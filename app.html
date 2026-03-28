@@ -142,7 +142,7 @@
   <div class="diary-compose">
     <textarea class="diary-textarea" id="diaryInput"
               placeholder="Anota lo que pasó en la sesión..."
-              onkeydown="if(event.key==='Enter'&&event.ctrlKey){App.addDiaryEntry();event.preventDefault();}"></textarea>
+              onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){App.addDiaryEntry();event.preventDefault();}"></textarea>
     <div class="diary-compose-actions">
       <span style="font-size:11px;color:var(--text-dim)">Ctrl+Enter para guardar</span>
       <button class="btn btn-gold" onclick="App.addDiaryEntry()">Guardar</button>
