@@ -406,8 +406,8 @@ input[type=number] { -moz-appearance: textfield; }
 .hp-header-block {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 200px;
+  gap: 3px;
+  min-width: 240px;
 }
 
 .hp-header-top {
@@ -462,29 +462,29 @@ input[type=number] { -moz-appearance: textfield; }
 
 .hp-header-cur {
   font-family: 'Cinzel', serif;
-  font-size: 20px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
-  min-width: 28px;
+  min-width: 36px;
   text-align: right;
 }
 
 .hp-header-sep {
   font-family: 'Cinzel', serif;
-  font-size: 14px;
+  font-size: 18px;
   color: var(--text-dim);
 }
 
 .hp-header-max {
   font-family: 'Cinzel', serif;
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-dim);
   background: transparent;
   border: none;
   border-bottom: 1px dashed var(--border);
-  width: 40px;
+  width: 48px;
   text-align: center;
   padding: 0 2px;
   cursor: text;
@@ -548,10 +548,10 @@ input[type=number] { -moz-appearance: textfield; }
 
 .hp-hdr-btn {
   font-family: 'Cinzel', serif;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  padding: 3px 7px;
-  min-height: 28px;
+  padding: 5px 10px;
+  min-height: 34px;
   border-radius: var(--radius-sm);
   border: 1px solid;
   cursor: pointer;
