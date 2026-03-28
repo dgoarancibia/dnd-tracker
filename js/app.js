@@ -383,7 +383,7 @@ const App = (() => {
     const keySells = (c.spells || []).filter(s => s.level > 0 && (s.domain || (c.preparedToday||[]).includes(s.id)));
 
     let html = `
-    <button class="btn btn-gold" style="width:100%;margin-bottom:12px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>
+    <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>
 
     <div class="section-hd">✨ Conjuros de Referencia</div>`;
 
@@ -399,7 +399,7 @@ const App = (() => {
       byLevel[lv].forEach(sp => {
         const tags = _buildTagsHTML(sp);
         html += `
-        <div class="spell-card">
+        <div class="spell-card" onclick="this.querySelector('.spell-desc').classList.toggle('expanded')">
           <div class="spell-info">
             <div class="spell-top">
               <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>

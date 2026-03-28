@@ -717,7 +717,7 @@ input[type=number] { -moz-appearance: textfield; }
 /* 2-col layout para tabs */
 .two-col {
   display: none;
-  grid-template-columns: 400px 1fr;
+  grid-template-columns: 1fr 320px;
   height: 100%;
   overflow: hidden;
 }
@@ -1539,12 +1539,13 @@ input[type=number] { -moz-appearance: textfield; }
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px 11px;
-  margin-bottom: 5px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
   transition: border-color 0.15s;
+  cursor: pointer;
 }
 
 .spell-card:hover { border-color: rgba(201,151,58,0.3); }
@@ -1580,9 +1581,26 @@ input[type=number] { -moz-appearance: textfield; }
   margin-bottom: 3px;
 }
 
-.spell-name { font-weight: 600; font-size: 15px; color: var(--text); flex: 1; }
+.spell-name { font-weight: 600; font-size: 13px; color: var(--text); flex: 1; }
 .spell-lvl { font-family: 'Cinzel', serif; font-size: 9px; color: var(--gold); min-width: 12px; }
-.spell-desc { font-size: 13px; color: var(--text-dim); font-style: italic; line-height: 1.4; }
+.spell-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 2.8em;
+  transition: max-height 0.25s ease, -webkit-line-clamp 0.25s;
+}
+.spell-desc.expanded {
+  display: block;
+  max-height: 200px;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
 
 .tag {
   font-size: 9px;
