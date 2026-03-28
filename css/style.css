@@ -1078,6 +1078,16 @@ input[type=number] { -moz-appearance: textfield; }
   margin-bottom: 4px;
 }
 
+.full-width-card {
+  grid-column: 1 / -1;
+}
+
+.rc-divider {
+  height: 1px;
+  background: rgba(201,151,58,0.15);
+  margin: 6px 0;
+}
+
 .resource-card {
   background: var(--bg3);
   border: 1px solid var(--border);

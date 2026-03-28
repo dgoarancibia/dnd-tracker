@@ -233,12 +233,11 @@ const App = (() => {
         <div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div>
       </div>`;
     });
-    html += `</div>`;
-
-    // SPELL SLOTS
+    // SPELL SLOTS y DADOS dentro del mismo grid
+    // SPELL SLOTS — ancho completo
     html += `
-    <div class="slots-card">
-      <div class="rc-header" style="margin-bottom:6px;">
+    <div class="slots-card full-width-card">
+      <div class="rc-top" style="margin-bottom:4px;">
         <span class="rc-name">Spell Slots</span>
         <span class="rc-recharge">↺ Largo</span>
       </div>`;
@@ -258,23 +257,21 @@ const App = (() => {
       </div>`;
     }
 
-    html += `</div>`;
-
-    // DADOS DE GOLPE — dots
+    // DADOS DE GOLPE — ancho completo
     let hdDotsHtml = '';
     for (let d = 0; d < c.hitDice.max; d++) {
       const used = d >= c.hitDice.current;
       hdDotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleHitDieDot(${d})"></div>`;
     }
     html += `
-    <div class="hit-dice-card">
-      <div class="rc-header">
+    <div class="hit-dice-card full-width-card">
+      <div class="rc-top" style="margin-bottom:4px;">
         <span class="rc-name">Dados de Golpe (d${c.hitDie})</span>
         <span class="rc-recharge">↺ Largo (mitad)</span>
       </div>
       <div class="slot-dots" id="hd-dots">${hdDotsHtml}</div>
-      <div class="rc-note">En descanso corto: usa dados y suma CON mod (${conMod >= 0 ? '+' : ''}${conMod}) por dado</div>
-    </div>`;
+    </div>
+    </div>`; // cierra resources-grid
 
     // DESCANSOS
     html += `
