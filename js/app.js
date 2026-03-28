@@ -576,7 +576,7 @@ const App = (() => {
     const ca = Characters.calcCA(c);
 
     // ── COLUMNA IZQUIERDA: Armas + Armadura + Ítems ──
-    let htmlIzq = `<div class="section-hd">🎒 Equipo</div>
+    let htmlIzq = `<div class="section-hd">🎒 Ítems</div>
 
     <!-- ARMAS -->
     <div class="equip-section">
@@ -680,7 +680,7 @@ const App = (() => {
 
     <!-- MONEDAS -->
     <div class="equip-section">
-      <div class="rc-name" style="margin-bottom:6px;">Monedas</div>
+      <div class="rc-name" style="margin-bottom:6px;">Dinero</div>
       <div class="currency-row">
         <div class="currency-field">
           <span class="currency-label">GP</span>
