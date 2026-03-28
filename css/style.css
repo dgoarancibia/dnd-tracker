@@ -1288,6 +1288,12 @@ input[type=number] { -moz-appearance: textfield; }
 .bonus-input-sm:not([value="0"]) { opacity: 1; border-color: var(--gold-dim); }
 
 /* ARMOR SECTION */
+.body-items-list {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
 .armor-row {
   display: flex;
   align-items: flex-start;

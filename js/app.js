@@ -636,11 +636,13 @@ const App = (() => {
 
     htmlIzq += `</div>
 
-    <!-- ARMADURA -->
+    <!-- CUERPO & ARMADURA (fusionado) -->
     <div class="equip-section">
       <div class="rc-header" style="margin-bottom:10px;">
-        <span class="rc-name">Armadura & CA</span>
+        <span class="rc-name">🧥 Cuerpo & Armadura</span>
+        <button class="btn-sm" onclick="App.openAddItem('body')">+ Agregar</button>
       </div>
+      <!-- CA block compacto -->
       <div class="armor-row">
         <div class="armor-info">
           <div style="font-size:15px;color:var(--text);font-weight:600;">${c.armor.name || 'Sin armadura'}</div>
@@ -668,18 +670,12 @@ const App = (() => {
           <div class="ca-label">CA Total</div>
         </div>
       </div>
-    </div>
-
-    <!-- EQUIPO DEL CUERPO -->
-    <div class="equip-section">
-      <div class="rc-header">
-        <span class="rc-name">🧥 Equipo del cuerpo</span>
-        <button class="btn-sm" onclick="App.openAddItem('body')">+ Agregar</button>
-      </div>`;
+      <!-- Piezas equipadas -->
+      <div class="body-items-list">`;
 
     const bodyItems = (c.consumables || []).filter(item => item.slot === 'body');
     if (bodyItems.length === 0) {
-      htmlIzq += `<div class="equip-empty">Sin equipo equipado.</div>`;
+      htmlIzq += `<div class="equip-empty" style="margin-top:6px;">Sin ropa ni equipo equipado.</div>`;
     } else {
       (c.consumables || []).forEach((item, i) => {
         if (item.slot !== 'body') return;
@@ -699,6 +695,7 @@ const App = (() => {
     }
 
     htmlIzq += `</div>
+    </div>
 
     <!-- MOCHILA -->
     <div class="equip-section">
