@@ -696,6 +696,61 @@ const App = (() => {
     htmlIzq += `</div>
     </div>
 
+    <!-- ÍTEMS MÁGICOS -->
+    <div class="equip-section">
+      <div class="rc-header">
+        <span class="rc-name">Ítems Mágicos</span>
+        <button class="btn-sm" onclick="App.addMagicItem()">+ Agregar</button>
+      </div>
+      <div id="magicItemsList">`;
+
+    if ((c.magicItems || []).length === 0) {
+      htmlIzq += `<div class="equip-empty">Sin ítems mágicos.</div>`;
+    } else {
+      (c.magicItems || []).forEach((item, i) => {
+        htmlIzq += `
+        <div class="item-row">
+          <div class="item-row-left">
+            <span class="item-name">${item.name}</span>
+            ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
+          </div>
+          <div class="item-row-right">
+            ${_itemCatBadge('Valuable')}
+            <button class="item-del" onclick="App.deleteMagicItem(${i})">✕</button>
+          </div>
+        </div>`;
+      });
+    }
+
+    htmlIzq += `</div></div>
+
+    <!-- ATTUNEMENT -->
+    <div class="equip-section">
+      <div class="rc-name" style="margin-bottom:8px;">Attunement (máx 3)</div>
+      <div class="attunement-slots">`;
+
+    (c.attunement || ['','','']).forEach((slot, i) => {
+      htmlIzq += `<input type="text" class="attunement-input"
+        value="${slot.replace(/"/g,'&quot;')}"
+        placeholder="Ítem sintonizado ${i+1}..."
+        onchange="App.setAttunement(${i},this.value)">`;
+    });
+
+    htmlIzq += `</div></div>
+
+    <!-- NOTAS DE SESIÓN -->
+    <div class="equip-section">
+      <div class="rc-header">
+        <span class="rc-name">Notas de Sesión</span>
+        <button class="btn-sm" onclick="document.getElementById('sessionNotesArea').value='';App.setNotes('');">Limpiar</button>
+      </div>
+      <textarea class="notes-area" id="sessionNotesArea"
+                placeholder="NPCs encontrados, pistas, acuerdos, daño recibido..."
+                oninput="App.setNotes(this.value)">${c.notes || ''}</textarea>
+    </div>`;
+
+    // ── COLUMNA DERECHA: Mochila + Dinero ──
+    let htmlDer = `
     <!-- MOCHILA -->
     <div class="equip-section">
       <div class="rc-header">
@@ -705,12 +760,12 @@ const App = (() => {
 
     const bagItems = (c.consumables || []).filter(item => item.slot !== 'body');
     if (bagItems.length === 0) {
-      htmlIzq += `<div class="equip-empty">Mochila vacía.</div>`;
+      htmlDer += `<div class="equip-empty">Mochila vacía.</div>`;
     } else {
       (c.consumables || []).forEach((item, i) => {
         if (item.slot === 'body') return;
         const cat = item.category || 'Other';
-        htmlIzq += `
+        htmlDer += `
         <div class="item-row">
           <div class="item-row-left">
             <div class="item-qty-name">
@@ -732,9 +787,9 @@ const App = (() => {
       });
     }
 
-    htmlIzq += `</div>
+    htmlDer += `</div>
 
-    <!-- MONEDAS -->
+    <!-- DINERO -->
     <div class="equip-section">
       <div class="rc-name" style="margin-bottom:6px;">Dinero</div>
       <div class="currency-row">
@@ -759,60 +814,6 @@ const App = (() => {
                  onchange="App.setCurrency('cp',parseInt(this.value)||0)">
         </div>
       </div>
-    </div>`;
-
-    let htmlDer = `
-    <!-- ÍTEMS MÁGICOS -->
-    <div class="equip-section">
-      <div class="rc-header">
-        <span class="rc-name">Ítems Mágicos</span>
-        <button class="btn-sm" onclick="App.addMagicItem()">+ Agregar</button>
-      </div>
-      <div id="magicItemsList">`;
-
-    if ((c.magicItems || []).length === 0) {
-      htmlDer += `<div class="equip-empty">Sin ítems mágicos.</div>`;
-    } else {
-      (c.magicItems || []).forEach((item, i) => {
-        htmlDer += `
-        <div class="item-row">
-          <div class="item-row-left">
-            <span class="item-name">${item.name}</span>
-            ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
-          </div>
-          <div class="item-row-right">
-            ${_itemCatBadge('Valuable')}
-            <button class="item-del" onclick="App.deleteMagicItem(${i})">✕</button>
-          </div>
-        </div>`;
-      });
-    }
-
-    htmlDer += `</div></div>
-
-    <!-- ATTUNEMENT -->
-    <div class="equip-section">
-      <div class="rc-name" style="margin-bottom:8px;">Attunement (máx 3)</div>
-      <div class="attunement-slots">`;
-
-    (c.attunement || ['','','']).forEach((slot, i) => {
-      htmlDer += `<input type="text" class="attunement-input"
-        value="${slot.replace(/"/g,'&quot;')}"
-        placeholder="Ítem sintonizado ${i+1}..."
-        onchange="App.setAttunement(${i},this.value)">`;
-    });
-
-    htmlDer += `</div></div>
-
-    <!-- NOTAS DE SESIÓN -->
-    <div class="equip-section">
-      <div class="rc-header">
-        <span class="rc-name">Notas de Sesión</span>
-        <button class="btn-sm" onclick="document.getElementById('sessionNotesArea').value='';App.setNotes('');">Limpiar</button>
-      </div>
-      <textarea class="notes-area" id="sessionNotesArea"
-                placeholder="NPCs encontrados, pistas, acuerdos, daño recibido..."
-                oninput="App.setNotes(this.value)">${c.notes || ''}</textarea>
     </div>`;
 
     document.getElementById('col-equipo-izq').innerHTML = htmlIzq;
