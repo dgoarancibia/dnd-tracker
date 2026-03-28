@@ -229,13 +229,17 @@ const App = (() => {
     }
     html += `</div>`;
 
-    // 2. DADOS DE GOLPE — ancho completo, segundo
-    let hdDotsHtml = '';
-    for (let d = 0; d < c.hitDice.max; d++) {
+    // 2. DADOS DE GOLPE — 2 columnas como recursos
+    const hdMax = c.hitDice.max;
+    const hdMid = Math.ceil(hdMax / 2);
+    let hdLeft = '', hdRight = '';
+    for (let d = 0; d < hdMax; d++) {
       const used = d >= c.hitDice.current;
-      hdDotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleHitDieDot(${d})"></div>`;
+      const dot = `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleHitDieDot(${d})"></div>`;
+      if (d < hdMid) hdLeft += dot; else hdRight += dot;
     }
-    html += `<div class="hit-dice-card full-width-card"><div class="rc-top" style="margin-bottom:4px;"><span class="rc-name">Dados de Golpe (d${c.hitDie})</span><span class="rc-recharge">↺ Largo (mitad)</span></div><div class="slot-dots" id="hd-dots">${hdDotsHtml}</div></div>`;
+    html += `<div class="resource-card"><div class="rc-top"><span class="rc-name">Dados de Golpe (d${c.hitDie})</span><span class="rc-recharge">↺ Largo (mitad)</span></div><div class="slot-dots" id="hd-dots">${hdLeft}</div></div>`;
+    html += `<div class="resource-card"><div class="rc-top"><span class="rc-name" style="opacity:0">·</span></div><div class="slot-dots">${hdRight}</div></div>`;
 
     // 3. RECURSOS — grilla 2 columnas, al final
     c.resources.forEach(r => {
