@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>D&D Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="D&D Tracker">
+<meta name="theme-color" content="#c9973a">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- PORTRAIT WARNING -->
+<div class="portrait-warning">
+  <div class="pw-icon">⟳</div>
+  <div class="pw-title">Girar el iPad</div>
+  <div class="pw-text">Esta app está diseñada para modo horizontal (landscape)</div>
+</div>
+
+<!-- HEADER -->
+<header class="app-header" id="appHeader">
+  <div class="app-header-left">
+    <div class="app-char-name" id="headerCharName">Cargando...</div>
+    <div class="app-char-sub" id="headerCharSub"></div>
+  </div>
+
+  <div class="char-selector-wrap">
+    <select class="char-selector" id="charSelector" onchange="App.switchChar(this.value)" title="Cambiar personaje"></select>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat-box key"><div class="sl">CA</div><div class="sv" id="hdrCA">—</div></div>
+
+    <div class="hp-header-block">
+      <div class="hp-header-top">
+        <div class="hp-header-label">HP</div>
+        <div class="hp-header-nums">
+          <span class="hp-header-cur" id="hdrHP">—</span>
+          <span class="hp-header-sep">/</span>
+          <input type="number" class="hp-header-max" id="hdrHPMax" min="1" max="999"
+                 title="HP máximo — toca para editar"
+                 onchange="App.setHPMax(parseInt(this.value))" onclick="this.select()">
+          <span class="hp-temp-badge" id="hdrHPTemp" onclick="App.promptTempHP()" title="Toca para editar HP temporales" style="cursor:pointer;"></span>
+        </div>
+      </div>
+      <div class="hp-header-bar"><div class="hp-header-bar-fill" id="hdrHPBar"></div></div>
+      <div class="hp-header-btns">
+        <button class="hp-hdr-btn dmg" onclick="App.adjustHP(-10)">−10</button>
+        <button class="hp-hdr-btn dmg" onclick="App.adjustHP(-5)">−5</button>
+        <button class="hp-hdr-btn dmg" onclick="App.adjustHP(-1)">−1</button>
+        <input type="number" class="hp-hdr-free" id="hdrHPFree" placeholder="±"
+               onkeydown="if(event.key==='Enter'){App.applyFreeHP();this.value='';this.blur();}">
+        <button class="hp-hdr-btn heal" onclick="App.adjustHP(1)">+1</button>
+        <button class="hp-hdr-btn heal" onclick="App.adjustHP(5)">+5</button>
+        <button class="hp-hdr-btn heal" onclick="App.adjustHP(10)">+10</button>
+      </div>
+    </div>
+
+    <div class="stat-box key"><div class="sl">CD</div><div class="sv" id="hdrCD">—</div></div>
+    <div class="stat-box key"><div class="sl">Atq</div><div class="sv" id="hdrATQ">—</div></div>
+    <div class="stat-box"><div class="sl">Init</div><div class="sv" id="hdrINIT">—</div></div>
+    <div class="stat-box"><div class="sl">Prof</div><div class="sv" id="hdrPROF">—</div></div>
+    <button class="insp-btn" id="hdrInspBtn" onclick="App.toggleInspiration()" title="Inspiración">✦</button>
+  </div>
+
+  <!-- BACKUP + IMPORT -->
+  <div style="display:flex;flex-direction:column;gap:5px;align-items:stretch;">
+    <button class="backup-btn" id="backupBtn" onclick="App.doBackup()">
+      ☁ Backup
+      <span class="backup-ts" id="backupTs">Sin backup</span>
+    </button>
+    <label class="backup-btn" style="cursor:pointer;text-align:center;" title="Importar backup JSON">
+      ↑ Importar
+      <input type="file" accept=".json" style="display:none" onchange="App.importBackup(this)">
+    </label>
+  </div>
+</header>
+
+<!-- TABS NAV -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="combate" onclick="App.switchTab('combate')">⚔️ Combate</button>
+  <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
+  <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Equipo</button>
+  <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
+</nav>
+
+<!-- CONTENIDO TABS -->
+<div class="app-content">
+
+  <!-- ══ TAB COMBATE ══ -->
+  <div class="tab-panel active two-col" id="tab-combate">
+    <div class="two-col-left" id="col-combate-izq"><!-- renderizado por app.js --></div>
+    <div class="two-col-right" id="col-combate-der"><!-- renderizado por app.js --></div>
+  </div>
+
+  <!-- ══ TAB CONJUROS ══ -->
+  <div class="tab-panel two-col" id="tab-conjuros">
+    <div class="two-col-left" id="col-conjuros-izq"><!-- renderizado por app.js --></div>
+    <div class="two-col-right" id="col-conjuros-der"><!-- renderizado por app.js --></div>
+  </div>
+
+  <!-- ══ TAB EQUIPO ══ -->
+  <div class="tab-panel two-col" id="tab-equipo">
+    <div class="two-col-left" id="col-equipo-izq"><!-- renderizado por app.js --></div>
+    <div class="two-col-right" id="col-equipo-der"><!-- renderizado por app.js --></div>
+  </div>
+
+  <!-- ══ TAB HABILIDADES ══ -->
+  <div class="tab-panel two-col" id="tab-habilidades">
+    <div class="two-col-left" id="col-hab-izq"><!-- renderizado por app.js --></div>
+    <div class="two-col-right" id="col-hab-der"><!-- renderizado por app.js --></div>
+  </div>
+
+</div>
+
+<!-- FAB DIARIO -->
+<button class="fab" id="diaryFab" onclick="App.toggleDiary()" title="Diario de sesión">📓</button>
+
+<!-- PANEL DIARIO -->
+<div class="diary-panel" id="diaryPanel">
+  <div class="diary-header">
+    <span class="diary-title">📓 Diario de Sesión</span>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-sm" onclick="App.exportDiary()">Exportar .txt</button>
+      <button class="diary-close" onclick="App.toggleDiary()">✕</button>
+    </div>
+  </div>
+  <div class="diary-search-wrap">
+    <input type="text" class="diary-search" id="diarySearch" placeholder="Buscar en el diario..."
+           oninput="App.filterDiary(this.value)">
+  </div>
+  <div class="diary-entries" id="diaryEntries"></div>
+  <div class="diary-compose">
+    <textarea class="diary-textarea" id="diaryInput"
+              placeholder="Anota lo que pasó en la sesión..."
+              onkeydown="if(event.key==='Enter'&&event.ctrlKey){App.addDiaryEntry();event.preventDefault();}"></textarea>
+    <div class="diary-compose-actions">
+      <span style="font-size:11px;color:var(--text-dim)">Ctrl+Enter para guardar</span>
+      <button class="btn btn-gold" onclick="App.addDiaryEntry()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL IFTTT OVERLAY -->
+<div class="ifttt-overlay" id="iftttOverlay">
+  <div class="ifttt-overlay-header">
+    <span class="ifttt-overlay-title">⚔️ Guía de Combate</span>
+    <button class="ifttt-overlay-close" onclick="App.closeIfttt()">✕</button>
+  </div>
+  <div class="ifttt-overlay-body" id="iftttBody"></div>
+</div>
+
+<!-- BACKDROP PARA OVERLAYS -->
+<div class="overlay-backdrop" id="overlayBackdrop" onclick="App.closeAllOverlays()"></div>
+
+<!-- MODAL DESCANSO CORTO (dados de golpe) -->
+<div class="modal-overlay" id="shortRestModal">
+  <div class="modal">
+    <div class="modal-title">↺ Descanso Corto</div>
+    <p style="font-size:14px;color:var(--text-dim);margin-bottom:14px;line-height:1.6;">
+      Lanza uno o más dados de golpe y anota el resultado (suma los números del dado, no tires digitalmente).
+      El sistema sumará el modificador de CON automáticamente.
+    </p>
+    <div class="modal-grid-2">
+      <div class="modal-field">
+        <label>Dados d8 a usar (0–<span id="srMaxDice">5</span>)</label>
+        <input type="number" id="srDiceQty" value="1" min="0">
+      </div>
+      <div class="modal-field">
+        <label>Resultado de tus dados (total)</label>
+        <input type="number" id="srDiceResult" value="0" min="0">
+      </div>
+    </div>
+    <div class="modal-calc-preview" id="srPreview">Ingresa los valores para ver la curación.</div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="App.closeShortRest()">Cancelar</button>
+      <button class="btn btn-gold" onclick="App.applyShortRest()">Aplicar Descanso</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LEVEL UP -->
+<div class="modal-overlay" id="levelUpModal">
+  <div class="modal">
+    <div class="modal-title">✦ Subir de Nivel</div>
+    <div class="modal-grid-2">
+      <div class="modal-field">
+        <label>Nuevo Nivel</label>
+        <input type="number" id="luNewLevel" min="2" max="20">
+      </div>
+      <div class="modal-field">
+        <label>HP ganados (tira dado en físico)</label>
+        <input type="number" id="luHPGained" min="1" value="5">
+      </div>
+    </div>
+    <div class="modal-calc-preview" id="luPreview">Selecciona el nuevo nivel para ver los cambios.</div>
+    <div class="modal-note">El sistema recalculará automáticamente: Proficiency Bonus, CD de conjuros, bonus de ataque y spell slots.</div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="App.closeLevelUp()">Cancelar</button>
+      <button class="btn btn-gold" onclick="App.applyLevelUp()">Confirmar Level Up</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RECURSO CUSTOM -->
+<div class="modal-overlay" id="customResourceModal">
+  <div class="modal">
+    <div class="modal-title">+ Recurso Personalizado</div>
+    <div class="modal-grid-2">
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label>Nombre del recurso</label>
+        <input type="text" id="crName" placeholder="ej: Ki Points, Rage, Bardic Inspiration">
+      </div>
+      <div class="modal-field">
+        <label>Cantidad máxima</label>
+        <input type="number" id="crMax" value="3" min="1">
+      </div>
+      <div class="modal-field">
+        <label>Se recarga con</label>
+        <select id="crRecharge">
+          <option value="short">Descanso Corto</option>
+          <option value="long">Descanso Largo</option>
+          <option value="dawn">Al Amanecer</option>
+          <option value="never">No se recarga</option>
+        </select>
+      </div>
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label>Nota (opcional)</label>
+        <input type="text" id="crNote" placeholder="Descripción breve">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="App.closeCustomResource()">Cancelar</button>
+      <button class="btn btn-gold" onclick="App.saveCustomResource()">Agregar Recurso</button>
+    </div>
+  </div>
+</div>
+
+<!-- ALERTA CONCENTRACIÓN -->
+<div class="conc-alert" id="concAlert">
+  <button class="conc-alert-close" onclick="App.closeConcAlert()">✕</button>
+  <div class="conc-alert-title">⚠ Chequeo de Concentración</div>
+  <div class="conc-alert-text" id="concAlertText">Recibiste daño.</div>
+  <div class="conc-alert-dc" id="concAlertDC">Save CON DC 10</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="js/storage.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
+</body>
+</html>
