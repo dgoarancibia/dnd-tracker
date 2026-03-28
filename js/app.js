@@ -213,7 +213,8 @@ const App = (() => {
     <!-- RECURSOS CON CONTADORES -->
     <div class="section-hd" style="margin-top:12px;">Recursos</div>`;
 
-    // Resources dinámicos — dots táctiles
+    // Resources dinámicos — grilla 2 columnas
+    html += `<div class="resources-grid">`;
     c.resources.forEach(r => {
       const rechargeLabel = { short: '↺ Corto', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
       const isCustom = !['channel-divinity','bond','guiding-bolt-mi'].includes(r.id);
@@ -224,17 +225,15 @@ const App = (() => {
       }
       html += `
       <div class="resource-card">
-        <div class="rc-header">
+        <div class="rc-top">
           <span class="rc-name">${r.name}</span>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <span class="rc-recharge">${rechargeLabel}</span>
-            ${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:2px 7px;min-height:24px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}
-          </div>
+          <span class="rc-recharge">${rechargeLabel}</span>
+          ${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}
         </div>
         <div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div>
-        ${r.note ? `<div class="rc-note">${r.note}</div>` : ''}
       </div>`;
     });
+    html += `</div>`;
 
     // SPELL SLOTS
     html += `

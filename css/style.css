@@ -1071,15 +1071,26 @@ input[type=number] { -moz-appearance: textfield; }
 .conc-btn.none.active { background: var(--bg3); border-color: var(--text-dim); color: var(--text-mid); }
 
 /* RECURSOS — CONTADOR NUMÉRICO */
+.resources-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
 .resource-card {
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  margin-bottom: 4px;
+  padding: 5px 8px;
+}
+
+.rc-top {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
 }
 
 .rc-header {
@@ -1089,23 +1100,20 @@ input[type=number] { -moz-appearance: textfield; }
 
 .rc-name {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: 8px;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-mid);
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.rc-recharge { font-size: 10px; color: var(--text-dim); font-style: italic; }
+.rc-recharge { font-size: 9px; color: var(--text-dim); font-style: italic; flex-shrink: 0; }
 
-.rc-counter {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
+.rc-counter { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
 .rc-adj-btn {
   font-family: 'Cinzel', serif;
