@@ -41,13 +41,36 @@ const App = (() => {
       return;
     }
 
-    // Siempre sincronizar datos maestros desde characters.js
-    // Esto permite actualizar spells/consumibles sin borrar el personaje
+    // Sincronizar datos maestros desde characters.js (spells/ifttt)
+    // Preserva: spellSlots usados, preparedToday, cantidades de consumables
     if (_char.id === 'lursey-brumaclara') {
       const freshLursey = Characters.buildLursey();
-      _char.spells      = freshLursey.spells;
-      _char.ifttt       = freshLursey.ifttt;
-      _char.consumables = freshLursey.consumables;
+
+      // Spells: merge preservando estado prepared del personaje guardado
+      const savedPrepared = _char.preparedToday || [];
+      _char.spells = freshLursey.spells.map(freshSpell => {
+        const saved = (_char.spells || []).find(s => s.id === freshSpell.id);
+        return { ...freshSpell, prepared: saved ? saved.prepared : freshSpell.prepared };
+      });
+      _char.preparedToday = savedPrepared;
+
+      // Ifttt: siempre desde master (es solo texto/guía)
+      _char.ifttt = freshLursey.ifttt;
+
+      // Consumables: solo agregar los que no existen — respeta cantidades guardadas
+      const savedCons = _char.consumables || [];
+      freshLursey.consumables.forEach(fresh => {
+        const exists = savedCons.find(s => s.id === fresh.id);
+        if (!exists) savedCons.push(fresh);
+        else {
+          // Actualizar metadatos (name, desc, category) pero NO qty
+          exists.name     = fresh.name;
+          exists.desc     = fresh.desc;
+          exists.category = fresh.category;
+        }
+      });
+      _char.consumables = savedCons;
+
       Storage.saveChar(_char);
     }
 
@@ -1937,12 +1960,10 @@ const App = (() => {
     if (!file) return;
     Storage.importJSON(file,
       count => {
-        _char = Storage.getActiveChar();
-        _populateCharSelector();
-        _renderHeader();
-        _renderActiveTab();
-        showToast(`✓ ${count} personaje(s) importado(s)`);
+        // Recargar la página para que init() aplique el merge correctamente
+        showToast(`✓ ${count} personaje(s) importado(s) — recargando...`);
         input.value = '';
+        setTimeout(() => location.reload(), 800);
       },
       err => {
         showToast('Error al importar: ' + err);
