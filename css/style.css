@@ -1074,40 +1074,45 @@ input[type=number] { -moz-appearance: textfield; }
 .resource-card {
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  margin-bottom: 7px;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .rc-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .rc-name {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 1.5px;
+  font-size: 9px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.rc-recharge { font-size: 11px; color: var(--text-dim); font-style: italic; }
+.rc-recharge { font-size: 10px; color: var(--text-dim); font-style: italic; }
 
 .rc-counter {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .rc-adj-btn {
   font-family: 'Cinzel', serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1px solid var(--gold-dim);
   background: rgba(201,151,58,0.08);
@@ -1127,33 +1132,33 @@ input[type=number] { -moz-appearance: textfield; }
 
 .rc-display {
   font-family: 'Cinzel', serif;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
-  min-width: 60px;
+  min-width: 40px;
   text-align: center;
 }
 
-.rc-sep { font-size: 14px; color: var(--text-dim); }
-.rc-max { font-size: 15px; color: var(--text-dim); }
+.rc-sep { font-size: 12px; color: var(--text-dim); }
+.rc-max { font-size: 12px; color: var(--text-dim); }
 
-.rc-note { font-size: 12px; color: var(--text-dim); font-style: italic; margin-top: 6px; }
+.rc-note { display: none; }
 
 /* SPELL SLOTS CARD */
 .slots-card {
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  margin-bottom: 7px;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: 4px;
 }
 
 .slot-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 5px 0;
+  gap: 8px;
+  padding: 3px 0;
   border-bottom: 1px solid rgba(201,151,58,0.07);
 }
 
@@ -1161,24 +1166,24 @@ input[type=number] { -moz-appearance: textfield; }
 
 .slot-lv {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 1px;
   color: var(--text-dim);
   text-transform: uppercase;
-  min-width: 38px;
+  min-width: 32px;
   flex-shrink: 0;
 }
 
 /* DOTS para slots */
 .slot-dots {
   display: flex;
-  gap: 7px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .slot-dot {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 2px solid var(--gold-dim);
   background: rgba(201,151,58,0.08);
