@@ -717,17 +717,12 @@ input[type=number] { -moz-appearance: textfield; }
 /* 2-col layout para tabs */
 .two-col {
   display: none;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 1fr;
   height: 100%;
   overflow: hidden;
 }
 
 .tab-panel.active.two-col { display: grid; }
-
-/* Columnas específicas por tab */
-#tab-conjuros  { grid-template-columns: 1fr 340px; }
-#tab-equipo    { grid-template-columns: 1fr 280px; }
-#tab-habilidades { grid-template-columns: 1fr 1fr; }
 
 .two-col-left, .two-col-right {
   overflow-y: auto;
