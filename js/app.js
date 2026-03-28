@@ -1075,17 +1075,10 @@ const App = (() => {
   function setTempHP(val) {
     if (!_char) return;
     const newVal = Math.max(0, val || 0);
-    // Los HP temp no se apilan — solo el valor más alto
-    if (newVal > _char.hp.temp) {
-      _char.hp.temp = newVal;
-      _saveChar();
-      _updateTempHPDisplay();
-      showToast(`HP Temporales: ${newVal}`);
-    } else if (newVal === 0) {
-      _char.hp.temp = 0;
-      _saveChar();
-      _updateTempHPDisplay();
-    }
+    _char.hp.temp = newVal;
+    _saveChar();
+    _updateTempHPDisplay();
+    if (newVal > 0) showToast(`HP Temporales: ${newVal}`);
   }
 
   function adjustTempHP(delta) {
