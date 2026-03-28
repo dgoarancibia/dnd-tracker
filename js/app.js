@@ -1960,10 +1960,12 @@ const App = (() => {
     if (!file) return;
     Storage.importJSON(file,
       count => {
-        // Recargar la página para que init() aplique el merge correctamente
-        showToast(`✓ ${count} personaje(s) importado(s) — recargando...`);
         input.value = '';
-        setTimeout(() => location.reload(), 800);
+        _char = Storage.getActiveChar();
+        _populateCharSelector();
+        _renderHeader();
+        _renderActiveTab();
+        showToast(`✓ ${count} personaje(s) importado(s)`);
       },
       err => {
         showToast('Error al importar: ' + err);
