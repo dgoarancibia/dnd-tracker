@@ -44,24 +44,24 @@
           <input type="number" class="hp-header-max" id="hdrHPMax" min="1" max="999"
                  title="HP máximo — toca para editar"
                  onchange="App.setHPMax(parseInt(this.value))" onclick="this.select()">
-          <span class="hp-temp-badge" id="hdrHPTemp" onclick="App.promptTempHP()" title="Toca para editar HP temporales" style="cursor:pointer;"></span>
+        </div>
+        <div class="hp-temp-inline">
+          <span class="hp-temp-inline-label">TMP</span>
+          <input type="number" class="hp-temp-inline-input" id="tempHPInput" value="0" min="0"
+                 onchange="App.setTempHP(parseInt(this.value)||0)" onclick="this.select()">
         </div>
       </div>
       <div class="hp-header-bar"><div class="hp-header-bar-fill" id="hdrHPBar"></div></div>
       <div class="hp-header-btns">
-        <button class="hp-hdr-btn dmg" onclick="App.adjustHP(-10)">−10</button>
-        <button class="hp-hdr-btn dmg" onclick="App.adjustHP(-5)">−5</button>
         <button class="hp-hdr-btn dmg" onclick="App.adjustHP(-1)">−1</button>
         <input type="number" class="hp-hdr-free" id="hdrHPFree" placeholder="±"
                onkeydown="if(event.key==='Enter'){App.applyFreeHP();this.value='';this.blur();}">
         <button class="hp-hdr-btn heal" onclick="App.adjustHP(1)">+1</button>
-        <button class="hp-hdr-btn heal" onclick="App.adjustHP(5)">+5</button>
-        <button class="hp-hdr-btn heal" onclick="App.adjustHP(10)">+10</button>
       </div>
     </div>
 
     <div class="stat-box key"><div class="sl">CD</div><div class="sv" id="hdrCD">—</div></div>
-    <div class="stat-box key"><div class="sl">Atq</div><div class="sv" id="hdrATQ">—</div></div>
+    <div class="stat-box key"><div class="sl">Spell</div><div class="sv" id="hdrATQ">—</div></div>
     <div class="stat-box"><div class="sl">Init</div><div class="sv" id="hdrINIT">—</div></div>
     <div class="stat-box"><div class="sl">Prof</div><div class="sv" id="hdrPROF">—</div></div>
     <button class="insp-btn" id="hdrInspBtn" onclick="App.toggleInspiration()" title="Inspiración">✦</button>

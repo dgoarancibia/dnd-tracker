@@ -413,8 +413,36 @@ input[type=number] { -moz-appearance: textfield; }
 .hp-header-top {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
+.hp-temp-inline {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  border-left: 1px solid rgba(122,179,212,0.25);
+  padding-left: 8px;
+}
+.hp-temp-inline-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  color: #7ab3d4;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.hp-temp-inline-input {
+  width: 36px;
+  background: rgba(122,179,212,0.1);
+  border: 1px solid rgba(122,179,212,0.3);
+  border-radius: 4px;
+  color: #7ab3d4;
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  padding: 1px 0;
+  -moz-appearance: textfield;
+}
+.hp-temp-inline-input::-webkit-inner-spin-button { display: none; }
 
 .hp-header-label {
   font-family: 'Cinzel', serif;

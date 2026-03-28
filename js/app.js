@@ -204,21 +204,6 @@ const App = (() => {
     <!-- TIRADAS DE MUERTE -->
     ${c.hp.current === 0 ? _buildDeathSavesHTML(c) : ''}
 
-    <!-- HP TEMPORALES -->
-    <div class="temp-hp-block">
-      <div class="rc-header">
-        <span class="rc-name" style="color:#7ab3d4;">❄ HP Temporales</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button class="hp-hdr-btn dmg" onclick="App.adjustTempHP(-1)">−</button>
-          <input type="number" class="hp-temp-input" id="tempHPInput" value="${c.hp.temp||0}" min="0"
-                 onchange="App.setTempHP(parseInt(this.value)||0)" onclick="this.select()">
-          <button class="hp-hdr-btn heal" onclick="App.adjustTempHP(1)">+</button>
-          <button class="btn-sm" onclick="App.setTempHP(0)" style="color:var(--text-dim);">✕</button>
-        </div>
-      </div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">No se apilan — solo el valor mayor aplica. Absorben daño primero.</div>
-    </div>
-
     <!-- CONCENTRACIÓN -->
     <div class="conc-block">
       <span class="conc-label">Concentración activa</span>
