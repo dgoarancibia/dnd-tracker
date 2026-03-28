@@ -51,7 +51,8 @@
         <div class="hp-temp-inline">
           <span class="hp-temp-inline-label">TMP</span>
           <input type="number" class="hp-temp-inline-input" id="tempHPInput" value="0" min="0"
-                 onchange="App.setTempHP(parseInt(this.value)||0)" onclick="this.select()">
+                 onchange="App.setTempHP(parseInt(this.value)||0)" onclick="this.select()"
+                 onkeydown="if(event.key==='Enter'){App.setTempHP(parseInt(this.value)||0);this.blur();}">
         </div>
       </div>
       <div class="hp-header-bar"><div class="hp-header-bar-fill" id="hdrHPBar"></div></div>
