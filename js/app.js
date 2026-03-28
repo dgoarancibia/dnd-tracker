@@ -670,24 +670,55 @@ const App = (() => {
       </div>
     </div>
 
-    <!-- ÍTEMS -->
+    <!-- EQUIPO DEL CUERPO -->
     <div class="equip-section">
       <div class="rc-header">
-        <span class="rc-name">Ítems & Consumibles</span>
-        <button class="btn-sm" onclick="App.openAddItem()">+ Agregar</button>
+        <span class="rc-name">🧥 Equipo del cuerpo</span>
+        <button class="btn-sm" onclick="App.openAddItem('body')">+ Agregar</button>
       </div>`;
 
-    const allItems = c.consumables || [];
-    if (allItems.length === 0) {
-      htmlIzq += `<div class="equip-empty">Sin ítems. Toca "+ Agregar" para añadir.</div>`;
+    const bodyItems = (c.consumables || []).filter(item => item.slot === 'body');
+    if (bodyItems.length === 0) {
+      htmlIzq += `<div class="equip-empty">Sin equipo equipado.</div>`;
     } else {
-      allItems.forEach((item, i) => {
+      (c.consumables || []).forEach((item, i) => {
+        if (item.slot !== 'body') return;
+        const cat = item.category || 'Other';
+        htmlIzq += `
+        <div class="item-row">
+          <div class="item-row-left">
+            <span class="item-name">${item.name}</span>
+            ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
+          </div>
+          <div class="item-row-right">
+            ${_itemCatBadge(cat)}
+            <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
+          </div>
+        </div>`;
+      });
+    }
+
+    htmlIzq += `</div>
+
+    <!-- MOCHILA -->
+    <div class="equip-section">
+      <div class="rc-header">
+        <span class="rc-name">🎒 Mochila</span>
+        <button class="btn-sm" onclick="App.openAddItem('bag')">+ Agregar</button>
+      </div>`;
+
+    const bagItems = (c.consumables || []).filter(item => item.slot !== 'body');
+    if (bagItems.length === 0) {
+      htmlIzq += `<div class="equip-empty">Mochila vacía.</div>`;
+    } else {
+      (c.consumables || []).forEach((item, i) => {
+        if (item.slot === 'body') return;
         const cat = item.category || 'Other';
         htmlIzq += `
         <div class="item-row">
           <div class="item-row-left">
             <div class="item-qty-name">
-              <span class="item-qty">+${item.qty}</span>
+              <span class="item-qty">×${item.qty}</span>
               <span class="item-name">${item.name}</span>
             </div>
             ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
@@ -1421,12 +1452,21 @@ const App = (() => {
     _renderEquipoTab();
   }
 
-  function openAddItem() {
+  let _addItemSlot = 'bag';
+
+  function openAddItem(slot) {
+    _addItemSlot = slot || 'bag';
     document.getElementById('aimName').value = '';
-    document.getElementById('aimQty').value = '1';
-    document.getElementById('aimCategory').value = 'Other';
     document.getElementById('aimDesc').value = '';
     document.getElementById('addItemModal').classList.add('show');
+    const titleEl = document.getElementById('addItemModalTitle');
+    if (titleEl) titleEl.textContent = slot === 'body' ? '+ Equipo del cuerpo' : '+ Agregar a mochila';
+    // Body items default to Apparel category, bag items to Other
+    document.getElementById('aimCategory').value = slot === 'body' ? 'Apparel' : 'Other';
+    // Show/hide qty row — body items don't need qty
+    const qtyField = document.getElementById('aimQtyField');
+    if (qtyField) qtyField.style.display = slot === 'body' ? 'none' : '';
+    document.getElementById('aimQty').value = '1';
   }
 
   function closeAddItem() {
@@ -1436,11 +1476,11 @@ const App = (() => {
   function saveAddItem() {
     const name = document.getElementById('aimName').value.trim();
     if (!name) return;
-    const qty  = parseInt(document.getElementById('aimQty').value) || 1;
+    const qty  = _addItemSlot === 'body' ? 1 : (parseInt(document.getElementById('aimQty').value) || 1);
     const category = document.getElementById('aimCategory').value;
     const desc = document.getElementById('aimDesc').value.trim();
     if (!_char.consumables) _char.consumables = [];
-    _char.consumables.push({ id:'i-'+Date.now(), name, qty, category, desc });
+    _char.consumables.push({ id:'i-'+Date.now(), name, qty, category, desc, slot: _addItemSlot });
     _saveChar();
     closeAddItem();
     _renderEquipoTab();
