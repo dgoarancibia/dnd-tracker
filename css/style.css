@@ -1036,34 +1036,34 @@ input[type=number] { -moz-appearance: textfield; }
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 6px 10px;
+  padding: 4px 8px;
   margin-bottom: 8px;
 }
 
 .conc-label {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: 8px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--text-mid);
-  margin-bottom: 5px;
+  color: var(--text-dim);
+  margin-bottom: 3px;
   display: block;
 }
 
-.conc-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+.conc-btns { display: flex; gap: 4px; flex-wrap: wrap; }
 
 .conc-btn {
   font-family: 'Cinzel', serif;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.5px;
-  padding: 6px 12px;
+  padding: 3px 9px;
   border-radius: 20px;
   border: 1px solid var(--border);
   background: var(--bg2);
   color: var(--text-dim);
   cursor: pointer;
   transition: all 0.15s;
-  min-height: 36px;
+  min-height: 28px;
 }
 
 .conc-btn:hover { border-color: var(--gold-dim); color: var(--text-mid); }
@@ -1612,6 +1612,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 .spell-name { font-weight: 600; font-size: 13px; color: var(--text); flex: 1; }
 .spell-lvl { font-family: 'Cinzel', serif; font-size: 9px; color: var(--gold); min-width: 12px; }
+
 .spell-desc {
   font-size: 11px;
   color: var(--text-dim);
@@ -1624,6 +1625,10 @@ input[type=number] { -moz-appearance: textfield; }
   max-height: 2.8em;
   transition: max-height 0.25s ease, -webkit-line-clamp 0.25s;
 }
+
+/* Spell cards in combat reference panel — larger text */
+#tab-combate .spell-name { font-size: 15px; }
+#tab-combate .spell-desc { font-size: 12px; max-height: 3em; }
 .spell-desc.expanded {
   display: block;
   max-height: 200px;

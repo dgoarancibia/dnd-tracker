@@ -214,7 +214,6 @@ const App = (() => {
 
     <!-- ACCIONES DEL TURNO -->
     <div class="turn-block">
-      <div class="rc-name">Acciones del Turno</div>
       <div class="turn-actions-grid">
         <button class="turn-action-btn ${c.turn.action ? 'used' : ''}" id="turnAction" onclick="App.toggleTurn('action')">Acción</button>
         <button class="turn-action-btn ${c.turn.bonus ? 'used' : ''}" id="turnBonus" onclick="App.toggleTurn('bonus')">Bonus Action</button>
