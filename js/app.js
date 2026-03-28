@@ -282,12 +282,18 @@ const App = (() => {
 
     // CONDICIONES
     const CONDITIONS = [
-      { id:'caido', label:'Caído' }, { id:'envenenado', label:'Envenenado' },
-      { id:'aturdido', label:'Aturdido' }, { id:'agarrado', label:'Agarrado' },
-      { id:'asustado', label:'Asustado' }, { id:'incapacitado', label:'Incapacitado' },
-      { id:'cegado', label:'Cegado' }, { id:'encantado', label:'Encantado' },
-      { id:'ensordecido', label:'Ensordecido' }, { id:'invisible', label:'Invisible' },
-      { id:'paralizado', label:'Paralizado' }, { id:'apresado', label:'Apresado' },
+      { id:'caido',         label:'Caído',         effect:'Desventaja en ataques · Ataques cuerpo a cuerpo contra ti con ventaja · Vel 0' },
+      { id:'envenenado',    label:'Envenenado',     effect:'Desventaja en ataques y checks de habilidad' },
+      { id:'aturdido',      label:'Aturdido',       effect:'Incapacitado · no puede moverse · falla STR/DEX saves · ataques contra ti con ventaja' },
+      { id:'agarrado',      label:'Agarrado',       effect:'Velocidad 0 · termina si el agarrador queda incapacitado' },
+      { id:'asustado',      label:'Asustado',       effect:'Desventaja en ataques y checks mientras vea la fuente · no puede acercarse a ella' },
+      { id:'incapacitado',  label:'Incapacitado',   effect:'No puede realizar acciones ni reacciones' },
+      { id:'cegado',        label:'Cegado',         effect:'Falla checks que requieran vista · desventaja en ataques · ventaja contra ti' },
+      { id:'encantado',     label:'Encantado',      effect:'No puede atacar al encantador · el encantador tiene ventaja en checks sociales' },
+      { id:'ensordecido',   label:'Ensordecido',    effect:'Falla checks que requieran oído' },
+      { id:'invisible',     label:'Invisible',      effect:'Ventaja en ataques · desventaja en ataques contra ti · no se puede ver sin magia' },
+      { id:'paralizado',    label:'Paralizado',     effect:'Incapacitado · falla STR/DEX saves · ataques con ventaja · golpes a 5ft son críticos' },
+      { id:'apresado',      label:'Apresado',       effect:'Restringido: sin vel, sin reacciones · desventaja en ataques · ventaja contra ti' },
     ];
 
     html += `
@@ -300,10 +306,22 @@ const App = (() => {
 
     CONDITIONS.forEach(cond => {
       const active = c.conditions.includes(cond.id);
-      html += `<button class="cond-btn ${active ? 'active' : ''}" onclick="App.toggleCondition('${cond.id}')">${cond.label}</button>`;
+      html += `<button class="cond-btn ${active ? 'active' : ''}" onclick="App.toggleCondition('${cond.id}')" title="${cond.effect}">${cond.label}</button>`;
     });
 
-    html += `</div></div>`;
+    html += `</div>`;
+
+    // Efectos de condiciones activas
+    const activeConditions = CONDITIONS.filter(cond => c.conditions.includes(cond.id));
+    if (activeConditions.length > 0) {
+      html += `<div class="cond-effects">`;
+      activeConditions.forEach(cond => {
+        html += `<div class="cond-effect-row"><span class="cond-effect-name">${cond.label}</span><span class="cond-effect-text">${cond.effect}</span></div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `</div>`;
 
     // INSPIRACIÓN
     html += `
@@ -1334,8 +1352,8 @@ const App = (() => {
     if (idx >= 0) _char.conditions.splice(idx, 1);
     else _char.conditions.push(id);
     _saveChar();
-    const btn = document.querySelector(`.cond-btn[onclick*="'${id}'"]`);
-    if (btn) btn.classList.toggle('active', _char.conditions.includes(id));
+    // Re-render para actualizar lista de efectos activos
+    _renderCombateIzq();
   }
 
   function clearConditions() {

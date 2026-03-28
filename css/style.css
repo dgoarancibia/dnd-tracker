@@ -1431,6 +1431,34 @@ input[type=number] { -moz-appearance: textfield; }
 .cond-btn:hover { border-color: var(--gold-dim); color: var(--text-mid); }
 .cond-btn.active { border-color: var(--red); background: rgba(138,58,58,0.2); color: var(--red-light); }
 
+.cond-effects {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cond-effect-row {
+  background: rgba(138,58,58,0.08);
+  border: 1px solid rgba(138,58,58,0.2);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cond-effect-name {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--red-light);
+}
+.cond-effect-text {
+  font-size: 11px;
+  color: var(--text-mid);
+  line-height: 1.4;
+}
+
 /* INSPIRACIÓN */
 .inspiration-block {
   background: var(--bg3);
