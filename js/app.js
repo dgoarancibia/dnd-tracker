@@ -559,14 +559,28 @@ const App = (() => {
 
   // Colores por categoría de ítem
   const ITEM_CAT_COLORS = {
-    'Potion':           { bg: 'rgba(80,200,120,0.15)',  color: '#60c878', border: 'rgba(80,200,120,0.3)' },
-    'Food':             { bg: 'rgba(200,160,80,0.15)',  color: '#c8a050', border: 'rgba(200,160,80,0.3)' },
-    'Adventuring gear': { bg: 'rgba(120,160,210,0.15)', color: '#7aa0d2', border: 'rgba(120,160,210,0.3)' },
-    'Equipment':        { bg: 'rgba(160,120,200,0.15)', color: '#a078c8', border: 'rgba(160,120,200,0.3)' },
-    'Valuable':         { bg: 'rgba(201,151,58,0.15)',  color: 'var(--gold)', border: 'var(--gold-dim)' },
-    'Ammo':             { bg: 'rgba(200,80,80,0.12)',   color: '#d06060', border: 'rgba(200,80,80,0.3)' },
-    'Weapon':           { bg: 'rgba(200,100,60,0.15)',  color: '#d08050', border: 'rgba(200,100,60,0.3)' },
-    'Other':            { bg: 'rgba(160,160,160,0.12)', color: '#aaa',    border: 'rgba(160,160,160,0.3)' },
+    // Armas
+    'Weapon':                   { bg: 'rgba(200,100,60,0.15)',  color: '#d08050', border: 'rgba(200,100,60,0.3)' },
+    'Weapon - simple melee':    { bg: 'rgba(200,100,60,0.15)',  color: '#d08050', border: 'rgba(200,100,60,0.3)' },
+    'Weapon - martial melee':   { bg: 'rgba(200,60,60,0.15)',   color: '#d05050', border: 'rgba(200,60,60,0.3)' },
+    'Weapon - simple ranged':   { bg: 'rgba(180,120,60,0.15)',  color: '#c89050', border: 'rgba(180,120,60,0.3)' },
+    'Weapon - martial ranged':  { bg: 'rgba(160,80,40,0.15)',   color: '#c07040', border: 'rgba(160,80,40,0.3)' },
+    'Ammo':                     { bg: 'rgba(200,80,80,0.12)',   color: '#d06060', border: 'rgba(200,80,80,0.3)' },
+    // Consumibles
+    'Potion':                   { bg: 'rgba(80,200,120,0.15)',  color: '#60c878', border: 'rgba(80,200,120,0.3)' },
+    'Poison':                   { bg: 'rgba(100,180,60,0.15)',  color: '#80c040', border: 'rgba(100,180,60,0.3)' },
+    'Food':                     { bg: 'rgba(200,160,80,0.15)',  color: '#c8a050', border: 'rgba(200,160,80,0.3)' },
+    'Spell scroll':              { bg: 'rgba(100,140,220,0.15)', color: '#7090d8', border: 'rgba(100,140,220,0.3)' },
+    // Equipo
+    'Adventuring gear':         { bg: 'rgba(120,160,210,0.15)', color: '#7aa0d2', border: 'rgba(120,160,210,0.3)' },
+    'Tool':                     { bg: 'rgba(140,140,100,0.15)', color: '#a8a870', border: 'rgba(140,140,100,0.3)' },
+    'Apparel':                  { bg: 'rgba(180,120,180,0.15)', color: '#c080c0', border: 'rgba(180,120,180,0.3)' },
+    'Equipment':                { bg: 'rgba(160,120,200,0.15)', color: '#a078c8', border: 'rgba(160,120,200,0.3)' },
+    // Otros
+    'Valuable':                 { bg: 'rgba(201,151,58,0.15)',  color: 'var(--gold)', border: 'var(--gold-dim)' },
+    'Magic item':               { bg: 'rgba(160,80,220,0.15)',  color: '#b060e0', border: 'rgba(160,80,220,0.3)' },
+    'Part':                     { bg: 'rgba(140,120,100,0.15)', color: '#9a8870', border: 'rgba(140,120,100,0.3)' },
+    'Other':                    { bg: 'rgba(160,160,160,0.12)', color: '#aaa',    border: 'rgba(160,160,160,0.3)' },
   };
 
   function _itemCatBadge(cat) {

@@ -225,13 +225,31 @@
       <div class="modal-field">
         <label>Categoría</label>
         <select id="aimCategory">
-          <option value="Potion">Poción</option>
-          <option value="Food">Comida</option>
-          <option value="Adventuring gear">Equipo de aventura</option>
-          <option value="Equipment">Equipamiento</option>
-          <option value="Valuable">Valioso</option>
-          <option value="Ammo">Munición</option>
-          <option value="Other">Otro</option>
+          <optgroup label="── Armas ──">
+            <option value="Weapon - simple melee">Arma simple cuerpo a cuerpo</option>
+            <option value="Weapon - martial melee">Arma marcial cuerpo a cuerpo</option>
+            <option value="Weapon - simple ranged">Arma simple a distancia</option>
+            <option value="Weapon - martial ranged">Arma marcial a distancia</option>
+            <option value="Ammo">Munición</option>
+          </optgroup>
+          <optgroup label="── Consumibles ──">
+            <option value="Potion">Poción</option>
+            <option value="Poison">Veneno</option>
+            <option value="Food">Comida / Ración</option>
+            <option value="Spell scroll">Pergamino de hechizo</option>
+          </optgroup>
+          <optgroup label="── Equipo ──">
+            <option value="Adventuring gear">Equipo de aventura</option>
+            <option value="Tool">Herramienta</option>
+            <option value="Apparel">Ropa / Armadura</option>
+            <option value="Equipment">Equipamiento</option>
+          </optgroup>
+          <optgroup label="── Otros ──">
+            <option value="Valuable">Valioso / Joya</option>
+            <option value="Magic item">Ítem mágico</option>
+            <option value="Part">Parte / Material</option>
+            <option value="Other">Otro</option>
+          </optgroup>
         </select>
       </div>
       <div class="modal-field" style="grid-column:1/-1;">
