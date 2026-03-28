@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v2';
+const CACHE = 'dnd-tracker-v3';
 const ASSETS = [
   '/app.html',
   '/css/style.css',
