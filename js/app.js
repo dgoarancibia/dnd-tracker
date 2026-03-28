@@ -1482,9 +1482,12 @@ const App = (() => {
   function addWeapon() { openAddWeapon(); }
 
   function deleteWeapon(idx) {
-    _char.weapons.splice(idx, 1);
-    _saveChar();
-    _renderEquipoTab();
+    const name = _char.weapons[idx]?.name || 'esta arma';
+    _confirm(`¿Eliminar "${name}"?`, () => {
+      _char.weapons.splice(idx, 1);
+      _saveChar();
+      _renderEquipoTab();
+    });
   }
 
   let _addItemSlot = 'bag';
@@ -1529,9 +1532,12 @@ const App = (() => {
   }
 
   function deleteConsumable(idx) {
-    _char.consumables.splice(idx, 1);
-    _saveChar();
-    _renderEquipoTab();
+    const name = _char.consumables[idx]?.name || 'este ítem';
+    _confirm(`¿Eliminar "${name}"?`, () => {
+      _char.consumables.splice(idx, 1);
+      _saveChar();
+      _renderEquipoTab();
+    });
   }
 
   function addConsumable() { openAddItem(); }
@@ -1557,9 +1563,12 @@ const App = (() => {
   }
 
   function deleteMagicItem(idx) {
-    _char.magicItems.splice(idx, 1);
-    _saveChar();
-    _renderEquipoTab();
+    const name = _char.magicItems[idx]?.name || 'este ítem';
+    _confirm(`¿Eliminar "${name}"?`, () => {
+      _char.magicItems.splice(idx, 1);
+      _saveChar();
+      _renderEquipoTab();
+    });
   }
 
   function setNotes(val) {
@@ -1838,9 +1847,11 @@ const App = (() => {
 
   function deleteDiaryEntry(id) {
     if (!_char.diary) return;
-    _char.diary = _char.diary.filter(e => e.id !== id);
-    _saveChar();
-    _renderDiaryEntries(document.getElementById('diarySearch').value);
+    _confirm('¿Eliminar esta entrada del diario?', () => {
+      _char.diary = _char.diary.filter(e => e.id !== id);
+      _saveChar();
+      _renderDiaryEntries(document.getElementById('diarySearch').value);
+    });
   }
 
   function filterDiary(query) {
@@ -1939,6 +1950,24 @@ const App = (() => {
     if (_diaryOpen) toggleDiary();
     if (_iftttOpen) closeIfttt();
     if (_spellDetailOpen) closeSpellDetail();
+  }
+
+  /* ══════════════════════════════════════════════════════
+     CONFIRM MODAL
+  ══════════════════════════════════════════════════════ */
+
+  let _confirmCallback = null;
+
+  function _confirm(msg, onOk) {
+    _confirmCallback = onOk;
+    document.getElementById('confirmMsg').textContent = msg;
+    document.getElementById('confirmOkBtn').onclick = () => { closeConfirm(); onOk(); };
+    document.getElementById('confirmModal').classList.add('show');
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirmModal').classList.remove('show');
+    _confirmCallback = null;
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2055,7 +2084,7 @@ const App = (() => {
     toggleDiary, addDiaryEntry, deleteDiaryEntry, filterDiary, exportDiary,
 
     // IFTTT
-    openIfttt, closeIfttt, closeAllOverlays,
+    openIfttt, closeIfttt, closeAllOverlays, closeConfirm,
 
     // Detalle spell
     openSpellDetail, closeSpellDetail,

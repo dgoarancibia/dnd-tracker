@@ -370,6 +370,18 @@
   <div class="conc-alert-dc" id="concAlertDC">Save CON DC 10</div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:320px;text-align:center;">
+    <div class="modal-title" id="confirmTitle">¿Eliminar?</div>
+    <p class="confirm-msg" id="confirmMsg"></p>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="App.closeConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 

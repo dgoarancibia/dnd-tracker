@@ -2681,6 +2681,13 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 /* ═══ TOAST ═══ */
+.confirm-msg {
+  color: var(--text-mid);
+  font-size: 14px;
+  margin: 8px 0 16px;
+  line-height: 1.4;
+}
+
 .toast {
   position: fixed;
   bottom: 24px;
