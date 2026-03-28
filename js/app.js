@@ -1219,8 +1219,14 @@ const App = (() => {
     if (!_char) return;
     const r = _char.resources.find(r => r.id === id);
     if (!r) return;
-    const isUsed = dotIndex >= r.current;
-    r.current = isUsed ? dotIndex + 1 : dotIndex;
+    // Click on a dot sets current directly:
+    // - If clicking the last available dot (dotIndex = current-1): spend it → current-1
+    // - Otherwise: set current to dotIndex+1 (absolute position)
+    if (dotIndex === r.current - 1) {
+      r.current = dotIndex;         // spend the last one
+    } else {
+      r.current = dotIndex + 1;     // restore/set to this dot
+    }
     _saveChar();
     _refreshResourceDots(id);
   }
@@ -1248,15 +1254,10 @@ const App = (() => {
     if (!_char) return;
     const slot = _char.spellSlots[level];
     if (!slot) return;
-    // dotIndex = posición del dot (0 = primero)
-    // current = slots disponibles; dots usados son los que están en d >= current
-    // Si el dot está usado (d >= current), restaurarlo → current = dotIndex + 1
-    // Si el dot está libre (d < current), gastarlo → current = dotIndex
-    const isUsed = dotIndex >= slot.current;
-    if (isUsed) {
-      slot.current = dotIndex + 1; // restaurar hasta ese dot
+    if (dotIndex === slot.current - 1) {
+      slot.current = dotIndex;       // spend the last available
     } else {
-      slot.current = dotIndex;     // gastar desde ese dot
+      slot.current = dotIndex + 1;   // set absolute
     }
     _saveChar();
     _refreshSlotDots(level);
@@ -1282,8 +1283,11 @@ const App = (() => {
 
   function toggleHitDieDot(dotIndex) {
     if (!_char) return;
-    const isUsed = dotIndex >= _char.hitDice.current;
-    _char.hitDice.current = isUsed ? dotIndex + 1 : dotIndex;
+    if (dotIndex === _char.hitDice.current - 1) {
+      _char.hitDice.current = dotIndex;
+    } else {
+      _char.hitDice.current = dotIndex + 1;
+    }
     _saveChar();
     _refreshHitDiceDots();
   }
