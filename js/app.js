@@ -104,7 +104,10 @@ const App = (() => {
     document.getElementById('hdrCD').textContent   = cd !== null ? cd : '—';
     document.getElementById('hdrATQ').textContent  = atq !== null ? (atq >= 0 ? '+' : '') + atq : '—';
     document.getElementById('hdrINIT').textContent = (init >= 0 ? '+' : '') + init;
-    document.getElementById('hdrPROF').textContent = '+' + prof;
+    const strMod = Characters.calcMod(_char.stats.for);
+    const dexMod = Characters.calcMod(_char.stats.des);
+    const physAtk = Math.max(strMod, dexMod) + prof;
+    document.getElementById('hdrPROF').textContent = (physAtk >= 0 ? '+' : '') + physAtk;
 
     const inspBtn = document.getElementById('hdrInspBtn');
     if (inspBtn) inspBtn.classList.toggle('active', !!_char.inspiration);
@@ -588,7 +591,19 @@ const App = (() => {
     if ((c.weapons || []).length === 0) {
       htmlIzq += `<div class="equip-empty">Sin armas.</div>`;
     } else {
+      const prof = Characters.calcProfBonus(c.nivel);
+      const strMod = Characters.calcMod(c.stats.for);
+      const dexMod = Characters.calcMod(c.stats.des);
       (c.weapons || []).forEach((w, i) => {
+        const isFocus = w.type === 'focus';
+        const magicBonus = parseInt(w.bonus) || 0;
+        const statMod = (w.type === 'ranged') ? dexMod : strMod;
+        const hitTotal = statMod + prof + magicBonus;
+        const hitStr = (hitTotal >= 0 ? '+' : '') + hitTotal;
+        const dmgBonus = statMod + magicBonus;
+        const dmgStr = w.die !== '—'
+          ? `${w.die}${dmgBonus !== 0 ? (dmgBonus > 0 ? '+' : '') + dmgBonus : ''}`
+          : '—';
         htmlIzq += `
         <div class="item-row">
           <div class="item-row-left">
@@ -596,8 +611,8 @@ const App = (() => {
             ${w.notes ? `<span class="item-desc">${w.notes}</span>` : ''}
           </div>
           <div class="item-row-right">
-            <span class="item-stat">${w.die}</span>
-            <span class="item-stat gold">${w.bonus}</span>
+            ${!isFocus ? `<span class="item-stat hit-badge">${hitStr} al golpe</span>` : ''}
+            ${!isFocus ? `<span class="item-stat">${dmgStr}</span>` : ''}
             ${_itemCatBadge('Weapon')}
             <button class="item-del" onclick="App.deleteWeapon(${i})">✕</button>
           </div>
@@ -993,6 +1008,16 @@ const App = (() => {
     const val = parseInt(input.value);
     if (isNaN(val)) return;
     adjustHP(val);
+    input.value = '';
+    input.blur();
+  }
+
+  function applyFreeHPAs(sign) {
+    const input = document.getElementById('hdrHPFree');
+    if (!input) return;
+    const val = parseInt(input.value);
+    if (isNaN(val) || val <= 0) return;
+    adjustHP(sign * val);
     input.value = '';
     input.blur();
   }
@@ -1896,7 +1921,7 @@ const App = (() => {
     switchChar,
 
     // HP
-    setHP, adjustHP, applyFreeHP, healFull, setHPMax,
+    setHP, adjustHP, applyFreeHP, applyFreeHPAs, healFull, setHPMax,
     setTempHP, adjustTempHP, promptTempHP,
     setBonus, toggleShield,
 

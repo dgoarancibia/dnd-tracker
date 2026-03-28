@@ -578,7 +578,7 @@ input[type=number] { -moz-appearance: textfield; }
 .hp-hdr-free {
   font-family: 'Cinzel', serif;
   font-size: 12px;
-  width: 44px;
+  width: 54px;
   min-height: 28px;
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -1822,6 +1822,7 @@ input[type=number] { -moz-appearance: textfield; }
   border: 1px solid var(--border);
 }
 .item-stat.gold { color: var(--gold-light); }
+.item-stat.hit-badge { color: var(--green-light); border-color: rgba(74,138,90,0.4); background: rgba(74,138,90,0.08); }
 
 .item-cat-badge {
   font-family: 'Cinzel', serif;

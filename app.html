@@ -56,17 +56,17 @@
       </div>
       <div class="hp-header-bar"><div class="hp-header-bar-fill" id="hdrHPBar"></div></div>
       <div class="hp-header-btns">
-        <button class="hp-hdr-btn dmg" onclick="App.adjustHP(-1)">−1</button>
-        <input type="number" class="hp-hdr-free" id="hdrHPFree" placeholder="±"
+        <input type="number" inputmode="numeric" pattern="[0-9]*" class="hp-hdr-free" id="hdrHPFree" placeholder="0" min="0"
                onkeydown="if(event.key==='Enter'){App.applyFreeHP();this.value='';this.blur();}">
-        <button class="hp-hdr-btn heal" onclick="App.adjustHP(1)">+1</button>
+        <button class="hp-hdr-btn dmg" onclick="App.applyFreeHPAs(-1)">Dmg</button>
+        <button class="hp-hdr-btn heal" onclick="App.applyFreeHPAs(1)">Heal</button>
       </div>
     </div>
 
     <div class="stat-box key"><div class="sl">CD</div><div class="sv" id="hdrCD">—</div></div>
     <div class="stat-box key"><div class="sl">Spell</div><div class="sv" id="hdrATQ">—</div></div>
     <div class="stat-box"><div class="sl">Init</div><div class="sv" id="hdrINIT">—</div></div>
-    <div class="stat-box"><div class="sl">Prof</div><div class="sv" id="hdrPROF">—</div></div>
+    <div class="stat-box"><div class="sl">Atk</div><div class="sv" id="hdrPROF">—</div></div>
     <button class="insp-btn" id="hdrInspBtn" onclick="App.toggleInspiration()" title="Inspiración">✦</button>
   </div>
 
