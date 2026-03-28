@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>D&D Tracker</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/favicon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Tracker">
@@ -209,6 +209,72 @@
   </div>
 </div>
 
+<!-- MODAL AGREGAR ÍTEM -->
+<div class="modal-overlay" id="addItemModal">
+  <div class="modal">
+    <div class="modal-title" id="addItemModalTitle">+ Agregar Ítem</div>
+    <div class="modal-grid-2">
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label>Nombre</label>
+        <input type="text" id="aimName" placeholder="ej: Poción de Curación">
+      </div>
+      <div class="modal-field">
+        <label>Cantidad</label>
+        <input type="number" id="aimQty" value="1" min="0">
+      </div>
+      <div class="modal-field">
+        <label>Categoría</label>
+        <select id="aimCategory">
+          <option value="Potion">Poción</option>
+          <option value="Food">Comida</option>
+          <option value="Adventuring gear">Equipo de aventura</option>
+          <option value="Equipment">Equipamiento</option>
+          <option value="Valuable">Valioso</option>
+          <option value="Ammo">Munición</option>
+          <option value="Other">Otro</option>
+        </select>
+      </div>
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label>Descripción (opcional)</label>
+        <input type="text" id="aimDesc" placeholder="ej: 2d4+2 HP">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="App.closeAddItem()">Cancelar</button>
+      <button class="btn btn-gold" onclick="App.saveAddItem()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGREGAR ARMA -->
+<div class="modal-overlay" id="addWeaponModal">
+  <div class="modal">
+    <div class="modal-title">+ Agregar Arma</div>
+    <div class="modal-grid-2">
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label>Nombre</label>
+        <input type="text" id="awmName" placeholder="ej: Espada Larga +1">
+      </div>
+      <div class="modal-field">
+        <label>Dado de daño</label>
+        <input type="text" id="awmDie" value="1d6" placeholder="1d8">
+      </div>
+      <div class="modal-field">
+        <label>Bonus ataque</label>
+        <input type="text" id="awmBonus" value="+0" placeholder="+5">
+      </div>
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label>Descripción (opcional)</label>
+        <input type="text" id="awmDesc" placeholder="ej: Alcance 3 m, versátil 1d10">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="App.closeAddWeapon()">Cancelar</button>
+      <button class="btn btn-gold" onclick="App.saveAddWeapon()">Agregar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RECURSO CUSTOM -->
 <div class="modal-overlay" id="customResourceModal">
   <div class="modal">
@@ -239,6 +305,39 @@
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="App.closeCustomResource()">Cancelar</button>
       <button class="btn btn-gold" onclick="App.saveCustomResource()">Agregar Recurso</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE SPELL -->
+<div class="modal-overlay" id="spellDetailModal">
+  <div class="modal spell-detail-modal">
+    <button class="modal-close-x" onclick="App.closeSpellDetail()">✕</button>
+    <div class="sdm-level-badge" id="sdmBadge"></div>
+    <div class="sdm-name" id="sdmName"></div>
+    <div class="sdm-meta-row">
+      <div class="sdm-meta-item">
+        <div class="sdm-meta-label">Casteo</div>
+        <div class="sdm-meta-val" id="sdmCastTime"></div>
+      </div>
+      <div class="sdm-meta-item">
+        <div class="sdm-meta-label">Duración</div>
+        <div class="sdm-meta-val" id="sdmDuration"></div>
+      </div>
+      <div class="sdm-meta-item">
+        <div class="sdm-meta-label">Distancia</div>
+        <div class="sdm-meta-val" id="sdmRange"></div>
+      </div>
+      <div class="sdm-meta-item" id="sdmDamageWrap">
+        <div class="sdm-meta-label">Daño</div>
+        <div class="sdm-meta-val sdm-damage" id="sdmDamage"></div>
+      </div>
+    </div>
+    <div class="sdm-divider"></div>
+    <div class="sdm-desc" id="sdmDesc"></div>
+    <div class="sdm-upcast" id="sdmUpcastWrap">
+      <div class="sdm-upcast-label">A mayor nivel</div>
+      <div class="sdm-upcast-text" id="sdmUpcast"></div>
     </div>
   </div>
 </div>

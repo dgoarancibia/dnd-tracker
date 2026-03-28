@@ -12,6 +12,7 @@ const App = (() => {
   let _concAlertTimer = null;
   let _diaryOpen = false;
   let _iftttOpen = false;
+  let _spellDetailOpen = false;
 
   /* ══════════════════════════════════════════════════════
      INICIALIZACIÓN
@@ -27,8 +28,27 @@ const App = (() => {
 
     _char = Storage.getActiveChar();
     if (!_char) {
+      // Puede haber chars pero sin activeId — usar el primero disponible
+      const all = Storage.getAllChars();
+      const ids = Object.keys(all);
+      if (ids.length > 0) {
+        Storage.setActiveId(ids[0]);
+        _char = Storage.getActiveChar();
+      }
+    }
+    if (!_char) {
       window.location.href = 'index.html';
       return;
+    }
+
+    // Siempre sincronizar datos maestros desde characters.js
+    // Esto permite actualizar spells/consumibles sin borrar el personaje
+    if (_char.id === 'lursey-brumaclara') {
+      const freshLursey = Characters.buildLursey();
+      _char.spells      = freshLursey.spells;
+      _char.ifttt       = freshLursey.ifttt;
+      _char.consumables = freshLursey.consumables;
+      Storage.saveChar(_char);
     }
 
     _renderHeader();
@@ -460,9 +480,9 @@ const App = (() => {
         const clickable = !isCantrip && !isDomain && !isMI;
 
         htmlIzq += `
-        <div class="spell-card" ${clickable ? `onclick="App.toggleSpellPrepared('${sp.id}')"` : ''} style="${clickable?'cursor:pointer;':''}">
-          <div class="spell-checkbox ${checkClass}" id="spchk-${sp.id}"></div>
-          <div class="spell-info">
+        <div class="spell-card">
+          <div class="spell-checkbox ${checkClass}" id="spchk-${sp.id}" ${clickable ? `onclick="App.toggleSpellPrepared('${sp.id}')"` : ''} style="${clickable?'cursor:pointer;':''}"></div>
+          <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
             <div class="spell-top">
               <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
               <span class="spell-name">${sp.name}</span>${tags}
@@ -487,7 +507,7 @@ const App = (() => {
       htmlDer += `
       <div class="spell-card">
         <div class="spell-checkbox domain"></div>
-        <div class="spell-info">
+        <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
           <div class="spell-top">
             <span class="spell-lvl">${sp.level}</span>
             <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
@@ -508,9 +528,9 @@ const App = (() => {
     } else {
       preparedList.forEach(sp => {
         htmlDer += `
-        <div class="spell-card" onclick="App.toggleSpellPrepared('${sp.id}')" style="cursor:pointer;">
-          <div class="spell-checkbox checked"></div>
-          <div class="spell-info">
+        <div class="spell-card">
+          <div class="spell-checkbox checked" onclick="App.toggleSpellPrepared('${sp.id}')" style="cursor:pointer;"></div>
+          <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
             <div class="spell-top">
               <span class="spell-lvl">${sp.level}</span>
               <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
@@ -534,32 +554,58 @@ const App = (() => {
      TAB EQUIPO
   ══════════════════════════════════════════════════════ */
 
+  // Colores por categoría de ítem
+  const ITEM_CAT_COLORS = {
+    'Potion':           { bg: 'rgba(80,200,120,0.15)',  color: '#60c878', border: 'rgba(80,200,120,0.3)' },
+    'Food':             { bg: 'rgba(200,160,80,0.15)',  color: '#c8a050', border: 'rgba(200,160,80,0.3)' },
+    'Adventuring gear': { bg: 'rgba(120,160,210,0.15)', color: '#7aa0d2', border: 'rgba(120,160,210,0.3)' },
+    'Equipment':        { bg: 'rgba(160,120,200,0.15)', color: '#a078c8', border: 'rgba(160,120,200,0.3)' },
+    'Valuable':         { bg: 'rgba(201,151,58,0.15)',  color: 'var(--gold)', border: 'var(--gold-dim)' },
+    'Ammo':             { bg: 'rgba(200,80,80,0.12)',   color: '#d06060', border: 'rgba(200,80,80,0.3)' },
+    'Weapon':           { bg: 'rgba(200,100,60,0.15)',  color: '#d08050', border: 'rgba(200,100,60,0.3)' },
+    'Other':            { bg: 'rgba(160,160,160,0.12)', color: '#aaa',    border: 'rgba(160,160,160,0.3)' },
+  };
+
+  function _itemCatBadge(cat) {
+    const c = ITEM_CAT_COLORS[cat] || ITEM_CAT_COLORS['Other'];
+    return `<span class="item-cat-badge" style="background:${c.bg};color:${c.color};border-color:${c.border};">${cat}</span>`;
+  }
+
   function _renderEquipoTab() {
     const c = _char;
     const ca = Characters.calcCA(c);
 
+    // ── COLUMNA IZQUIERDA: Armas + Armadura + Ítems ──
     let htmlIzq = `<div class="section-hd">🎒 Equipo</div>
 
     <!-- ARMAS -->
     <div class="equip-section">
       <div class="rc-header">
         <span class="rc-name">Armas</span>
-        <button class="btn-sm" onclick="App.addWeapon()">+ Agregar</button>
-      </div>
-      <table class="equip-table">
-        <thead><tr><th>Arma</th><th>Daño</th><th>Bonus</th><th></th></tr></thead>
-        <tbody id="weaponsTable">`;
+        <button class="btn-sm" onclick="App.openAddWeapon()">+ Agregar</button>
+      </div>`;
 
-    (c.weapons || []).forEach((w, i) => {
-      htmlIzq += `<tr>
-        <td>${w.name}${w.notes ? `<br><small style="color:var(--text-dim);font-style:italic;">${w.notes}</small>` : ''}</td>
-        <td>${w.die}</td><td style="color:var(--gold-light);font-family:'Cinzel',serif;">${w.bonus}</td>
-        <td><button class="btn-sm" style="padding:2px 6px;min-height:24px;" onclick="App.deleteWeapon(${i})">✕</button></td>
-      </tr>`;
-    });
+    if ((c.weapons || []).length === 0) {
+      htmlIzq += `<div class="equip-empty">Sin armas.</div>`;
+    } else {
+      (c.weapons || []).forEach((w, i) => {
+        htmlIzq += `
+        <div class="item-row">
+          <div class="item-row-left">
+            <span class="item-name">${w.name}</span>
+            ${w.notes ? `<span class="item-desc">${w.notes}</span>` : ''}
+          </div>
+          <div class="item-row-right">
+            <span class="item-stat">${w.die}</span>
+            <span class="item-stat gold">${w.bonus}</span>
+            ${_itemCatBadge('Weapon')}
+            <button class="item-del" onclick="App.deleteWeapon(${i})">✕</button>
+          </div>
+        </div>`;
+      });
+    }
 
-    htmlIzq += `</tbody></table>
-    </div>
+    htmlIzq += `</div>
 
     <!-- ARMADURA -->
     <div class="equip-section">
@@ -595,28 +641,42 @@ const App = (() => {
       </div>
     </div>
 
-    <!-- CONSUMIBLES -->
+    <!-- ÍTEMS -->
     <div class="equip-section">
       <div class="rc-header">
-        <span class="rc-name">Consumibles</span>
-        <button class="btn-sm" onclick="App.addConsumable()">+ Agregar</button>
-      </div>
-      <div id="consumablesList">`;
-
-    (c.consumables || []).forEach((item, i) => {
-      htmlIzq += `
-      <div class="consumable-item">
-        <span class="consumable-name">${item.name}</span>
-        <div class="qty-control">
-          <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
-          <span class="qty-val" id="cons-${i}">${item.qty}</span>
-          <button class="qty-btn" onclick="App.adjustConsumable(${i},1)">+</button>
-          <button class="qty-btn" style="color:var(--red-light);" onclick="App.deleteConsumable(${i})">✕</button>
-        </div>
+        <span class="rc-name">Ítems & Consumibles</span>
+        <button class="btn-sm" onclick="App.openAddItem()">+ Agregar</button>
       </div>`;
-    });
 
-    htmlIzq += `</div></div>
+    const allItems = c.consumables || [];
+    if (allItems.length === 0) {
+      htmlIzq += `<div class="equip-empty">Sin ítems. Toca "+ Agregar" para añadir.</div>`;
+    } else {
+      allItems.forEach((item, i) => {
+        const cat = item.category || 'Other';
+        htmlIzq += `
+        <div class="item-row">
+          <div class="item-row-left">
+            <div class="item-qty-name">
+              <span class="item-qty">+${item.qty}</span>
+              <span class="item-name">${item.name}</span>
+            </div>
+            ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
+          </div>
+          <div class="item-row-right">
+            ${_itemCatBadge(cat)}
+            <div class="qty-mini">
+              <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
+              <span class="qty-val" id="cons-${i}">${item.qty}</span>
+              <button class="qty-btn" onclick="App.adjustConsumable(${i},1)">+</button>
+            </div>
+            <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
+          </div>
+        </div>`;
+      });
+    }
+
+    htmlIzq += `</div>
 
     <!-- MONEDAS -->
     <div class="equip-section">
@@ -650,16 +710,19 @@ const App = (() => {
       <div id="magicItemsList">`;
 
     if ((c.magicItems || []).length === 0) {
-      htmlDer += `<div style="font-size:13px;color:var(--text-dim);font-style:italic;padding:6px 0;">Sin ítems mágicos.</div>`;
+      htmlDer += `<div class="equip-empty">Sin ítems mágicos.</div>`;
     } else {
       (c.magicItems || []).forEach((item, i) => {
         htmlDer += `
-        <div class="magic-item">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <span class="magic-item-name">${item.name}</span>
-            <button class="btn-sm" style="padding:2px 6px;min-height:24px;" onclick="App.deleteMagicItem(${i})">✕</button>
+        <div class="item-row">
+          <div class="item-row-left">
+            <span class="item-name">${item.name}</span>
+            ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
           </div>
-          ${item.desc ? `<div class="magic-item-desc">${item.desc}</div>` : ''}
+          <div class="item-row-right">
+            ${_itemCatBadge('Valuable')}
+            <button class="item-del" onclick="App.deleteMagicItem(${i})">✕</button>
+          </div>
         </div>`;
       });
     }
@@ -1282,19 +1345,60 @@ const App = (() => {
      EQUIPO
   ══════════════════════════════════════════════════════ */
 
-  function addWeapon() {
-    const name = prompt('Nombre del arma:');
+  function openAddWeapon() {
+    document.getElementById('awmName').value = '';
+    document.getElementById('awmDie').value = '1d6';
+    document.getElementById('awmBonus').value = '+0';
+    document.getElementById('awmDesc').value = '';
+    document.getElementById('addWeaponModal').classList.add('show');
+  }
+
+  function closeAddWeapon() {
+    document.getElementById('addWeaponModal').classList.remove('show');
+  }
+
+  function saveAddWeapon() {
+    const name = document.getElementById('awmName').value.trim();
     if (!name) return;
-    const die = prompt('Dado de daño (ej: 1d8):', '1d6') || '1d6';
-    const bonus = prompt('Bonus de ataque (ej: +5):', '+0') || '+0';
-    _char.weapons.push({ id: 'w-'+Date.now(), name, die, bonus, type:'melee', notes:'' });
+    const die   = document.getElementById('awmDie').value.trim() || '1d6';
+    const bonus = document.getElementById('awmBonus').value.trim() || '+0';
+    const notes = document.getElementById('awmDesc').value.trim();
+    _char.weapons.push({ id:'w-'+Date.now(), name, die, bonus, type:'melee', notes });
     _saveChar();
+    closeAddWeapon();
     _renderEquipoTab();
   }
+
+  function addWeapon() { openAddWeapon(); }
 
   function deleteWeapon(idx) {
     _char.weapons.splice(idx, 1);
     _saveChar();
+    _renderEquipoTab();
+  }
+
+  function openAddItem() {
+    document.getElementById('aimName').value = '';
+    document.getElementById('aimQty').value = '1';
+    document.getElementById('aimCategory').value = 'Other';
+    document.getElementById('aimDesc').value = '';
+    document.getElementById('addItemModal').classList.add('show');
+  }
+
+  function closeAddItem() {
+    document.getElementById('addItemModal').classList.remove('show');
+  }
+
+  function saveAddItem() {
+    const name = document.getElementById('aimName').value.trim();
+    if (!name) return;
+    const qty  = parseInt(document.getElementById('aimQty').value) || 1;
+    const category = document.getElementById('aimCategory').value;
+    const desc = document.getElementById('aimDesc').value.trim();
+    if (!_char.consumables) _char.consumables = [];
+    _char.consumables.push({ id:'i-'+Date.now(), name, qty, category, desc });
+    _saveChar();
+    closeAddItem();
     _renderEquipoTab();
   }
 
@@ -1311,14 +1415,7 @@ const App = (() => {
     _renderEquipoTab();
   }
 
-  function addConsumable() {
-    const name = prompt('Nombre del consumible:');
-    if (!name) return;
-    const qty = parseInt(prompt('Cantidad inicial:', '1')) || 1;
-    _char.consumables.push({ id: 'c-'+Date.now(), name, qty });
-    _saveChar();
-    _renderEquipoTab();
-  }
+  function addConsumable() { openAddItem(); }
 
   function setCurrency(coin, val) {
     _char.currency[coin] = Math.max(0, val);
@@ -1653,6 +1750,53 @@ const App = (() => {
     document.getElementById('overlayBackdrop').classList.toggle('show', _diaryOpen);
   }
 
+  /* ══════════════════════════════════════════════════════
+     MODAL DETALLE SPELL
+  ══════════════════════════════════════════════════════ */
+
+  function openSpellDetail(spellId) {
+    const sp = (_char.spells || []).find(s => s.id === spellId);
+    if (!sp) return;
+
+    const levelLabel = sp.level === 0 ? 'Truco' : `Nivel ${sp.level}`;
+    const badgeClass = sp.domain ? 'sdm-badge-dom' : sp.mi ? 'sdm-badge-mi' : sp.level === 0 ? 'sdm-badge-cantrip' : 'sdm-badge-spell';
+
+    document.getElementById('sdmBadge').textContent = levelLabel;
+    document.getElementById('sdmBadge').className = `sdm-level-badge ${badgeClass}`;
+    document.getElementById('sdmName').textContent = sp.name.replace(/\s*[◆†]/g, '');
+    document.getElementById('sdmCastTime').textContent = sp.castTime || '—';
+    document.getElementById('sdmDuration').textContent = sp.duration || '—';
+    document.getElementById('sdmRange').textContent = sp.range || '—';
+
+    const damageWrap = document.getElementById('sdmDamageWrap');
+    if (sp.damage) {
+      document.getElementById('sdmDamage').textContent = sp.damage;
+      damageWrap.style.display = '';
+    } else {
+      damageWrap.style.display = 'none';
+    }
+
+    document.getElementById('sdmDesc').textContent = sp.fullDesc || sp.desc || '';
+
+    const upcastWrap = document.getElementById('sdmUpcastWrap');
+    if (sp.upcast) {
+      document.getElementById('sdmUpcast').textContent = sp.upcast;
+      upcastWrap.style.display = '';
+    } else {
+      upcastWrap.style.display = 'none';
+    }
+
+    _spellDetailOpen = true;
+    document.getElementById('spellDetailModal').classList.add('show');
+    document.getElementById('overlayBackdrop').classList.add('show');
+  }
+
+  function closeSpellDetail() {
+    _spellDetailOpen = false;
+    document.getElementById('spellDetailModal').classList.remove('show');
+    document.getElementById('overlayBackdrop').classList.toggle('show', _diaryOpen || _iftttOpen);
+  }
+
   function _renderIftttBody() {
     const ifttt = _char.ifttt || [];
     const sections = [...new Set(ifttt.map(i => i.section))];
@@ -1675,6 +1819,7 @@ const App = (() => {
   function closeAllOverlays() {
     if (_diaryOpen) toggleDiary();
     if (_iftttOpen) closeIfttt();
+    if (_spellDetailOpen) closeSpellDetail();
   }
 
   /* ══════════════════════════════════════════════════════
@@ -1771,7 +1916,8 @@ const App = (() => {
     toggleSpellPrepared,
 
     // Equipo
-    addWeapon, deleteWeapon,
+    addWeapon, openAddWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
+    openAddItem, closeAddItem, saveAddItem,
     adjustConsumable, deleteConsumable, addConsumable,
     setCurrency, setAttunement,
     addMagicItem, deleteMagicItem,
@@ -1791,6 +1937,9 @@ const App = (() => {
 
     // IFTTT
     openIfttt, closeIfttt, closeAllOverlays,
+
+    // Detalle spell
+    openSpellDetail, closeSpellDetail,
 
     // Backup
     doBackup, importBackup,
