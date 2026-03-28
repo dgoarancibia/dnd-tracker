@@ -396,7 +396,7 @@ const App = (() => {
       byLevel[lv].forEach(sp => {
         const tags = _buildTagsHTML(sp);
         html += `
-        <div class="spell-card" onclick="this.querySelector('.spell-desc').classList.toggle('expanded')">
+        <div class="spell-card" onclick="App.openSpellDetail('${sp.id}')">
           <div class="spell-info">
             <div class="spell-top">
               <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
