@@ -213,35 +213,10 @@ const App = (() => {
     <!-- RECURSOS CON CONTADORES -->
     <div class="section-hd" style="margin-top:12px;">Recursos</div>`;
 
-    // Resources dinámicos — grilla 2 columnas
     html += `<div class="resources-grid">`;
-    c.resources.forEach(r => {
-      const rechargeLabel = { short: '↺ Corto', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
-      const isCustom = !['channel-divinity','bond','guiding-bolt-mi'].includes(r.id);
-      let dotsHtml = '';
-      for (let d = 0; d < r.max; d++) {
-        const used = d >= r.current;
-        dotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
-      }
-      html += `
-      <div class="resource-card">
-        <div class="rc-top">
-          <span class="rc-name">${r.name}</span>
-          <span class="rc-recharge">${rechargeLabel}</span>
-          ${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}
-        </div>
-        <div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div>
-      </div>`;
-    });
-    // SPELL SLOTS y DADOS dentro del mismo grid
-    // SPELL SLOTS — ancho completo
-    html += `
-    <div class="slots-card full-width-card">
-      <div class="rc-top" style="margin-bottom:4px;">
-        <span class="rc-name">Spell Slots</span>
-        <span class="rc-recharge">↺ Largo</span>
-      </div>`;
 
+    // 1. SPELL SLOTS — ancho completo, primero
+    html += `<div class="slots-card full-width-card"><div class="rc-top" style="margin-bottom:4px;"><span class="rc-name">Spell Slots</span><span class="rc-recharge">↺ Largo</span></div>`;
     for (let i = 1; i <= 9; i++) {
       const slot = c.spellSlots[i];
       if (!slot || slot.max === 0) continue;
@@ -250,28 +225,31 @@ const App = (() => {
         const used = d >= slot.current;
         dotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleSlotDot(${i},${d})"></div>`;
       }
-      html += `
-      <div class="slot-row">
-        <span class="slot-lv">Nvl ${i}</span>
-        <div class="slot-dots" id="slot-dots-${i}">${dotsHtml}</div>
-      </div>`;
+      html += `<div class="slot-row"><span class="slot-lv">Nvl ${i}</span><div class="slot-dots" id="slot-dots-${i}">${dotsHtml}</div></div>`;
     }
+    html += `</div>`;
 
-    // DADOS DE GOLPE — ancho completo
+    // 2. DADOS DE GOLPE — ancho completo, segundo
     let hdDotsHtml = '';
     for (let d = 0; d < c.hitDice.max; d++) {
       const used = d >= c.hitDice.current;
       hdDotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleHitDieDot(${d})"></div>`;
     }
-    html += `
-    <div class="hit-dice-card full-width-card">
-      <div class="rc-top" style="margin-bottom:4px;">
-        <span class="rc-name">Dados de Golpe (d${c.hitDie})</span>
-        <span class="rc-recharge">↺ Largo (mitad)</span>
-      </div>
-      <div class="slot-dots" id="hd-dots">${hdDotsHtml}</div>
-    </div>
-    </div>`; // cierra resources-grid
+    html += `<div class="hit-dice-card full-width-card"><div class="rc-top" style="margin-bottom:4px;"><span class="rc-name">Dados de Golpe (d${c.hitDie})</span><span class="rc-recharge">↺ Largo (mitad)</span></div><div class="slot-dots" id="hd-dots">${hdDotsHtml}</div></div>`;
+
+    // 3. RECURSOS — grilla 2 columnas, al final
+    c.resources.forEach(r => {
+      const rechargeLabel = { short: '↺ Corto', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
+      const isCustom = !['channel-divinity','bond','guiding-bolt-mi'].includes(r.id);
+      let dotsHtml = '';
+      for (let d = 0; d < r.max; d++) {
+        const used = d >= r.current;
+        dotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
+      }
+      html += `<div class="resource-card"><div class="rc-top"><span class="rc-name">${r.name}</span><span class="rc-recharge">${rechargeLabel}</span>${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}</div><div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div></div>`;
+    });
+
+    html += `</div>`; // cierra resources-grid
 
     // DESCANSOS
     html += `
