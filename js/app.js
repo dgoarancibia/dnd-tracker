@@ -683,17 +683,22 @@ const App = (() => {
       <div class="rc-name" style="margin-bottom:6px;">Dinero</div>
       <div class="currency-row">
         <div class="currency-field">
-          <span class="currency-label">GP</span>
+          <span class="currency-label" style="color:#e0d0ff;">PP</span>
+          <input type="number" class="currency-input" value="${c.currency.pp||0}" min="0"
+                 onchange="App.setCurrency('pp',parseInt(this.value)||0)">
+        </div>
+        <div class="currency-field">
+          <span class="currency-label" style="color:var(--gold);">GP</span>
           <input type="number" class="currency-input" value="${c.currency.gp}" min="0"
                  onchange="App.setCurrency('gp',parseInt(this.value)||0)">
         </div>
         <div class="currency-field">
-          <span class="currency-label">SP</span>
+          <span class="currency-label" style="color:#c0c0c0;">SP</span>
           <input type="number" class="currency-input" value="${c.currency.sp}" min="0"
                  onchange="App.setCurrency('sp',parseInt(this.value)||0)">
         </div>
         <div class="currency-field">
-          <span class="currency-label">CP</span>
+          <span class="currency-label" style="color:#cd7f32;">CP</span>
           <input type="number" class="currency-input" value="${c.currency.cp}" min="0"
                  onchange="App.setCurrency('cp',parseInt(this.value)||0)">
         </div>
