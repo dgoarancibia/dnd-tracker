@@ -724,6 +724,11 @@ input[type=number] { -moz-appearance: textfield; }
 
 .tab-panel.active.two-col { display: grid; }
 
+/* Columnas específicas por tab */
+#tab-conjuros  { grid-template-columns: 1fr 340px; }
+#tab-equipo    { grid-template-columns: 1fr 280px; }
+#tab-habilidades { grid-template-columns: 1fr 1fr; }
+
 .two-col-left, .two-col-right {
   overflow-y: auto;
   overflow-x: hidden;
