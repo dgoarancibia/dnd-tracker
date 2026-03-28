@@ -166,8 +166,9 @@ const Characters = (() => {
   function calcPercPasiva(char) {
     const mod  = calcMod(char.stats.sab);
     const prof = calcProfBonus(char.nivel);
-    const hasPerspicacia = char.skillProfs && char.skillProfs.includes('perspicacia');
-    return 10 + mod + (hasPerspicacia ? prof : 0);
+    const hasPercepcion = char.skillProfs && char.skillProfs.includes('percepcion');
+    const hasExp        = char.skillExpertise && char.skillExpertise.includes('percepcion');
+    return 10 + mod + (hasExp ? prof * 2 : hasPercepcion ? prof : 0);
   }
 
   function calcSkill(char, skillId) {

@@ -860,8 +860,8 @@ const App = (() => {
       </div>
       <div class="passive-row">
         <span class="passive-label">Velocidad</span>
-        <input type="number" class="speed-input" value="${c.velocidad}" min="0" step="5"
-               onchange="App.setVelocidad(parseInt(this.value)||30)"> ft
+        <input type="number" class="speed-input" value="${Math.round(c.velocidad * 0.3)}" min="0" step="1.5"
+               onchange="App.setVelocidad(Math.round(parseInt(this.value)/0.3))"> m
       </div>
       <div class="passive-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
         <span class="passive-label">Resistencias</span>
