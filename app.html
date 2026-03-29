@@ -414,15 +414,7 @@
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">
   await import('./js/firebase.js');
-  // firebase.js ya registró window.FirebaseApp — ahora cargar cloud.js
-  await new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'js/cloud.js';
-    s.onload = resolve;
-    s.onerror = reject;
-    document.body.appendChild(s);
-  });
-  // cloud.js ya llamó Cloud.init() al cargarse
+  await import('./js/cloud.js');
 </script>
 <script>
   if ('serviceWorker' in navigator) {

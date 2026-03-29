@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════
    cloud.js — Sincronización Firestore + estado de sync
-   Depende de: firebase.js (window.FirebaseApp)
-   Exporta: Cloud (singleton global)
+   Módulo ESM — importa firebase.js, exporta Cloud global
    ═══════════════════════════════════════════════════════ */
+import './firebase.js';
 
 const Cloud = (() => {
   let _uid      = null;   // UID del usuario autenticado
@@ -241,5 +241,8 @@ const Cloud = (() => {
   };
 })();
 
-// Auto-inicializar cuando el script carga (FirebaseApp ya existe en este punto)
+// Exponer globalmente (necesario porque cloud.js es módulo ESM — scope aislado)
+window.Cloud = Cloud;
+
+// Auto-inicializar
 Cloud.init();
