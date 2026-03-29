@@ -10,9 +10,7 @@ self.addEventListener('install', e => {
       './js/characters.js',
       './js/storage.js',
       './js/cloud.js',
-      './icons/icon-192.png',
-      './icons/icon-512.png',
-      './icons/apple-touch-icon.png',
+      './icons/favicon.png',
     ])).then(() => self.skipWaiting())
   );
 });
