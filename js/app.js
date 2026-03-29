@@ -2610,7 +2610,7 @@ const App = (() => {
     toggleHeaderMenu, closeHeaderMenu,
 
     // Cloud / Undo
-    undoLastChange,
+    undoLastChange, toggleTheme,
     reloadChar(char) {
       _char = char || Storage.getActiveChar();
       if (_char) {
