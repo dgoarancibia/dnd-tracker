@@ -101,6 +101,13 @@ const App = (() => {
       _undoBtn.addEventListener('click', undoLastChange);
     }
 
+    // Cerrar header menu al click fuera
+    document.addEventListener('click', e => {
+      if (_headerMenuOpen && !document.getElementById('headerMenuWrap')?.contains(e.target)) {
+        closeHeaderMenu();
+      }
+    });
+
     // Cloud.init() se llama desde cloud.js al cargarse (después del módulo ESM)
 
     // Auto-backup y cloud save al salir
@@ -230,20 +237,31 @@ const App = (() => {
     const ts = Storage.getBackupTimestamp();
     const el = document.getElementById('backupTs');
     if (!ts) {
-      el.textContent = 'Sin backup';
-      document.getElementById('backupBtn').classList.add('stale');
+      if (el) el.textContent = 'Sin backup';
       return;
     }
     const diff = Date.now() - new Date(ts).getTime();
     const hours = Math.floor(diff / 3600000);
     const mins  = Math.floor(diff / 60000);
-    if (mins < 1) el.textContent = 'Hace un momento';
-    else if (mins < 60) el.textContent = `Hace ${mins} min`;
-    else el.textContent = `Hace ${hours}h`;
+    if (el) {
+      if (mins < 1) el.textContent = 'Hace un momento';
+      else if (mins < 60) el.textContent = `Hace ${mins} min`;
+      else el.textContent = `Hace ${hours}h`;
+    }
+  }
 
-    // Alerta si lleva más de 24h
-    if (diff > 86400000) document.getElementById('backupBtn').classList.add('stale');
-    else document.getElementById('backupBtn').classList.remove('stale');
+  let _headerMenuOpen = false;
+
+  function toggleHeaderMenu() {
+    _headerMenuOpen = !_headerMenuOpen;
+    const dd = document.getElementById('headerMenuDropdown');
+    if (dd) dd.classList.toggle('open', _headerMenuOpen);
+  }
+
+  function closeHeaderMenu() {
+    _headerMenuOpen = false;
+    const dd = document.getElementById('headerMenuDropdown');
+    if (dd) dd.classList.remove('open');
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2366,6 +2384,9 @@ const App = (() => {
 
     // Toast
     showToast,
+
+    // Header menu
+    toggleHeaderMenu, closeHeaderMenu,
 
     // Cloud / Undo
     undoLastChange,
