@@ -199,7 +199,7 @@ const App = (() => {
     const { current, max, temp } = _char.hp;
     const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0;
     const col = pct > 50 ? '#4a8a5a' : pct > 25 ? '#a0802a' : '#8a3a3a';
-    const textCol = pct <= 0 ? '#ff4040' : pct <= 25 ? '#e05050' : pct <= 50 ? '#e08050' : 'var(--red-light)';
+    const textCol = pct <= 0 ? '#ff4040' : pct <= 25 ? '#e05050' : pct <= 50 ? '#e08050' : 'var(--text)';
 
     const hdrHP = document.getElementById('hdrHP');
     if (hdrHP) { hdrHP.textContent = current; hdrHP.style.color = textCol; }
@@ -214,6 +214,23 @@ const App = (() => {
     if (tempEl) {
       if (temp > 0) { tempEl.textContent = '+' + temp; tempEl.style.display = 'inline'; }
       else tempEl.style.display = 'none';
+    }
+
+    // Estado caído
+    const header = document.getElementById('appHeader');
+    if (header) header.classList.toggle('dying', current <= 0);
+
+    let dyingBadge = document.getElementById('dyingBadge');
+    if (current <= 0) {
+      if (!dyingBadge) {
+        dyingBadge = document.createElement('div');
+        dyingBadge.id = 'dyingBadge';
+        dyingBadge.className = 'dying-badge';
+        dyingBadge.textContent = '☠ Caído · Tiradas de muerte';
+        document.querySelector('.stats-strip').prepend(dyingBadge);
+      }
+    } else if (dyingBadge) {
+      dyingBadge.remove();
     }
   }
 
@@ -367,12 +384,7 @@ const App = (() => {
 
     html += `</div>`; // cierra resources-grid
 
-    // DESCANSOS
-    html += `
-    <div class="rest-btns">
-      <button class="rest-btn short" onclick="App.openShortRest()">↺ Descanso Corto</button>
-      <button class="rest-btn long" onclick="App.longRest()">✦ Descanso Largo</button>
-    </div>`;
+    // DESCANSOS — en header, no duplicar aquí
 
     // CONDICIONES
     const CONDITIONS = [
@@ -1110,7 +1122,7 @@ const App = (() => {
       <div class="xp-bar">
         <div class="xp-bar-fill" style="width:${xpPct}%"></div>
       </div>
-      <button class="levelup-btn" onclick="App.openLevelUp()">✦ Subir de Nivel</button>
+      ${c.nivel < 20 ? `<button class="levelup-btn" onclick="App.openLevelUp()">✦ Subir de Nivel</button>` : ''}
     </div>`;
 
     document.getElementById('col-hab-izq').innerHTML = htmlIzq;
