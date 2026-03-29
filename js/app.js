@@ -524,7 +524,9 @@ const App = (() => {
     const allConc = (c.spells || []).filter(s => s.concentration && s.level > 0 &&
       (s.domain || prepared.includes(s.id)));
 
-    let html = `<button class="conc-btn none ${!active ? 'active' : ''}" onclick="App.setConc(null)">— Ninguna</button>`;
+    let html = active
+      ? `<button class="conc-btn none conc-romper" onclick="App.setConc(null)">✕ Romper</button>`
+      : `<button class="conc-btn none active" onclick="App.setConc(null)">— Ninguna</button>`;
     allConc.forEach(sp => {
       html += `<button class="conc-btn ${active === sp.id ? 'active' : ''}" onclick="App.setConc('${sp.id}')">${sp.name.replace(' ◆','').replace(' ●','')}</button>`;
     });
@@ -781,7 +783,7 @@ const App = (() => {
       (c.weapons || []).forEach((w, i) => {
         const isFocus = w.type === 'focus';
         const magicBonus = parseInt(w.bonus) || 0;
-        const statMod = (w.type === 'ranged') ? dexMod : strMod;
+        const statMod = (w.type === 'ranged' || w.type === 'finesse') ? dexMod : strMod;
         const hitTotal = statMod + prof + magicBonus;
         const hitStr = (hitTotal >= 0 ? '+' : '') + hitTotal;
         const dmgBonus = statMod + magicBonus;
@@ -1513,14 +1515,24 @@ const App = (() => {
     if (!_char) return;
     _char.concentration = spellId;
     _saveChar();
-    // Actualizar botones
-    document.querySelectorAll('.conc-btn').forEach(btn => {
+    // Actualizar botón "Ninguna/Romper"
+    const noneBtn = document.querySelector('.conc-btn.none');
+    if (noneBtn) {
+      if (spellId) {
+        noneBtn.textContent = '✕ Romper';
+        noneBtn.classList.add('conc-romper');
+        noneBtn.classList.remove('active');
+      } else {
+        noneBtn.textContent = '— Ninguna';
+        noneBtn.classList.remove('conc-romper');
+        noneBtn.classList.add('active');
+      }
+    }
+    // Actualizar botones de conjuros
+    document.querySelectorAll('.conc-btn:not(.none)').forEach(btn => {
       btn.classList.remove('active');
     });
-    if (!spellId) {
-      const noneBtn = document.querySelector('.conc-btn.none');
-      if (noneBtn) noneBtn.classList.add('active');
-    } else {
+    if (spellId) {
       const activeBtn = document.querySelector(`.conc-btn[onclick*="'${spellId}'"]`);
       if (activeBtn) activeBtn.classList.add('active');
     }
@@ -1948,8 +1960,9 @@ const App = (() => {
     if (!name) return;
     const die   = document.getElementById('awmDie').value.trim() || '1d6';
     const bonus = document.getElementById('awmBonus').value.trim() || '+0';
+    const type  = document.getElementById('awmType').value || 'melee';
     const notes = document.getElementById('awmDesc').value.trim();
-    _char.weapons.push({ id:'w-'+Date.now(), name, die, bonus, type:'melee', notes });
+    _char.weapons.push({ id:'w-'+Date.now(), name, die, bonus, type, notes });
     _saveChar();
     closeAddWeapon();
     _renderEquipoTab();

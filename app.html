@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=11">
+<link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
 
@@ -336,8 +336,17 @@
         <input type="text" id="awmDie" value="1d6" placeholder="1d8">
       </div>
       <div class="modal-field">
-        <label>Bonus ataque</label>
-        <input type="text" id="awmBonus" value="+0" placeholder="+5">
+        <label>Bonus mágico (+golpe/+daño)</label>
+        <input type="text" id="awmBonus" value="+0" placeholder="+1, +2…">
+      </div>
+      <div class="modal-field">
+        <label>Tipo</label>
+        <select id="awmType">
+          <option value="melee">Melé (usa FUE)</option>
+          <option value="ranged">Distancia (usa DES)</option>
+          <option value="finesse">Melé finesse (usa DES)</option>
+          <option value="focus">Foco / símbolo</option>
+        </select>
       </div>
       <div class="modal-field" style="grid-column:1/-1;">
         <label>Descripción (opcional)</label>
@@ -453,9 +462,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=11"></script>
-<script src="js/characters.js?v=11"></script>
-<script src="js/app.js?v=11"></script>
+<script src="js/storage.js?v=12"></script>
+<script src="js/characters.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

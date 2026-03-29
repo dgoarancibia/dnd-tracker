@@ -1142,6 +1142,8 @@ input[type=number] { -moz-appearance: textfield; }
 .conc-btn:hover { border-color: var(--gold-dim); color: var(--text-mid); }
 .conc-btn.active { background: rgba(201,151,58,0.15); border-color: var(--gold); color: var(--gold-light); }
 .conc-btn.none.active { background: var(--bg3); border-color: var(--text-dim); color: var(--text-mid); }
+.conc-btn.conc-romper { background: rgba(138,58,58,0.15); border-color: var(--red-light); color: var(--red-light); }
+.conc-btn.conc-romper:hover { background: rgba(138,58,58,0.30); border-color: var(--red-bright); color: var(--red-bright); }
 
 /* RECURSOS — CONTADOR NUMÉRICO */
 .resources-grid {
@@ -3539,30 +3541,34 @@ input[type=number] { -moz-appearance: textfield; }
    ═══════════════════════════════════════════════════════════ */
 
 [data-theme="light"] {
-  --bg:  #f5f0e8;
-  --bg2: #ede6d8;
-  --bg3: #e4dcc8;
-  --bg4: #dbd2bc;
-  --bg5: #d0c8b0;
-  --gold: #8a5e10;
-  --gold-light: #a87820;
-  --gold-dim: #c8aa70;
-  --gold-faint: rgba(138,94,16,0.08);
-  --green: #2a6a3a;
-  --green-light: #3a8a4a;
-  --red: #8a2020;
-  --red-light: #b04040;
-  --red-bright: #cc3030;
-  --blue: #1a3a8a;
-  --blue-light: #2a5aa8;
-  --purple: #4a1a8a;
-  --purple-light: #6a3aa8;
-  --orange: #905010;
-  --text: #1a1408;
-  --text-mid: #4a3e28;
-  --text-dim: #8a7858;
-  --border: rgba(138,94,16,0.22);
-  --border-strong: rgba(138,94,16,0.40);
+  /* Fondos: blancos con leve tinte cálido, bien diferenciados entre capas */
+  --bg:  #faf8f4;
+  --bg2: #f0ece3;
+  --bg3: #e6e0d4;
+  --bg4: #dad3c4;
+  --bg5: #ccc4b2;
+  /* Dorado oscuro legible sobre fondo claro */
+  --gold: #7a4e08;
+  --gold-light: #9a6610;
+  --gold-dim: #b89060;
+  --gold-faint: rgba(122,78,8,0.10);
+  /* Colores de estado — más saturados para visibilidad */
+  --green: #1a6030;
+  --green-light: #2a7a40;
+  --red: #961a1a;
+  --red-light: #c03030;
+  --red-bright: #e02020;
+  --blue: #0e2e80;
+  --blue-light: #1a4aa0;
+  --purple: #3a0a80;
+  --purple-light: #5a28a0;
+  --orange: #804010;
+  /* Texto: negro puro principal, grises muy oscuros para secundario */
+  --text: #0e0a04;
+  --text-mid: #2e2416;
+  --text-dim: #6a5c40;
+  --border: rgba(122,78,8,0.28);
+  --border-strong: rgba(122,78,8,0.55);
 }
 
 [data-theme="light"] body {
