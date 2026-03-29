@@ -120,7 +120,6 @@ const App = (() => {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
         _saveChar();
-        Storage.autoBackup();
         if (window.Cloud && Cloud.isLoggedIn()) Cloud.saveNow(_char);
       }
     });
