@@ -37,6 +37,10 @@ const _auth     = getAuth(_app);
 const _db       = getFirestore(_app);
 const _provider = new GoogleAuthProvider();
 
+// Procesar redirect result inmediatamente al cargar el módulo
+// Esto permite que onAuthStateChanged detecte al usuario tras el redirect
+getRedirectResult(_auth).catch(() => {});
+
 /* ── Auth ── */
 
 function signIn() {
