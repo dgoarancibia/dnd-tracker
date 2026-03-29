@@ -3398,3 +3398,30 @@ input[type=number] { -moz-appearance: textfield; }
   background: var(--border);
   margin: 3px 0;
 }
+
+/* ── DESCANSOS EN HEADER ── */
+.hdr-rest-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.hdr-rest-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.13s;
+  min-height: 28px;
+  white-space: nowrap;
+}
+
+.hdr-rest-btn.short:hover { border-color: var(--blue-light); color: var(--blue-light); background: rgba(58,90,138,0.12); }
+.hdr-rest-btn.long:hover  { border-color: var(--gold-dim);   color: var(--gold-light);  background: rgba(201,151,58,0.1); }

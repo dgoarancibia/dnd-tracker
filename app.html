@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 
@@ -31,7 +31,6 @@
 <header class="app-header" id="appHeader">
   <div class="app-header-left">
     <div class="app-char-name" id="headerCharName">Cargando...</div>
-    <div class="app-char-sub" id="headerCharSub"></div>
   </div>
 
   <div class="char-selector-wrap">
@@ -74,6 +73,12 @@
     <div class="stat-box"><div class="sl">Init</div><div class="sv" id="hdrINIT">—</div></div>
     <div class="stat-box"><div class="sl">Atk</div><div class="sv" id="hdrPROF">—</div></div>
     <button class="insp-btn" id="hdrInspBtn" onclick="App.toggleInspiration()" title="Inspiración">✦</button>
+
+    <!-- DESCANSOS en header -->
+    <div class="hdr-rest-btns">
+      <button class="hdr-rest-btn short" onclick="App.openShortRest()" title="Descanso Corto">↺ Corto</button>
+      <button class="hdr-rest-btn long"  onclick="App.longRest()"      title="Descanso Largo">✦ Largo</button>
+    </div>
   </div>
 
   <!-- CLOUD / UNDO / BACKUP — colapsado en menú -->
@@ -421,9 +426,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=4"></script>
-<script src="js/characters.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/characters.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

@@ -177,9 +177,6 @@ const App = (() => {
     const ca   = Characters.calcCA(_char);
 
     document.getElementById('headerCharName').textContent = _char.name;
-    document.getElementById('headerCharSub').textContent =
-      [_char.subclase || _char.clase, `Nvl ${_char.nivel}`,
-       _char.raza, _char.deity].filter(Boolean).join(' · ');
 
     document.getElementById('hdrCA').textContent   = ca;
     document.getElementById('hdrCD').textContent   = cd !== null ? cd : '—';
