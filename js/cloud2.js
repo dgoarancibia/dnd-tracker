@@ -71,8 +71,16 @@ const Cloud = (() => {
     const el = document.getElementById('syncStatus');
     if (el) { el.textContent = '↻ Conectando…'; el.style.display = 'flex'; }
 
+    // Si en 4s no llegó respuesta de auth, asumir no logueado y ocultar
+    let _authResolved = false;
+    const _authTimeout = setTimeout(() => {
+      if (!_authResolved) _setSyncState(SyncState.IDLE);
+    }, 4000);
+
     // onAuthStateChanged detecta cambios Y la sesión activa al inicializar
     FirebaseApp.onAuthChange(user => {
+      _authResolved = true;
+      clearTimeout(_authTimeout);
       _uid = user ? user.uid : null;
       _updateAuthUI(user);
       if (user) _syncOnLogin(user.uid);
