@@ -67,11 +67,16 @@ const Cloud = (() => {
   function init() {
     if (!window.FirebaseApp) return;
 
+    _setSyncState(SyncState.SAVING);
+    const el = document.getElementById('syncStatus');
+    if (el) { el.textContent = '↻ Conectando…'; el.style.display = 'flex'; }
+
     // onAuthStateChanged detecta cambios Y la sesión activa al inicializar
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
       _updateAuthUI(user);
       if (user) _syncOnLogin(user.uid);
+      else _setSyncState(SyncState.IDLE);
     });
 
     // Por si acaso ya hay un usuario activo antes de que onAuthStateChanged dispare
