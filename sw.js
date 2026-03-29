@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v7';
+const CACHE = 'dnd-tracker-v8';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -9,6 +9,7 @@ self.addEventListener('install', e => {
       './js/app.js',
       './js/characters.js',
       './js/storage.js',
+      './js/cloud.js',
       './icons/icon-192.png',
       './icons/icon-512.png',
       './icons/apple-touch-icon.png',

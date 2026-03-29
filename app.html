@@ -72,10 +72,32 @@
     <button class="insp-btn" id="hdrInspBtn" onclick="App.toggleInspiration()" title="Inspiración">✦</button>
   </div>
 
-  <!-- BACKUP + IMPORT -->
+  <!-- CLOUD / UNDO / BACKUP -->
   <div style="display:flex;flex-direction:column;gap:5px;align-items:stretch;">
+
+    <!-- Auth -->
+    <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+      <button class="backup-btn" id="loginBtn" onclick="Cloud.signIn()" style="display:inline-flex;align-items:center;gap:4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1h-9.2v2.82h5.28c-.24 1.32-1.04 2.44-2.2 3.18v2.64h3.56c2.08-1.92 3.28-4.74 3.28-8.08 0-.56-.06-1.12-.14-1.66z"/><path fill="currentColor" d="M12.15 22c2.7 0 4.96-.9 6.61-2.44l-3.56-2.64c-.9.6-2.06.96-3.05.96-2.35 0-4.34-1.59-5.05-3.73H3.46v2.72A9.98 9.98 0 0 0 12.15 22z"/><path fill="currentColor" d="M7.1 14.15A5.97 5.97 0 0 1 6.79 12c0-.74.13-1.45.31-2.15V7.13H3.46A9.98 9.98 0 0 0 2.15 12c0 1.61.38 3.14 1.31 4.87z"/><path fill="currentColor" d="M12.15 6.12c1.32 0 2.5.45 3.43 1.35l2.57-2.57C16.51 3.38 14.55 2 12.15 2A9.98 9.98 0 0 0 3.46 7.13l3.64 2.72c.71-2.14 2.7-3.73 5.05-3.73z"/></svg>
+        Google
+      </button>
+      <button class="backup-btn" id="logoutBtn" onclick="Cloud.signOut()" style="display:none;align-items:center;gap:4px;" title="Cerrar sesión">
+        ✕ Salir
+      </button>
+      <span id="userLabel" style="display:none;font-size:10px;color:var(--gold-dim);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    </div>
+
+    <!-- Sync status -->
+    <div class="sync-status" id="syncStatus" style="display:none;"></div>
+
+    <!-- Undo -->
+    <button class="backup-btn" id="undoBtn" title="Deshacer último cambio" style="opacity:0.6;">
+      ↩ Deshacer
+    </button>
+
+    <!-- Backup local -->
     <button class="backup-btn" id="backupBtn" onclick="App.doBackup()">
-      ☁ Backup
+      ⬇ Backup
       <span class="backup-ts" id="backupTs">Sin backup</span>
     </button>
     <label class="backup-btn" style="cursor:pointer;text-align:center;" title="Importar backup JSON">
@@ -388,6 +410,16 @@
 <script src="js/storage.js"></script>
 <script src="js/characters.js"></script>
 <script src="js/app.js"></script>
+<!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
+     luego cloud.js (classic) puede usarlo al cargarse después -->
+<script type="module">
+  await import('./js/firebase.js');
+  const s = document.createElement('script');
+  s.src = 'js/cloud.js';
+  // Después de cargar cloud.js, inicializar
+  s.onload = () => { if (window.Cloud) Cloud.init(); };
+  document.body.appendChild(s);
+</script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');

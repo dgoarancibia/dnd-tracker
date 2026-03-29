@@ -7,6 +7,21 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
+  const DATA_VERSION = 2;   // Incrementar al cambiar el esquema
+
+  /* ── Migrations ── */
+  function _migrate(char) {
+    const v = char._dataVersion || 1;
+    if (v < 2) {
+      // v1 → v2: asegurar campos requeridos
+      if (!char.hitDice) char.hitDice = { current: char.nivel || 1, max: char.nivel || 1 };
+      if (!char.currency) char.currency = { pp: 0, gp: 0, sp: 0, cp: 0 };
+      if (!Array.isArray(char.diary)) char.diary = [];
+      if (!Array.isArray(char.ifttt)) char.ifttt = [];
+      char._dataVersion = 2;
+    }
+    return char;
+  }
 
   function _get(key) {
     try { return JSON.parse(localStorage.getItem(key)); }
@@ -26,12 +41,21 @@ const Storage = (() => {
 
   function getChar(id) {
     const all = getAllChars();
-    return all[id] || null;
+    const char = all[id];
+    return char ? _migrate(char) : null;
   }
 
   function saveChar(char) {
     const all = getAllChars();
     char.updatedAt = new Date().toISOString();
+    char._dataVersion = DATA_VERSION;
+    all[char.id] = char;
+    _set(CHARS_KEY, all);
+  }
+
+  /* Guardar sin modificar updatedAt (usado por cloud sync) */
+  function saveCharRaw(char) {
+    const all = getAllChars();
     all[char.id] = char;
     _set(CHARS_KEY, all);
   }
@@ -136,37 +160,62 @@ const Storage = (() => {
     }
   }
 
-  function importJSON(file, onSuccess, onError) {
+  function importJSON(file, onSuccess, onError, onPreview) {
+    if (!file || file.size > 5 * 1024 * 1024) {
+      onError('Archivo demasiado grande (máx 5 MB)');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = e => {
       try {
         const data = JSON.parse(e.target.result);
-        // Validación básica
-        if (!data.characters || typeof data.characters !== 'object') {
+
+        // Estructura esperada: { version, exportedAt, characters: { [id]: char } }
+        if (!data || typeof data !== 'object') {
+          onError('Archivo inválido: no es JSON válido');
+          return;
+        }
+        if (!data.characters || typeof data.characters !== 'object' || Array.isArray(data.characters)) {
           onError('Archivo inválido: falta la clave "characters"');
           return;
         }
+
         const chars = data.characters;
-        const valid = Object.values(chars).filter(c => c.id && c.name && c.clase);
+        const valid = Object.values(chars).filter(c =>
+          c && typeof c === 'object' &&
+          typeof c.id === 'string' && c.id.length > 0 &&
+          typeof c.name === 'string' && c.name.length > 0 &&
+          typeof c.clase === 'string'
+        ).map(c => _migrate(c));
+
         if (valid.length === 0) {
           onError('No se encontraron personajes válidos en el archivo');
           return;
         }
-        // Merge: no sobreescribir existentes por defecto, pero actualizar
-        const existing = getAllChars();
-        valid.forEach(c => { existing[c.id] = c; });
-        _set(CHARS_KEY, existing);
-        // Activar el primer personaje importado si no hay activo
-        if (!getActiveId() && valid.length > 0) {
-          setActiveId(valid[0].id);
+
+        // Si hay onPreview, pedir confirmación antes de sobreescribir
+        if (typeof onPreview === 'function') {
+          onPreview(valid, () => _doImport(valid, onSuccess));
+          return;
         }
-        onSuccess(valid.length);
+
+        _doImport(valid, onSuccess);
       } catch (err) {
         onError('Error al leer el archivo: ' + err.message);
       }
     };
     reader.onerror = () => onError('No se pudo leer el archivo');
     reader.readAsText(file);
+  }
+
+  function _doImport(validChars, onSuccess) {
+    const existing = getAllChars();
+    validChars.forEach(c => { existing[c.id] = c; });
+    _set(CHARS_KEY, existing);
+    if (!getActiveId() && validChars.length > 0) {
+      setActiveId(validChars[0].id);
+    }
+    onSuccess(validChars.length);
   }
 
   function autoBackup() {
@@ -185,6 +234,7 @@ const Storage = (() => {
     getAllChars,
     getChar,
     saveChar,
+    saveCharRaw,
     deleteChar,
     getAllCharsList,
     getActiveId,

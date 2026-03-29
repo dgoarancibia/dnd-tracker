@@ -643,6 +643,25 @@ input[type=number] { -moz-appearance: textfield; }
 
 .backup-ts { display: block; font-size: 8px; color: var(--text-dim); margin-top: 2px; }
 
+/* SYNC STATUS */
+.sync-status {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  text-align: center;
+  transition: all 0.2s;
+}
+.sync-saving  { color: var(--gold-dim); border-color: var(--gold-dim); }
+.sync-saved   { color: #4aaa6a; border-color: #4aaa6a55; }
+.sync-error   { color: var(--red-light); border-color: rgba(180,60,60,0.4); }
+.sync-offline { color: var(--text-dim); border-color: var(--border); }
+
+#undoBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+#undoBtn:not(:disabled) { opacity: 1; color: var(--gold); border-color: var(--gold-dim); }
+
 /* INSPIRACIÓN HEADER */
 .insp-btn {
   font-family: 'Cinzel', serif;

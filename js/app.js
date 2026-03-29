@@ -14,6 +14,11 @@ const App = (() => {
   let _iftttOpen = false;
   let _spellDetailOpen = false;
 
+  /* ── Undo stack (hasta 5 snapshots) ── */
+  const UNDO_MAX = 5;
+  let _undoStack = [];
+  let _undoBtn   = null;
+
   /* ══════════════════════════════════════════════════════
      INICIALIZACIÓN
   ══════════════════════════════════════════════════════ */
@@ -79,16 +84,27 @@ const App = (() => {
     _updateBackupBtn();
     _renderActiveTab();
 
-    // Auto-backup al salir
+    // Botón undo
+    _undoBtn = document.getElementById('undoBtn');
+    if (_undoBtn) {
+      _undoBtn.disabled = true;
+      _undoBtn.addEventListener('click', undoLastChange);
+    }
+
+    // Cloud.init() se llama desde cloud.js al cargarse (después del módulo ESM)
+
+    // Auto-backup y cloud save al salir
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
         _saveChar();
         Storage.autoBackup();
+        if (window.Cloud && Cloud.isLoggedIn()) Cloud.saveNow(_char);
       }
     });
 
     window.addEventListener('pagehide', () => {
       _saveChar();
+      if (window.Cloud && Cloud.isLoggedIn() && _char) Cloud.saveNow(_char);
     });
 
     // Nivel sugerido en modal
@@ -102,8 +118,33 @@ const App = (() => {
      GUARDAR
   ══════════════════════════════════════════════════════ */
 
-  function _saveChar() {
-    if (_char) Storage.saveChar(_char);
+  function _pushUndo() {
+    if (!_char) return;
+    _undoStack.push(JSON.parse(JSON.stringify(_char)));
+    if (_undoStack.length > UNDO_MAX) _undoStack.shift();
+    if (_undoBtn) _undoBtn.disabled = false;
+  }
+
+  function _saveChar(pushUndo = false) {
+    if (!_char) return;
+    if (pushUndo) _pushUndo();
+    Storage.saveChar(_char);
+    // Cloud autosave debounced
+    if (window.Cloud && Cloud.isLoggedIn()) {
+      Cloud.scheduleSave(_char);
+    }
+  }
+
+  function undoLastChange() {
+    if (_undoStack.length === 0) { showToast('Sin cambios para deshacer'); return; }
+    const prev = _undoStack.pop();
+    _char = prev;
+    Storage.saveChar(_char);
+    if (window.Cloud && Cloud.isLoggedIn()) Cloud.scheduleSave(_char);
+    _renderHeader();
+    _renderActiveTab();
+    showToast('Cambio deshecho');
+    if (_undoBtn) _undoBtn.disabled = _undoStack.length === 0;
   }
 
   /* ══════════════════════════════════════════════════════
@@ -1044,7 +1085,7 @@ const App = (() => {
     if (!_char) return;
     const prev = _char.hp.current;
     _char.hp.current = Math.max(0, Math.min(_char.hp.max, val || 0));
-    _saveChar();
+    _saveChar(true);
     _updateHPDisplay();
     if ((prev === 0) !== (_char.hp.current === 0)) _renderCombateIzq();
   }
@@ -1053,7 +1094,7 @@ const App = (() => {
     if (!_char || isNaN(val) || val < 1) return;
     _char.hp.max = val;
     _char.hp.current = Math.min(_char.hp.current, val);
-    _saveChar();
+    _saveChar(true);
     _updateHPDisplay();
     showToast(`HP máximo → ${val}`);
   }
@@ -1068,7 +1109,7 @@ const App = (() => {
       delta += absorbed;
       if (delta === 0) {
         showToast(`HP Temp absorbió ${absorbed} daño`);
-        _saveChar();
+        _saveChar(true);
         _updateHPDisplay();
         _updateTempHPDisplay();
         return;
@@ -1080,7 +1121,7 @@ const App = (() => {
 
     const prev = _char.hp.current;
     _char.hp.current = Math.max(0, Math.min(_char.hp.max, _char.hp.current + delta));
-    _saveChar();
+    _saveChar(true);
     _updateHPDisplay();
     if ((prev === 0) !== (_char.hp.current === 0)) _renderCombateIzq();
   }
@@ -1242,7 +1283,7 @@ const App = (() => {
     const r = _char.resources.find(r => r.id === id);
     if (!r) return;
     r.current = Math.max(0, Math.min(r.max, r.current + delta));
-    _saveChar();
+    _saveChar(true);
     _refreshResourceDots(id);
   }
 
@@ -1250,15 +1291,12 @@ const App = (() => {
     if (!_char) return;
     const r = _char.resources.find(r => r.id === id);
     if (!r) return;
-    // Click on a dot sets current directly:
-    // - If clicking the last available dot (dotIndex = current-1): spend it → current-1
-    // - Otherwise: set current to dotIndex+1 (absolute position)
     if (dotIndex === r.current - 1) {
-      r.current = dotIndex;         // spend the last one
+      r.current = dotIndex;
     } else {
-      r.current = dotIndex + 1;     // restore/set to this dot
+      r.current = dotIndex + 1;
     }
-    _saveChar();
+    _saveChar(true);
     _refreshResourceDots(id);
   }
 
@@ -1277,7 +1315,7 @@ const App = (() => {
     const slot = _char.spellSlots[level];
     if (!slot) return;
     slot.current = Math.max(0, Math.min(slot.max, slot.current + delta));
-    _saveChar();
+    _saveChar(true);
     _refreshSlotDots(level);
   }
 
@@ -1286,11 +1324,11 @@ const App = (() => {
     const slot = _char.spellSlots[level];
     if (!slot) return;
     if (dotIndex === slot.current - 1) {
-      slot.current = dotIndex;       // spend the last available
+      slot.current = dotIndex;
     } else {
-      slot.current = dotIndex + 1;   // set absolute
+      slot.current = dotIndex + 1;
     }
-    _saveChar();
+    _saveChar(true);
     _refreshSlotDots(level);
   }
 
@@ -1308,7 +1346,7 @@ const App = (() => {
   function adjustHitDice(delta) {
     if (!_char) return;
     _char.hitDice.current = Math.max(0, Math.min(_char.hitDice.max, _char.hitDice.current + delta));
-    _saveChar();
+    _saveChar(true);
     _refreshHitDiceDots();
   }
 
@@ -1319,7 +1357,7 @@ const App = (() => {
     } else {
       _char.hitDice.current = dotIndex + 1;
     }
-    _saveChar();
+    _saveChar(true);
     _refreshHitDiceDots();
   }
 
@@ -1374,8 +1412,7 @@ const App = (() => {
     const idx = _char.conditions.indexOf(id);
     if (idx >= 0) _char.conditions.splice(idx, 1);
     else _char.conditions.push(id);
-    _saveChar();
-    // Re-render para actualizar lista de efectos activos
+    _saveChar(true);
     _renderCombateIzq();
   }
 
@@ -1702,7 +1739,7 @@ const App = (() => {
     // Reset turno
     _char.turn = { action: false, bonus: false, reaction: false, movement: false };
 
-    _saveChar();
+    _saveChar(true);
     closeShortRest();
     _renderCombateTab();
     showToast(`Descanso corto · +${heal} HP · CD recargado`);
@@ -1734,7 +1771,7 @@ const App = (() => {
     // Limpiar condiciones
     _char.conditions = [];
 
-    _saveChar();
+    _saveChar(true);
     _renderHeader();
     _renderCombateTab();
     showToast('Descanso largo · Todo recargado ✦');
@@ -2094,6 +2131,16 @@ const App = (() => {
 
     // Toast
     showToast,
+
+    // Cloud / Undo
+    undoLastChange,
+    reloadChar() {
+      _char = Storage.getActiveChar();
+      if (_char) {
+        _renderHeader();
+        _renderActiveTab();
+      }
+    },
   };
 })();
 
