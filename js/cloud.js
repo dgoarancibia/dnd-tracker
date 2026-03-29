@@ -240,3 +240,6 @@ const Cloud = (() => {
     deleteChar
   };
 })();
+
+// Auto-inicializar cuando el script carga (FirebaseApp ya existe en este punto)
+Cloud.init();
