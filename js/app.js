@@ -1839,6 +1839,7 @@ const App = (() => {
     _char.conditions = [];
     _saveChar();
     document.querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active'));
+    _updateHeaderStatus();
     showToast('Condiciones limpiadas');
   }
 

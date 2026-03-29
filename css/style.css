@@ -614,7 +614,7 @@ input[type=number] { -moz-appearance: textfield; }
 .hp-hdr-free:focus { outline: none; border-color: var(--gold-dim); }
 
 /* STAT BOXES HEADER */
-.stats-strip { display: flex; gap: 6px; align-items: center; }
+.stats-strip { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 
 .stat-box {
   background: var(--bg3);
@@ -653,6 +653,7 @@ input[type=number] { -moz-appearance: textfield; }
   align-items: center;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 .hdr-status-chip {
   font-family: 'Cinzel', serif;
