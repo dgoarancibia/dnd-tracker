@@ -471,9 +471,9 @@ const Characters = (() => {
         {
           id: 'bond',
           name: 'Emboldening Bond',
-          current: 1, max: 1,
+          current: 3, max: 3,
           recharge: 'long',
-          note: '1d4 en ataque/save/check · 30 ft · 10 min'
+          note: '1d4 en ataque/save/check · 30 ft · 10 min · max = prof bonus'
         },
         {
           id: 'guiding-bolt-mi',

@@ -89,6 +89,17 @@ const App = (() => {
       });
       _char.consumables = savedCons;
 
+      // Resources: actualiza max/name/note desde master, preserva current
+      freshLursey.resources.forEach(fresh => {
+        const saved = (_char.resources || []).find(r => r.id === fresh.id);
+        if (saved) {
+          saved.name = fresh.name;
+          saved.max  = fresh.max;
+          saved.note = fresh.note;
+          if (saved.current > saved.max) saved.current = saved.max;
+        }
+      });
+
       Storage.saveChar(_char);
     }
 
