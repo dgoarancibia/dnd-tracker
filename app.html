@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
 
@@ -179,8 +179,26 @@
 
 </div>
 
+<!-- FAB COMBAT LOG -->
+<button class="fab fab-log" id="combatLogFab" onclick="App.toggleCombatLog()" title="Log de combate" data-count="0">⚔</button>
+
 <!-- FAB DIARIO -->
 <button class="fab" id="diaryFab" onclick="App.toggleDiary()" title="Diario de sesión">📓</button>
+
+<!-- PANEL COMBAT LOG -->
+<div class="combat-log-panel" id="combatLogPanel">
+  <div class="diary-header">
+    <span class="diary-title">⚔ Log de Combate</span>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="diary-export-btn" onclick="App.exportCombatLog()" title="Exportar">↓ TXT</button>
+      <button class="diary-export-btn" onclick="App.clearCombatLog()" title="Limpiar">🗑 Limpiar</button>
+      <button class="diary-close-btn" onclick="App.toggleCombatLog()">✕</button>
+    </div>
+  </div>
+  <div class="diary-entries" id="combatLogEntries">
+    <div class="empty-state"><div class="es-icon">⚔️</div><div class="es-title">Sin eventos</div><div class="es-text">Las acciones de combate aparecerán aquí.</div></div>
+  </div>
+</div>
 
 <!-- PANEL DIARIO -->
 <div class="diary-panel" id="diaryPanel">
@@ -462,9 +480,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=12"></script>
-<script src="js/characters.js?v=12"></script>
-<script src="js/app.js?v=12"></script>
+<script src="js/storage.js?v=13"></script>
+<script src="js/characters.js?v=13"></script>
+<script src="js/app.js?v=13"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

@@ -13,6 +13,11 @@ const App = (() => {
   let _diaryOpen = false;
   let _iftttOpen = false;
   let _spellDetailOpen = false;
+  let _combatLogOpen = false;
+
+  // Combat log — session only, max 200 entries
+  const COMBAT_LOG_MAX = 200;
+  let _combatLog = [];   // { id, round, text, type, ts }
 
   // Combat round tracker (session-only, not persisted)
   let _combatRound = 0;
@@ -168,6 +173,76 @@ const App = (() => {
   /* ══════════════════════════════════════════════════════
      TEMA
   ══════════════════════════════════════════════════════ */
+
+  /* ══════════════════════════════════════════════════════
+     COMBAT LOG
+  ══════════════════════════════════════════════════════ */
+
+  function _logCombat(text, type = 'info') {
+    const entry = {
+      id: 'cl-' + Date.now() + '-' + Math.random().toString(36).slice(2,5),
+      round: _combatActive ? _combatRound : 0,
+      text,
+      type,  // 'dmg' | 'heal' | 'spell' | 'resource' | 'cond' | 'rest' | 'info'
+      ts: Date.now()
+    };
+    _combatLog.unshift(entry);
+    if (_combatLog.length > COMBAT_LOG_MAX) _combatLog.pop();
+    // Update badge
+    const fab = document.getElementById('combatLogFab');
+    if (fab) fab.setAttribute('data-count', _combatLog.length > 99 ? '99+' : _combatLog.length);
+    // Live update if panel open
+    if (_combatLogOpen) _renderCombatLog();
+  }
+
+  function toggleCombatLog() {
+    _combatLogOpen = !_combatLogOpen;
+    const panel = document.getElementById('combatLogPanel');
+    if (panel) panel.classList.toggle('open', _combatLogOpen);
+    document.getElementById('overlayBackdrop').classList.toggle('show', _diaryOpen || _iftttOpen || _combatLogOpen);
+    if (_combatLogOpen) _renderCombatLog();
+  }
+
+  function _renderCombatLog() {
+    const container = document.getElementById('combatLogEntries');
+    if (!container) return;
+    if (_combatLog.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="es-icon">⚔️</div><div class="es-title">Sin eventos</div><div class="es-text">Las acciones de combate aparecerán aquí.</div></div>`;
+      return;
+    }
+    container.innerHTML = _combatLog.map(e => {
+      const d = new Date(e.ts);
+      const ts = d.toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      const rnd = e.round > 0 ? `<span class="cl-round">R${e.round}</span>` : '';
+      return `<div class="cl-entry cl-${e.type}">
+        <div class="cl-meta">${rnd}<span class="cl-ts">${ts}</span></div>
+        <div class="cl-text">${e.text}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function clearCombatLog() {
+    _combatLog = [];
+    const fab = document.getElementById('combatLogFab');
+    if (fab) fab.setAttribute('data-count', '0');
+    _renderCombatLog();
+    showToast('Log limpiado');
+  }
+
+  function exportCombatLog() {
+    if (_combatLog.length === 0) { showToast('Log vacío'); return; }
+    const lines = _combatLog.slice().reverse().map(e => {
+      const d = new Date(e.ts);
+      const ts = d.toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      const rnd = e.round > 0 ? `[R${e.round}] ` : '';
+      return `${ts} ${rnd}${e.text}`;
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `combat-log-${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+  }
 
   function _applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -1221,6 +1296,13 @@ const App = (() => {
     _updateCombatHUD();
     _flashHP(delta < 0 ? 'dmg' : 'heal');
 
+    // Combat log
+    if (delta !== 0) {
+      const actual = _char.hp.current - prev;
+      if (actual < 0) _logCombat(`Recibió ${Math.abs(actual)} daño → ${_char.hp.current} HP`, 'dmg');
+      else if (actual > 0) _logCombat(`Curado ${actual} HP → ${_char.hp.current} HP`, 'heal');
+    }
+
     // Record delta in history for smart chips
     if (delta !== 0) {
       _hpHistory = [delta, ..._hpHistory.filter(v => v !== delta)].slice(0, 5);
@@ -1506,6 +1588,12 @@ const App = (() => {
 
   function setConc(spellId) {
     if (!_char) return;
+    if (spellId) {
+      const sp = (_char.spells || []).find(s => s.id === spellId);
+      _logCombat(`◆ Concentración: ${sp ? sp.name : spellId}`, 'spell');
+    } else if (_char.concentration) {
+      _logCombat('◇ Concentración rota', 'cond');
+    }
     _char.concentration = spellId;
     _saveChar();
     // Re-render completo del bloque (más simple y correcto)
@@ -1608,6 +1696,7 @@ const App = (() => {
     const slotNote = slotLevel > 0 ? ` (slot ${slotLevel})` : '';
     const concNote = sp.concentration ? ' [Concentración]' : '';
     _addDiaryAuto(`Lanzó ${sp.name}${slotNote}${concNote}`);
+    _logCombat(`✨ ${sp.name}${slotNote}${concNote}`, 'spell');
 
     // Refresh right column to show updated slot dots
     _renderCombateDer();
@@ -1827,8 +1916,13 @@ const App = (() => {
   function toggleCondition(id) {
     if (!_char) return;
     const idx = _char.conditions.indexOf(id);
-    if (idx >= 0) _char.conditions.splice(idx, 1);
-    else _char.conditions.push(id);
+    if (idx >= 0) {
+      _char.conditions.splice(idx, 1);
+      _logCombat(`Condición quitada: ${id}`, 'cond');
+    } else {
+      _char.conditions.push(id);
+      _logCombat(`⚠ Condición: ${id}`, 'cond');
+    }
     _saveChar(true);
     _renderCombateIzq();
     _updateHeaderStatus();
@@ -2218,6 +2312,7 @@ const App = (() => {
     closeShortRest();
     _renderCombateTab();
     _updateCombatHUD();
+    _logCombat(`↺ Descanso corto · +${heal} HP`, 'rest');
     showToast(`Descanso corto · +${heal} HP · CD recargado`);
   }
 
@@ -2251,6 +2346,7 @@ const App = (() => {
     _renderHeader();
     _renderCombateTab();
     _updateCombatHUD();
+    _logCombat('✦ Descanso largo · Todo recargado', 'rest');
     showToast('Descanso largo · Todo recargado ✦');
   }
 
@@ -2464,6 +2560,7 @@ const App = (() => {
     if (_diaryOpen) toggleDiary();
     if (_iftttOpen) closeIfttt();
     if (_spellDetailOpen) closeSpellDetail();
+    if (_combatLogOpen) toggleCombatLog();
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2598,6 +2695,9 @@ const App = (() => {
 
     // Diario
     toggleDiary, addDiaryEntry, deleteDiaryEntry, filterDiary, exportDiary,
+
+    // Combat Log
+    toggleCombatLog, clearCombatLog, exportCombatLog,
 
     // IFTTT
     openIfttt, closeIfttt, closeAllOverlays, closeConfirm,

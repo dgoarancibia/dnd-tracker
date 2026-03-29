@@ -2237,6 +2237,104 @@ input[type=number] { -moz-appearance: textfield; }
   position: fixed;
   bottom: 24px;
   right: 24px;
+}
+
+/* FAB COMBAT LOG — encima del diario */
+.fab.fab-log {
+  bottom: 92px;
+  right: 24px;
+  font-size: 18px;
+}
+
+/* Badge contador en FAB */
+.fab.fab-log::after {
+  content: attr(data-count);
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--red-light);
+  color: #fff;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 16px;
+}
+
+.fab.fab-log[data-count="0"]::after { display: none; }
+
+/* PANEL COMBAT LOG — igual que diary pero a la izquierda del diary */
+.combat-log-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 38%;
+  min-width: 320px;
+  max-width: 480px;
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  z-index: 820;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow: hidden;
+}
+.combat-log-panel.open { transform: translateX(0); }
+
+/* Entradas del log */
+.cl-entry {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cl-entry:last-child { border-bottom: none; }
+
+.cl-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.cl-round {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--gold);
+  background: rgba(201,151,58,0.12);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.cl-ts {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: monospace;
+}
+.cl-text {
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.3;
+}
+
+/* Colores por tipo */
+.cl-dmg   .cl-text { color: var(--red-light); }
+.cl-heal  .cl-text { color: var(--green-light); }
+.cl-spell .cl-text { color: var(--gold-light); }
+.cl-cond  .cl-text { color: var(--purple-light); }
+.cl-rest  .cl-text { color: var(--blue-light); }
+
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
   width: 56px;
   height: 56px;
   border-radius: 50%;
