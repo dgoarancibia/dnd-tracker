@@ -112,6 +112,13 @@ const Cloud = (() => {
   async function signIn() {
     try {
       await FirebaseApp.signIn();
+      // COOP puede bloquear onAuthStateChanged — forzar detección manual
+      const user = FirebaseApp.getCurrentUser();
+      if (user && !_uid) {
+        _uid = user.uid;
+        _updateAuthUI(user);
+        _syncOnLogin(user.uid);
+      }
     } catch (e) {
       console.error('Login error:', e);
       _setSyncState(SyncState.ERROR, 'No se pudo iniciar sesión');
