@@ -38,8 +38,9 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Solo cachear GETs — no cachear requests con body (POST, etc.)
+  // Solo cachear GETs con protocolo http/https
   if (e.request.method !== 'GET') return;
+  if (!url.protocol.startsWith('http')) return;
 
   // Todos los demás — network-first, cae a caché si offline
   e.respondWith(
