@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 
@@ -414,6 +414,18 @@
   <div class="conc-alert-dc" id="concAlertDC">Save CON DC 10</div>
 </div>
 
+<!-- MODAL SELECCIÓN DE SLOT (upcast) -->
+<div class="modal-overlay" id="castPickerModal">
+  <div class="modal" style="max-width:320px;text-align:center;">
+    <div class="modal-title">Lanzar <span id="castPickerName"></span></div>
+    <p style="color:var(--text-mid);font-size:13px;margin:0 0 12px;">Elige nivel de slot:</p>
+    <div class="cast-picker-btns" id="castPickerBtns"></div>
+    <div class="modal-btns" style="margin-top:12px;">
+      <button class="btn btn-ghost" onclick="App.closeCastPicker()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal" style="max-width:320px;text-align:center;">
@@ -429,9 +441,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=6"></script>
-<script src="js/characters.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/storage.js?v=7"></script>
+<script src="js/characters.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

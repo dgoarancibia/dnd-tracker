@@ -504,15 +504,27 @@ const App = (() => {
       html += `<div class="spell-group-title">${lv}</div>`;
       byLevel[lv].forEach(sp => {
         const tags = _buildTagsHTML(sp);
+        // Determine if castable / has slots
+        let castable = true;
+        let castLabel = 'Lanzar';
+        if (sp.level > 0 && !sp.domain && !sp.mi) {
+          let hasSlot = false;
+          for (let i = sp.level; i <= 9; i++) {
+            const s = _char.spellSlots && _char.spellSlots[i];
+            if (s && s.current > 0) { hasSlot = true; break; }
+          }
+          if (!hasSlot) { castable = false; castLabel = 'Sin slots'; }
+        }
         html += `
-        <div class="spell-card" onclick="App.openSpellDetail('${sp.id}')">
-          <div class="spell-info">
+        <div class="spell-card">
+          <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')">
             <div class="spell-top">
               <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
               <span class="spell-name">${sp.name}</span>${tags}
             </div>
             <div class="spell-desc">${sp.desc}</div>
           </div>
+          <button class="cast-btn${castable ? '' : ' cast-btn-disabled'}" onclick="App.castSpell('${sp.id}')" ${castable ? '' : 'disabled'}>${castLabel}</button>
         </div>`;
       });
     });
@@ -1477,6 +1489,124 @@ const App = (() => {
     if (breakBtn) breakBtn.style.display = _char.concentration ? 'inline-flex' : 'none';
   }
 
+  /* ══════════════════════════════════════════════════════
+     CAST SPELL (Epic 1)
+  ══════════════════════════════════════════════════════ */
+
+  function castSpell(spellId, slotLevel) {
+    if (!_char) return;
+    const sp = (_char.spells || []).find(s => s.id === spellId);
+    if (!sp) return;
+
+    // Cantrip — no slot needed
+    if (sp.level === 0) {
+      _finalizeCast(sp, 0);
+      return;
+    }
+
+    // Domain or MI spells — free cast (no slot consumed), but only if current ≥ 1
+    if (sp.domain || sp.mi) {
+      // Find a resource matching the spell name or a slot if forced
+      _finalizeCast(sp, sp.level);
+      return;
+    }
+
+    // Leveled spell — need a slot
+    if (slotLevel === undefined) {
+      // Find lowest available slot at or above sp.level
+      let found = null;
+      for (let i = sp.level; i <= 9; i++) {
+        const slot = _char.spellSlots[i];
+        if (slot && slot.current > 0) { found = i; break; }
+      }
+      if (found === null) {
+        showToast(`Sin slots disponibles para ${sp.name}`);
+        return;
+      }
+      // If spell can be upcast and there are higher slots, show picker
+      const availSlots = [];
+      for (let i = sp.level; i <= 9; i++) {
+        const slot = _char.spellSlots[i];
+        if (slot && slot.current > 0) availSlots.push(i);
+      }
+      if (availSlots.length > 1 && sp.upcast) {
+        _openCastPicker(sp, availSlots);
+        return;
+      }
+      slotLevel = found;
+    }
+
+    // Consume slot
+    const slot = _char.spellSlots[slotLevel];
+    if (!slot || slot.current <= 0) {
+      showToast(`Sin slots de nivel ${slotLevel}`);
+      return;
+    }
+    slot.current -= 1;
+    _finalizeCast(sp, slotLevel);
+    _refreshSlotDots(slotLevel);
+  }
+
+  function _finalizeCast(sp, slotLevel) {
+    _saveChar(true);
+
+    // Auto-concentration
+    if (sp.concentration) {
+      if (_char.concentration && _char.concentration !== sp.id) {
+        const prev = (_char.spells || []).find(s => s.id === _char.concentration);
+        const prevName = prev ? prev.name : _char.concentration;
+        showToast(`◆ ${sp.name} activo (rompe ${prevName})`);
+      } else {
+        showToast(`◆ ${sp.name} lanzado${slotLevel > 0 ? ` · slot ${slotLevel}` : ''}`);
+      }
+      setConc(sp.id);
+    } else {
+      showToast(`✨ ${sp.name}${slotLevel > 0 ? ` · slot ${slotLevel}` : ''}`);
+    }
+
+    // Log to diary
+    const slotNote = slotLevel > 0 ? ` (slot ${slotLevel})` : '';
+    const concNote = sp.concentration ? ' [Concentración]' : '';
+    _addDiaryAuto(`Lanzó ${sp.name}${slotNote}${concNote}`);
+
+    // Refresh right column to show updated slot dots
+    _renderCombateDer();
+  }
+
+  function _addDiaryAuto(text) {
+    if (!_char) return;
+    if (!_char.diary) _char.diary = [];
+    _char.diary.unshift({ id: crypto.randomUUID(), timestamp: new Date().toISOString(), text, auto: true });
+    _saveChar();
+  }
+
+  // Slot picker modal for upcasting
+  let _castPickerSpell = null;
+
+  function _openCastPicker(sp, availSlots) {
+    _castPickerSpell = sp;
+    const modal = document.getElementById('castPickerModal');
+    const btns  = document.getElementById('castPickerBtns');
+    document.getElementById('castPickerName').textContent = sp.name;
+    btns.innerHTML = availSlots.map(lv =>
+      `<button class="btn btn-ghost cast-picker-btn" onclick="App.confirmCastAtLevel('${sp.id}',${lv})">Slot ${lv}</button>`
+    ).join('');
+    modal.classList.add('show');
+    document.getElementById('overlayBackdrop').classList.add('show');
+  }
+
+  function confirmCastAtLevel(spellId, slotLevel) {
+    closeCastPicker();
+    castSpell(spellId, slotLevel);
+  }
+
+  function closeCastPicker() {
+    _castPickerSpell = null;
+    const modal = document.getElementById('castPickerModal');
+    if (modal) modal.classList.remove('show');
+    document.getElementById('overlayBackdrop').classList.toggle('show', _diaryOpen || _iftttOpen || _spellDetailOpen);
+  }
+
   function _checkConcAlert(damage) {
     if (!_char || !_char.concentration) return;
     const spell = (_char.spells || []).find(s => s.id === _char.concentration);
@@ -2349,6 +2479,7 @@ const App = (() => {
 
     // Conjuros
     toggleSpellPrepared,
+    castSpell, confirmCastAtLevel, closeCastPicker,
 
     // Equipo
     addWeapon, openAddWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,

@@ -1618,13 +1618,52 @@ input[type=number] { -moz-appearance: textfield; }
   padding: 6px 8px;
   margin-bottom: 4px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
   transition: border-color 0.15s;
-  cursor: pointer;
 }
 
 .spell-card:hover { border-color: rgba(201,151,58,0.3); }
+
+.spell-info { flex: 1; cursor: pointer; }
+
+/* Cast button on spell cards */
+.cast-btn {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  min-width: 56px;
+  text-align: center;
+  min-height: 32px;
+}
+.cast-btn:hover { background: var(--gold); color: var(--bg1); }
+.cast-btn:active { transform: scale(0.97); }
+.cast-btn-disabled {
+  border-color: var(--border);
+  color: var(--text-dim);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Cast picker modal buttons */
+.cast-picker-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.cast-picker-btn {
+  min-width: 80px;
+  font-size: 14px;
+}
 
 .spell-checkbox {
   width: 20px;
