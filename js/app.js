@@ -798,7 +798,7 @@ const App = (() => {
           <div class="item-row-right">
             ${!isFocus ? `<span class="item-stat hit-badge">${hitStr} al golpe</span>` : ''}
             ${!isFocus ? `<span class="item-stat">${dmgStr}</span>` : ''}
-            ${_itemCatBadge('Weapon')}
+            <button class="item-edit" onclick="App.openEditWeapon(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteWeapon(${i})">✕</button>
           </div>
         </div>`;
@@ -1935,10 +1935,26 @@ const App = (() => {
   ══════════════════════════════════════════════════════ */
 
   function openAddWeapon() {
+    _editWeaponIdx = null;
+    document.getElementById('awmModalTitle').textContent = '+ Agregar Arma';
     document.getElementById('awmName').value = '';
     document.getElementById('awmDie').value = '1d6';
     document.getElementById('awmBonus').value = '0';
+    document.getElementById('awmType').value = 'melee';
     document.getElementById('awmDesc').value = '';
+    document.getElementById('addWeaponModal').classList.add('show');
+  }
+
+  function openEditWeapon(idx) {
+    const w = (_char.weapons || [])[idx];
+    if (!w) return;
+    _editWeaponIdx = idx;
+    document.getElementById('awmModalTitle').textContent = '✎ Editar Arma';
+    document.getElementById('awmName').value = w.name || '';
+    document.getElementById('awmDie').value = w.die || '1d6';
+    document.getElementById('awmBonus').value = parseInt(w.bonus) || 0;
+    document.getElementById('awmType').value = w.type || 'melee';
+    document.getElementById('awmDesc').value = w.notes || '';
     document.getElementById('addWeaponModal').classList.add('show');
   }
 
@@ -1949,12 +1965,17 @@ const App = (() => {
   function saveAddWeapon() {
     const name = document.getElementById('awmName').value.trim();
     if (!name) return;
-    const die   = document.getElementById('awmDie').value.trim() || '1d6';
+    const die      = document.getElementById('awmDie').value.trim() || '1d6';
     const bonusRaw = parseInt(document.getElementById('awmBonus').value) || 0;
-    const bonus = (bonusRaw >= 0 ? '+' : '') + bonusRaw;
-    const type  = document.getElementById('awmType').value || 'melee';
-    const notes = document.getElementById('awmDesc').value.trim();
-    _char.weapons.push({ id:'w-'+Date.now(), name, die, bonus, type, notes });
+    const bonus    = (bonusRaw >= 0 ? '+' : '') + bonusRaw;
+    const type     = document.getElementById('awmType').value || 'melee';
+    const notes    = document.getElementById('awmDesc').value.trim();
+    if (_editWeaponIdx !== null) {
+      const w = _char.weapons[_editWeaponIdx];
+      Object.assign(w, { name, die, bonus, type, notes });
+    } else {
+      _char.weapons.push({ id:'w-'+Date.now(), name, die, bonus, type, notes });
+    }
     _saveChar();
     closeAddWeapon();
     _renderEquipoTab();
@@ -1970,6 +1991,8 @@ const App = (() => {
       _renderEquipoTab();
     });
   }
+
+  let _editWeaponIdx = null;
 
   let _addItemSlot = 'bag';
   let _editItemIdx = null;  // null = crear nuevo, number = editar existente
@@ -2580,7 +2603,7 @@ const App = (() => {
     castSpell, confirmCastAtLevel, closeCastPicker,
 
     // Equipo
-    addWeapon, openAddWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
+    addWeapon, openAddWeapon, openEditWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
     openAddItem, openEditItem, closeAddItem, saveAddItem,
     adjustConsumable, deleteConsumable, addConsumable,
     setCurrency, setAttunement,
