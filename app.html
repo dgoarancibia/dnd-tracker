@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 
@@ -31,10 +31,6 @@
 <header class="app-header" id="appHeader">
   <div class="app-header-left">
     <div class="app-char-name" id="headerCharName">Cargando...</div>
-  </div>
-
-  <div class="char-selector-wrap">
-    <select class="char-selector" id="charSelector" onchange="App.switchChar(this.value)" title="Cambiar personaje"></select>
   </div>
 
   <div class="stats-strip">
@@ -92,6 +88,13 @@
 
     <!-- Dropdown menú -->
     <div class="header-menu-dropdown" id="headerMenuDropdown">
+
+      <!-- Selector de personaje -->
+      <div class="hm-char-selector-wrap">
+        <select class="hm-char-selector" id="charSelector" onchange="App.switchChar(this.value);App.closeHeaderMenu()"></select>
+      </div>
+
+      <div class="hm-divider"></div>
 
       <!-- Auth -->
       <button class="hm-btn" id="loginBtn" onclick="Cloud.signIn();App.closeHeaderMenu()">
@@ -426,9 +429,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=5"></script>
-<script src="js/characters.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/storage.js?v=6"></script>
+<script src="js/characters.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

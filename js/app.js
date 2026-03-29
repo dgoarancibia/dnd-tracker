@@ -1131,6 +1131,13 @@ const App = (() => {
   function adjustHP(delta) {
     if (!_char) return;
 
+    // Sync temp HP from input in case user typed but didn't blur
+    const tempInput = document.getElementById('tempHPInput');
+    if (tempInput) {
+      const inputVal = parseInt(tempInput.value) || 0;
+      if (inputVal !== _char.hp.temp) _char.hp.temp = Math.max(0, inputVal);
+    }
+
     // HP temp absorben daño primero
     if (delta < 0 && _char.hp.temp > 0) {
       const absorbed = Math.min(_char.hp.temp, Math.abs(delta));
