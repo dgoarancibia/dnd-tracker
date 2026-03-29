@@ -325,22 +325,22 @@ input[type=number] { -moz-appearance: textfield; }
 .app-header {
   background: linear-gradient(135deg, #181508, #201c10);
   border-bottom: 1px solid var(--gold-dim);
-  padding: 10px 20px;
+  padding: 8px 16px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 88px;
+  gap: 10px;
+  min-height: 72px;
 }
 
-.app-header-left { flex: 1; min-width: 0; }
+.app-header-left { flex: 0 0 auto; min-width: 0; max-width: 160px; }
 
 .app-char-name {
   font-family: 'Cinzel', serif;
-  font-size: 20px;
-  font-weight: 900;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--gold);
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -462,11 +462,11 @@ input[type=number] { -moz-appearance: textfield; }
 
 .hp-header-cur {
   font-family: 'Cinzel', serif;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
-  min-width: 36px;
+  min-width: 32px;
   text-align: right;
 }
 
@@ -597,9 +597,9 @@ input[type=number] { -moz-appearance: textfield; }
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 7px 14px;
+  padding: 6px 10px;
   text-align: center;
-  min-width: 58px;
+  min-width: 52px;
 }
 
 .stat-box .sl {
@@ -613,7 +613,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 .stat-box .sv {
   font-family: 'Cinzel', serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
@@ -1927,7 +1927,7 @@ input[type=number] { -moz-appearance: textfield; }
   white-space: nowrap;
 }
 
-.item-del {
+.item-del, .item-edit {
   background: transparent;
   border: none;
   color: var(--text-dim);
@@ -1939,7 +1939,8 @@ input[type=number] { -moz-appearance: textfield; }
   min-height: 28px;
   transition: color 0.15s;
 }
-.item-del:hover { color: var(--red-light); }
+.item-del:hover  { color: var(--red-light); }
+.item-edit:hover { color: var(--gold-light); }
 
 .equip-empty {
   font-size: 13px;
@@ -3008,16 +3009,22 @@ input[type=number] { -moz-appearance: textfield; }
 /* ── 2.1 HP SMART CHIPS ── */
 .hp-chips {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-top: 3px;
+  gap: 3px;
+  flex-wrap: nowrap;
+  position: absolute;
+  bottom: -28px;
+  left: 0;
+  z-index: 10;
+  pointer-events: auto;
 }
+
+.hp-header-block { position: relative; }
 
 .hp-chip {
   font-family: 'Cinzel', serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 2px 6px;
   border-radius: 20px;
   border: 1px solid;
   cursor: pointer;

@@ -300,8 +300,6 @@ const App = (() => {
     const conMod = Characters.calcMod(c.stats.con);
 
     let html = `
-    <div class="section-hd">⚔️ Combate</div>
-
     <!-- RONDAS Y TURNO -->
     <div id="roundDisplay"></div>
 
@@ -809,6 +807,7 @@ const App = (() => {
           </div>
           <div class="item-row-right">
             ${_itemCatBadge(cat)}
+            <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
           </div>
         </div>`;
@@ -903,6 +902,7 @@ const App = (() => {
               <span class="qty-val" id="cons-${i}">${item.qty}</span>
               <button class="qty-btn" onclick="App.adjustConsumable(${i},1)">+</button>
             </div>
+            <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
           </div>
         </div>`;
@@ -1905,8 +1905,26 @@ const App = (() => {
   }
 
   let _addItemSlot = 'bag';
+  let _editItemIdx = null;  // null = crear nuevo, number = editar existente
+
+  function openEditItem(idx) {
+    const item = (_char.consumables || [])[idx];
+    if (!item) return;
+    _editItemIdx = idx;
+    _addItemSlot = item.slot || 'bag';
+    document.getElementById('aimName').value = item.name || '';
+    document.getElementById('aimDesc').value = item.desc || '';
+    document.getElementById('aimQty').value  = item.qty || 1;
+    document.getElementById('aimCategory').value = item.category || 'Other';
+    const titleEl = document.getElementById('addItemModalTitle');
+    if (titleEl) titleEl.textContent = '✎ Editar ítem';
+    const qtyField = document.getElementById('aimQtyRow');
+    if (qtyField) qtyField.style.display = item.slot === 'body' ? 'none' : '';
+    document.getElementById('addItemModal').classList.add('show');
+  }
 
   function openAddItem(slot) {
+    _editItemIdx = null;
     _addItemSlot = slot || 'bag';
     document.getElementById('aimName').value = '';
     document.getElementById('aimDesc').value = '';
@@ -1932,7 +1950,20 @@ const App = (() => {
     const category = document.getElementById('aimCategory').value;
     const desc = document.getElementById('aimDesc').value.trim();
     if (!_char.consumables) _char.consumables = [];
-    _char.consumables.push({ id:'i-'+Date.now(), name, qty, category, desc, slot: _addItemSlot });
+
+    if (_editItemIdx !== null) {
+      // Editar existente
+      const item = _char.consumables[_editItemIdx];
+      if (item) {
+        item.name = name;
+        item.desc = desc;
+        item.qty  = qty;
+        item.category = category;
+      }
+    } else {
+      _char.consumables.push({ id:'i-'+Date.now(), name, qty, category, desc, slot: _addItemSlot });
+    }
+
     _saveChar();
     closeAddItem();
     _renderEquipoTab();
@@ -2483,7 +2514,7 @@ const App = (() => {
 
     // Equipo
     addWeapon, openAddWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
-    openAddItem, closeAddItem, saveAddItem,
+    openAddItem, openEditItem, closeAddItem, saveAddItem,
     adjustConsumable, deleteConsumable, addConsumable,
     setCurrency, setAttunement,
     addMagicItem, deleteMagicItem,
