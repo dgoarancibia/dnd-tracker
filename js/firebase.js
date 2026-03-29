@@ -8,6 +8,8 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -40,14 +42,24 @@ const _provider = new GoogleAuthProvider();
 /* ── Auth ── */
 
 async function signIn() {
+  // Intentar popup primero; si falla por COOP, caer a redirect
   try {
     return await signInWithPopup(_auth, _provider);
   } catch (e) {
-    // Ignorar errores COOP de GitHub Pages — el login igual completa
-    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return null;
-    if (e.message && e.message.includes('Cross-Origin')) return null;
+    if (e.code === 'auth/popup-blocked' ||
+        e.code === 'auth/popup-closed-by-user' ||
+        (e.message && e.message.includes('Cross-Origin-Opener-Policy'))) {
+      return signInWithRedirect(_auth, _provider);
+    }
     throw e;
   }
+}
+
+// Procesar redirect result con top-level await — garantiza que el usuario
+// esté disponible antes de que cloud.js registre onAuthStateChanged
+const _redirectResult = await getRedirectResult(_auth).catch(() => null);
+if (_redirectResult) {
+  console.log('[firebase] redirect result procesado:', _redirectResult.user?.email);
 }
 
 function signOutUser() {
