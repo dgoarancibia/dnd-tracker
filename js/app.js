@@ -189,19 +189,40 @@ const App = (() => {
     _combatLog.unshift(entry);
     if (_combatLog.length > COMBAT_LOG_MAX) _combatLog.pop();
     // Update badge
-    const fab = document.getElementById('combatLogFab');
-    if (fab) fab.setAttribute('data-count', _combatLog.length > 99 ? '99+' : _combatLog.length);
+    const badge = document.getElementById('nbLogBadge');
+    if (badge) badge.textContent = _combatLog.length > 0 ? _combatLog.length : '';
     // Live update if panel open
     if (_combatLogOpen) _renderCombatLog();
   }
 
-  function toggleCombatLog() {
-    _combatLogOpen = !_combatLogOpen;
-    const panel = document.getElementById('combatLogPanel');
-    if (panel) panel.classList.toggle('open', _combatLogOpen);
-    document.getElementById('overlayBackdrop').classList.toggle('show', _diaryOpen || _iftttOpen || _combatLogOpen);
-    if (_combatLogOpen) _renderCombatLog();
+  // Notebook state
+  let _notebookOpen = false;
+  let _notebookTab  = 'diary'; // 'diary' | 'log'
+
+  function toggleNotebook() {
+    _notebookOpen = !_notebookOpen;
+    const panel = document.getElementById('notebookPanel');
+    if (panel) panel.classList.toggle('open', _notebookOpen);
+    document.getElementById('overlayBackdrop').classList.toggle('show', _notebookOpen || _iftttOpen);
+    if (_notebookOpen) {
+      if (_notebookTab === 'diary') _renderDiaryEntries();
+      else _renderCombatLog();
+    }
   }
+
+  function switchNotebookTab(tab) {
+    _notebookTab = tab;
+    document.getElementById('nbTabDiary').classList.toggle('active', tab === 'diary');
+    document.getElementById('nbTabLog').classList.toggle('active', tab === 'log');
+    document.getElementById('nbPaneDiary').style.display = tab === 'diary' ? 'flex' : 'none';
+    document.getElementById('nbPaneLog').style.display   = tab === 'log'   ? 'flex' : 'none';
+    if (tab === 'log') _renderCombatLog();
+    else _renderDiaryEntries();
+  }
+
+  // Legacy shims (used by closeAllOverlays etc.)
+  function toggleCombatLog() { if (!_notebookOpen) toggleNotebook(); switchNotebookTab('log'); }
+  function toggleDiaryLegacy() { if (!_notebookOpen) toggleNotebook(); switchNotebookTab('diary'); }
 
   function _renderCombatLog() {
     const container = document.getElementById('combatLogEntries');
@@ -1695,8 +1716,12 @@ const App = (() => {
     // Log to diary
     const slotNote = slotLevel > 0 ? ` (slot ${slotLevel})` : '';
     const concNote = sp.concentration ? ' [Concentración]' : '';
-    _addDiaryAuto(`Lanzó ${sp.name}${slotNote}${concNote}`);
-    _logCombat(`✨ ${sp.name}${slotNote}${concNote}`, 'spell');
+    const parts = [sp.name];
+    if (slotLevel > 0) parts.push(`slot ${slotLevel}`);
+    if (sp.concentration) parts.push('Conc');
+    const logLine = parts.join(' · ');
+    _addDiaryAuto(`Lanzó ${logLine}`);
+    _logCombat(`✨ ${logLine}`, 'spell');
 
     // Refresh right column to show updated slot dots
     _renderCombateDer();
@@ -1829,6 +1854,7 @@ const App = (() => {
     if (!_char) return;
     const slot = _char.spellSlots[level];
     if (!slot) return;
+    const prev = slot.current;
     if (dotIndex === slot.current - 1) {
       slot.current = dotIndex;
     } else {
@@ -1836,6 +1862,8 @@ const App = (() => {
     }
     _saveChar(true);
     _refreshSlotDots(level);
+    if (slot.current < prev) _logCombat(`Slot Nvl ${level} gastado manualmente (${slot.current}/${slot.max})`, 'spell');
+    else if (slot.current > prev) _logCombat(`Slot Nvl ${level} recuperado (${slot.current}/${slot.max})`, 'info');
   }
 
   function _refreshSlotDots(level) {
@@ -2404,10 +2432,7 @@ const App = (() => {
   ══════════════════════════════════════════════════════ */
 
   function toggleDiary() {
-    _diaryOpen = !_diaryOpen;
-    document.getElementById('diaryPanel').classList.toggle('open', _diaryOpen);
-    document.getElementById('overlayBackdrop').classList.toggle('show', _diaryOpen || _iftttOpen);
-    if (_diaryOpen) _renderDiaryEntries();
+    toggleNotebook();
   }
 
   function _renderDiaryEntries(filter = '') {
@@ -2557,10 +2582,9 @@ const App = (() => {
   }
 
   function closeAllOverlays() {
-    if (_diaryOpen) toggleDiary();
+    if (_notebookOpen) toggleNotebook();
     if (_iftttOpen) closeIfttt();
     if (_spellDetailOpen) closeSpellDetail();
-    if (_combatLogOpen) toggleCombatLog();
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2693,10 +2717,9 @@ const App = (() => {
     // Level up
     openLevelUp, closeLevelUp, applyLevelUp,
 
-    // Diario
+    // Notebook (diario + log)
+    toggleNotebook, switchNotebookTab,
     toggleDiary, addDiaryEntry, deleteDiaryEntry, filterDiary, exportDiary,
-
-    // Combat Log
     toggleCombatLog, clearCombatLog, exportCombatLog,
 
     // IFTTT

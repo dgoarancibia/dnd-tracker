@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
 
@@ -179,48 +179,46 @@
 
 </div>
 
-<!-- FAB COMBAT LOG -->
-<button class="fab fab-log" id="combatLogFab" onclick="App.toggleCombatLog()" title="Log de combate" data-count="0">⚔</button>
+<!-- FAB UNIFICADO -->
+<button class="fab" id="notebookFab" onclick="App.toggleNotebook()" title="Diario / Log">📓<span class="fab-log-badge" id="fabLogBadge" style="display:none"></span></button>
 
-<!-- FAB DIARIO -->
-<button class="fab" id="diaryFab" onclick="App.toggleDiary()" title="Diario de sesión">📓</button>
-
-<!-- PANEL COMBAT LOG -->
-<div class="combat-log-panel" id="combatLogPanel">
+<!-- PANEL NOTEBOOK (diario + log) -->
+<div class="diary-panel" id="notebookPanel">
+  <!-- Header con sub-tabs -->
   <div class="diary-header">
-    <span class="diary-title">⚔ Log de Combate</span>
-    <div style="display:flex;gap:6px;align-items:center;">
-      <button class="diary-export-btn" onclick="App.exportCombatLog()" title="Exportar">↓ TXT</button>
-      <button class="diary-export-btn" onclick="App.clearCombatLog()" title="Limpiar">🗑 Limpiar</button>
-      <button class="diary-close-btn" onclick="App.toggleCombatLog()">✕</button>
+    <div class="nb-tabs">
+      <button class="nb-tab active" id="nbTabDiary"  onclick="App.switchNotebookTab('diary')">📓 Diario</button>
+      <button class="nb-tab"        id="nbTabLog"    onclick="App.switchNotebookTab('log')">⚔ Log<span class="nb-badge" id="nbLogBadge"></span></button>
+    </div>
+    <button class="diary-close-btn" onclick="App.toggleNotebook()">✕</button>
+  </div>
+
+  <!-- SUB-TAB: DIARIO -->
+  <div class="nb-pane" id="nbPaneDiary">
+    <div class="diary-search-wrap">
+      <input type="text" class="diary-search" id="diarySearch" placeholder="Buscar en el diario..."
+             oninput="App.filterDiary(this.value)">
+    </div>
+    <div class="diary-entries" id="diaryEntries"></div>
+    <div class="diary-compose">
+      <textarea class="diary-textarea" id="diaryInput"
+                placeholder="Anota lo que pasó en la sesión..."
+                onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){App.addDiaryEntry();event.preventDefault();}"></textarea>
+      <div class="diary-compose-actions">
+        <button class="btn-sm" onclick="App.exportDiary()">↓ Exportar</button>
+        <button class="btn btn-gold" onclick="App.addDiaryEntry()">Guardar</button>
+      </div>
     </div>
   </div>
-  <div class="diary-entries" id="combatLogEntries">
-    <div class="empty-state"><div class="es-icon">⚔️</div><div class="es-title">Sin eventos</div><div class="es-text">Las acciones de combate aparecerán aquí.</div></div>
-  </div>
-</div>
 
-<!-- PANEL DIARIO -->
-<div class="diary-panel" id="diaryPanel">
-  <div class="diary-header">
-    <span class="diary-title">📓 Diario de Sesión</span>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button class="btn-sm" onclick="App.exportDiary()">Exportar .txt</button>
-      <button class="diary-close" onclick="App.toggleDiary()">✕</button>
+  <!-- SUB-TAB: LOG DE COMBATE -->
+  <div class="nb-pane" id="nbPaneLog" style="display:none">
+    <div class="cl-toolbar">
+      <button class="btn-sm" onclick="App.exportCombatLog()">↓ Exportar</button>
+      <button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);" onclick="App.clearCombatLog()">🗑 Limpiar</button>
     </div>
-  </div>
-  <div class="diary-search-wrap">
-    <input type="text" class="diary-search" id="diarySearch" placeholder="Buscar en el diario..."
-           oninput="App.filterDiary(this.value)">
-  </div>
-  <div class="diary-entries" id="diaryEntries"></div>
-  <div class="diary-compose">
-    <textarea class="diary-textarea" id="diaryInput"
-              placeholder="Anota lo que pasó en la sesión..."
-              onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){App.addDiaryEntry();event.preventDefault();}"></textarea>
-    <div class="diary-compose-actions">
-      <span style="font-size:11px;color:var(--text-dim)">Ctrl+Enter para guardar</span>
-      <button class="btn btn-gold" onclick="App.addDiaryEntry()">Guardar</button>
+    <div class="diary-entries" id="combatLogEntries">
+      <div class="empty-state"><div class="es-icon">⚔️</div><div class="es-title">Sin eventos</div><div class="es-text">Las acciones aparecerán aquí.</div></div>
     </div>
   </div>
 </div>
@@ -480,9 +478,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=13"></script>
-<script src="js/characters.js?v=13"></script>
-<script src="js/app.js?v=13"></script>
+<script src="js/storage.js?v=14"></script>
+<script src="js/characters.js?v=14"></script>
+<script src="js/app.js?v=14"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">
