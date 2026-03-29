@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
 
@@ -75,6 +75,9 @@
       <button class="hdr-rest-btn short" onclick="App.openShortRest()" title="Descanso Corto">↺ Corto</button>
       <button class="hdr-rest-btn long"  onclick="App.longRest()"      title="Descanso Largo">✦ Largo</button>
     </div>
+
+    <!-- ESTADO ACTIVO: concentración + condiciones -->
+    <div class="hdr-status" id="hdrStatus"></div>
   </div>
 
   <!-- CLOUD / UNDO / BACKUP — colapsado en menú -->
@@ -129,6 +132,11 @@
         <input type="file" accept=".json" style="display:none" onchange="App.importBackup(this);App.closeHeaderMenu()">
       </label>
 
+      <div class="hm-divider"></div>
+
+      <!-- Tema -->
+      <button class="hm-btn" id="themeToggleBtn" onclick="App.toggleTheme();App.closeHeaderMenu()">☀ Modo claro</button>
+
     </div>
   </div>
 </header>
@@ -136,9 +144,9 @@
 <!-- TABS NAV -->
 <nav class="tab-nav">
   <button class="tab-btn active" data-tab="combate" onclick="App.switchTab('combate')">⚔️ Combate</button>
-  <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
   <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Ítems</button>
   <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
+  <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
 </nav>
 
 <!-- CONTENIDO TABS -->
@@ -445,9 +453,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=10"></script>
-<script src="js/characters.js?v=10"></script>
-<script src="js/app.js?v=10"></script>
+<script src="js/storage.js?v=11"></script>
+<script src="js/characters.js?v=11"></script>
+<script src="js/app.js?v=11"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

@@ -645,6 +645,38 @@ input[type=number] { -moz-appearance: textfield; }
 .stat-box.key { border-color: var(--gold-dim); }
 .stat-box.key .sv { color: var(--gold-light); }
 
+/* ESTADO ACTIVO EN HEADER */
+.hdr-status {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.hdr-status-chip {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid;
+  white-space: nowrap;
+  cursor: default;
+}
+.hdr-status-chip.conc {
+  border-color: rgba(201,151,58,0.5);
+  background: rgba(201,151,58,0.1);
+  color: var(--gold-light);
+  cursor: pointer;
+}
+.hdr-status-chip.conc:hover { background: rgba(201,151,58,0.2); }
+.hdr-status-chip.cond {
+  border-color: rgba(180,60,60,0.4);
+  background: rgba(138,40,40,0.1);
+  color: #e07070;
+}
+
 /* BACKUP BTN */
 .backup-btn {
   font-family: 'Cinzel', serif;
@@ -1257,7 +1289,7 @@ input[type=number] { -moz-appearance: textfield; }
 .slot-dot.used {
   background: var(--bg2);
   border-color: var(--bg4);
-  opacity: 0.35;
+  opacity: 0.55;
 }
 
 /* BONUS INPUTS */
@@ -3326,18 +3358,13 @@ input[type=number] { -moz-appearance: textfield; }
 .round-btn.danger:hover { background: rgba(138,58,58,0.2); }
 
 /* ── 2.4 CONCENTRACIÓN MEJORADA ── */
-.conc-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
 .conc-break-btn {
   font-family: 'Cinzel', serif;
   font-size: 9px;
   letter-spacing: 1px;
   text-transform: uppercase;
+  width: 100%;
+  margin-top: 6px;
   padding: 3px 10px;
   border-radius: 20px;
   border: 1px solid rgba(138,58,58,0.5);
@@ -3505,4 +3532,209 @@ input[type=number] { -moz-appearance: textfield; }
   appearance: none;
   -webkit-appearance: none;
   min-height: 38px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE — [data-theme="light"]
+   ═══════════════════════════════════════════════════════════ */
+
+[data-theme="light"] {
+  --bg:  #f5f0e8;
+  --bg2: #ede6d8;
+  --bg3: #e4dcc8;
+  --bg4: #dbd2bc;
+  --bg5: #d0c8b0;
+  --gold: #8a5e10;
+  --gold-light: #a87820;
+  --gold-dim: #c8aa70;
+  --gold-faint: rgba(138,94,16,0.08);
+  --green: #2a6a3a;
+  --green-light: #3a8a4a;
+  --red: #8a2020;
+  --red-light: #b04040;
+  --red-bright: #cc3030;
+  --blue: #1a3a8a;
+  --blue-light: #2a5aa8;
+  --purple: #4a1a8a;
+  --purple-light: #6a3aa8;
+  --orange: #905010;
+  --text: #1a1408;
+  --text-mid: #4a3e28;
+  --text-dim: #8a7858;
+  --border: rgba(138,94,16,0.22);
+  --border-strong: rgba(138,94,16,0.40);
+}
+
+[data-theme="light"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Inputs y selects en light mode */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--text-dim);
+}
+
+/* Overlays y modales */
+[data-theme="light"] .diary-panel,
+[data-theme="light"] .ifttt-panel,
+[data-theme="light"] .overlay-modal,
+[data-theme="light"] .cast-picker-modal {
+  background: var(--bg2);
+}
+
+/* Barras de scroll */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--bg2);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: var(--gold-dim);
+}
+
+/* Header */
+[data-theme="light"] .app-header {
+  background: var(--bg2);
+  border-bottom-color: var(--border-strong);
+}
+
+/* Cards y secciones */
+[data-theme="light"] .spell-card,
+[data-theme="light"] .resource-row,
+[data-theme="light"] .item-row,
+[data-theme="light"] .weapon-row,
+[data-theme="light"] .diary-entry-bubble {
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+/* Tab bar */
+[data-theme="light"] .tab-bar {
+  background: var(--bg2);
+  border-bottom-color: var(--border-strong);
+}
+
+[data-theme="light"] .tab-btn {
+  color: var(--text-dim);
+}
+
+[data-theme="light"] .tab-btn.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+/* Sección headers */
+[data-theme="light"] .section-hd {
+  color: var(--gold);
+  border-bottom-color: var(--border);
+}
+
+/* Skill/stat boxes */
+[data-theme="light"] .stat-box,
+[data-theme="light"] .skill-row {
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+/* HP display */
+[data-theme="light"] .hp-current {
+  color: var(--text);
+}
+
+/* Condition chips */
+[data-theme="light"] .cond-chip {
+  background: var(--bg4);
+  border-color: var(--border);
+  color: var(--text-mid);
+}
+
+[data-theme="light"] .cond-chip.active {
+  background: rgba(138,94,16,0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Turn action buttons */
+[data-theme="light"] .turn-action-btn {
+  background: var(--bg3);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+[data-theme="light"] .turn-action-btn.used {
+  opacity: 0.45;
+}
+
+/* HP bar */
+[data-theme="light"] .hp-bar-track {
+  background: var(--bg4);
+}
+
+/* Rest buttons */
+[data-theme="light"] .hdr-rest-btn {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+/* Menu dropdown */
+[data-theme="light"] .header-menu {
+  background: var(--bg2);
+  border-color: var(--border-strong);
+}
+
+[data-theme="light"] .hm-btn {
+  color: var(--text);
+}
+
+[data-theme="light"] .hm-btn:hover {
+  background: var(--bg4);
+}
+
+/* Concentration block */
+[data-theme="light"] .conc-block {
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+/* Index page */
+[data-theme="light"] .index-page {
+  background: var(--bg);
+}
+
+[data-theme="light"] .char-card {
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+[data-theme="light"] .char-card:hover {
+  border-color: var(--gold);
+}
+
+/* Resource counter buttons */
+[data-theme="light"] .res-btn {
+  background: var(--bg4);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* Slot dots */
+[data-theme="light"] .slot-dot {
+  background: var(--bg5);
+  border-color: var(--gold-dim);
+}
+[data-theme="light"] .slot-dot.available {
+  background: var(--gold);
+}
+[data-theme="light"] .slot-dot.used {
+  background: var(--bg5);
+  opacity: 0.55;
 }

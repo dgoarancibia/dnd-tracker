@@ -87,6 +87,7 @@ const App = (() => {
       Storage.saveChar(_char);
     }
 
+    _applyTheme(localStorage.getItem('dnd_theme') || 'dark');
     _renderHeader();
     _populateCharSelector();
     _updateBackupBtn();
@@ -165,6 +166,22 @@ const App = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
+     TEMA
+  ══════════════════════════════════════════════════════ */
+
+  function _applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('dnd_theme', theme);
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'light' ? '🌙 Modo oscuro' : '☀ Modo claro';
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    _applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+
+  /* ══════════════════════════════════════════════════════
      HEADER
   ══════════════════════════════════════════════════════ */
 
@@ -192,6 +209,30 @@ const App = (() => {
 
     _updateHPDisplay();
     _updateTempHPDisplay();
+    _updateHeaderStatus();
+  }
+
+  function _updateHeaderStatus() {
+    const el = document.getElementById('hdrStatus');
+    if (!el || !_char) return;
+    let html = '';
+    // Concentración activa
+    if (_char.concentration) {
+      const sp = (_char.spells || []).find(s => s.id === _char.concentration);
+      const name = sp ? sp.name : _char.concentration;
+      html += `<span class="hdr-status-chip conc" onclick="App.switchTab('combate')" title="Romper concentración · toca Combate">◆ ${name}</span>`;
+    }
+    // Condiciones activas (máx 3 visibles)
+    const conds = (_char.conditions || []).slice(0, 3);
+    conds.forEach(cid => {
+      const labels = { caido:'Caído', envenenado:'Envenenado', aturdido:'Aturdido', asustado:'Asustado', paralizado:'Paralizado', incapacitado:'Incapac.' };
+      html += `<span class="hdr-status-chip cond">${labels[cid] || cid}</span>`;
+    });
+    if ((_char.conditions || []).length > 3) {
+      html += `<span class="hdr-status-chip cond">+${_char.conditions.length - 3}</span>`;
+    }
+    el.innerHTML = html;
+    el.style.display = html ? 'flex' : 'none';
   }
 
   function _updateHPDisplay() {
@@ -336,11 +377,9 @@ const App = (() => {
 
     <!-- CONCENTRACIÓN -->
     <div class="conc-block ${c.concentration ? 'conc-active' : ''}">
-      <div class="conc-header-row">
-        <span class="conc-label">${c.concentration ? '◆ Concentración activa' : 'Concentración'}</span>
-        <button class="conc-break-btn" id="concBreakBtn" onclick="App.setConc(null)" style="display:${c.concentration ? 'inline-flex' : 'none'}">Romper</button>
-      </div>
+      <span class="conc-label">${c.concentration ? '◆ Concentración activa' : 'Concentración'}</span>
       <div class="conc-btns" id="concBtns">${_buildConcBtns(c)}</div>
+      ${c.concentration ? `<button class="conc-break-btn" id="concBreakBtn" onclick="App.setConc(null)">✕ Romper concentración</button>` : `<span id="concBreakBtn" style="display:none"></span>`}
     </div>
 
     <!-- RECURSOS CON CONTADORES -->
@@ -1488,6 +1527,7 @@ const App = (() => {
     // Update concentration block styling and HUD
     _updateConcBlock();
     _updateCombatHUD();
+    _updateHeaderStatus();
   }
 
   function _updateConcBlock() {
@@ -1496,9 +1536,18 @@ const App = (() => {
     if (!block) return;
     block.classList.toggle('conc-active', !!_char.concentration);
 
-    // Update break button visibility
+    const label = block.querySelector('.conc-label');
+    if (label) label.textContent = _char.concentration ? '◆ Concentración activa' : 'Concentración';
+
     const breakBtn = document.getElementById('concBreakBtn');
-    if (breakBtn) breakBtn.style.display = _char.concentration ? 'inline-flex' : 'none';
+    if (breakBtn) {
+      if (_char.concentration) {
+        breakBtn.style.display = 'inline-flex';
+        breakBtn.textContent = '✕ Romper concentración';
+      } else {
+        breakBtn.style.display = 'none';
+      }
+    }
   }
 
   /* ══════════════════════════════════════════════════════
@@ -1803,6 +1852,7 @@ const App = (() => {
     else _char.conditions.push(id);
     _saveChar(true);
     _renderCombateIzq();
+    _updateHeaderStatus();
   }
 
   function clearConditions() {
