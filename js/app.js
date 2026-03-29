@@ -379,7 +379,6 @@ const App = (() => {
     <div class="conc-block ${c.concentration ? 'conc-active' : ''}">
       <span class="conc-label">${c.concentration ? '◆ Concentración activa' : 'Concentración'}</span>
       <div class="conc-btns" id="concBtns">${_buildConcBtns(c)}</div>
-      ${c.concentration ? `<button class="conc-break-btn" id="concBreakBtn" onclick="App.setConc(null)">✕ Romper concentración</button>` : `<span id="concBreakBtn" style="display:none"></span>`}
     </div>
 
     <!-- RECURSOS CON CONTADORES -->
@@ -1551,15 +1550,7 @@ const App = (() => {
     const label = block.querySelector('.conc-label');
     if (label) label.textContent = _char.concentration ? '◆ Concentración activa' : 'Concentración';
 
-    const breakBtn = document.getElementById('concBreakBtn');
-    if (breakBtn) {
-      if (_char.concentration) {
-        breakBtn.style.display = 'inline-flex';
-        breakBtn.textContent = '✕ Romper concentración';
-      } else {
-        breakBtn.style.display = 'none';
-      }
-    }
+    // El botón Romper está integrado como primer chip en conc-btns
   }
 
   /* ══════════════════════════════════════════════════════
