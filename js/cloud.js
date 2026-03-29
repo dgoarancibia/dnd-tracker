@@ -66,17 +66,23 @@ const Cloud = (() => {
   function init() {
     if (!window.FirebaseApp) return;
 
-    // Manejar resultado del redirect de Google (si venimos de signInWithRedirect)
+    // Manejar resultado del redirect de Google
     FirebaseApp.handleRedirectResult().catch(() => {});
 
+    // onAuthStateChanged detecta cambios Y la sesión activa al inicializar
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
       _updateAuthUI(user);
-
-      if (user) {
-        _syncOnLogin(user.uid);
-      }
+      if (user) _syncOnLogin(user.uid);
     });
+
+    // Por si acaso ya hay un usuario activo antes de que onAuthStateChanged dispare
+    const current = FirebaseApp.getCurrentUser();
+    if (current) {
+      _uid = current.uid;
+      _updateAuthUI(current);
+      _syncOnLogin(current.uid);
+    }
 
     // Detectar online/offline
     window.addEventListener('online',  () => { if (_uid) _setSyncState(SyncState.IDLE); });
