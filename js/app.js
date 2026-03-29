@@ -2134,11 +2134,12 @@ const App = (() => {
 
     // Cloud / Undo
     undoLastChange,
-    reloadChar() {
-      _char = Storage.getActiveChar();
+    reloadChar(char) {
+      _char = char || Storage.getActiveChar();
       if (_char) {
         _renderHeader();
         _renderActiveTab();
+        _populateCharSelector();
       }
     },
   };

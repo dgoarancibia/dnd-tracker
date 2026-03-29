@@ -180,7 +180,10 @@ const Cloud = (() => {
           Storage.saveCharRaw(char);
         }
         if (window.App && typeof App.reloadChar === 'function') {
-          App.reloadChar();
+          // Pasar el char activo directamente para evitar leer localStorage viejo
+          const activeId = Storage.getActiveId();
+          const activeChar = activeId ? local[activeId] : null;
+          App.reloadChar(activeChar);
         }
       }
     } catch (e) {
