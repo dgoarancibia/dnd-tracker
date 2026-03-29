@@ -525,7 +525,7 @@ const App = (() => {
 
     let html = active
       ? `<button class="conc-btn none conc-romper" onclick="App.setConc(null)">✕ Romper</button>`
-      : `<button class="conc-btn none active" onclick="App.setConc(null)">— Ninguna</button>`;
+      : ``;
     allConc.forEach(sp => {
       html += `<button class="conc-btn ${active === sp.id ? 'active' : ''}" onclick="App.setConc('${sp.id}')">${sp.name.replace(' ◆','').replace(' ●','')}</button>`;
     });
@@ -1514,27 +1514,9 @@ const App = (() => {
     if (!_char) return;
     _char.concentration = spellId;
     _saveChar();
-    // Actualizar botón "Ninguna/Romper"
-    const noneBtn = document.querySelector('.conc-btn.none');
-    if (noneBtn) {
-      if (spellId) {
-        noneBtn.textContent = '✕ Romper';
-        noneBtn.classList.add('conc-romper');
-        noneBtn.classList.remove('active');
-      } else {
-        noneBtn.textContent = '— Ninguna';
-        noneBtn.classList.remove('conc-romper');
-        noneBtn.classList.add('active');
-      }
-    }
-    // Actualizar botones de conjuros
-    document.querySelectorAll('.conc-btn:not(.none)').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    if (spellId) {
-      const activeBtn = document.querySelector(`.conc-btn[onclick*="'${spellId}'"]`);
-      if (activeBtn) activeBtn.classList.add('active');
-    }
+    // Re-render completo del bloque (más simple y correcto)
+    const concBtns = document.getElementById('concBtns');
+    if (concBtns) concBtns.innerHTML = _buildConcBtns(_char);
     // Update concentration block styling and HUD
     _updateConcBlock();
     _updateCombatHUD();
