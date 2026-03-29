@@ -7,8 +7,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -37,23 +36,17 @@ const _auth     = getAuth(_app);
 const _db       = getFirestore(_app);
 const _provider = new GoogleAuthProvider();
 
-// Esperar el redirect result antes de que cloud.js registre onAuthStateChanged
-// Top-level await garantiza que firebase.js no resuelve hasta que esto termine
-try { await getRedirectResult(_auth); } catch (_) {}
 
 /* ── Auth ── */
 
-function signIn() {
-  return signInWithRedirect(_auth, _provider);
-}
-
-async function handleRedirectResult() {
+async function signIn() {
   try {
-    const result = await getRedirectResult(_auth);
-    return result; // null si no hay redirect pendiente
+    return await signInWithPopup(_auth, _provider);
   } catch (e) {
-    console.error('Redirect result error:', e);
-    return null;
+    // Ignorar errores COOP de GitHub Pages — el login igual completa
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return null;
+    if (e.message && e.message.includes('Cross-Origin')) return null;
+    throw e;
   }
 }
 
@@ -116,7 +109,6 @@ async function deleteCharCloud(uid, charId) {
 /* ── Exportar singleton ── */
 window.FirebaseApp = {
   signIn,
-  handleRedirectResult,
   signOutUser,
   getCurrentUser,
   onAuthChange,

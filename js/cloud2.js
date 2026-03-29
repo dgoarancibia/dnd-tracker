@@ -67,9 +67,6 @@ const Cloud = (() => {
   function init() {
     if (!window.FirebaseApp) return;
 
-    // Manejar resultado del redirect de Google
-    FirebaseApp.handleRedirectResult().catch(() => {});
-
     // onAuthStateChanged detecta cambios Y la sesión activa al inicializar
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
