@@ -1946,7 +1946,7 @@ const App = (() => {
   function openAddWeapon() {
     document.getElementById('awmName').value = '';
     document.getElementById('awmDie').value = '1d6';
-    document.getElementById('awmBonus').value = '+0';
+    document.getElementById('awmBonus').value = '0';
     document.getElementById('awmDesc').value = '';
     document.getElementById('addWeaponModal').classList.add('show');
   }
@@ -1959,7 +1959,8 @@ const App = (() => {
     const name = document.getElementById('awmName').value.trim();
     if (!name) return;
     const die   = document.getElementById('awmDie').value.trim() || '1d6';
-    const bonus = document.getElementById('awmBonus').value.trim() || '+0';
+    const bonusRaw = parseInt(document.getElementById('awmBonus').value) || 0;
+    const bonus = (bonusRaw >= 0 ? '+' : '') + bonusRaw;
     const type  = document.getElementById('awmType').value || 'melee';
     const notes = document.getElementById('awmDesc').value.trim();
     _char.weapons.push({ id:'w-'+Date.now(), name, die, bonus, type, notes });
