@@ -333,7 +333,7 @@ input[type=number] { -moz-appearance: textfield; }
   min-height: 72px;
 }
 
-.app-header-left { flex: 0 0 auto; min-width: 0; max-width: 160px; }
+.app-header-left { flex: 0 1 auto; min-width: 0; max-width: 220px; }
 
 .app-char-name {
   font-family: 'Cinzel', serif;
