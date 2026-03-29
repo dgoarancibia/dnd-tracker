@@ -419,13 +419,6 @@ const App = (() => {
 
     html += `</div>`;
 
-    // INSPIRACIÓN
-    html += `
-    <div class="inspiration-block ${c.inspiration ? 'active' : ''}" onclick="App.toggleInspiration()">
-      <span class="insp-label">Inspiración Heroica</span>
-      <span class="insp-icon">${c.inspiration ? '⭐' : '☆'}</span>
-    </div>`;
-
     // RECURSOS CUSTOM
     html += `
     <div style="margin-top:4px;">
