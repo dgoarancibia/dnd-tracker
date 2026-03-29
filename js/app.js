@@ -2138,6 +2138,7 @@ const App = (() => {
       _char = char || Storage.getActiveChar();
       if (_char) {
         _renderHeader();
+        _updateTempHPDisplay();
         _renderActiveTab();
         _populateCharSelector();
       }
