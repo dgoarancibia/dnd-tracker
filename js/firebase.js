@@ -37,9 +37,9 @@ const _auth     = getAuth(_app);
 const _db       = getFirestore(_app);
 const _provider = new GoogleAuthProvider();
 
-// Procesar redirect result inmediatamente al cargar el módulo
-// Esto permite que onAuthStateChanged detecte al usuario tras el redirect
-getRedirectResult(_auth).catch(() => {});
+// Esperar el redirect result antes de que cloud.js registre onAuthStateChanged
+// Top-level await garantiza que firebase.js no resuelve hasta que esto termine
+try { await getRedirectResult(_auth); } catch (_) {}
 
 /* ── Auth ── */
 
