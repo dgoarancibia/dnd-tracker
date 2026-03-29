@@ -1,8 +1,9 @@
-const CACHE = 'dnd-tracker-v17';
+const CACHE = 'dnd-tracker-v18';
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll([
+      './index.html',
       './app.html',
       './manifest.json',
       './css/style.css',

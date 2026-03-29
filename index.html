@@ -1,2 +1,673 @@
 <!DOCTYPE html>
-<html><head><meta http-equiv="refresh" content="0;url=app.html"></head></html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>D&D Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/favicon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="D&D Tracker">
+<meta name="theme-color" content="#c9973a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0e0d09;
+    --bg2:       #141209;
+    --bg3:       #1a1810;
+    --bg4:       #242018;
+    --bg5:       #2e2a1e;
+    --border:    rgba(201,151,58,0.15);
+    --gold:      #c9973a;
+    --gold-dim:  rgba(201,151,58,0.35);
+    --gold-light:#e4b84a;
+    --text:      #e8e0cc;
+    --text-mid:  #a89870;
+    --text-dim:  #6a5e44;
+    --red-light: #e06060;
+    --radius:    8px;
+    --radius-sm: 5px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  .idx-header {
+    background: linear-gradient(135deg, #181508, #201c10);
+    border-bottom: 1px solid var(--gold-dim);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .idx-title {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 3px;
+  }
+  .idx-header-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* MAIN */
+  .idx-main {
+    flex: 1;
+    padding: 28px 24px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .idx-section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* GRID */
+  .char-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  /* CARD */
+  .char-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  }
+  .char-card:hover {
+    border-color: var(--gold-dim);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  }
+  .char-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .char-card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .char-card-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .char-action-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-height: 32px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .char-action-btn:hover { color: var(--gold-light); }
+  .char-action-btn.del:hover { color: var(--red-light); }
+
+  .char-meta {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .clase-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(201,151,58,0.1);
+    border: 1px solid rgba(201,151,58,0.25);
+    color: var(--text-mid);
+    white-space: nowrap;
+  }
+  .char-raza {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .char-stats {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--text-mid);
+    white-space: nowrap;
+  }
+  .stat-pill.hp-ok   { border-color: rgba(74,138,90,0.4);  color: #70b880; }
+  .stat-pill.hp-low  { border-color: rgba(200,140,50,0.4); color: #e0a050; }
+  .stat-pill.hp-crit { border-color: rgba(138,58,58,0.4);  color: #e07070; }
+  .stat-pill.conc    { border-color: rgba(201,151,58,0.4); color: var(--gold); }
+  .stat-pill.tmp     { border-color: rgba(122,179,212,0.4);color: #7ab3d4; }
+
+  .char-play-btn {
+    margin-top: 4px;
+    width: 100%;
+    padding: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border: 1px solid var(--gold-dim);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--gold);
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .char-play-btn:hover { background: var(--gold); color: var(--bg); }
+
+  /* CARD NUEVA */
+  .char-card-new {
+    background: transparent;
+    border: 1px dashed rgba(201,151,58,0.2);
+    border-radius: var(--radius);
+    padding: 32px 16px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 160px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .char-card-new:hover {
+    border-color: var(--gold-dim);
+    background: rgba(201,151,58,0.04);
+  }
+  .new-icon { font-size: 28px; color: var(--text-dim); }
+  .new-label {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* BOTONES */
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 9px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-gold  { border-color: var(--gold-dim); background: rgba(201,151,58,0.1); color: var(--gold-light); }
+  .btn-gold:hover { background: var(--gold); color: var(--bg); }
+  .btn-ghost { border-color: var(--border); background: transparent; color: var(--text-mid); }
+  .btn-ghost:hover { border-color: var(--gold-dim); color: var(--gold-light); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+  }
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold-light);
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+  .modal-close-x {
+    position: absolute;
+    top: 12px; right: 14px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    min-height: 32px;
+  }
+  .modal-close-x:hover { color: var(--text); }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .form-input, .form-select {
+    width: 100%;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--gold-dim); }
+  .form-select-wrap { position: relative; }
+  .form-select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+  .form-row { display: flex; gap: 12px; }
+  .form-row .form-group { flex: 1; }
+
+  .modal-btns {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  .btn-primary {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gold-dim);
+    background: rgba(201,151,58,0.15);
+    color: var(--gold-light);
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-primary:hover { background: var(--gold); color: var(--bg); }
+  .btn-cancel {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-mid);
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .btn-cancel:hover { border-color: var(--gold-dim); color: var(--text); }
+  .btn-danger {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(200,60,60,0.4);
+    background: rgba(138,40,40,0.18);
+    color: #e07070;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .btn-danger:hover { background: rgba(138,40,40,0.35); }
+
+  .confirm-msg { color: var(--text-mid); font-size: 15px; margin-bottom: 4px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg4);
+    border: 1px solid var(--gold-dim);
+    color: var(--text);
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  #importInput { display: none; }
+</style>
+</head>
+<body>
+
+<header class="idx-header">
+  <div class="idx-title">⚔ D&amp;D Tracker</div>
+  <div class="idx-header-actions">
+    <button class="btn btn-ghost" onclick="document.getElementById('importInput').click()">📥 Importar</button>
+    <button class="btn btn-gold" onclick="openCreateModal()">+ Nuevo personaje</button>
+    <input type="file" id="importInput" accept=".json" onchange="importChars(this)">
+  </div>
+</header>
+
+<main class="idx-main">
+  <div class="idx-section-title" id="charCountLabel">Personajes</div>
+  <div class="char-grid" id="charGrid"></div>
+</main>
+
+<!-- MODAL CREAR / EDITAR -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <button class="modal-close-x" onclick="closeCreateModal()">✕</button>
+    <div class="modal-title" id="createModalTitle">✦ Nuevo personaje</div>
+
+    <div class="form-group">
+      <label class="form-label" for="cmName">Nombre</label>
+      <input class="form-input" id="cmName" type="text" placeholder="Ej: Aldric de la Llama" maxlength="40"
+             onkeydown="if(event.key==='Enter') document.getElementById('cmClase').focus()">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="cmClase">Clase</label>
+        <div class="form-select-wrap">
+          <select class="form-select" id="cmClase">
+            <option>Bárbaro</option>
+            <option>Bardo</option>
+            <option selected>Clérigo</option>
+            <option>Druida</option>
+            <option>Explorador</option>
+            <option>Guerrero</option>
+            <option>Hechicero</option>
+            <option>Mago</option>
+            <option>Monje</option>
+            <option>Paladín</option>
+            <option>Pícaro</option>
+            <option>Brujo</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="max-width:90px;">
+        <label class="form-label" for="cmNivel">Nivel</label>
+        <input class="form-input" id="cmNivel" type="number" min="1" max="20" value="1" style="text-align:center;">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="cmRaza">Raza <span style="color:var(--text-dim);font-size:9px;">(opcional)</span></label>
+      <input class="form-input" id="cmRaza" type="text" placeholder="Humano, Elfo, Enano…" maxlength="30">
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeCreateModal()">Cancelar</button>
+      <button class="btn-primary" id="saveBtn" onclick="saveCreateModal()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:320px;text-align:center;">
+    <div class="modal-title">¿Eliminar personaje?</div>
+    <p class="confirm-msg" id="confirmMsg"></p>
+    <div class="modal-btns" style="justify-content:center;margin-top:16px;">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn-danger" id="confirmOkBtn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/storage.js?v=9"></script>
+<script src="js/characters.js?v=9"></script>
+<script>
+let _editId = null;
+let _confirmCallback = null;
+let _toastTimer = null;
+
+function _esc(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderGrid() {
+  const chars = Storage.getAllCharsList();
+  const grid  = document.getElementById('charGrid');
+  const label = document.getElementById('charCountLabel');
+  label.textContent = chars.length === 1 ? '1 Personaje' : chars.length + ' Personajes';
+
+  let html = '';
+
+  chars.forEach(c => {
+    const hpPct = c.hp.max > 0 ? (c.hp.current / c.hp.max) * 100 : 0;
+    const hpCls = hpPct > 50 ? 'hp-ok' : hpPct > 25 ? 'hp-low' : 'hp-crit';
+    const sub   = [c.raza, c.subclase].filter(Boolean).join(' · ');
+    html += `
+    <div class="char-card">
+      <div class="char-card-header">
+        <div class="char-card-name">${_esc(c.name)}</div>
+        <div class="char-card-actions">
+          <button class="char-action-btn" onclick="openEditModal('${c.id}')" title="Editar">✎</button>
+          <button class="char-action-btn del" onclick="confirmDelete('${c.id}')" title="Eliminar">✕</button>
+        </div>
+      </div>
+      <div class="char-meta">
+        <span class="clase-badge">${_esc(c.clase)}</span>
+        ${sub ? `<span class="char-raza">${_esc(sub)}</span>` : ''}
+      </div>
+      <div class="char-stats">
+        <span class="stat-pill">Nvl ${c.nivel}</span>
+        <span class="stat-pill ${hpCls}">HP ${c.hp.current}/${c.hp.max}</span>
+        ${c.hp.temp > 0 ? `<span class="stat-pill tmp">+${c.hp.temp} tmp</span>` : ''}
+        ${c.concentration ? `<span class="stat-pill conc">◆ Conc</span>` : ''}
+      </div>
+      <button class="char-play-btn" onclick="playChar('${c.id}')">▶ Jugar</button>
+    </div>`;
+  });
+
+  html += `
+  <div class="char-card-new" onclick="openCreateModal()">
+    <div class="new-icon">+</div>
+    <div class="new-label">Nuevo personaje</div>
+  </div>`;
+
+  grid.innerHTML = html;
+}
+
+function playChar(id) {
+  Storage.setActiveId(id);
+  window.location.href = 'app.html';
+}
+
+function openCreateModal() {
+  _editId = null;
+  document.getElementById('createModalTitle').textContent = '✦ Nuevo personaje';
+  document.getElementById('saveBtn').textContent = 'Crear';
+  document.getElementById('cmName').value  = '';
+  document.getElementById('cmClase').value = 'Clérigo';
+  document.getElementById('cmNivel').value = '1';
+  document.getElementById('cmRaza').value  = '';
+  document.getElementById('createModal').classList.add('show');
+  setTimeout(() => document.getElementById('cmName').focus(), 80);
+}
+
+function openEditModal(id) {
+  const c = Storage.getChar(id);
+  if (!c) return;
+  _editId = id;
+  document.getElementById('createModalTitle').textContent = '✎ Editar personaje';
+  document.getElementById('saveBtn').textContent = 'Guardar';
+  document.getElementById('cmName').value  = c.name;
+  document.getElementById('cmClase').value = c.clase;
+  document.getElementById('cmNivel').value = c.nivel;
+  document.getElementById('cmRaza').value  = c.raza || '';
+  document.getElementById('createModal').classList.add('show');
+  setTimeout(() => document.getElementById('cmName').focus(), 80);
+}
+
+function closeCreateModal() {
+  document.getElementById('createModal').classList.remove('show');
+  _editId = null;
+}
+
+function saveCreateModal() {
+  const name  = document.getElementById('cmName').value.trim();
+  const clase = document.getElementById('cmClase').value;
+  const nivel = Math.min(20, Math.max(1, parseInt(document.getElementById('cmNivel').value) || 1));
+  const raza  = document.getElementById('cmRaza').value.trim();
+  if (!name) { document.getElementById('cmName').focus(); return; }
+
+  if (_editId) {
+    const c = Storage.getChar(_editId);
+    if (c) {
+      c.name = name;
+      c.raza = raza;
+      if (c.nivel !== nivel || c.clase !== clase) {
+        c.clase = clase;
+        const updated = Characters.applyLevelUp(c, nivel, 0);
+        Storage.saveChar(updated);
+      } else {
+        Storage.saveChar(c);
+      }
+    }
+    showToast('Personaje actualizado');
+  } else {
+    const newChar = Characters.createNew(name, clase);
+    newChar.raza = raza;
+    if (nivel > 1) {
+      const leveled = Characters.applyLevelUp(newChar, nivel, 0);
+      Storage.saveChar(leveled);
+    } else {
+      Storage.saveChar(newChar);
+    }
+    Storage.setActiveId(newChar.id);
+    showToast('Personaje creado · ' + name);
+  }
+
+  closeCreateModal();
+  renderGrid();
+}
+
+function confirmDelete(id) {
+  const c = Storage.getChar(id);
+  if (!c) return;
+  if (Storage.getAllCharsList().length <= 1) {
+    showToast('No puedes eliminar el único personaje');
+    return;
+  }
+  document.getElementById('confirmMsg').textContent = `"${c.name}" será eliminado. Esta acción no se puede deshacer.`;
+  _confirmCallback = () => {
+    if (Storage.getActiveId() === id) {
+      const others = Storage.getAllCharsList().filter(x => x.id !== id);
+      if (others.length) Storage.setActiveId(others[0].id);
+    }
+    Storage.deleteChar(id);
+    renderGrid();
+    showToast('Personaje eliminado');
+  };
+  document.getElementById('confirmOkBtn').onclick = () => { closeConfirm(); _confirmCallback(); };
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('show');
+}
+
+function importChars(input) {
+  const file = input.files[0];
+  if (!file) return;
+  Storage.importJSON(file,
+    count => { input.value = ''; renderGrid(); showToast('✓ ' + count + ' personaje(s) importado(s)'); },
+    err   => { showToast('Error: ' + err); input.value = ''; }
+  );
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// Primer run
+if (Storage.isFirstRun()) {
+  const lursey = Characters.buildLursey();
+  Storage.saveChar(lursey);
+  Storage.setActiveId(lursey.id);
+}
+
+renderGrid();
+
+// ?new=1 desde app.html → abrir modal
+if (new URLSearchParams(location.search).get('new') === '1') {
+  history.replaceState(null, '', 'index.html');
+  setTimeout(openCreateModal, 120);
+}
+</script>
+</body>
+</html>
