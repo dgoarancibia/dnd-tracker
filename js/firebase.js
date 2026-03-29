@@ -84,9 +84,13 @@ function _charsCol(uid) {
   return collection(_db, 'users', uid, 'characters');
 }
 
+function _stripUndefined(obj) {
+  return JSON.parse(JSON.stringify(obj, (_, v) => v === undefined ? null : v));
+}
+
 async function saveCharCloud(uid, char) {
   const ref = _charRef(uid, char.id);
-  const data = { ...char, _syncedAt: serverTimestamp() };
+  const data = { ..._stripUndefined(char), _syncedAt: serverTimestamp() };
   await setDoc(ref, data);
 }
 
