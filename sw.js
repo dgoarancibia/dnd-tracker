@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v9';
+const CACHE = 'dnd-tracker-v10';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -30,17 +30,24 @@ self.addEventListener('fetch', e => {
   if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
     e.respondWith(
       caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-        caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        const toCache = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, toCache));
         return res;
       }))
     );
     return;
   }
 
+  // Solo cachear GETs — no cachear requests con body (POST, etc.)
+  if (e.request.method !== 'GET') return;
+
   // Todos los demás — network-first, cae a caché si offline
   e.respondWith(
     fetch(e.request).then(res => {
-      if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+      if (res.ok && res.status < 400) {
+        const toCache = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, toCache));
+      }
       return res;
     }).catch(() => caches.match(e.request))
   );
