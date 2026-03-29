@@ -154,19 +154,21 @@ const Cloud = (() => {
         return;
       }
 
-      // Merge: si nube más reciente, usar nube; si local más reciente, mantener local
+      // Merge: nube siempre gana si tiene _syncedAt (fue guardado desde la app)
+      // Solo conservar local si el char no existe en nube
       const local = Storage.getAllChars();
       let changed = false;
       for (const [id, cloudChar] of Object.entries(cloudChars)) {
         const localChar = local[id];
         if (!localChar) {
-          // Personaje solo en nube — traer a local
+          // Solo en nube — traer
           local[id] = cloudChar;
           changed = true;
-        } else {
+        } else if (cloudChar._syncedAt) {
+          // Nube tiene datos confirmados — comparar timestamps
           const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
           const localTs = new Date(localChar.updatedAt || 0).getTime();
-          if (cloudTs > localTs) {
+          if (cloudTs >= localTs) {
             local[id] = cloudChar;
             changed = true;
           }
@@ -174,11 +176,9 @@ const Cloud = (() => {
       }
 
       if (changed) {
-        // Guardar merge en localStorage
         for (const char of Object.values(local)) {
           Storage.saveCharRaw(char);
         }
-        // Notificar a app para re-render si está inicializada
         if (window.App && typeof App.reloadChar === 'function') {
           App.reloadChar();
         }
