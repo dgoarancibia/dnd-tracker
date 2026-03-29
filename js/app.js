@@ -14,6 +14,14 @@ const App = (() => {
   let _iftttOpen = false;
   let _spellDetailOpen = false;
 
+  // Combat round tracker (session-only, not persisted)
+  let _combatRound = 0;
+  let _combatTurn  = 0;   // turn counter within the current round
+  let _combatActive = false;
+
+  // HP history for smart chips (last 5 non-zero deltas)
+  let _hpHistory = [];
+
   /* ── Undo stack (hasta 5 snapshots) ── */
   const UNDO_MAX = 5;
   let _undoStack = [];
@@ -83,6 +91,8 @@ const App = (() => {
     _populateCharSelector();
     _updateBackupBtn();
     _renderActiveTab();
+    _updateCombatHUD();
+    _setupHPSwipe();
 
     // Botón undo
     _undoBtn = document.getElementById('undoBtn');
@@ -277,6 +287,9 @@ const App = (() => {
     let html = `
     <div class="section-hd">⚔️ Combate</div>
 
+    <!-- RONDAS Y TURNO -->
+    <div id="roundDisplay"></div>
+
     <!-- ACCIONES DEL TURNO -->
     <div class="turn-block">
       <div class="turn-actions-grid">
@@ -292,8 +305,11 @@ const App = (() => {
     ${c.hp.current === 0 ? _buildDeathSavesHTML(c) : ''}
 
     <!-- CONCENTRACIÓN -->
-    <div class="conc-block">
-      <span class="conc-label">Concentración activa</span>
+    <div class="conc-block ${c.concentration ? 'conc-active' : ''}">
+      <div class="conc-header-row">
+        <span class="conc-label">${c.concentration ? '◆ Concentración activa' : 'Concentración'}</span>
+        <button class="conc-break-btn" id="concBreakBtn" onclick="App.setConc(null)" style="display:${c.concentration ? 'inline-flex' : 'none'}">Romper</button>
+      </div>
       <div class="conc-btns" id="concBtns">${_buildConcBtns(c)}</div>
     </div>
 
@@ -402,6 +418,9 @@ const App = (() => {
     </div>`;
 
     document.getElementById('col-combate-izq').innerHTML = html;
+    _updateRoundDisplay();
+    _updateConcBlock();
+    _renderHPChips();
   }
 
   function _buildDeathSavesHTML(c) {
@@ -1088,6 +1107,7 @@ const App = (() => {
     _char.hp.current = Math.max(0, Math.min(_char.hp.max, val || 0));
     _saveChar(true);
     _updateHPDisplay();
+    _updateCombatHUD();
     if ((prev === 0) !== (_char.hp.current === 0)) _renderCombateIzq();
   }
 
@@ -1113,6 +1133,7 @@ const App = (() => {
         _saveChar(true);
         _updateHPDisplay();
         _updateTempHPDisplay();
+        _updateCombatHUD();
         return;
       }
     }
@@ -1124,6 +1145,15 @@ const App = (() => {
     _char.hp.current = Math.max(0, Math.min(_char.hp.max, _char.hp.current + delta));
     _saveChar(true);
     _updateHPDisplay();
+    _updateCombatHUD();
+    _flashHP(delta < 0 ? 'dmg' : 'heal');
+
+    // Record delta in history for smart chips
+    if (delta !== 0) {
+      _hpHistory = [delta, ..._hpHistory.filter(v => v !== delta)].slice(0, 5);
+      _renderHPChips();
+    }
+
     if ((prev === 0) !== (_char.hp.current === 0)) _renderCombateIzq();
   }
 
@@ -1186,6 +1216,192 @@ const App = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
+     COMBAT HUD — barra fija siempre visible
+  ══════════════════════════════════════════════════════ */
+
+  function _updateCombatHUD() {
+    const hud = document.getElementById('combatHUD');
+    if (!hud || !_char) return;
+
+    const { current, max, temp } = _char.hp;
+    const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0;
+    const hpColor = pct <= 0 ? '#ff4040' : pct <= 25 ? '#e05050' : pct <= 50 ? '#e08050' : 'var(--green-light)';
+    const barColor = pct > 50 ? 'var(--green)' : pct > 25 ? '#a0802a' : '#8a3a3a';
+
+    // Concentration
+    const concSpell = _char.concentration
+      ? (_char.spells || []).find(s => s.id === _char.concentration)
+      : null;
+    const concName = concSpell ? concSpell.name.replace(/\s*[◆†●]/g,'') : null;
+
+    // Key resources (first 2 non-zero resources)
+    const keyResources = (_char.resources || []).filter(r => r.max > 0).slice(0, 2);
+
+    // Slots — first non-exhausted level
+    let firstSlot = null;
+    for (let i = 1; i <= 9; i++) {
+      const s = _char.spellSlots && _char.spellSlots[i];
+      if (s && s.max > 0) { firstSlot = { level: i, ...s }; break; }
+    }
+
+    hud.innerHTML = `
+      <div class="hud-hp" id="hudHP">
+        <span class="hud-hp-num" style="color:${hpColor}">${current}</span>
+        <span class="hud-hp-sep">/</span>
+        <span class="hud-hp-max">${max}</span>
+        ${temp > 0 ? `<span class="hud-hp-temp">+${temp}</span>` : ''}
+        <div class="hud-hp-bar"><div class="hud-hp-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      </div>
+      <div class="hud-divider"></div>
+      <div class="hud-conc ${concName ? 'active' : ''}">
+        ${concName
+          ? `<span class="hud-conc-dot"></span><span class="hud-conc-name">${concName}</span>
+             <button class="hud-conc-break" onclick="App.setConc(null)" title="Romper concentración">✕</button>`
+          : `<span class="hud-conc-none">Sin conc</span>`
+        }
+      </div>
+      <div class="hud-divider"></div>
+      <div class="hud-resources">
+        ${keyResources.map(r =>
+          `<div class="hud-res"><span class="hud-res-name">${r.name.split(' ')[0]}</span><span class="hud-res-val ${r.current === 0 ? 'empty' : ''}">${r.current}/${r.max}</span></div>`
+        ).join('')}
+        ${firstSlot ? `<div class="hud-res"><span class="hud-res-name">Nvl${firstSlot.level}</span><span class="hud-res-val ${firstSlot.current === 0 ? 'empty' : ''}">${firstSlot.current}/${firstSlot.max}</span></div>` : ''}
+      </div>
+      ${_combatActive ? `
+      <div class="hud-divider"></div>
+      <div class="hud-round">
+        <span class="hud-round-label">Ronda</span>
+        <span class="hud-round-num">${_combatRound}</span>
+      </div>` : ''}`;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     HP SWIPE + CHIPS
+  ══════════════════════════════════════════════════════ */
+
+  function _setupHPSwipe() {
+    const el = document.getElementById('hdrHP');
+    if (!el) return;
+
+    let startX = 0, startY = 0, moved = false;
+
+    el.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      moved = false;
+    }, { passive: true });
+
+    el.addEventListener('touchmove', e => {
+      moved = true;
+    }, { passive: true });
+
+    el.addEventListener('touchend', e => {
+      if (!moved) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = Math.abs(e.changedTouches[0].clientY - startY);
+      if (Math.abs(dx) < 40 || dy > 60) return;
+
+      const val = parseInt(document.getElementById('hdrHPFree').value);
+      if (!val || val <= 0) { showToast('Ingresa un valor primero'); return; }
+
+      if (dx < 0) {
+        // Swipe left = daño
+        adjustHP(-val);
+        document.getElementById('hdrHPFree').value = '';
+        _flashHP('dmg');
+      } else {
+        // Swipe right = curación
+        adjustHP(val);
+        document.getElementById('hdrHPFree').value = '';
+        _flashHP('heal');
+      }
+    });
+  }
+
+  function _flashHP(type) {
+    const el = document.getElementById('hdrHP');
+    if (!el) return;
+    el.classList.remove('hp-flash-dmg', 'hp-flash-heal');
+    // Force reflow
+    void el.offsetWidth;
+    el.classList.add(type === 'dmg' ? 'hp-flash-dmg' : 'hp-flash-heal');
+    setTimeout(() => el.classList.remove('hp-flash-dmg', 'hp-flash-heal'), 600);
+  }
+
+  function _renderHPChips() {
+    const container = document.getElementById('hpChips');
+    if (!container) return;
+    container.innerHTML = _hpHistory.map(v => {
+      const isDmg = v < 0;
+      return `<button class="hp-chip ${isDmg ? 'dmg' : 'heal'}" onclick="App.adjustHP(${v})">${isDmg ? '' : '+'}${v}</button>`;
+    }).join('');
+  }
+
+  /* ══════════════════════════════════════════════════════
+     ROUND & TURN TRACKER
+  ══════════════════════════════════════════════════════ */
+
+  function startCombat() {
+    _combatRound = 1;
+    _combatTurn  = 1;
+    _combatActive = true;
+    _updateRoundDisplay();
+    _updateCombatHUD();
+    showToast('⚔️ Combate iniciado — Ronda 1');
+  }
+
+  function nextCombatTurn() {
+    if (!_combatActive) { startCombat(); return; }
+    _combatTurn++;
+    _updateRoundDisplay();
+    _updateCombatHUD();
+    // End current turn actions
+    endTurn();
+  }
+
+  function nextCombatRound() {
+    if (!_combatActive) { startCombat(); return; }
+    _combatRound++;
+    _combatTurn = 1;
+    _updateRoundDisplay();
+    _updateCombatHUD();
+    endTurn();
+    showToast(`Ronda ${_combatRound}`);
+  }
+
+  function resetCombat() {
+    _combatRound = 0;
+    _combatTurn  = 0;
+    _combatActive = false;
+    _updateRoundDisplay();
+    _updateCombatHUD();
+    showToast('Combate terminado');
+  }
+
+  function _updateRoundDisplay() {
+    const el = document.getElementById('roundDisplay');
+    if (!el) return;
+    if (!_combatActive) {
+      el.innerHTML = `<button class="round-start-btn" onclick="App.startCombat()">⚔️ Iniciar combate</button>`;
+    } else {
+      el.innerHTML = `
+        <div class="round-tracker">
+          <div class="round-info">
+            <span class="round-label">Ronda</span>
+            <span class="round-num">${_combatRound}</span>
+            <span class="round-label" style="margin-left:10px;">Turno</span>
+            <span class="round-num" style="color:var(--text-mid);">${_combatTurn}</span>
+          </div>
+          <div class="round-btns">
+            <button class="round-btn" onclick="App.nextCombatTurn()" title="Siguiente turno (fin del tuyo)">Siguiente turno</button>
+            <button class="round-btn gold" onclick="App.nextCombatRound()" title="Nueva ronda">+ Ronda</button>
+            <button class="round-btn danger" onclick="App.resetCombat()">Fin</button>
+          </div>
+        </div>`;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════
      TURN TRACKER
   ══════════════════════════════════════════════════════ */
 
@@ -1207,7 +1423,8 @@ const App = (() => {
       const btn = document.getElementById('turn' + a);
       if (btn) btn.classList.remove('used');
     });
-    showToast('Turno reiniciado');
+    if (_combatActive) showToast(`↺ Turno ${_combatTurn} terminado`);
+    else showToast('Turno reiniciado');
   }
 
   /* ══════════════════════════════════════════════════════
@@ -1229,6 +1446,20 @@ const App = (() => {
       const activeBtn = document.querySelector(`.conc-btn[onclick*="'${spellId}'"]`);
       if (activeBtn) activeBtn.classList.add('active');
     }
+    // Update concentration block styling and HUD
+    _updateConcBlock();
+    _updateCombatHUD();
+  }
+
+  function _updateConcBlock() {
+    if (!_char) return;
+    const block = document.querySelector('.conc-block');
+    if (!block) return;
+    block.classList.toggle('conc-active', !!_char.concentration);
+
+    // Update break button visibility
+    const breakBtn = document.getElementById('concBreakBtn');
+    if (breakBtn) breakBtn.style.display = _char.concentration ? 'inline-flex' : 'none';
   }
 
   function _checkConcAlert(damage) {
@@ -1743,6 +1974,7 @@ const App = (() => {
     _saveChar(true);
     closeShortRest();
     _renderCombateTab();
+    _updateCombatHUD();
     showToast(`Descanso corto · +${heal} HP · CD recargado`);
   }
 
@@ -1775,6 +2007,7 @@ const App = (() => {
     _saveChar(true);
     _renderHeader();
     _renderCombateTab();
+    _updateCombatHUD();
     showToast('Descanso largo · Todo recargado ✦');
   }
 
@@ -2081,8 +2314,9 @@ const App = (() => {
     setTempHP, adjustTempHP, promptTempHP,
     setBonus, toggleShield,
 
-    // Turn
+    // Turn & Rounds
     toggleTurn, endTurn,
+    startCombat, nextCombatTurn, nextCombatRound, resetCombat,
 
     // Concentración
     setConc, closeConcAlert,
@@ -2142,6 +2376,7 @@ const App = (() => {
         _renderActiveTab();
         _updateTempHPDisplay();
         _populateCharSelector();
+        _updateCombatHUD();
       }
     },
   };

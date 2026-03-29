@@ -2947,3 +2947,366 @@ input[type=number] { -moz-appearance: textfield; }
 .ds-status.dying  { color: #e08050; background: rgba(224,128,80,0.15); }
 .ds-status.stable { color: var(--green-light); background: rgba(74,138,90,0.15); }
 .ds-status.dead   { color: var(--red-light); background: rgba(138,58,58,0.25); }
+
+/* ═══════════════════════════════════════════════════════════
+   EPIC 2 — COMBAT UX
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 2.5 HP FLASH ANIMATIONS ── */
+@keyframes hp-flash-dmg {
+  0%   { color: var(--red-bright); text-shadow: 0 0 16px rgba(224,80,80,0.9); transform: scale(1.15); }
+  60%  { color: #e05050; }
+  100% { text-shadow: none; transform: scale(1); }
+}
+@keyframes hp-flash-heal {
+  0%   { color: var(--green-light); text-shadow: 0 0 16px rgba(106,170,122,0.9); transform: scale(1.15); }
+  60%  { color: var(--green-light); }
+  100% { text-shadow: none; transform: scale(1); }
+}
+.hp-flash-dmg  { animation: hp-flash-dmg  0.55s ease-out; }
+.hp-flash-heal { animation: hp-flash-heal 0.55s ease-out; }
+
+/* ── 2.1 HP SMART CHIPS ── */
+.hp-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+
+.hp-chip {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.12s;
+  min-height: 26px;
+  line-height: 1;
+}
+
+.hp-chip.dmg {
+  border-color: rgba(138,58,58,0.5);
+  background: rgba(138,58,58,0.1);
+  color: var(--red-light);
+}
+.hp-chip.dmg:active { background: rgba(138,58,58,0.28); }
+
+.hp-chip.heal {
+  border-color: rgba(74,138,90,0.5);
+  background: rgba(74,138,90,0.1);
+  color: var(--green-light);
+}
+.hp-chip.heal:active { background: rgba(74,138,90,0.25); }
+
+/* ── 2.2 COMBAT HUD FIJO ── */
+.combat-hud {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 5px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  min-height: 36px;
+  overflow: hidden;
+}
+
+.hud-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* HP section */
+.hud-hp {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.hud-hp-num {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.hud-hp-sep, .hud-hp-max {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.hud-hp-temp {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: #7ab3d4;
+  font-weight: 700;
+}
+
+.hud-hp-bar {
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--bg3);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.hud-hp-bar-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.3s ease;
+}
+
+/* Concentration section */
+.hud-conc {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.hud-conc-none {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.hud-conc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+  animation: hud-conc-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hud-conc-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(201,151,58,0.6); }
+  50%       { opacity: 0.5; box-shadow: 0 0 8px rgba(201,151,58,0.9); }
+}
+
+.hud-conc-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--gold-light);
+  font-weight: 600;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud-conc-break {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(138,58,58,0.45);
+  background: rgba(138,58,58,0.1);
+  color: var(--red-light);
+  cursor: pointer;
+  transition: all 0.12s;
+  min-height: 20px;
+  line-height: 1;
+}
+.hud-conc-break:hover { background: rgba(138,58,58,0.25); }
+
+/* Resources in HUD */
+.hud-resources {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.hud-res {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 36px;
+}
+
+.hud-res-name {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.hud-res-val {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-mid);
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.hud-res-val.empty {
+  color: rgba(138,58,58,0.7);
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Round in HUD */
+.hud-round {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.hud-round-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.hud-round-num {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+/* ── 2.3 ROUND TRACKER (in combat tab) ── */
+.round-start-btn {
+  width: 100%;
+  padding: 7px 12px;
+  margin-bottom: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: rgba(201,151,58,0.08);
+  border: 1px dashed var(--gold-dim);
+  border-radius: var(--radius);
+  color: var(--gold-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 36px;
+}
+.round-start-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,151,58,0.14); }
+
+.round-tracker {
+  background: var(--bg3);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.round-info {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.round-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.round-num {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--gold-light);
+  line-height: 1;
+}
+
+.round-btns {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.round-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.13s;
+  min-height: 28px;
+  white-space: nowrap;
+}
+.round-btn:hover { border-color: var(--gold-dim); color: var(--text-mid); }
+.round-btn.gold { border-color: var(--gold-dim); background: rgba(201,151,58,0.1); color: var(--gold); }
+.round-btn.gold:hover { background: rgba(201,151,58,0.2); border-color: var(--gold); }
+.round-btn.danger { border-color: rgba(138,58,58,0.4); background: rgba(138,58,58,0.08); color: var(--red-light); }
+.round-btn.danger:hover { background: rgba(138,58,58,0.2); }
+
+/* ── 2.4 CONCENTRACIÓN MEJORADA ── */
+.conc-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.conc-break-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(138,58,58,0.5);
+  background: rgba(138,58,58,0.12);
+  color: var(--red-light);
+  cursor: pointer;
+  transition: all 0.12s;
+  min-height: 24px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+.conc-break-btn:hover { background: rgba(138,58,58,0.28); border-color: var(--red-light); }
+
+/* Active concentration block — glowing border */
+.conc-block.conc-active {
+  border-color: rgba(201,151,58,0.6);
+  background: linear-gradient(135deg, rgba(201,151,58,0.06), rgba(201,151,58,0.02));
+  animation: conc-glow 3s ease-in-out infinite;
+}
+
+@keyframes conc-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,151,58,0); }
+  50%       { box-shadow: 0 0 8px 1px rgba(201,151,58,0.25); }
+}
+
+.conc-block.conc-active .conc-label {
+  color: var(--gold);
+  font-weight: 600;
+}
+
