@@ -66,12 +66,14 @@ const Cloud = (() => {
   function init() {
     if (!window.FirebaseApp) return;
 
+    // Manejar resultado del redirect de Google (si venimos de signInWithRedirect)
+    FirebaseApp.handleRedirectResult().catch(() => {});
+
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
       _updateAuthUI(user);
 
       if (user) {
-        // Al loguearse: cargar chars desde nube si localStorage está vacío o más viejo
         _syncOnLogin(user.uid);
       }
     });

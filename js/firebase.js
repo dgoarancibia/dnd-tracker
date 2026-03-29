@@ -7,7 +7,8 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -39,7 +40,17 @@ const _provider = new GoogleAuthProvider();
 /* ── Auth ── */
 
 function signIn() {
-  return signInWithPopup(_auth, _provider);
+  return signInWithRedirect(_auth, _provider);
+}
+
+async function handleRedirectResult() {
+  try {
+    const result = await getRedirectResult(_auth);
+    return result; // null si no hay redirect pendiente
+  } catch (e) {
+    console.error('Redirect result error:', e);
+    return null;
+  }
 }
 
 function signOutUser() {
@@ -101,6 +112,7 @@ async function deleteCharCloud(uid, charId) {
 /* ── Exportar singleton ── */
 window.FirebaseApp = {
   signIn,
+  handleRedirectResult,
   signOutUser,
   getCurrentUser,
   onAuthChange,
