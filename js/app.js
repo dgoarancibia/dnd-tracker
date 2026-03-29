@@ -1720,7 +1720,6 @@ const App = (() => {
     if (slotLevel > 0) parts.push(`slot ${slotLevel}`);
     if (sp.concentration) parts.push('Conc');
     const logLine = parts.join(' · ');
-    _addDiaryAuto(`Lanzó ${logLine}`);
     _logCombat(`✨ ${logLine}`, 'spell');
 
     // Refresh right column to show updated slot dots
