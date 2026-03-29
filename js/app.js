@@ -177,6 +177,7 @@ const App = (() => {
     if (inspBtn) inspBtn.classList.toggle('active', !!_char.inspiration);
 
     _updateHPDisplay();
+    _updateTempHPDisplay();
   }
 
   function _updateHPDisplay() {
@@ -2138,8 +2139,8 @@ const App = (() => {
       _char = char || Storage.getActiveChar();
       if (_char) {
         _renderHeader();
-        _updateTempHPDisplay();
         _renderActiveTab();
+        _updateTempHPDisplay();
         _populateCharSelector();
       }
     },
