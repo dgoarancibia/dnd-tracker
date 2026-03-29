@@ -3,6 +3,7 @@
    Módulo ESM — importa firebase.js, exporta Cloud global
    ═══════════════════════════════════════════════════════ */
 import './firebase.js';
+console.log('[cloud2] módulo cargado, FirebaseApp:', typeof window.FirebaseApp);
 
 const Cloud = (() => {
   let _uid      = null;   // UID del usuario autenticado
