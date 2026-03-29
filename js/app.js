@@ -781,14 +781,8 @@ const App = (() => {
       const dexMod = Characters.calcMod(c.stats.des);
       (c.weapons || []).forEach((w, i) => {
         const isFocus = w.type === 'focus';
-        const magicBonus = parseInt(w.bonus) || 0;
-        const statMod = (w.type === 'ranged' || w.type === 'finesse') ? dexMod : strMod;
-        const hitTotal = statMod + prof + magicBonus;
-        const hitStr = (hitTotal >= 0 ? '+' : '') + hitTotal;
-        const dmgBonus = statMod + magicBonus;
-        const dmgStr = w.die !== '—'
-          ? `${w.die}${dmgBonus !== 0 ? (dmgBonus > 0 ? '+' : '') + dmgBonus : ''}`
-          : '—';
+        const hitStr = w.bonus && w.bonus !== '+0' ? w.bonus : '';
+        const dmgStr = w.die !== '—' ? w.die : '—';
         htmlIzq += `
         <div class="item-row">
           <div class="item-row-left">
@@ -796,7 +790,7 @@ const App = (() => {
             ${w.notes ? `<span class="item-desc">${w.notes}</span>` : ''}
           </div>
           <div class="item-row-right">
-            ${!isFocus ? `<span class="item-stat hit-badge">${hitStr} al golpe</span>` : ''}
+            ${!isFocus && hitStr ? `<span class="item-stat hit-badge">${hitStr} al golpe</span>` : ''}
             ${!isFocus ? `<span class="item-stat">${dmgStr}</span>` : ''}
             <button class="item-edit" onclick="App.openEditWeapon(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteWeapon(${i})">✕</button>
@@ -1921,7 +1915,7 @@ const App = (() => {
     document.getElementById('awmModalTitle').textContent = '+ Agregar Arma';
     document.getElementById('awmName').value = '';
     document.getElementById('awmDie').value = '1d6';
-    document.getElementById('awmBonus').value = '0';
+    document.getElementById('awmBonus').value = '';
     document.getElementById('awmType').value = 'melee';
     document.getElementById('awmDesc').value = '';
     document.getElementById('addWeaponModal').classList.add('show');
@@ -1934,7 +1928,7 @@ const App = (() => {
     document.getElementById('awmModalTitle').textContent = '✎ Editar Arma';
     document.getElementById('awmName').value = w.name || '';
     document.getElementById('awmDie').value = w.die || '1d6';
-    document.getElementById('awmBonus').value = parseInt(w.bonus) || 0;
+    document.getElementById('awmBonus').value = w.bonus || '';
     document.getElementById('awmType').value = w.type || 'melee';
     document.getElementById('awmDesc').value = w.notes || '';
     document.getElementById('addWeaponModal').classList.add('show');
@@ -1948,8 +1942,8 @@ const App = (() => {
     const name = document.getElementById('awmName').value.trim();
     if (!name) return;
     const die      = document.getElementById('awmDie').value.trim() || '1d6';
-    const bonusRaw = parseInt(document.getElementById('awmBonus').value) || 0;
-    const bonus    = (bonusRaw >= 0 ? '+' : '') + bonusRaw;
+    const bonusRaw = document.getElementById('awmBonus').value.trim();
+    const bonus    = bonusRaw ? (bonusRaw.startsWith('+') || bonusRaw.startsWith('-') ? bonusRaw : '+' + bonusRaw) : '';
     const type     = document.getElementById('awmType').value || 'melee';
     const notes    = document.getElementById('awmDesc').value.trim();
     if (_editWeaponIdx !== null) {
