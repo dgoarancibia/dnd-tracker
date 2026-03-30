@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=21">
 </head>
 <body>
 
@@ -274,6 +274,45 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR STATS -->
+<div class="modal-overlay" id="editStatsModal">
+  <div class="modal" style="max-width:360px;">
+    <button class="modal-close-x" onclick="App.closeEditStats()">✕</button>
+    <div class="modal-title">✎ Editar Personaje</div>
+
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" id="es-name" type="text" maxlength="40">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" style="max-width:80px;">
+        <label class="form-label">Nivel</label>
+        <input class="form-input" id="es-nivel" type="number" min="1" max="20" style="text-align:center;">
+      </div>
+      <div class="form-group" style="max-width:90px;">
+        <label class="form-label">HP Máx</label>
+        <input class="form-input" id="es-hp-max" type="number" min="1" max="999" style="text-align:center;">
+      </div>
+    </div>
+
+    <label class="form-label" style="margin-bottom:8px;display:block;">Estadísticas base</label>
+    <div class="es-stats-grid">
+      <div class="es-stat-cell"><label>FUE</label><input type="number" id="es-stat-for" min="1" max="30" class="es-stat-input"></div>
+      <div class="es-stat-cell"><label>DES</label><input type="number" id="es-stat-des" min="1" max="30" class="es-stat-input"></div>
+      <div class="es-stat-cell"><label>CON</label><input type="number" id="es-stat-con" min="1" max="30" class="es-stat-input"></div>
+      <div class="es-stat-cell"><label>INT</label><input type="number" id="es-stat-int" min="1" max="30" class="es-stat-input"></div>
+      <div class="es-stat-cell"><label>SAB</label><input type="number" id="es-stat-sab" min="1" max="30" class="es-stat-input"></div>
+      <div class="es-stat-cell"><label>CAR</label><input type="number" id="es-stat-car" min="1" max="30" class="es-stat-input"></div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="App.closeEditStats()">Cancelar</button>
+      <button class="btn btn-gold" onclick="App.saveEditStats()">✓ Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL LEVEL UP -->
 <div class="modal-overlay" id="levelUpModal">
   <div class="modal">
@@ -494,9 +533,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=20"></script>
-<script src="js/characters.js?v=20"></script>
-<script src="js/app.js?v=20"></script>
+<script src="js/storage.js?v=21"></script>
+<script src="js/characters.js?v=21"></script>
+<script src="js/app.js?v=21"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

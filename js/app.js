@@ -1172,7 +1172,11 @@ const App = (() => {
     const STAT_LABELS = { for:'FUE',des:'DES',con:'CON',int:'INT',sab:'SAB',car:'CAR' };
 
     // ── COLUMNA IZQUIERDA: Stats + Saves (compacto arriba) ──
-    let htmlIzq = `<div class="section-hd">🎲 Habilidades</div>
+    let htmlIzq = `
+    <div class="section-hd" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>🎲 Habilidades</span>
+      <button class="btn-edit-stats" onclick="App.openEditStats()" title="Editar estadísticas">✎ Editar</button>
+    </div>
     <div class="stats-grid">`;
 
     STATS.forEach(stat => {
@@ -2445,17 +2449,61 @@ const App = (() => {
      HABILIDADES
   ══════════════════════════════════════════════════════ */
 
-  function editStat(statKey) {
-    const current = _char.stats[statKey];
-    const label = Characters.STAT_NAMES[statKey] || statKey.toUpperCase();
-    const val = prompt(`Nuevo valor para ${label} (actual: ${current}):`, current);
-    if (val === null) return;
-    const n = parseInt(val);
-    if (isNaN(n) || n < 1 || n > 30) { showToast('Valor inválido (1-30)'); return; }
-    _char.stats[statKey] = n;
-    _saveChar();
-    _renderHabilidadesTab();
-    _renderHeader();
+  function editStat(statKey) { openEditStats(); }
+
+  function openEditStats() {
+    const c = _char;
+    const STATS = ['for','des','con','int','sab','car'];
+    const LABELS = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
+    const FULL   = { for:'Fuerza', des:'Destreza', con:'Constitución', int:'Inteligencia', sab:'Sabiduría', car:'Carisma' };
+
+    // Fill stat inputs
+    STATS.forEach(s => {
+      const el = document.getElementById(`es-stat-${s}`);
+      if (el) el.value = c.stats[s];
+    });
+    document.getElementById('es-nivel').value  = c.nivel;
+    document.getElementById('es-hp-max').value = c.hp.max;
+    document.getElementById('es-name').value   = c.name || '';
+
+    document.getElementById('editStatsModal').classList.add('show');
+  }
+
+  function saveEditStats() {
+    const STATS = ['for','des','con','int','sab','car'];
+    let changed = false;
+
+    STATS.forEach(s => {
+      const el = document.getElementById(`es-stat-${s}`);
+      if (!el) return;
+      const n = Math.max(1, Math.min(30, parseInt(el.value) || 10));
+      if (_char.stats[s] !== n) { _char.stats[s] = n; changed = true; }
+    });
+
+    const nivel = Math.max(1, Math.min(20, parseInt(document.getElementById('es-nivel').value) || _char.nivel));
+    const hpMax = Math.max(1, parseInt(document.getElementById('es-hp-max').value) || _char.hp.max);
+    const name  = document.getElementById('es-name').value.trim() || _char.name;
+
+    if (_char.nivel !== nivel) { _char.nivel = nivel; changed = true; }
+    if (_char.hp.max !== hpMax) {
+      _char.hp.max = hpMax;
+      if (_char.hp.current > hpMax) _char.hp.current = hpMax;
+      changed = true;
+    }
+    if (_char.name !== name) { _char.name = name; changed = true; }
+
+    document.getElementById('editStatsModal').classList.remove('show');
+
+    if (changed) {
+      _saveChar();
+      _renderHeader();
+      _renderHabilidadesTab();
+      showToast('✓ Estadísticas actualizadas');
+    }
+  }
+
+  function closeEditStats() {
+    document.getElementById('editStatsModal').classList.remove('show');
   }
 
   function toggleSkillProf(skillId) {
@@ -2941,7 +2989,7 @@ const App = (() => {
     setNotes,
 
     // Habilidades
-    editStat, toggleSkillProf, setVelocidad, setXP,
+    editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, setVelocidad, setXP,
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty, longRest,
