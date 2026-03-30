@@ -1686,6 +1686,8 @@ const App = (() => {
     _renderEnemyTracker();
   }
 
+  let _etDragId = null;
+
   function _renderEnemyTracker() {
     const container = document.getElementById('enemyTracker');
     if (!container) return;
@@ -1701,26 +1703,53 @@ const App = (() => {
     if (_enemies.length === 0) {
       html += `<div class="et-empty">Sin enemigos registrados</div>`;
     } else {
-      _enemies.forEach((e, idx) => {
+      _enemies.forEach(e => {
         const isBleeding = e.status === 'bleeding';
-        const isFirst = idx === 0;
-        const isLast = idx === _enemies.length - 1;
         html += `
-        <div class="et-row${isBleeding ? ' bleeding' : ''}">
-          <div class="et-order-btns">
-            <button class="et-order-btn" onclick="App.moveEnemy(${e.id},-1)" ${isFirst ? 'disabled' : ''}>▲</button>
-            <button class="et-order-btn" onclick="App.moveEnemy(${e.id},1)" ${isLast ? 'disabled' : ''}>▼</button>
-          </div>
+        <div class="et-row${isBleeding ? ' bleeding' : ''}"
+             draggable="true" data-eid="${e.id}"
+             ondragstart="App._etDragStart(event,${e.id})"
+             ondragover="App._etDragOver(event)"
+             ondrop="App._etDrop(event,${e.id})"
+             ondragend="App._etDragEnd()">
+          <span class="et-drag-handle" title="Arrastrar">⠿</span>
+          <button class="et-bleed-btn${isBleeding ? ' active' : ''}" onclick="App.toggleEnemyBleeding(${e.id})" title="${isBleeding ? 'Quitar sangrando' : 'Marcar sangrando'}">⚔</button>
           <span class="et-name">${e.name}</span>
-          ${e.ac > 0 ? `<span class="et-ac-badge" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Toca para editar">CA ${e.ac}</span>` : `<span class="et-ac-badge et-ac-empty" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Agregar CA">CA —</span>`}
           ${isBleeding ? `<span class="et-bleeding-badge">Sangrando</span>` : ''}
-          <button class="et-bleed-btn${isBleeding ? ' active' : ''}" onclick="App.toggleEnemyBleeding(${e.id})" title="${isBleeding ? 'Quitar' : 'Sangrando'}">⚔</button>
+          ${e.ac > 0 ? `<span class="et-ac-badge" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Toca para editar">CA ${e.ac}</span>` : `<span class="et-ac-badge et-ac-empty" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Agregar CA">CA —</span>`}
           <button class="et-del-btn" onclick="App.removeEnemy(${e.id})">✕</button>
         </div>`;
       });
     }
 
     container.innerHTML = html;
+  }
+
+  function _etDragStart(e, id) {
+    _etDragId = id;
+    e.currentTarget.classList.add('et-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  function _etDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const row = e.currentTarget;
+    row.classList.add('et-drag-over');
+  }
+  function _etDrop(e, targetId) {
+    e.preventDefault();
+    if (_etDragId === null || _etDragId === targetId) return;
+    const fromIdx = _enemies.findIndex(x => x.id === _etDragId);
+    const toIdx   = _enemies.findIndex(x => x.id === targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const [moved] = _enemies.splice(fromIdx, 1);
+    _enemies.splice(toIdx, 0, moved);
+    _etDragId = null;
+    _renderEnemyTracker();
+  }
+  function _etDragEnd() {
+    _etDragId = null;
+    document.querySelectorAll('.et-row').forEach(r => r.classList.remove('et-dragging','et-drag-over'));
   }
 
   function _updateRoundDisplay() {
@@ -2883,6 +2912,7 @@ const App = (() => {
     toggleTurn, endTurn,
     startCombat, nextCombatTurn, nextCombatRound, resetCombat,
     addEnemy, moveEnemy, toggleEnemyBleeding, removeEnemy, editEnemyAC, _saveEnemyAC,
+    _etDragStart, _etDragOver, _etDrop, _etDragEnd,
 
     // Concentración
     setConc, closeConcAlert,
