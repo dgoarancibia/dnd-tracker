@@ -3075,6 +3075,25 @@ input[type=number] { -moz-appearance: textfield; }
   transition: border-color 0.15s;
 }
 .et-row.bleeding { border-color: rgba(180,50,50,0.5); background: rgba(120,30,30,0.12); }
+.et-order-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.et-order-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 8px;
+  padding: 1px 3px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.et-order-btn:hover:not(:disabled) { color: var(--gold); }
+.et-order-btn:disabled { opacity: 0.2; cursor: default; }
+
 .et-name {
   flex: 1;
   font-family: 'Crimson Pro', serif;

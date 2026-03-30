@@ -1594,40 +1594,14 @@ const App = (() => {
   ══════════════════════════════════════════════════════ */
 
   function startCombat() {
-    // Show initiative modal first
-    const initMod = (_char && _char.stats) ? Characters.calcMod(_char.stats.dex) : 0;
-    const modStr = initMod >= 0 ? `+${initMod}` : `${initMod}`;
-    document.getElementById('initModDisplay').textContent = `DEX ${modStr}`;
-    document.getElementById('initRollInput').value = '';
-    document.getElementById('initTotal').textContent = '—';
-    document.getElementById('initModal').classList.add('show');
-    setTimeout(() => document.getElementById('initRollInput').focus(), 80);
-  }
-
-  function _confirmStartCombat() {
-    const roll = parseInt(document.getElementById('initRollInput').value) || 0;
-    const initMod = (_char && _char.stats) ? Characters.calcMod(_char.stats.dex) : 0;
-    const total = roll + initMod;
-    document.getElementById('initModal').classList.remove('show');
     _combatRound = 1;
     _combatTurn  = 1;
     _combatActive = true;
     _updateRoundDisplay();
     _updateCombatHUD();
     _renderCombateDer();
-    if (roll > 0) {
-      _logCombat(`⚡ Iniciativa ${total} (tirada ${roll} ${initMod >= 0 ? '+' : ''}${initMod})`, 'info');
-      showToast(`⚔️ Iniciativa ${total} · Ronda 1`);
-    } else {
-      showToast('⚔️ Combate iniciado — Ronda 1');
-    }
-  }
-
-  function _updateInitTotal() {
-    const roll = parseInt(document.getElementById('initRollInput').value) || 0;
-    const initMod = (_char && _char.stats) ? Characters.calcMod(_char.stats.dex) : 0;
-    const total = roll + initMod;
-    document.getElementById('initTotal').textContent = roll > 0 ? (total >= 0 ? total : total) : '—';
+    _logCombat('⚔ Combate iniciado', 'info');
+    showToast('⚔ Combate iniciado — Ronda 1');
   }
 
   function nextCombatTurn() {
@@ -1670,6 +1644,15 @@ const App = (() => {
     nameEl.value = '';
     acEl.value   = '';
     nameEl.focus();
+    _renderEnemyTracker();
+  }
+
+  function moveEnemy(id, dir) {
+    const idx = _enemies.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= _enemies.length) return;
+    [_enemies[idx], _enemies[swapIdx]] = [_enemies[swapIdx], _enemies[idx]];
     _renderEnemyTracker();
   }
 
@@ -1718,14 +1701,20 @@ const App = (() => {
     if (_enemies.length === 0) {
       html += `<div class="et-empty">Sin enemigos registrados</div>`;
     } else {
-      _enemies.forEach(e => {
+      _enemies.forEach((e, idx) => {
         const isBleeding = e.status === 'bleeding';
+        const isFirst = idx === 0;
+        const isLast = idx === _enemies.length - 1;
         html += `
         <div class="et-row${isBleeding ? ' bleeding' : ''}">
+          <div class="et-order-btns">
+            <button class="et-order-btn" onclick="App.moveEnemy(${e.id},-1)" ${isFirst ? 'disabled' : ''}>▲</button>
+            <button class="et-order-btn" onclick="App.moveEnemy(${e.id},1)" ${isLast ? 'disabled' : ''}>▼</button>
+          </div>
           <span class="et-name">${e.name}</span>
           ${e.ac > 0 ? `<span class="et-ac-badge" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Toca para editar">CA ${e.ac}</span>` : `<span class="et-ac-badge et-ac-empty" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Agregar CA">CA —</span>`}
           ${isBleeding ? `<span class="et-bleeding-badge">Sangrando</span>` : ''}
-          <button class="et-bleed-btn${isBleeding ? ' active' : ''}" onclick="App.toggleEnemyBleeding(${e.id})" title="${isBleeding ? 'Quitar sangrando' : 'Marcar sangrando'}">⚔</button>
+          <button class="et-bleed-btn${isBleeding ? ' active' : ''}" onclick="App.toggleEnemyBleeding(${e.id})" title="${isBleeding ? 'Quitar' : 'Sangrando'}">⚔</button>
           <button class="et-del-btn" onclick="App.removeEnemy(${e.id})">✕</button>
         </div>`;
       });
@@ -2892,8 +2881,8 @@ const App = (() => {
 
     // Turn & Rounds
     toggleTurn, endTurn,
-    startCombat, _confirmStartCombat, _updateInitTotal, nextCombatTurn, nextCombatRound, resetCombat,
-    addEnemy, toggleEnemyBleeding, removeEnemy, editEnemyAC, _saveEnemyAC,
+    startCombat, nextCombatTurn, nextCombatRound, resetCombat,
+    addEnemy, moveEnemy, toggleEnemyBleeding, removeEnemy, editEnemyAC, _saveEnemyAC,
 
     // Concentración
     setConc, closeConcAlert,

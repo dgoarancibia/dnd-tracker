@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=18">
+<link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
 
@@ -274,26 +274,6 @@
   </div>
 </div>
 
-<!-- MODAL INICIATIVA -->
-<div class="modal-overlay" id="initModal">
-  <div class="modal" style="max-width:300px;text-align:center;">
-    <div class="modal-title">⚡ Iniciativa</div>
-    <div class="init-mod-label" id="initModDisplay">DEX +2</div>
-    <p style="font-size:13px;color:var(--text-dim);margin:8px 0 14px;">Tira 1d20 y anota el resultado</p>
-    <input type="number" id="initRollInput" class="sr-result-input" placeholder="1d20" min="1" max="20"
-           oninput="App._updateInitTotal()"
-           onkeydown="if(event.key==='Enter') App._confirmStartCombat()">
-    <div class="init-total-row">
-      <span style="color:var(--text-dim);font-size:12px;">Total</span>
-      <span class="init-total-val" id="initTotal">—</span>
-    </div>
-    <div class="modal-btns" style="justify-content:center;gap:10px;margin-top:16px;">
-      <button class="btn btn-ghost" onclick="document.getElementById('initRollInput').value='';App._confirmStartCombat()">Saltar</button>
-      <button class="btn btn-gold" onclick="App._confirmStartCombat()">⚔️ Iniciar</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL LEVEL UP -->
 <div class="modal-overlay" id="levelUpModal">
   <div class="modal">
@@ -514,9 +494,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=18"></script>
-<script src="js/characters.js?v=18"></script>
-<script src="js/app.js?v=18"></script>
+<script src="js/storage.js?v=19"></script>
+<script src="js/characters.js?v=19"></script>
+<script src="js/app.js?v=19"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">
