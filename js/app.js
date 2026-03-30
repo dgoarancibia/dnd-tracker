@@ -2616,37 +2616,86 @@ const App = (() => {
   }
 
   function longRest() {
-    if (!confirm('¿Descanso largo? Se recargan todos los recursos, HP máximo y dados de golpe (mitad).')) return;
+    // Build preview of what will be recovered
+    const c = _char;
+    const hpRecover = c.hp.max - c.hp.current;
+    const hdRecover = Math.max(1, Math.ceil(c.hitDice.max / 2));
+    const hdNew = Math.min(c.hitDice.max, c.hitDice.current + hdRecover);
 
-    // Recargar todos los recursos
-    _char.resources.forEach(r => { r.current = r.max; });
-
-    // Spell slots máximo
+    // Slots that will be recovered
+    const slotLines = [];
     for (let i = 1; i <= 9; i++) {
-      if (_char.spellSlots[i]) _char.spellSlots[i].current = _char.spellSlots[i].max;
+      const s = c.spellSlots[i];
+      if (s && s.max > 0 && s.current < s.max) {
+        slotLines.push(`Nvl ${i}: ${s.current}→${s.max}`);
+      }
     }
 
-    // Dados de golpe: recupera mitad redondeado hacia arriba
-    const recover = Math.max(1, Math.ceil(_char.hitDice.max / 2));
-    _char.hitDice.current = Math.min(_char.hitDice.max, _char.hitDice.current + recover);
+    // Resources that will recover
+    const resLines = c.resources
+      .filter(r => r.current < r.max)
+      .map(r => `${r.name}: ${r.current}→${r.max}`);
 
-    // HP máximo
-    _char.hp.current = _char.hp.max;
-    _char.hp.temp = 0;
+    let summaryHtml = '';
+    if (hpRecover > 0)
+      summaryHtml += `<div class="lr-row lr-hp"><span class="lr-icon">♥</span><span>HP <strong>${c.hp.current} → ${c.hp.max}</strong>${c.hp.temp > 0 ? ' · tmp eliminados' : ''}</span></div>`;
+    else
+      summaryHtml += `<div class="lr-row lr-ok"><span class="lr-icon">♥</span><span>HP ya en máximo <strong>${c.hp.max}</strong></span></div>`;
 
-    // Reset turno y concentración
-    _char.turn = { action: false, bonus: false, reaction: false, movement: false };
-    _char.concentration = null;
+    summaryHtml += `<div class="lr-row"><span class="lr-icon">⬡</span><span>Dados de golpe <strong>${c.hitDice.current} → ${hdNew}</strong> / ${c.hitDice.max}</span></div>`;
 
-    // Limpiar condiciones
-    _char.conditions = [];
+    if (slotLines.length)
+      summaryHtml += `<div class="lr-row lr-slots"><span class="lr-icon">✦</span><span>Slots: <strong>${slotLines.join(' · ')}</strong></span></div>`;
+    else
+      summaryHtml += `<div class="lr-row lr-ok"><span class="lr-icon">✦</span><span>Slots ya en máximo</span></div>`;
 
+    if (resLines.length)
+      summaryHtml += `<div class="lr-row"><span class="lr-icon">↺</span><span>${resLines.join(' · ')}</span></div>`;
+
+    if (c.conditions && c.conditions.length)
+      summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">✕</span><span>Condiciones eliminadas</span></div>`;
+    if (c.concentration)
+      summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">◆</span><span>Concentración rota</span></div>`;
+
+    document.getElementById('lrSummary').innerHTML = summaryHtml;
+    document.getElementById('longRestModal').classList.add('show');
+  }
+
+  function closeLongRest() {
+    document.getElementById('longRestModal').classList.remove('show');
+  }
+
+  function applyLongRest() {
+    const c = _char;
+
+    // Build result summary for log
+    const hpBefore = c.hp.current;
+    const hdBefore = c.hitDice.current;
+    const slotsBefore = {};
+    for (let i = 1; i <= 9; i++) {
+      if (c.spellSlots[i] && c.spellSlots[i].max > 0) slotsBefore[i] = c.spellSlots[i].current;
+    }
+
+    // Apply rest
+    c.resources.forEach(r => { r.current = r.max; });
+    for (let i = 1; i <= 9; i++) {
+      if (c.spellSlots[i]) c.spellSlots[i].current = c.spellSlots[i].max;
+    }
+    const hdRecover = Math.max(1, Math.ceil(c.hitDice.max / 2));
+    c.hitDice.current = Math.min(c.hitDice.max, c.hitDice.current + hdRecover);
+    c.hp.current = c.hp.max;
+    c.hp.temp = 0;
+    c.turn = { action: false, bonus: false, reaction: false, movement: false };
+    c.concentration = null;
+    c.conditions = [];
+
+    closeLongRest();
     _saveChar(true);
     _renderHeader();
     _renderCombateTab();
     _updateCombatHUD();
-    _logCombat('✦ Descanso largo · Todo recargado', 'rest');
-    showToast('Descanso largo · Todo recargado ✦');
+    _logCombat(`✦ Descanso largo · HP ${hpBefore}→${c.hp.max} · Slots recargados`, 'rest');
+    showToast('✦ Descanso largo — Todo recargado');
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2992,7 +3041,8 @@ const App = (() => {
     editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, setVelocidad, setXP,
 
     // Descansos
-    openShortRest, closeShortRest, applyShortRest, srAdjustQty, longRest,
+    openShortRest, closeShortRest, applyShortRest, srAdjustQty,
+    longRest, closeLongRest, applyLongRest,
 
     // Level up
     openLevelUp, closeLevelUp, applyLevelUp,
