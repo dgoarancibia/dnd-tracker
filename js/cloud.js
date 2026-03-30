@@ -70,19 +70,12 @@ const Cloud = (() => {
     FirebaseApp.handleRedirectResult().catch(() => {});
 
     // onAuthStateChanged detecta cambios Y la sesión activa al inicializar
+    // No duplicar con getCurrentUser — onAuthChange ya cubre ese caso
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
       _updateAuthUI(user);
       if (user) _syncOnLogin(user.uid);
     });
-
-    // Por si acaso ya hay un usuario activo antes de que onAuthStateChanged dispare
-    const current = FirebaseApp.getCurrentUser();
-    if (current) {
-      _uid = current.uid;
-      _updateAuthUI(current);
-      _syncOnLogin(current.uid);
-    }
 
     // Detectar online/offline
     window.addEventListener('online',  () => { if (_uid) _setSyncState(SyncState.IDLE); });
@@ -136,8 +129,10 @@ const Cloud = (() => {
      SYNC AL LOGIN — trae chars de nube más recientes
   ══════════════════════════════════════════════════════ */
 
+  let _syncing = false;
   async function _syncOnLogin(uid) {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine || _syncing) return;
+    _syncing = true;
     try {
       const cloudChars = await FirebaseApp.loadAllCharsCloud(uid);
       if (Object.keys(cloudChars).length === 0) {
@@ -146,7 +141,7 @@ const Cloud = (() => {
         for (const char of Object.values(local)) {
           await FirebaseApp.saveCharCloud(uid, char);
         }
-        return;
+        return; // finally limpia _syncing
       }
 
       // Merge: si nube más reciente, usar nube; si local más reciente, mantener local
@@ -180,6 +175,8 @@ const Cloud = (() => {
       }
     } catch (e) {
       console.error('Sync on login error:', e);
+    } finally {
+      _syncing = false;
     }
   }
 
