@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
 
@@ -65,7 +65,7 @@
     </div>
 
     <div class="stat-box key"><div class="sl">CD</div><div class="sv" id="hdrCD">—</div></div>
-    <div class="stat-box key"><div class="sl">Spell</div><div class="sv" id="hdrATQ">—</div></div>
+    <div class="stat-box key"><div class="sl">S.Atk</div><div class="sv" id="hdrATQ">—</div></div>
     <div class="stat-box"><div class="sl">Init</div><div class="sv" id="hdrINIT">—</div></div>
     <div class="stat-box"><div class="sl">Atk</div><div class="sv" id="hdrPROF">—</div></div>
     <button class="insp-btn" id="hdrInspBtn" onclick="App.toggleInspiration()" title="Inspiración">✦</button>
@@ -239,24 +239,57 @@
 <div class="modal-overlay" id="shortRestModal">
   <div class="modal">
     <div class="modal-title">↺ Descanso Corto</div>
-    <p style="font-size:14px;color:var(--text-dim);margin-bottom:14px;line-height:1.6;">
-      Lanza uno o más dados de golpe y anota el resultado (suma los números del dado, no tires digitalmente).
-      El sistema sumará el modificador de CON automáticamente.
-    </p>
-    <div class="modal-grid-2">
-      <div class="modal-field">
-        <label>Dados d8 a usar (0–<span id="srMaxDice">5</span>)</label>
-        <input type="number" id="srDiceQty" value="1" min="0">
-      </div>
-      <div class="modal-field">
-        <label>Resultado de tus dados (total)</label>
-        <input type="number" id="srDiceResult" value="0" min="0">
+
+    <!-- Paso 1 -->
+    <div class="sr-step">
+      <div class="sr-step-num">1</div>
+      <div class="sr-step-body">
+        <div class="sr-step-label">¿Cuántos dados de golpe gastas?</div>
+        <div class="sr-step-hint">Disponibles: <strong id="srMaxDice">—</strong> · Se consumen al aplicar</div>
+        <div class="sr-qty-row">
+          <button class="sr-qty-btn" onclick="App.srAdjustQty(-1)">−</button>
+          <input type="number" id="srDiceQty" value="1" min="0" class="sr-qty-input">
+          <button class="sr-qty-btn" onclick="App.srAdjustQty(1)">+</button>
+        </div>
       </div>
     </div>
-    <div class="modal-calc-preview" id="srPreview">Ingresa los valores para ver la curación.</div>
+
+    <!-- Paso 2 -->
+    <div class="sr-step">
+      <div class="sr-step-num">2</div>
+      <div class="sr-step-body">
+        <div class="sr-step-label">Tira los dados físicamente y anota la suma</div>
+        <div class="sr-step-hint" id="srDiceHint">Ej: tiras 2d8 → sumas ambos números</div>
+        <input type="number" id="srDiceResult" placeholder="Suma del dado" min="0" class="sr-result-input">
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="modal-calc-preview" id="srPreview"></div>
+
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="App.closeShortRest()">Cancelar</button>
-      <button class="btn btn-gold" onclick="App.applyShortRest()">Aplicar Descanso</button>
+      <button class="btn btn-gold" onclick="App.applyShortRest()">✓ Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INICIATIVA -->
+<div class="modal-overlay" id="initModal">
+  <div class="modal" style="max-width:300px;text-align:center;">
+    <div class="modal-title">⚡ Iniciativa</div>
+    <div class="init-mod-label" id="initModDisplay">DEX +2</div>
+    <p style="font-size:13px;color:var(--text-dim);margin:8px 0 14px;">Tira 1d20 y anota el resultado</p>
+    <input type="number" id="initRollInput" class="sr-result-input" placeholder="1d20" min="1" max="20"
+           oninput="App._updateInitTotal()"
+           onkeydown="if(event.key==='Enter') App._confirmStartCombat()">
+    <div class="init-total-row">
+      <span style="color:var(--text-dim);font-size:12px;">Total</span>
+      <span class="init-total-val" id="initTotal">—</span>
+    </div>
+    <div class="modal-btns" style="justify-content:center;gap:10px;margin-top:16px;">
+      <button class="btn btn-ghost" onclick="document.getElementById('initRollInput').value='';App._confirmStartCombat()">Saltar</button>
+      <button class="btn btn-gold" onclick="App._confirmStartCombat()">⚔️ Iniciar</button>
     </div>
   </div>
 </div>
@@ -440,6 +473,9 @@
       <div class="sdm-upcast-label">A mayor nivel</div>
       <div class="sdm-upcast-text" id="sdmUpcast"></div>
     </div>
+    <div class="sdm-footer">
+      <button class="btn btn-gold" id="sdmCastBtn" onclick="">✨ Lanzar</button>
+    </div>
   </div>
 </div>
 
@@ -478,9 +514,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=14"></script>
-<script src="js/characters.js?v=14"></script>
-<script src="js/app.js?v=14"></script>
+<script src="js/storage.js?v=18"></script>
+<script src="js/characters.js?v=18"></script>
+<script src="js/app.js?v=18"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

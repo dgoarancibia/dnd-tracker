@@ -401,6 +401,46 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   #importInput { display: none; }
+
+  [data-theme="light"] {
+    --bg:        #faf8f4;
+    --bg2:       #f0ece4;
+    --bg3:       #ede8df;
+    --bg4:       #e4ded3;
+    --bg5:       #d8d0c4;
+    --border:    rgba(100,70,20,0.2);
+    --gold:      #7a4e08;
+    --gold-dim:  rgba(100,70,20,0.35);
+    --gold-light:#8a5c10;
+    --text:      #1a140a;
+    --text-mid:  #5a4020;
+    --text-dim:  #9a7850;
+    --red-light: #b02020;
+  }
+  [data-theme="light"] .idx-header {
+    background: linear-gradient(135deg, #ede8de, #e4ddd0);
+  }
+  [data-theme="light"] .char-card:hover {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+  }
+  [data-theme="light"] .modal {
+    background: var(--bg2);
+  }
+  .theme-btn {
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    border-radius: var(--radius-sm);
+    color: var(--text-mid);
+    font-size: 15px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .theme-btn:hover { border-color: var(--gold); color: var(--text); }
 </style>
 </head>
 <body>
@@ -408,6 +448,7 @@
 <header class="idx-header">
   <div class="idx-title">⚔ D&amp;D Tracker</div>
   <div class="idx-header-actions">
+    <button class="theme-btn" id="idxThemeBtn" onclick="toggleIndexTheme()" title="Cambiar tema">☀</button>
     <button class="btn btn-ghost" onclick="document.getElementById('importInput').click()">📥 Importar</button>
     <button class="btn btn-gold" onclick="openCreateModal()">+ Nuevo personaje</button>
     <input type="file" id="importInput" accept=".json" onchange="importChars(this)">
@@ -653,6 +694,26 @@ function showToast(msg) {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
 }
+
+function toggleIndexTheme() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const next = isLight ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('dnd_theme_v1', next);
+  document.getElementById('idxThemeBtn').textContent = next === 'light' ? '🌙' : '☀';
+}
+
+// Apply saved theme
+(function() {
+  const saved = localStorage.getItem('dnd_theme_v1') || 'dark';
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('idxThemeBtn');
+      if (btn) btn.textContent = '🌙';
+    });
+  }
+})();
 
 // Primer run
 if (Storage.isFirstRun()) {

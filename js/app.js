@@ -24,6 +24,10 @@ const App = (() => {
   let _combatTurn  = 0;   // turn counter within the current round
   let _combatActive = false;
 
+  // Enemy tracker — session only
+  let _enemies = [];   // { id, name, ac, status } status: 'ok'|'bleeding'|'dead'
+  let _enemyIdSeq = 0;
+
   // HP history for smart chips (last 5 non-zero deltas)
   let _hpHistory = [];
 
@@ -644,7 +648,16 @@ const App = (() => {
     // Conjuros clave referencia
     const keySells = (c.spells || []).filter(s => s.level > 0 && (s.domain || (c.preparedToday||[]).includes(s.id)));
 
-    let html = `
+    // Enemy tracker — solo visible en combate activo
+    let html = '';
+    if (_combatActive) {
+      html += `
+      <div class="section-hd" style="margin-bottom:6px;">⚔ Enemigos</div>
+      <div id="enemyTracker"></div>
+      <div style="margin-bottom:10px;"></div>`;
+    }
+
+    html += `
     <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>
 
     <div class="section-hd">✨ Conjuros de Referencia</div>`;
@@ -704,6 +717,7 @@ const App = (() => {
     </div>`;
 
     document.getElementById('col-combate-der').innerHTML = html;
+    if (_combatActive) _renderEnemyTracker();
   }
 
   function _buildTagsHTML(sp) {
@@ -720,6 +734,92 @@ const App = (() => {
      TAB CONJUROS
   ══════════════════════════════════════════════════════ */
 
+  // Spell filter state
+  let _spellFilter = { tag: 'all', level: null };
+
+  function setSpellFilter(tag, level) {
+    _spellFilter = { tag, level: level !== undefined ? level : null };
+    _renderConjurosIzq();
+    // Update chip active states
+    document.querySelectorAll('.sf-chip').forEach(el => {
+      const t = el.dataset.tag;
+      const l = el.dataset.level !== undefined ? +el.dataset.level : null;
+      el.classList.toggle('active', t === tag && (l === null ? level === undefined : l === level));
+    });
+  }
+
+  function _renderConjurosIzq() {
+    const c = _char;
+    const prepared = c.preparedToday || [];
+    const { tag, level } = _spellFilter;
+
+    // Build filter chips header (level buttons from spells that exist)
+    const levels = [...new Set((c.spells || []).filter(s => s.level > 0).map(s => s.level))].sort((a,b)=>a-b);
+
+    let htmlIzq = `
+    <div class="section-hd" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+      <span>Todos los Conjuros</span>
+      <span style="font-size:10px;color:var(--text-dim);font-family:'Crimson Pro',serif;font-style:italic;text-transform:none;letter-spacing:0;">Toca para preparar/despreparar</span>
+    </div>
+    <div class="sf-bar">
+      <button class="sf-chip${tag==='all'?' active':''}" data-tag="all" onclick="App.setSpellFilter('all')">Todos</button>
+      <button class="sf-chip${tag==='prep'?' active':''}" data-tag="prep" onclick="App.setSpellFilter('prep')">Preparados</button>
+      <button class="sf-chip${tag==='conc'?' active':''}" data-tag="conc" onclick="App.setSpellFilter('conc')">Conc</button>
+      <button class="sf-chip${tag==='bonus'?' active':''}" data-tag="bonus" onclick="App.setSpellFilter('bonus')">Bonus</button>
+      ${levels.map(l => `<button class="sf-chip sf-lvl${tag==='lvl'&&level===l?' active':''}" data-tag="lvl" data-level="${l}" onclick="App.setSpellFilter('lvl',${l})">Nvl ${l}</button>`).join('')}
+    </div>`;
+
+    // Apply filter
+    let spells = (c.spells || []);
+    if (tag === 'prep')  spells = spells.filter(s => s.level === 0 || s.domain || s.mi || prepared.includes(s.id));
+    else if (tag === 'conc')  spells = spells.filter(s => s.concentration);
+    else if (tag === 'bonus') spells = spells.filter(s => s.bonus);
+    else if (tag === 'lvl')   spells = spells.filter(s => s.level === level);
+
+    const byLevel = {};
+    spells.forEach(s => {
+      if (!byLevel[s.level]) byLevel[s.level] = [];
+      byLevel[s.level].push(s);
+    });
+
+    if (spells.length === 0) {
+      htmlIzq += `<div style="padding:20px 0;color:var(--text-dim);font-style:italic;font-size:13px;">Sin conjuros con ese filtro.</div>`;
+    } else {
+      Object.keys(byLevel).sort((a,b) => +a - +b).forEach(lv => {
+        const label = +lv === 0 ? 'Cantrips — ∞' : `Nivel ${lv}`;
+        htmlIzq += `<div class="spell-group-title">${label}</div>`;
+        byLevel[lv].forEach(sp => {
+          const isCantrip = sp.level === 0;
+          const isDomain = sp.domain;
+          const isMI = sp.mi;
+          const isPrepared = prepared.includes(sp.id) || isDomain || isMI || isCantrip;
+          const tags = _buildTagsHTML(sp);
+
+          let checkClass = 'cantrip';
+          if (!isCantrip && isDomain) checkClass = 'domain';
+          else if (!isCantrip && isMI) checkClass = 'cantrip';
+          else if (!isCantrip) checkClass = isPrepared ? 'checked' : '';
+
+          const clickable = !isCantrip && !isDomain && !isMI;
+
+          htmlIzq += `
+          <div class="spell-card">
+            <div class="spell-checkbox ${checkClass}" id="spchk-${sp.id}" ${clickable ? `onclick="App.toggleSpellPrepared('${sp.id}')"` : ''} style="${clickable?'cursor:pointer;':''}"></div>
+            <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
+              <div class="spell-top">
+                <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
+                <span class="spell-name">${sp.name}</span>${tags}
+              </div>
+              <div class="spell-desc">${sp.desc}</div>
+            </div>
+          </div>`;
+        });
+      });
+    }
+
+    document.getElementById('col-conjuros-izq').innerHTML = htmlIzq;
+  }
+
   function _renderConjurosTab() {
     const c = _char;
     const prepared = c.preparedToday || [];
@@ -728,50 +828,7 @@ const App = (() => {
       s.level > 0 && !s.domain && !s.mi && prepared.includes(s.id)
     ).length;
 
-    // Columna izquierda: todos los conjuros
-    const byLevel = {};
-    (c.spells || []).forEach(s => {
-      const key = s.level;
-      if (!byLevel[key]) byLevel[key] = [];
-      byLevel[key].push(s);
-    });
-
-    let htmlIzq = `
-    <div class="section-hd" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>Todos los Conjuros</span>
-      <span style="font-size:10px;color:var(--text-dim);font-family:'Crimson Pro',serif;font-style:italic;text-transform:none;letter-spacing:0;">Toca para preparar/despreprar</span>
-    </div>`;
-
-    Object.keys(byLevel).sort((a,b) => +a - +b).forEach(lv => {
-      const label = +lv === 0 ? 'Cantrips — ∞' : `Nivel ${lv}`;
-      htmlIzq += `<div class="spell-group-title">${label}</div>`;
-      byLevel[lv].forEach(sp => {
-        const isCantrip = sp.level === 0;
-        const isDomain = sp.domain;
-        const isMI = sp.mi;
-        const isPrepared = prepared.includes(sp.id) || isDomain || isMI || isCantrip;
-        const tags = _buildTagsHTML(sp);
-
-        let checkClass = 'cantrip';
-        if (!isCantrip && isDomain) checkClass = 'domain';
-        else if (!isCantrip && isMI) checkClass = 'cantrip';
-        else if (!isCantrip) checkClass = isPrepared ? 'checked' : '';
-
-        const clickable = !isCantrip && !isDomain && !isMI;
-
-        htmlIzq += `
-        <div class="spell-card">
-          <div class="spell-checkbox ${checkClass}" id="spchk-${sp.id}" ${clickable ? `onclick="App.toggleSpellPrepared('${sp.id}')"` : ''} style="${clickable?'cursor:pointer;':''}"></div>
-          <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
-            <div class="spell-top">
-              <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
-              <span class="spell-name">${sp.name}</span>${tags}
-            </div>
-            <div class="spell-desc">${sp.desc}</div>
-          </div>
-        </div>`;
-      });
-    });
+    _renderConjurosIzq();
 
     // Columna derecha: preparados hoy
     let htmlDer = `
@@ -826,7 +883,6 @@ const App = (() => {
       <strong>Máx preparados:</strong> ${preparedMax} = SAB mod (${Characters.calcMod(c.stats.sab) >= 0 ? '+' : ''}${Characters.calcMod(c.stats.sab)}) + Nvl (${c.nivel})
     </div>`;
 
-    document.getElementById('col-conjuros-izq').innerHTML = htmlIzq;
     document.getElementById('col-conjuros-der').innerHTML = htmlDer;
   }
 
@@ -860,9 +916,19 @@ const App = (() => {
     'Other':                    { bg: 'rgba(160,160,160,0.12)', color: '#aaa',    border: 'rgba(160,160,160,0.3)' },
   };
 
+  const ITEM_CAT_LABELS = {
+    'Weapon': 'Arma', 'Weapon - simple melee': 'Arma simple', 'Weapon - martial melee': 'Arma marcial',
+    'Weapon - simple ranged': 'Arma distancia', 'Weapon - martial ranged': 'Arma marcial dist.',
+    'Ammo': 'Munición', 'Potion': 'Poción', 'Poison': 'Veneno', 'Food': 'Comida',
+    'Spell scroll': 'Pergamino', 'Adventuring gear': 'Equipo avent.', 'Tool': 'Herramienta',
+    'Apparel': 'Indumentaria', 'Equipment': 'Equipamiento', 'Valuable': 'Valioso',
+    'Magic item': 'Ítem mágico', 'Part': 'Material', 'Other': 'Otro',
+  };
+
   function _itemCatBadge(cat) {
     const c = ITEM_CAT_COLORS[cat] || ITEM_CAT_COLORS['Other'];
-    return `<span class="item-cat-badge" style="background:${c.bg};color:${c.color};border-color:${c.border};">${cat}</span>`;
+    const label = ITEM_CAT_LABELS[cat] || cat;
+    return `<span class="item-cat-badge" style="background:${c.bg};color:${c.color};border-color:${c.border};">${label}</span>`;
   }
 
   function _renderEquipoTab() {
@@ -1528,12 +1594,40 @@ const App = (() => {
   ══════════════════════════════════════════════════════ */
 
   function startCombat() {
+    // Show initiative modal first
+    const initMod = (_char && _char.stats) ? Characters.calcMod(_char.stats.dex) : 0;
+    const modStr = initMod >= 0 ? `+${initMod}` : `${initMod}`;
+    document.getElementById('initModDisplay').textContent = `DEX ${modStr}`;
+    document.getElementById('initRollInput').value = '';
+    document.getElementById('initTotal').textContent = '—';
+    document.getElementById('initModal').classList.add('show');
+    setTimeout(() => document.getElementById('initRollInput').focus(), 80);
+  }
+
+  function _confirmStartCombat() {
+    const roll = parseInt(document.getElementById('initRollInput').value) || 0;
+    const initMod = (_char && _char.stats) ? Characters.calcMod(_char.stats.dex) : 0;
+    const total = roll + initMod;
+    document.getElementById('initModal').classList.remove('show');
     _combatRound = 1;
     _combatTurn  = 1;
     _combatActive = true;
     _updateRoundDisplay();
     _updateCombatHUD();
-    showToast('⚔️ Combate iniciado — Ronda 1');
+    _renderCombateDer();
+    if (roll > 0) {
+      _logCombat(`⚡ Iniciativa ${total} (tirada ${roll} ${initMod >= 0 ? '+' : ''}${initMod})`, 'info');
+      showToast(`⚔️ Iniciativa ${total} · Ronda 1`);
+    } else {
+      showToast('⚔️ Combate iniciado — Ronda 1');
+    }
+  }
+
+  function _updateInitTotal() {
+    const roll = parseInt(document.getElementById('initRollInput').value) || 0;
+    const initMod = (_char && _char.stats) ? Characters.calcMod(_char.stats.dex) : 0;
+    const total = roll + initMod;
+    document.getElementById('initTotal').textContent = roll > 0 ? (total >= 0 ? total : total) : '—';
   }
 
   function nextCombatTurn() {
@@ -1559,9 +1653,85 @@ const App = (() => {
     _combatRound = 0;
     _combatTurn  = 0;
     _combatActive = false;
+    _enemies = [];
     _updateRoundDisplay();
     _updateCombatHUD();
+    _renderCombateDer();
     showToast('Combate terminado');
+  }
+
+  /* ── Enemy Tracker ── */
+  function addEnemy() {
+    const nameEl = document.getElementById('enemyNameInput');
+    const acEl   = document.getElementById('enemyACInput');
+    const name = nameEl.value.trim() || `Enemigo ${_enemies.length + 1}`;
+    const ac   = parseInt(acEl.value) || 0;
+    _enemies.push({ id: ++_enemyIdSeq, name, ac, status: 'ok' });
+    nameEl.value = '';
+    acEl.value   = '';
+    nameEl.focus();
+    _renderEnemyTracker();
+  }
+
+  function toggleEnemyBleeding(id) {
+    const e = _enemies.find(x => x.id === id);
+    if (!e) return;
+    e.status = e.status === 'bleeding' ? 'ok' : 'bleeding';
+    _renderEnemyTracker();
+  }
+
+  function removeEnemy(id) {
+    _enemies = _enemies.filter(x => x.id !== id);
+    _renderEnemyTracker();
+  }
+
+  function editEnemyAC(id) {
+    const e = _enemies.find(x => x.id === id);
+    if (!e) return;
+    const el = document.getElementById(`et-ac-${id}`);
+    if (!el) return;
+    el.outerHTML = `<input type="number" id="et-ac-edit-${id}" class="et-ac-edit" value="${e.ac}" min="0" max="40"
+      onblur="App._saveEnemyAC(${id})" onkeydown="if(event.key==='Enter'||event.key==='Escape') this.blur()" style="width:46px;">`;
+    setTimeout(() => { const i = document.getElementById(`et-ac-edit-${id}`); if(i){i.focus();i.select();} }, 20);
+  }
+
+  function _saveEnemyAC(id) {
+    const e = _enemies.find(x => x.id === id);
+    const input = document.getElementById(`et-ac-edit-${id}`);
+    if (!e || !input) return;
+    e.ac = Math.max(0, parseInt(input.value) || 0);
+    _renderEnemyTracker();
+  }
+
+  function _renderEnemyTracker() {
+    const container = document.getElementById('enemyTracker');
+    if (!container) return;
+
+    let html = `<div class="et-add-row">
+      <input type="text" id="enemyNameInput" class="et-input" placeholder="Nombre" maxlength="20"
+             onkeydown="if(event.key==='Enter') document.getElementById('enemyACInput').focus()">
+      <input type="number" id="enemyACInput" class="et-input et-ac" placeholder="CA" min="0" max="40"
+             onkeydown="if(event.key==='Enter') App.addEnemy()">
+      <button class="et-add-btn" onclick="App.addEnemy()">+</button>
+    </div>`;
+
+    if (_enemies.length === 0) {
+      html += `<div class="et-empty">Sin enemigos registrados</div>`;
+    } else {
+      _enemies.forEach(e => {
+        const isBleeding = e.status === 'bleeding';
+        html += `
+        <div class="et-row${isBleeding ? ' bleeding' : ''}">
+          <span class="et-name">${e.name}</span>
+          ${e.ac > 0 ? `<span class="et-ac-badge" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Toca para editar">CA ${e.ac}</span>` : `<span class="et-ac-badge et-ac-empty" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Agregar CA">CA —</span>`}
+          ${isBleeding ? `<span class="et-bleeding-badge">Sangrando</span>` : ''}
+          <button class="et-bleed-btn${isBleeding ? ' active' : ''}" onclick="App.toggleEnemyBleeding(${e.id})" title="${isBleeding ? 'Quitar sangrando' : 'Marcar sangrando'}">⚔</button>
+          <button class="et-del-btn" onclick="App.removeEnemy(${e.id})">✕</button>
+        </div>`;
+      });
+    }
+
+    container.innerHTML = html;
   }
 
   function _updateRoundDisplay() {
@@ -2302,12 +2472,19 @@ const App = (() => {
 
   function openShortRest() {
     const max = _char.hitDice.current;
-    document.getElementById('srMaxDice').textContent = max;
+    document.getElementById('srMaxDice').textContent = max > 0 ? max : '0 (sin dados)';
     document.getElementById('srDiceQty').max = max;
     document.getElementById('srDiceQty').value = Math.min(1, max);
     document.getElementById('srDiceResult').value = '';
     _updateShortRestPreview();
     document.getElementById('shortRestModal').classList.add('show');
+  }
+
+  function srAdjustQty(delta) {
+    const input = document.getElementById('srDiceQty');
+    const max = _char.hitDice.current;
+    input.value = Math.max(0, Math.min(max, (parseInt(input.value) || 0) + delta));
+    _updateShortRestPreview();
   }
 
   function closeShortRest() {
@@ -2318,11 +2495,30 @@ const App = (() => {
     const qty = parseInt(document.getElementById('srDiceQty').value) || 0;
     const result = parseInt(document.getElementById('srDiceResult').value) || 0;
     const conMod = Characters.calcMod(_char.stats.con);
-    const heal = result + (conMod * qty);
-    document.getElementById('srPreview').innerHTML =
-      `Dados usados: <strong>${qty}</strong> · Resultado tirada: <strong>${result}</strong><br>
-       CON mod: <strong>${conMod >= 0 ? '+' : ''}${conMod}</strong> × ${qty} dados = <strong>${conMod * qty}</strong><br>
-       <strong style="color:var(--gold-light);">Curación total: ${Math.max(0, heal)} HP</strong>`;
+    const conBonus = conMod * qty;
+    const heal = Math.max(0, result + conBonus);
+    const die = `d${_char.hitDie || 8}`;
+
+    // Update hint
+    const hint = document.getElementById('srDiceHint');
+    if (hint) hint.textContent = qty === 0 ? 'Sin dados — solo se recargan recursos.' : `Tira ${qty}${die} y suma los resultados`;
+
+    // Build preview
+    let previewHtml = '';
+    if (qty === 0) {
+      previewHtml = `<span style="color:var(--text-mid);">Se recargarán recursos de descanso corto. Sin curación.</span>`;
+    } else {
+      const conStr = conMod >= 0 ? `+${conMod}` : `${conMod}`;
+      previewHtml = `
+        <div class="sr-formula">
+          <span class="sr-f-item"><span class="sr-f-label">Dados</span><span class="sr-f-val">${result || '?'}</span></span>
+          <span class="sr-f-op">+</span>
+          <span class="sr-f-item"><span class="sr-f-label">CON ${conStr} × ${qty}</span><span class="sr-f-val">${conBonus >= 0 ? '+' : ''}${conBonus}</span></span>
+          <span class="sr-f-op">=</span>
+          <span class="sr-f-item sr-f-total"><span class="sr-f-label">Curación</span><span class="sr-f-val">${result ? heal : '?'} HP</span></span>
+        </div>`;
+    }
+    document.getElementById('srPreview').innerHTML = previewHtml;
   }
 
   function applyShortRest() {
@@ -2560,6 +2756,13 @@ const App = (() => {
       upcastWrap.style.display = 'none';
     }
 
+    // "Lanzar" button — show for castable spells, hide for cantrips cast-from-combat-tab
+    const castBtn = document.getElementById('sdmCastBtn');
+    if (castBtn) {
+      castBtn.style.display = '';
+      castBtn.onclick = () => { closeSpellDetail(); castSpell(sp.id); };
+    }
+
     _spellDetailOpen = true;
     document.getElementById('spellDetailModal').classList.add('show');
     document.getElementById('overlayBackdrop').classList.add('show');
@@ -2689,7 +2892,8 @@ const App = (() => {
 
     // Turn & Rounds
     toggleTurn, endTurn,
-    startCombat, nextCombatTurn, nextCombatRound, resetCombat,
+    startCombat, _confirmStartCombat, _updateInitTotal, nextCombatTurn, nextCombatRound, resetCombat,
+    addEnemy, toggleEnemyBleeding, removeEnemy, editEnemyAC, _saveEnemyAC,
 
     // Concentración
     setConc, closeConcAlert,
@@ -2706,7 +2910,7 @@ const App = (() => {
     toggleInspiration,
 
     // Conjuros
-    toggleSpellPrepared,
+    toggleSpellPrepared, setSpellFilter,
     castSpell, confirmCastAtLevel, closeCastPicker,
 
     // Equipo
@@ -2721,7 +2925,7 @@ const App = (() => {
     editStat, toggleSkillProf, setVelocidad, setXP,
 
     // Descansos
-    openShortRest, closeShortRest, applyShortRest, longRest,
+    openShortRest, closeShortRest, applyShortRest, srAdjustQty, longRest,
 
     // Level up
     openLevelUp, closeLevelUp, applyLevelUp,
