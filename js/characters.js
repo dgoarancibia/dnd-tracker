@@ -530,44 +530,68 @@ const Characters = (() => {
         {
           id: 'emboldening-bond',
           name: 'Emboldening Bond',
-          source: 'Dominio de la Paz',
+          source: 'Dominio de la Paz · Nivel 1',
           type: 'active',
-          desc: 'Elige hasta Prof.Bonus criaturas a 30 ft. Por 10 min cada una añade +1d4 a tiradas de ataque, checks de habilidad y saves. Recharge: descanso largo. Usos = Prof.Bonus (3).'
+          recharge: 'Largo',
+          action: 'Acción',
+          range: '10 ft',
+          desc: 'Crea un vínculo entre hasta Prof.Bonus criaturas (3 a nivel 5).',
+          fullDesc: 'Como acción, eliges hasta tu Bono de Competencia (3) en criaturas que puedas ver a 30 ft de ti, incluido tú mismo. Las criaturas vinculadas añaden 1d4 a todas sus tiradas de ataque, checks de habilidad y tiradas de salvación mientras permanezcan a 30 ft entre sí. El efecto dura 10 minutos. Cada criatura solo puede estar vinculada una vez a la vez. Se recarga con descanso largo.'
         },
         {
           id: 'cd-balm',
-          name: 'CD: Balm of Peace',
-          source: 'Channel Divinity',
+          name: 'Balm of Peace',
+          source: 'Channel Divinity · Dominio de la Paz',
           type: 'active',
-          desc: 'Te mueves hasta tu velocidad sin provocar ataques de oportunidad. Puedes curar a cada criatura que pases a 5 ft: 2d6 + MOD SAB (+4) HP. Gasta 1 Channel Divinity.'
+          recharge: 'Corto/Largo',
+          action: 'Acción',
+          range: 'Movimiento',
+          desc: 'Muévete sin provocar OA y cura a cada aliado que pases a 5 ft.',
+          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Hasta el final de tu turno, tu movimiento no provoca ataques de oportunidad. Cuando te mueves a 5 ft de cualquier criatura durante este movimiento, puedes curarla por 2d6 + tu modificador de Sabiduría (+4) HP. Solo puedes curar a cada criatura una vez por uso. No requiere que las criaturas estén inconscientes ni que sean aliadas — puedes elegir a quién curar al moverte.'
         },
         {
           id: 'cd-spark',
-          name: 'CD: Divine Spark',
-          source: 'Channel Divinity',
+          name: 'Divine Spark',
+          source: 'Channel Divinity · Clérigo base',
           type: 'active',
-          desc: 'Elige una criatura a 18 m. Lanza MOD SAB dados de curación (d8) y cura o daña por ese total. A nivel 7: +1d8 dado. Gasta 1 Channel Divinity.'
+          recharge: 'Corto/Largo',
+          action: 'Acción',
+          range: '18 m',
+          desc: 'Cura o daña a una criatura por MOD SAB dados (d8).',
+          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Apuntas a una criatura a 18 m que puedas ver. Lanzas un número de dados igual a tu modificador de Sabiduría (+4), usando d8. Puedes elegir curar a la criatura por ese total, o infligirle daño radiante o necrótico por ese total (tu elección al activar). A nivel 7 el número de dados aumenta en 1 (total 5d8). A nivel 11 aumenta otros 2 (total 7d8).'
         },
         {
           id: 'cd-undead',
-          name: 'CD: Turn Undead',
-          source: 'Channel Divinity',
+          name: 'Turn Undead',
+          source: 'Channel Divinity · Clérigo base',
           type: 'active',
-          desc: 'Cada no-muerto a 9 ft que falle save SAB queda expulsado 1 min (debe alejarse). Gasta 1 Channel Divinity.'
+          recharge: 'Corto/Largo',
+          action: 'Acción',
+          range: '9 m (área)',
+          desc: 'Expulsa no-muertos cercanos que fallen su save de SAB.',
+          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Cada no-muerto que puedas ver a 30 ft de ti debe hacer una tirada de salvación de Sabiduría contra tu CD de conjuro (15). Si falla, queda Expulsado durante 1 minuto. Un no-muerto expulsado debe usar su movimiento para alejarse de ti lo máximo posible, no puede acercarse voluntariamente a ti, y no puede realizar reacciones. Solo puede usar la acción Dash o intentar escapar de un efecto que le impida moverse. Si no tiene adonde huir, puede usar la acción Dodge. A nivel 5 (Destroy Undead), no-muertos de CR 1/2 o menos son destruidos directamente.'
         },
         {
           id: 'blessed-healer',
           name: 'Blessed Healer',
-          source: 'Dominio de la Paz · Pasiva',
+          source: 'Dominio de la Paz · Nivel 1 · Pasiva',
           type: 'passive',
-          desc: 'Cuando lanzas un conjuro de curación en un aliado, tú también te curas 2 + nivel del conjuro HP. Automático, sin acción extra.'
+          recharge: null,
+          action: 'Automático',
+          range: 'Personal',
+          desc: 'Al curar a un aliado con un conjuro, tú también te curas.',
+          fullDesc: 'Cuando lanzas un conjuro que cura a otra criatura (no a ti mismo), tú también recuperas HP. El número de HP que recuperas es igual a 2 + el nivel del slot usado para lanzar el conjuro. Por ejemplo: Healing Word con slot 1 = te curas 3 HP. Cure Wounds con slot 2 = te curas 4 HP. Mass Healing Word con slot 3 = te curas 5 HP. Esta recuperación es automática y no requiere ninguna acción adicional.'
         },
         {
           id: 'war-caster',
           name: 'War Caster',
           source: 'Dote · Pasiva',
           type: 'passive',
-          desc: 'Ventaja en saves de CON para mantener concentración. Puedes usar Toll the Dead (u otro conjuro de 1 acción) como ataque de oportunidad. Puedes lanzar con las dos manos ocupadas.'
+          recharge: null,
+          action: 'Pasiva / Reacción',
+          range: 'Personal',
+          desc: 'Ventaja en CON saves para concentración, Toll the Dead como OA.',
+          fullDesc: 'Este dote otorga tres beneficios:\n\n1. Tienes ventaja en las tiradas de salvación de Constitución para mantener la concentración en un conjuro cuando recibes daño.\n\n2. Puedes realizar los componentes somáticos de los conjuros incluso cuando tienes una o dos manos ocupadas sosteniendo armas o escudos.\n\n3. Cuando una criatura provoca un ataque de oportunidad, puedes usar tu reacción para lanzar un conjuro con tiempo de casteo de 1 acción en lugar del ataque de oportunidad normal. El conjuro debe tener como objetivo solo esa criatura — Toll the Dead es la opción ideal (save WIS, 1d8 necrótico o 1d12 si ya tiene daño).'
         }
       ],
 

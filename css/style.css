@@ -1610,7 +1610,10 @@ input[type=number] { -moz-appearance: textfield; }
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 }
+.feat-card:hover { border-color: var(--gold-dim); background: var(--bg3); }
 .feat-top {
   display: flex;
   align-items: center;
@@ -2981,6 +2984,77 @@ input[type=number] { -moz-appearance: textfield; }
 }
 .sr-f-total .sr-f-val { color: var(--gold-light); font-size: 22px; }
 .sr-f-op { font-size: 18px; color: var(--text-dim); font-weight: 300; margin-top: 14px; }
+
+/* ── Feature Detail Modal ── */
+.fdm-header {
+  margin-bottom: 14px;
+}
+.fdm-badge {
+  margin-bottom: 6px;
+}
+.fdm-name {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.fdm-source {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+.fdm-stats-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.fdm-stat {
+  background: var(--bg3);
+  border: 1px solid var(--bg4);
+  border-radius: 6px;
+  padding: 6px 12px;
+  min-width: 80px;
+  text-align: center;
+}
+.fdm-stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.fdm-stat-val {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+.fdm-summary {
+  background: rgba(201,151,58,0.08);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-mid);
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.fdm-full {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.7;
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.fdm-full p {
+  margin: 0 0 10px;
+}
+.fdm-full p:last-child { margin-bottom: 0; }
 
 /* ── Long Rest summary ── */
 .lr-summary {

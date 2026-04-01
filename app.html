@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=25">
+<link rel="stylesheet" href="css/style.css?v=28">
 </head>
 <body>
 
@@ -309,6 +309,24 @@
   </div>
 </div>
 
+<!-- MODAL DETALLE FEATURE -->
+<div class="modal-overlay" id="featureDetailModal">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close-x" onclick="App.closeFeatureDetail()">✕</button>
+    <div class="fdm-header">
+      <div class="fdm-badge" id="fdmBadge"></div>
+      <div class="fdm-name" id="fdmName"></div>
+      <div class="fdm-source" id="fdmSource"></div>
+    </div>
+    <div class="fdm-stats-row" id="fdmStatsRow"></div>
+    <div class="fdm-summary" id="fdmSummary"></div>
+    <div class="fdm-full" id="fdmFull"></div>
+    <div class="modal-btns">
+      <button class="btn btn-gold" onclick="App.closeFeatureDetail()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DESCANSO LARGO -->
 <div class="modal-overlay" id="longRestModal">
   <div class="modal" style="max-width:380px;">
@@ -543,8 +561,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="js/storage.js?v=25"></script>
-<script src="js/characters.js?v=26"></script>
-<script src="js/app.js?v=27"></script>
+<script src="js/characters.js?v=28"></script>
+<script src="js/app.js?v=28"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

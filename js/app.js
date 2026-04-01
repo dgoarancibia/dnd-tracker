@@ -709,7 +709,7 @@ const App = (() => {
         const badge = f.type === 'passive'
           ? `<span class="feat-badge feat-passive">Pasiva</span>`
           : `<span class="feat-badge feat-active">Activa</span>`;
-        html += `<div class="feat-card">
+        html += `<div class="feat-card" onclick="App.openFeatureDetail('${f.id}')">
           <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}</div>
           <div class="feat-source">${f.source}</div>
           <div class="feat-desc">${f.desc}</div>
@@ -2900,6 +2900,41 @@ const App = (() => {
     document.getElementById('overlayBackdrop').classList.toggle('show', _diaryOpen || _iftttOpen);
   }
 
+  /* ── Feature Detail Modal ── */
+  function openFeatureDetail(featId) {
+    const f = (_char.features || []).find(f => f.id === featId);
+    if (!f) return;
+
+    const badge = f.type === 'passive'
+      ? `<span class="feat-badge feat-passive" style="font-size:11px;padding:2px 8px;">Pasiva</span>`
+      : `<span class="feat-badge feat-active" style="font-size:11px;padding:2px 8px;">Activa</span>`;
+
+    document.getElementById('fdmBadge').innerHTML = badge;
+    document.getElementById('fdmName').textContent = f.name;
+    document.getElementById('fdmSource').textContent = f.source;
+
+    // Stats row: Acción + Distancia + Recarga
+    let statsHtml = '';
+    if (f.action) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Acción</div><div class="fdm-stat-val">${f.action}</div></div>`;
+    if (f.range)  statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${f.range}</div></div>`;
+    if (f.recharge) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Recarga</div><div class="fdm-stat-val">↺ ${f.recharge}</div></div>`;
+    document.getElementById('fdmStatsRow').innerHTML = statsHtml;
+
+    document.getElementById('fdmSummary').textContent = f.desc;
+    // fullDesc with newlines rendered as <br><br>
+    document.getElementById('fdmFull').innerHTML = (f.fullDesc || '')
+      .replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+    document.getElementById('fdmFull').innerHTML =
+      '<p>' + document.getElementById('fdmFull').innerHTML + '</p>';
+
+    document.getElementById('featureDetailModal').classList.add('show');
+  }
+
+  function closeFeatureDetail() {
+    document.getElementById('featureDetailModal').classList.remove('show');
+  }
+
   function _renderIftttBody() {
     const ifttt = _char.ifttt || [];
     const sections = [...new Set(ifttt.map(i => i.section))];
@@ -3068,6 +3103,7 @@ const App = (() => {
 
     // Detalle spell
     openSpellDetail, closeSpellDetail,
+    openFeatureDetail, closeFeatureDetail,
 
     // Backup
     doBackup, importBackup,
