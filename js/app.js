@@ -645,8 +645,9 @@ const App = (() => {
   function _renderCombateDer() {
     const c = _char;
 
-    // Conjuros clave referencia
-    const keySells = (c.spells || []).filter(s => s.level > 0 && (s.domain || (c.preparedToday||[]).includes(s.id)));
+    // Conjuros clave referencia: cantrips, MI, domain, o preparados hoy
+    const keySells = (c.spells || []).filter(s =>
+      s.level === 0 || s.mi || s.domain || (c.preparedToday||[]).includes(s.id));
 
     // Enemy tracker — solo visible en combate activo
     let html = '';
@@ -1404,11 +1405,6 @@ const App = (() => {
       else if (actual > 0) _logCombat(`Curado ${actual} HP → ${_char.hp.current} HP`, 'heal');
     }
 
-    // Record delta in history for smart chips
-    if (delta !== 0) {
-      _hpHistory = [delta, ..._hpHistory.filter(v => v !== delta)].slice(0, 5);
-      _renderHPChips();
-    }
 
     if ((prev === 0) !== (_char.hp.current === 0)) _renderCombateIzq();
   }
@@ -1582,15 +1578,6 @@ const App = (() => {
     void el.offsetWidth;
     el.classList.add(type === 'dmg' ? 'hp-flash-dmg' : 'hp-flash-heal');
     setTimeout(() => el.classList.remove('hp-flash-dmg', 'hp-flash-heal'), 600);
-  }
-
-  function _renderHPChips() {
-    const container = document.getElementById('hpChips');
-    if (!container) return;
-    container.innerHTML = _hpHistory.map(v => {
-      const isDmg = v < 0;
-      return `<button class="hp-chip ${isDmg ? 'dmg' : 'heal'}" onclick="App.adjustHP(${v})">${isDmg ? '' : '+'}${v}</button>`;
-    }).join('');
   }
 
   /* ══════════════════════════════════════════════════════

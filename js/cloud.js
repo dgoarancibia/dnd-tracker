@@ -66,11 +66,8 @@ const Cloud = (() => {
   function init() {
     if (!window.FirebaseApp) return;
 
-    // Manejar resultado del redirect de Google
-    FirebaseApp.handleRedirectResult().catch(() => {});
-
     // onAuthStateChanged detecta cambios Y la sesión activa al inicializar
-    // No duplicar con getCurrentUser — onAuthChange ya cubre ese caso
+    // El redirect result ya fue procesado en firebase.js con top-level await
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
       _updateAuthUI(user);
@@ -133,8 +130,14 @@ const Cloud = (() => {
   async function _syncOnLogin(uid) {
     if (!navigator.onLine || _syncing) return;
     _syncing = true;
+    _setSyncState(SyncState.SAVING);
     try {
-      const cloudChars = await FirebaseApp.loadAllCharsCloud(uid);
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 10000));
+      const cloudChars = await Promise.race([
+        FirebaseApp.loadAllCharsCloud(uid),
+        timeout
+      ]);
       if (Object.keys(cloudChars).length === 0) {
         // Primera vez en nube — subir todos los locales
         const local = Storage.getAllChars();
@@ -173,8 +176,10 @@ const Cloud = (() => {
           App.reloadChar();
         }
       }
+      _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
       console.error('Sync on login error:', e);
+      _setSyncState(SyncState.ERROR, e.message === 'timeout' ? 'tiempo de espera agotado' : e.message);
     } finally {
       _syncing = false;
     }
