@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v31';
+const CACHE = 'dnd-tracker-v32';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -20,7 +20,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-    // Sin clients.claim() — evita el parpadeo al instalar
+      .then(() => self.clients.claim())
   );
 });
 
