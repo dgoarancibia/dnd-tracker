@@ -587,7 +587,6 @@ const App = (() => {
     document.getElementById('col-combate-izq').innerHTML = html;
     _updateRoundDisplay();
     _updateConcBlock();
-    _renderHPChips();
   }
 
   function _buildDeathSavesHTML(c) {
