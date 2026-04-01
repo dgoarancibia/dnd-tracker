@@ -76,8 +76,9 @@ const App = (() => {
       });
       _char.preparedToday = savedPrepared;
 
-      // Ifttt: siempre desde master (es solo texto/guía)
+      // Ifttt y features: siempre desde master (es solo texto/guía)
       _char.ifttt = freshLursey.ifttt;
+      _char.features = freshLursey.features;
 
       // Consumables: solo agregar los que no existen — respeta cantidades guardadas
       const savedCons = _char.consumables || [];
@@ -644,6 +645,8 @@ const App = (() => {
 
   function _renderCombateDer() {
     const c = _char;
+    const colDer = document.getElementById('col-combate-der');
+    if (!c || !colDer) return;
 
     // Conjuros clave referencia: cantrips de combate, MI, domain, o preparados hoy
     const keySells = (c.spells || []).filter(s =>
@@ -733,7 +736,7 @@ const App = (() => {
       <strong>Posición ideal:</strong> 15-20 ft detrás del Paladín · alcanza con Balm of Peace y Spirit Guardians
     </div>`;
 
-    document.getElementById('col-combate-der').innerHTML = html;
+    colDer.innerHTML = html;
     if (_combatActive) _renderEnemyTracker();
   }
 
