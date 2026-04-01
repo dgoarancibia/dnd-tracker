@@ -237,8 +237,6 @@ const App = (() => {
 
   // Legacy shims (used by closeAllOverlays etc.)
   function toggleCombatLog() { if (!_notebookOpen) toggleNotebook(); switchNotebookTab('log'); }
-  function toggleDiaryLegacy() { if (!_notebookOpen) toggleNotebook(); switchNotebookTab('diary'); }
-
   function _renderCombatLog() {
     const container = document.getElementById('combatLogEntries');
     if (!container) return;
@@ -1931,13 +1929,6 @@ const App = (() => {
 
     // Refresh right column to show updated slot dots
     _renderCombateDer();
-  }
-
-  function _addDiaryAuto(text) {
-    if (!_char) return;
-    if (!_char.diary) _char.diary = [];
-    _char.diary.unshift({ id: crypto.randomUUID(), timestamp: new Date().toISOString(), text, auto: true });
-    _saveChar();
   }
 
   // Slot picker modal for upcasting
