@@ -247,23 +247,23 @@ const Characters = (() => {
 
   const LURSEY_SPELLS = [
     // ── CANTRIPS ──
-    { id:'toll-dead',    name:'Toll the Dead',    level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false,
+    { id:'toll-dead',    name:'Toll the Dead',    level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:true,
       castTime:'Acción', range:'18 m', duration:'Instantáneo', damage:'1d8 necrótico (2d12 si ya tiene daño)', upcast:null,
       desc:'Acción · 18 m · save WIS · 1d8 necrótico (2d12 si el objetivo ya tiene daño) · sin slot · sin ataque', tags:[],
       fullDesc:'Haces sonar una campana fúnebre invisible. La criatura hace save WIS o recibe 1d8 necrótico. Si ya le faltan HP al castear, el dado aumenta a 1d12. Escala a 2d8/2d12 a nivel 5, 3d8/3d12 a nivel 11, 4d8/4d12 a nivel 17.' },
-    { id:'sacred-flame', name:'Sacred Flame',     level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false,
+    { id:'sacred-flame', name:'Sacred Flame',     level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:true,
       castTime:'Acción', range:'18 m', duration:'Instantáneo', damage:'1d8 radiante', upcast:null,
       desc:'Acción · 18 m · save DEX (ignora cobertura) · 1d8 radiante · escala con nivel del lanzador · ideal vs enemigos que se cubren', tags:[],
       fullDesc:'Llamas divinas caen sobre una criatura a 18 m. Hace save DEX — ignora completamente cualquier cobertura — o recibe 1d8 radiante. Escala a 2d8 a nivel 5, 3d8 a nivel 11, 4d8 a nivel 17.' },
-    { id:'guidance',     name:'Guidance',         level:0, concentration:true,  domain:false, mi:false, bonus:false, ritual:false,
+    { id:'guidance',     name:'Guidance',         level:0, concentration:true,  domain:false, mi:false, bonus:false, ritual:false, combat:false,
       castTime:'Acción', range:'Toque', duration:'Concentración (1 min)', damage:null, upcast:null,
       desc:'Acción · toque · conc 1 min · +1d4 a 1 check de habilidad antes de tirar · solo fuera de combate', tags:['conc'],
       fullDesc:'Tocas a una criatura voluntaria. Antes de que termine la concentración puede añadir 1d4 al resultado de un check de habilidad de su elección. Usa el dado antes o después de tirar. Ideal fuera de combate.' },
-    { id:'thaumaturgy',  name:'Thaumaturgy',      level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false,
+    { id:'thaumaturgy',  name:'Thaumaturgy',      level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:false,
       castTime:'Acción', range:'9 m', duration:'1 minuto', damage:null, upcast:null,
       desc:'Acción · 9 m · efectos menores (voz, llamas, temblor, ojos) · duración 1 min · puro roleplay', tags:[],
       fullDesc:'Manifiestas un pequeño milagro: voz que retumba 3× más fuerte, llamas en colores, temblor leve, truenos lejanos, puertas que se abren solas, o tus ojos brillan. Hasta 3 efectos activos a la vez, cada uno dura 1 minuto.' },
-    { id:'spare-dying',  name:'Spare the Dying',  level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false,
+    { id:'spare-dying',  name:'Spare the Dying',  level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:true,
       castTime:'Acción', range:'Toque', duration:'Instantáneo', damage:null, upcast:null,
       desc:'Acción · toque · estabiliza a criatura en 0 HP · no gasta slot · sin curación · solo detiene la muerte', tags:[],
       fullDesc:'Tocas a una criatura viva con 0 HP. Queda estabilizada automáticamente. No cura nada, solo detiene las tiradas de muerte. No funciona en construcciones ni muertos vivientes.' },
@@ -525,6 +525,51 @@ const Characters = (() => {
       },
 
       diary: [],
+
+      features: [
+        {
+          id: 'emboldening-bond',
+          name: 'Emboldening Bond',
+          source: 'Dominio de la Paz',
+          type: 'active',
+          desc: 'Elige hasta Prof.Bonus criaturas a 30 ft. Por 10 min cada una añade +1d4 a tiradas de ataque, checks de habilidad y saves. Recharge: descanso largo. Usos = Prof.Bonus (3).'
+        },
+        {
+          id: 'cd-balm',
+          name: 'CD: Balm of Peace',
+          source: 'Channel Divinity',
+          type: 'active',
+          desc: 'Te mueves hasta tu velocidad sin provocar ataques de oportunidad. Puedes curar a cada criatura que pases a 5 ft: 2d6 + MOD SAB (+4) HP. Gasta 1 Channel Divinity.'
+        },
+        {
+          id: 'cd-spark',
+          name: 'CD: Divine Spark',
+          source: 'Channel Divinity',
+          type: 'active',
+          desc: 'Elige una criatura a 18 m. Lanza MOD SAB dados de curación (d8) y cura o daña por ese total. A nivel 7: +1d8 dado. Gasta 1 Channel Divinity.'
+        },
+        {
+          id: 'cd-undead',
+          name: 'CD: Turn Undead',
+          source: 'Channel Divinity',
+          type: 'active',
+          desc: 'Cada no-muerto a 9 ft que falle save SAB queda expulsado 1 min (debe alejarse). Gasta 1 Channel Divinity.'
+        },
+        {
+          id: 'blessed-healer',
+          name: 'Blessed Healer',
+          source: 'Dominio de la Paz · Pasiva',
+          type: 'passive',
+          desc: 'Cuando lanzas un conjuro de curación en un aliado, tú también te curas 2 + nivel del conjuro HP. Automático, sin acción extra.'
+        },
+        {
+          id: 'war-caster',
+          name: 'War Caster',
+          source: 'Dote · Pasiva',
+          type: 'passive',
+          desc: 'Ventaja en saves de CON para mantener concentración. Puedes usar Toll the Dead (u otro conjuro de 1 acción) como ataque de oportunidad. Puedes lanzar con las dos manos ocupadas.'
+        }
+      ],
 
       ifttt: LURSEY_IFTTT,
 

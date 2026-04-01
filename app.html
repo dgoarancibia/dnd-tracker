@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=24">
 </head>
 <body>
 
@@ -194,18 +194,15 @@
 
   <!-- SUB-TAB: DIARIO -->
   <div class="nb-pane" id="nbPaneDiary">
-    <div class="diary-search-wrap">
-      <input type="text" class="diary-search" id="diarySearch" placeholder="Buscar en el diario..."
-             oninput="App.filterDiary(this.value)">
-    </div>
     <div class="diary-entries" id="diaryEntries"></div>
     <div class="diary-compose">
-      <textarea class="diary-textarea" id="diaryInput"
-                placeholder="Anota lo que pasó en la sesión..."
-                onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){App.addDiaryEntry();event.preventDefault();}"></textarea>
-      <div class="diary-compose-actions">
-        <button class="btn-sm" onclick="App.exportDiary()">↓ Exportar</button>
-        <button class="btn btn-gold" onclick="App.addDiaryEntry()">Guardar</button>
+      <textarea class="diary-textarea" id="diaryInput" rows="1"
+                placeholder="Escribe una nota…"
+                oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){App.addDiaryEntry();event.preventDefault();}"></textarea>
+      <div class="diary-compose-row">
+        <button class="btn-sm" onclick="App.exportDiary()" title="Exportar diario">↓</button>
+        <button class="diary-send-btn" onclick="App.addDiaryEntry()">↑ Enviar</button>
       </div>
     </div>
   </div>
@@ -545,9 +542,9 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=23"></script>
-<script src="js/characters.js?v=23"></script>
-<script src="js/app.js?v=23"></script>
+<script src="js/storage.js?v=24"></script>
+<script src="js/characters.js?v=24"></script>
+<script src="js/app.js?v=24"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después -->
 <script type="module">

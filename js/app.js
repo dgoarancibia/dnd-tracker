@@ -645,9 +645,9 @@ const App = (() => {
   function _renderCombateDer() {
     const c = _char;
 
-    // Conjuros clave referencia: cantrips, MI, domain, o preparados hoy
+    // Conjuros clave referencia: cantrips de combate, MI, domain, o preparados hoy
     const keySells = (c.spells || []).filter(s =>
-      s.level === 0 || s.mi || s.domain || (c.preparedToday||[]).includes(s.id));
+      (s.level === 0 && s.combat !== false) || s.mi || s.domain || (c.preparedToday||[]).includes(s.id));
 
     // Enemy tracker — solo visible en combate activo
     let html = '';
@@ -698,6 +698,22 @@ const App = (() => {
         </div>`;
       });
     });
+
+    // Habilidades de clase
+    const features = c.features || [];
+    if (features.length) {
+      html += `<div class="section-hd" style="margin-top:16px;">⚡ Habilidades de Clase</div>`;
+      features.forEach(f => {
+        const badge = f.type === 'passive'
+          ? `<span class="feat-badge feat-passive">Pasiva</span>`
+          : `<span class="feat-badge feat-active">Activa</span>`;
+        html += `<div class="feat-card">
+          <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}</div>
+          <div class="feat-source">${f.source}</div>
+          <div class="feat-desc">${f.desc}</div>
+        </div>`;
+      });
+    }
 
     // Prioridad de slots
     html += `
@@ -2742,31 +2758,38 @@ const App = (() => {
     toggleNotebook();
   }
 
-  function _renderDiaryEntries(filter = '') {
-    const entries = (_char.diary || []).filter(e =>
-      !filter || e.text.toLowerCase().includes(filter.toLowerCase())
-    ).slice().reverse(); // más recientes primero
+  function _renderDiaryEntries() {
+    const entries = (_char.diary || []).slice(); // cronológico, más antiguo primero
 
     const container = document.getElementById('diaryEntries');
     if (!container) return;
 
     if (entries.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="es-icon">📓</div><div class="es-title">Sin entradas</div><div class="es-text">${filter ? 'No se encontraron resultados.' : 'Escribe algo abajo para empezar.'}</div></div>`;
+      container.innerHTML = `<div class="empty-state"><div class="es-icon">📓</div><div class="es-title">Sin notas aún</div><div class="es-text">Escribe algo y presiona Enter para guardar.</div></div>`;
       return;
     }
 
-    container.innerHTML = entries.map(e => {
+    let html = '';
+    let lastDay = '';
+    entries.forEach(e => {
       const d = new Date(e.timestamp);
-      const ts = d.toLocaleDateString('es', { day:'2-digit', month:'2-digit', year:'numeric' }) +
-                 ' ' + d.toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
-      return `<div class="diary-entry">
-        <div class="diary-entry-ts">${ts}</div>
-        <div class="diary-entry-text">${e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-        <div class="diary-entry-actions">
-          <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">Eliminar</button>
+      const day = d.toLocaleDateString('es', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+      const time = d.toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
+      if (day !== lastDay) {
+        html += `<div class="diary-day-sep"><span>${day}</span></div>`;
+        lastDay = day;
+      }
+      html += `<div class="diary-bubble" data-id="${e.id}">
+        <div class="diary-bubble-text">${e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+        <div class="diary-bubble-meta">
+          <span class="diary-bubble-time">${time}</span>
+          <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">✕</button>
         </div>
       </div>`;
-    }).join('');
+    });
+    container.innerHTML = html;
+    // Auto-scroll al fondo (más reciente)
+    container.scrollTop = container.scrollHeight;
   }
 
   function addDiaryEntry() {
@@ -2784,21 +2807,20 @@ const App = (() => {
     _char.diary.push(entry);
     _saveChar();
     textarea.value = '';
-    _renderDiaryEntries(document.getElementById('diarySearch').value);
+    textarea.style.height = 'auto';
+    _renderDiaryEntries();
   }
 
   function deleteDiaryEntry(id) {
     if (!_char.diary) return;
-    _confirm('¿Eliminar esta entrada del diario?', () => {
+    _confirm('¿Eliminar esta nota?', () => {
       _char.diary = _char.diary.filter(e => e.id !== id);
       _saveChar();
-      _renderDiaryEntries(document.getElementById('diarySearch').value);
+      _renderDiaryEntries();
     });
   }
 
-  function filterDiary(query) {
-    _renderDiaryEntries(query);
-  }
+  function filterDiary() { /* no-op, kept for compat */ }
 
   function exportDiary() {
     Storage.exportDiaryTxt(_char);
