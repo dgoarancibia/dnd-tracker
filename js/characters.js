@@ -409,7 +409,7 @@ const Characters = (() => {
     // Cualquier turno
     { section:'Cualquier turno', trigger:'Si aliado cae a 0 HP', action:'<em>Healing Word</em> como <strong>bonus action</strong> — no gastes la acción', tag:'si' },
     { section:'Cualquier turno', trigger:'Si focalizan al Warlock/Mago', action:'<strong>Sanctuary</strong> — sin concentración, busca otro objetivo', tag:'si' },
-    { section:'Cualquier turno', trigger:'Si varios aliados bajos en posiciones distintas', action:'<strong>Balm of Peace</strong> — muévete entre ellos, 2d6+4 a cada uno a 5 ft, sin oportunidad de ataque', tag:'si' },
+    { section:'Cualquier turno', trigger:'Si varios aliados bajos en posiciones distintas', action:'<strong>Balm of Peace</strong> — muévete entre ellos, 2d6+4 a cada uno a 1,5 m, sin oportunidad de ataque', tag:'si' },
     { section:'Cualquier turno', trigger:'Si enemigo sale de tu rango', action:'<em>War Caster:</em> <strong>Toll the Dead</strong> de oportunidad', tag:'si' },
     { section:'Cualquier turno', trigger:'Si alguien muere', action:'<strong>Revivify</strong> inmediato, no esperes', tag:'si' },
     // Turno libre
@@ -473,7 +473,7 @@ const Characters = (() => {
           name: 'Emboldening Bond',
           current: 3, max: 3,
           recharge: 'long',
-          note: '1d4 en ataque/save/check · 30 ft · 10 min · max = prof bonus'
+          note: '1d4 en ataque/save/check · 9 m · 10 min · max = prof bonus'
         },
         {
           id: 'guiding-bolt-mi',
@@ -534,9 +534,9 @@ const Characters = (() => {
           type: 'active',
           recharge: 'Largo',
           action: 'Acción',
-          range: '10 ft',
+          range: '9 m',
           desc: 'Crea un vínculo entre hasta Prof.Bonus criaturas (3 a nivel 5).',
-          fullDesc: 'Como acción, eliges hasta tu Bono de Competencia (3) en criaturas que puedas ver a 30 ft de ti, incluido tú mismo. Las criaturas vinculadas añaden 1d4 a todas sus tiradas de ataque, checks de habilidad y tiradas de salvación mientras permanezcan a 30 ft entre sí. El efecto dura 10 minutos. Cada criatura solo puede estar vinculada una vez a la vez. Se recarga con descanso largo.'
+          fullDesc: 'Como acción, eliges hasta tu Bono de Competencia (3) en criaturas que puedas ver a 9 m de ti, incluido tú mismo. Las criaturas vinculadas añaden 1d4 a todas sus tiradas de ataque, checks de habilidad y tiradas de salvación mientras permanezcan a 9 m entre sí. El efecto dura 10 minutos. Cada criatura solo puede estar vinculada una vez a la vez. Se recarga con descanso largo.'
         },
         {
           id: 'cd-balm',
@@ -546,8 +546,8 @@ const Characters = (() => {
           recharge: 'Corto/Largo',
           action: 'Acción',
           range: 'Movimiento',
-          desc: 'Muévete sin provocar OA y cura a cada aliado que pases a 5 ft.',
-          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Hasta el final de tu turno, tu movimiento no provoca ataques de oportunidad. Cuando te mueves a 5 ft de cualquier criatura durante este movimiento, puedes curarla por 2d6 + tu modificador de Sabiduría (+4) HP. Solo puedes curar a cada criatura una vez por uso. No requiere que las criaturas estén inconscientes ni que sean aliadas — puedes elegir a quién curar al moverte.'
+          desc: 'Muévete sin provocar OA y cura a cada aliado que pases a 1,5 m.',
+          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Hasta el final de tu turno, tu movimiento no provoca ataques de oportunidad. Cuando te mueves a 1,5 m de cualquier criatura durante este movimiento, puedes curarla por 2d6 + tu modificador de Sabiduría (+4) HP. Solo puedes curar a cada criatura una vez por uso. No requiere que las criaturas estén inconscientes ni que sean aliadas — puedes elegir a quién curar al moverte.'
         },
         {
           id: 'cd-spark',
@@ -569,7 +569,7 @@ const Characters = (() => {
           action: 'Acción',
           range: '9 m (área)',
           desc: 'Expulsa no-muertos cercanos que fallen su save de SAB.',
-          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Cada no-muerto que puedas ver a 30 ft de ti debe hacer una tirada de salvación de Sabiduría contra tu CD de conjuro (15). Si falla, queda Expulsado durante 1 minuto. Un no-muerto expulsado debe usar su movimiento para alejarse de ti lo máximo posible, no puede acercarse voluntariamente a ti, y no puede realizar reacciones. Solo puede usar la acción Dash o intentar escapar de un efecto que le impida moverse. Si no tiene adonde huir, puede usar la acción Dodge. A nivel 5 (Destroy Undead), no-muertos de CR 1/2 o menos son destruidos directamente.'
+          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Cada no-muerto que puedas ver a 9 m de ti debe hacer una tirada de salvación de Sabiduría contra tu CD de conjuro (15). Si falla, queda Expulsado durante 1 minuto. Un no-muerto expulsado debe usar su movimiento para alejarse de ti lo máximo posible, no puede acercarse voluntariamente a ti, y no puede realizar reacciones. Solo puede usar la acción Dash o intentar escapar de un efecto que le impida moverse. Si no tiene adonde huir, puede usar la acción Dodge. A nivel 5 (Destroy Undead), no-muertos de CR 1/2 o menos son destruidos directamente.'
         },
         {
           id: 'blessed-healer',
@@ -591,7 +591,7 @@ const Characters = (() => {
           action: 'Pasiva / Reacción',
           range: 'Personal',
           desc: 'Ventaja en CON saves para concentración, Toll the Dead como OA.',
-          fullDesc: 'Este dote otorga tres beneficios:\n\n1. Tienes ventaja en las tiradas de salvación de Constitución para mantener la concentración en un conjuro cuando recibes daño.\n\n2. Puedes realizar los componentes somáticos de los conjuros incluso cuando tienes una o dos manos ocupadas sosteniendo armas o escudos.\n\n3. Cuando una criatura provoca un ataque de oportunidad, puedes usar tu reacción para lanzar un conjuro con tiempo de casteo de 1 acción en lugar del ataque de oportunidad normal. El conjuro debe tener como objetivo solo esa criatura — Toll the Dead es la opción ideal (save WIS, 1d8 necrótico o 1d12 si ya tiene daño).'
+          fullDesc: 'Este dote otorga tres beneficios:\n\n1. Tienes ventaja en las tiradas de salvación de Constitución para mantener la concentración en un conjuro cuando recibes daño.\n\n2. Puedes realizar los componentes somáticos de los conjuros incluso cuando tienes una o dos manos ocupadas sosteniendo armas o escudos.\n\n3. Cuando una criatura provoca un ataque de oportunidad, puedes usar tu reacción para lanzar un conjuro con tiempo de casteo de 1 acción en lugar del ataque de oportunidad normal. El conjuro debe tener como objetivo solo esa criatura — Toll the Dead es la opción ideal (save SAB, 1d8 necrótico o 1d12 si ya tiene daño).'
         }
       ],
 
