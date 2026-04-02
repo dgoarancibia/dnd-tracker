@@ -827,8 +827,8 @@ input[type=number] { -moz-appearance: textfield; }
 /* ── SECTION HEADERS ── */
 .section-hd {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 3px;
+  font-size: 11px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--gold);
   margin-bottom: 10px;
@@ -837,9 +837,9 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .section-divider {
-  font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 2px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--text-dim);
   margin: 12px 0 6px;
@@ -1123,9 +1123,9 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .conc-label {
-  font-family: 'Cinzel', serif;
-  font-size: 8px;
-  letter-spacing: 1.5px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 11px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-dim);
   margin-bottom: 3px;
@@ -1607,9 +1607,9 @@ input[type=number] { -moz-appearance: textfield; }
   margin-top: 2px;
 }
 
-.prio-text { font-size: 14px; color: var(--text); }
+.prio-text { font-size: 15px; font-family: 'Crimson Pro', serif; color: var(--text); }
 .prio-text strong { color: var(--gold-light); }
-.prio-text small { display: block; font-size: 12px; color: var(--text-dim); margin-top: 2px; font-style: italic; }
+.prio-text small { display: block; font-size: 13px; font-family: 'Crimson Pro', serif; color: var(--text-dim); margin-top: 2px; font-style: italic; }
 
 /* FEATURE CARDS */
 .feat-card {
@@ -1652,7 +1652,8 @@ input[type=number] { -moz-appearance: textfield; }
   margin-bottom: 4px;
 }
 .feat-desc {
-  font-size: 12px;
+  font-size: 14px;
+  font-family: 'Crimson Pro', serif;
   color: var(--text-mid);
   line-height: 1.5;
 }
@@ -1664,9 +1665,10 @@ input[type=number] { -moz-appearance: textfield; }
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: 7px 11px;
   margin-bottom: 7px;
-  font-size: 13px;
+  font-size: 15px;
+  font-family: 'Crimson Pro', serif;
   color: var(--text-mid);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .note-block strong { color: var(--text); }
@@ -1839,14 +1841,15 @@ input[type=number] { -moz-appearance: textfield; }
   margin-bottom: 3px;
 }
 
-.spell-name { font-weight: 600; font-size: 13px; color: var(--text); flex: 1; }
+.spell-name { font-weight: 600; font-size: 14px; color: var(--text); flex: 1; }
 .spell-lvl { font-family: 'Cinzel', serif; font-size: 9px; color: var(--gold); min-width: 12px; }
 
 .spell-desc {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-dim);
+  font-family: 'Crimson Pro', serif;
   font-style: italic;
-  line-height: 1.4;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1857,7 +1860,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* Spell cards in combat reference panel — larger text */
 #tab-combate .spell-name { font-size: 15px; }
-#tab-combate .spell-desc { font-size: 12px; max-height: 3em; }
+#tab-combate .spell-desc { font-size: 14px; max-height: 3em; }
 .spell-desc.expanded {
   display: block;
   max-height: 200px;
@@ -2045,7 +2048,7 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .item-desc {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-dim);
   font-family: 'Crimson Pro', serif;
   font-style: italic;
@@ -2608,9 +2611,10 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .diary-bubble-text {
-  font-size: 14px;
+  font-size: 16px;
+  font-family: 'Crimson Pro', serif;
   color: var(--text);
-  line-height: 1.55;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -3053,16 +3057,18 @@ input[type=number] { -moz-appearance: textfield; }
   border-left: 3px solid var(--gold-dim);
   border-radius: 0 6px 6px 0;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: 15px;
+  font-family: 'Crimson Pro', serif;
   color: var(--text-mid);
   font-style: italic;
-  line-height: 1.5;
+  line-height: 1.55;
   margin-bottom: 14px;
 }
 .fdm-full {
-  font-size: 14px;
+  font-size: 15px;
+  font-family: 'Crimson Pro', serif;
   color: var(--text);
-  line-height: 1.7;
+  line-height: 1.75;
   max-height: 280px;
   overflow-y: auto;
   scrollbar-width: thin;
