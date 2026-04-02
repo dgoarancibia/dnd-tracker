@@ -76,9 +76,11 @@ const App = (() => {
       });
       _char.preparedToday = savedPrepared;
 
-      // Ifttt y features: siempre desde master (es solo texto/guía)
+      // Ifttt, features, slotPriority y combatTips: siempre desde master (es solo texto/guía)
       _char.ifttt = freshLursey.ifttt;
       _char.features = freshLursey.features;
+      _char.slotPriority = freshLursey.slotPriority;
+      _char.combatTips = freshLursey.combatTips;
 
       // Consumables: solo agregar los que no existen — respeta cantidades guardadas
       const savedCons = _char.consumables || [];
@@ -716,22 +718,23 @@ const App = (() => {
     }
 
     // Prioridad de slots
-    html += `
-    <div class="section-hd" style="margin-top:16px;">🎯 Prioridad de Slots</div>
-    <div class="prio-item"><span class="prio-num">1</span><span class="prio-text"><strong>Revivify</strong><small>Guardar hasta muerte real</small></span></div>
-    <div class="prio-item"><span class="prio-num">2</span><span class="prio-text"><strong>Mass Healing Word</strong><small>Solo colapso total del grupo</small></span></div>
-    <div class="prio-item"><span class="prio-num">3</span><span class="prio-text"><strong>Spirit Guard. / Beacon</strong><small>Ronda 1 vs jefe · elige según situación</small></span></div>
-    <div class="prio-item"><span class="prio-num">4</span><span class="prio-text"><strong>Healing Word</strong><small>Reactivo cuando cae alguien</small></span></div>
-    <div class="prio-item"><span class="prio-num">5</span><span class="prio-text"><strong>Resto — úsalos</strong><small>Command · Guiding Bolt · Lesser Restoration</small></span></div>`;
+    const prio = c.slotPriority || [];
+    if (prio.length > 0) {
+      html += `<div class="section-hd" style="margin-top:16px;">🎯 Prioridad de Slots</div>`;
+      prio.forEach((p, i) => {
+        html += `<div class="prio-item"><span class="prio-num">${i+1}</span><span class="prio-text"><strong>${p.label}</strong><small>${p.note}</small></span></div>`;
+      });
+    }
 
-    // Notes de combate
-    html += `
-    <div class="note-block" style="margin-top:14px;">
-      <strong>Bond activo + Bless = 2d4</strong> en ataques y saves · recuérdales cada combate
-    </div>
-    <div class="note-block">
-      <strong>Posición ideal:</strong> 15-20 ft detrás del Paladín · alcanza con Balm of Peace y Spirit Guardians
-    </div>`;
+    // Tips de combate
+    const tips = c.combatTips || [];
+    if (tips.length > 0) {
+      html += `<div style="margin-top:14px;">`;
+      tips.forEach(t => {
+        html += `<div class="note-block">${t.text}</div>`;
+      });
+      html += `</div>`;
+    }
 
     colDer.innerHTML = html;
     if (_combatActive) _renderEnemyTracker();
@@ -1121,8 +1124,9 @@ const App = (() => {
       (c.consumables || []).forEach((item, i) => {
         if (item.slot === 'body') return;
         const cat = item.category || 'Other';
+        const emptyClass = item.qty === 0 ? ' item-row--empty' : '';
         htmlDer += `
-        <div class="item-row">
+        <div class="item-row${emptyClass}" id="item-row-${i}">
           <div class="item-row-left">
             <span class="item-name">${item.name}</span>
             ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
@@ -2355,8 +2359,11 @@ const App = (() => {
   function adjustConsumable(idx, delta) {
     _char.consumables[idx].qty = Math.max(0, _char.consumables[idx].qty + delta);
     _saveChar();
+    const newQty = _char.consumables[idx].qty;
     const el = document.getElementById(`cons-${idx}`);
-    if (el) el.textContent = _char.consumables[idx].qty;
+    if (el) el.textContent = newQty;
+    const row = document.getElementById(`item-row-${idx}`);
+    if (row) row.classList.toggle('item-row--empty', newQty === 0);
   }
 
   function deleteConsumable(idx) {

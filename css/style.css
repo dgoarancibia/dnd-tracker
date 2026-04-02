@@ -1999,6 +1999,13 @@ input[type=number] { -moz-appearance: textfield; }
 }
 .item-row:last-child { border-bottom: none; }
 
+.item-row--empty {
+  opacity: 0.45;
+}
+.item-row--empty .item-name {
+  text-decoration: line-through;
+}
+
 .item-row-left {
   display: flex;
   flex-direction: column;

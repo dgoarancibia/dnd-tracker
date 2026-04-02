@@ -597,6 +597,19 @@ const Characters = (() => {
 
       ifttt: LURSEY_IFTTT,
 
+      slotPriority: [
+        { label: 'Revivify',                  note: 'Guardar hasta muerte real' },
+        { label: 'Mass Healing Word',          note: 'Solo colapso total del grupo' },
+        { label: 'Spirit Guard. / Beacon',     note: 'Ronda 1 vs jefe · elige según situación' },
+        { label: 'Healing Word',               note: 'Reactivo cuando cae alguien' },
+        { label: 'Resto — úsalos',             note: 'Command · Guiding Bolt · Lesser Restoration' }
+      ],
+
+      combatTips: [
+        { text: '<strong>Bond activo + Bless = 2d4</strong> en ataques y saves · recuérdales cada combate' },
+        { text: '<strong>Posición ideal:</strong> 15-20 ft detrás del Paladín · alcanza con Balm of Peace y Spirit Guardians' }
+      ],
+
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

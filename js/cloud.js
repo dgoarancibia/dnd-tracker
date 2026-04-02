@@ -74,8 +74,9 @@ const Cloud = (() => {
       if (user) _syncOnLogin(user.uid);
     });
 
-    // Detectar online/offline
-    window.addEventListener('online',  () => { if (_uid) _setSyncState(SyncState.IDLE); });
+    // Detectar online/offline (incluye estado inicial)
+    if (!navigator.onLine) _setSyncState(SyncState.OFFLINE);
+    window.addEventListener('online',  () => { _setSyncState(SyncState.IDLE); });
     window.addEventListener('offline', () => _setSyncState(SyncState.OFFLINE));
   }
 
