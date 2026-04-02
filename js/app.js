@@ -1124,10 +1124,7 @@ const App = (() => {
         htmlDer += `
         <div class="item-row">
           <div class="item-row-left">
-            <div class="item-qty-name">
-              <span class="item-qty">×${item.qty}</span>
-              <span class="item-name">${item.name}</span>
-            </div>
+            <span class="item-name">${item.name}</span>
             ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
           </div>
           <div class="item-row-right">

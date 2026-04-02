@@ -573,8 +573,8 @@ input[type=number] { -moz-appearance: textfield; }
   font-family: 'Cinzel', serif;
   font-size: 13px;
   font-weight: 600;
-  padding: 5px 10px;
-  min-height: 34px;
+  padding: 8px 10px;
+  min-height: 44px;
   border-radius: var(--radius-sm);
   border: 1px solid;
   cursor: pointer;
@@ -601,20 +601,28 @@ input[type=number] { -moz-appearance: textfield; }
 .hp-hdr-free {
   font-family: 'Cinzel', serif;
   font-size: 12px;
-  width: 54px;
-  min-height: 28px;
+  width: 60px;
+  min-height: 44px;
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
   text-align: center;
-  padding: 2px 4px;
+  padding: 4px 4px;
 }
 
 .hp-hdr-free:focus { outline: none; border-color: var(--gold-dim); }
 
 /* STAT BOXES HEADER */
 .stats-strip { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+.stat-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
 
 .stat-box {
   background: var(--bg3);
@@ -1089,21 +1097,21 @@ input[type=number] { -moz-appearance: textfield; }
 
 .turn-end-btn {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 1px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  padding: 5px 10px;
+  padding: 8px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--gold-dim);
-  background: rgba(201,151,58,0.12);
-  color: var(--gold-light);
+  border: 1px solid var(--blue-light);
+  background: rgba(58,90,138,0.18);
+  color: var(--blue-light);
   cursor: pointer;
   transition: all 0.15s;
-  min-height: 32px;
+  min-height: 44px;
   white-space: nowrap;
 }
 
-.turn-end-btn:hover { background: rgba(201,151,58,0.22); border-color: var(--gold); }
+.turn-end-btn:hover { background: rgba(58,90,138,0.32); border-color: #7ba4d4; color: #7ba4d4; }
 
 /* CONCENTRACIÓN */
 .conc-block {
@@ -1124,20 +1132,20 @@ input[type=number] { -moz-appearance: textfield; }
   display: block;
 }
 
-.conc-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.conc-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .conc-btn {
   font-family: 'Cinzel', serif;
   font-size: 10px;
   letter-spacing: 0.5px;
-  padding: 3px 9px;
+  padding: 6px 14px;
   border-radius: 20px;
   border: 1px solid var(--border);
   background: var(--bg2);
   color: var(--text-dim);
   cursor: pointer;
   transition: all 0.15s;
-  min-height: 28px;
+  min-height: 44px;
 }
 
 .conc-btn:hover { border-color: var(--gold-dim); color: var(--text-mid); }
@@ -1765,7 +1773,7 @@ input[type=number] { -moz-appearance: textfield; }
 /* Cast button on spell cards */
 .cast-btn {
   flex-shrink: 0;
-  padding: 5px 10px;
+  padding: 8px 12px;
   font-size: 11px;
   font-weight: 600;
   border: 1px solid var(--gold);
@@ -1777,7 +1785,7 @@ input[type=number] { -moz-appearance: textfield; }
   transition: background 0.15s, color 0.15s;
   min-width: 56px;
   text-align: center;
-  min-height: 32px;
+  min-height: 44px;
 }
 .cast-btn:hover { background: var(--gold); color: var(--bg); }
 .cast-btn:active { transform: scale(0.97); }
@@ -2066,12 +2074,13 @@ input[type=number] { -moz-appearance: textfield; }
   background: transparent;
   border: none;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 10px 10px;
   border-radius: 4px;
   line-height: 1;
-  min-height: 28px;
+  min-height: 44px;
+  min-width: 44px;
   transition: color 0.15s;
 }
 .item-del:hover  { color: var(--red-light); }
@@ -4152,17 +4161,17 @@ input[type=number] { -moz-appearance: textfield; }
 
 .hdr-rest-btn {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 1px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  padding: 5px 10px;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg3);
   color: var(--text-dim);
   cursor: pointer;
   transition: all 0.13s;
-  min-height: 28px;
+  min-height: 44px;
   white-space: nowrap;
 }
 
