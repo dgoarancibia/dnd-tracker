@@ -607,7 +607,7 @@ const Characters = (() => {
 
       combatTips: [
         { text: '<strong>Bond activo + Bless = 2d4</strong> en ataques y saves · recuérdales cada combate' },
-        { text: '<strong>Posición ideal:</strong> 15-20 ft detrás del Paladín · alcanza con Balm of Peace y Spirit Guardians' }
+        { text: '<strong>Posición ideal:</strong> 4,5-6 m detrás del Paladín · alcanza con Balm of Peace y Spirit Guardians' }
       ],
 
       createdAt: new Date().toISOString(),

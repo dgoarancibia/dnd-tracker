@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v40';
+const CACHE = 'dnd-tracker-v41';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -27,14 +27,24 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Google Fonts — cache-first
+  // Nunca interceptar Firebase, Firestore ni Auth — son dinámicos y causan errores de caché
+  if (
+    url.hostname.includes('firestore.googleapis.com') ||
+    url.hostname.includes('firebase') ||
+    url.hostname.includes('googleapis.com') ||
+    url.hostname.includes('gstatic.com') && url.pathname.includes('firebasejs')
+  ) return;
+
+  // Google Fonts — cache-first (solo si respuesta ok)
   if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
     e.respondWith(
       caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-        const toCache = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, toCache));
+        if (res.ok && res.status < 400) {
+          const toCache = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, toCache));
+        }
         return res;
-      }))
+      }).catch(() => new Response('', { status: 503 })))
     );
     return;
   }
