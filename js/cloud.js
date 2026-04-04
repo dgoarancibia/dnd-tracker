@@ -171,8 +171,8 @@ const Cloud = (() => {
           Storage.saveCharRaw(char);
         }
         // Notificar a app para re-render si está inicializada
-        if (window.App && typeof App.reloadChar === 'function') {
-          App.reloadChar();
+        if (window.App && typeof App.init === 'function') {
+          App.init();
         }
       }
       _setSyncState(SyncState.SAVED, new Date().toISOString());
@@ -287,8 +287,8 @@ const Cloud = (() => {
       for (const char of Object.values(cloudChars)) {
         Storage.saveCharRaw(char);
       }
-      if (window.App && typeof App.reloadChar === 'function') {
-        App.reloadChar();
+      if (window.App && typeof App.init === 'function') {
+        App.init();
       }
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
