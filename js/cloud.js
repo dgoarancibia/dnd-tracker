@@ -224,8 +224,8 @@ const Cloud = (() => {
       for (const char of Object.values(local)) {
         Storage.saveCharRaw(char);
       }
-      if (window.App && typeof App.reloadChar === 'function') {
-        App.reloadChar();
+      if (window.App && typeof App.init === 'function') {
+        App.init();
       }
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     }
