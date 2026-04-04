@@ -93,9 +93,11 @@ const Cloud = (() => {
 
     if (!loginBtn) return;
 
+    const forcePullBtn = document.getElementById('forcePullBtn');
     if (user) {
       loginBtn.style.display  = 'none';
       logoutBtn.style.display = 'inline-flex';
+      if (forcePullBtn) forcePullBtn.style.display = 'inline-flex';
       if (userLabel) {
         userLabel.textContent = user.displayName || user.email || '';
         userLabel.style.display = 'inline';
@@ -103,6 +105,7 @@ const Cloud = (() => {
     } else {
       loginBtn.style.display  = 'inline-flex';
       logoutBtn.style.display = 'none';
+      if (forcePullBtn) forcePullBtn.style.display = 'none';
       if (userLabel) userLabel.style.display = 'none';
       _setSyncState(SyncState.IDLE);
     }
@@ -196,36 +199,53 @@ const Cloud = (() => {
      LISTENER EN TIEMPO REAL
   ══════════════════════════════════════════════════════ */
 
+  let _listenerReady = false;
+
   function _startListener(uid) {
     _stopListener();
+    _listenerReady = false;
+
     _unsubListen = FirebaseApp.listenCharsCloud(uid, cloudChars => {
-      // Ignorar el primer disparo si aún estamos en el sync inicial
-      if (_syncing) return;
-
-      const local = Storage.getAllChars();
-      let changed = false;
-
-      for (const [id, cloudChar] of Object.entries(cloudChars)) {
-        const localChar = local[id];
-        const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
-        const localTs = new Date(localChar ? localChar.updatedAt || 0 : 0).getTime();
-
-        if (cloudTs > localTs) {
-          local[id] = cloudChar;
-          changed = true;
-        }
+      // Primer disparo: es el estado inicial de Firestore — úsalo directamente
+      // igual que _syncOnLogin pero sin bloquear por _syncing
+      if (!_listenerReady) {
+        _listenerReady = true;
+        // Si _syncing aún corre, dejar que _syncOnLogin maneje este primer estado
+        if (_syncing) return;
+        // Si _syncOnLogin ya terminó, aplicar estado de nube directo
+        _applyCloudChars(cloudChars);
+        return;
       }
 
-      if (changed) {
-        for (const char of Object.values(local)) {
-          Storage.saveCharRaw(char);
-        }
-        if (window.App && typeof App.reloadChar === 'function') {
-          App.reloadChar();
-        }
-        _setSyncState(SyncState.SAVED, new Date().toISOString());
-      }
+      // Disparos posteriores: cambio real desde otro dispositivo
+      _applyCloudChars(cloudChars);
     });
+  }
+
+  function _applyCloudChars(cloudChars) {
+    const local = Storage.getAllChars();
+    let changed = false;
+
+    for (const [id, cloudChar] of Object.entries(cloudChars)) {
+      const localChar = local[id];
+      const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
+      const localTs = new Date(localChar ? localChar.updatedAt || 0 : 0).getTime();
+
+      if (cloudTs > localTs) {
+        local[id] = cloudChar;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      for (const char of Object.values(local)) {
+        Storage.saveCharRaw(char);
+      }
+      if (window.App && typeof App.reloadChar === 'function') {
+        App.reloadChar();
+      }
+      _setSyncState(SyncState.SAVED, new Date().toISOString());
+    }
   }
 
   function _stopListener() {
@@ -270,6 +290,30 @@ const Cloud = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
+     FORCE PULL — sobreescribe local con versión de nube
+  ══════════════════════════════════════════════════════ */
+
+  async function forcePullFromCloud() {
+    if (!_uid || !navigator.onLine) {
+      _setSyncState(SyncState.ERROR, 'sin conexión');
+      return;
+    }
+    _setSyncState(SyncState.SAVING);
+    try {
+      const cloudChars = await FirebaseApp.loadAllCharsCloud(_uid);
+      for (const char of Object.values(cloudChars)) {
+        Storage.saveCharRaw(char);
+      }
+      if (window.App && typeof App.reloadChar === 'function') {
+        App.reloadChar();
+      }
+      _setSyncState(SyncState.SAVED, new Date().toISOString());
+    } catch (e) {
+      _setSyncState(SyncState.ERROR, e.message);
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════
      DELETE CHAR
   ══════════════════════════════════════════════════════ */
 
@@ -289,7 +333,8 @@ const Cloud = (() => {
     isLoggedIn,
     scheduleSave,
     saveNow,
-    deleteChar
+    deleteChar,
+    forcePullFromCloud
   };
 })();
 
