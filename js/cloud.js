@@ -224,8 +224,11 @@ const Cloud = (() => {
       for (const char of Object.values(local)) {
         Storage.saveCharRaw(char);
       }
-      if (window.App && typeof App.init === 'function') {
-        App.init();
+      // Recargar el personaje activo directamente con los datos frescos
+      const activeId = Storage.getActiveId();
+      const freshChar = activeId ? local[activeId] : null;
+      if (window.App && freshChar) {
+        App.reloadChar(freshChar);
       }
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     }
@@ -287,8 +290,10 @@ const Cloud = (() => {
       for (const char of Object.values(cloudChars)) {
         Storage.saveCharRaw(char);
       }
-      if (window.App && typeof App.init === 'function') {
-        App.init();
+      const activeId = Storage.getActiveId();
+      const freshChar = activeId ? cloudChars[activeId] : null;
+      if (window.App && freshChar) {
+        App.reloadChar(freshChar);
       }
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
