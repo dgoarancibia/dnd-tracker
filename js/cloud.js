@@ -5,8 +5,9 @@
 import './firebase.js';
 
 const Cloud = (() => {
-  let _uid      = null;   // UID del usuario autenticado
-  let _debTimer = null;   // timer para debounce de autosave
+  let _uid        = null;   // UID del usuario autenticado
+  let _debTimer   = null;   // timer para debounce de autosave
+  let _unsubListen = null;  // unsub del onSnapshot listener
   const DEBOUNCE_MS = 2000;
 
   /* ══════════════════════════════════════════════════════
@@ -71,7 +72,12 @@ const Cloud = (() => {
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
       _updateAuthUI(user);
-      if (user) _syncOnLogin(user.uid);
+      if (user) {
+        _syncOnLogin(user.uid);
+        _startListener(user.uid);
+      } else {
+        _stopListener();
+      }
     });
 
     // Detectar online/offline (incluye estado inicial)
@@ -183,6 +189,49 @@ const Cloud = (() => {
       _setSyncState(SyncState.ERROR, e.message === 'timeout' ? 'tiempo de espera agotado' : e.message);
     } finally {
       _syncing = false;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════
+     LISTENER EN TIEMPO REAL
+  ══════════════════════════════════════════════════════ */
+
+  function _startListener(uid) {
+    _stopListener();
+    _unsubListen = FirebaseApp.listenCharsCloud(uid, cloudChars => {
+      // Ignorar el primer disparo si aún estamos en el sync inicial
+      if (_syncing) return;
+
+      const local = Storage.getAllChars();
+      let changed = false;
+
+      for (const [id, cloudChar] of Object.entries(cloudChars)) {
+        const localChar = local[id];
+        const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
+        const localTs = new Date(localChar ? localChar.updatedAt || 0 : 0).getTime();
+
+        if (cloudTs > localTs) {
+          local[id] = cloudChar;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        for (const char of Object.values(local)) {
+          Storage.saveCharRaw(char);
+        }
+        if (window.App && typeof App.reloadChar === 'function') {
+          App.reloadChar();
+        }
+        _setSyncState(SyncState.SAVED, new Date().toISOString());
+      }
+    });
+  }
+
+  function _stopListener() {
+    if (_unsubListen) {
+      _unsubListen();
+      _unsubListen = null;
     }
   }
 

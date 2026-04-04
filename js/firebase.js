@@ -21,6 +21,7 @@ import {
   getDocs,
   deleteDoc,
   collection,
+  onSnapshot,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -122,6 +123,22 @@ async function deleteCharCloud(uid, charId) {
   await deleteDoc(_charRef(uid, charId));
 }
 
+function listenCharsCloud(uid, onChange) {
+  return onSnapshot(_charsCol(uid), snap => {
+    const result = {};
+    snap.forEach(d => {
+      const data = d.data();
+      if (data._syncedAt && data._syncedAt.toDate) {
+        data._syncedAt = data._syncedAt.toDate().toISOString();
+      }
+      result[data.id] = data;
+    });
+    onChange(result);
+  }, err => {
+    console.error('[firebase] onSnapshot error:', err);
+  });
+}
+
 /* ── Exportar singleton ── */
 window.FirebaseApp = {
   signIn,
@@ -131,5 +148,6 @@ window.FirebaseApp = {
   saveCharCloud,
   loadCharCloud,
   loadAllCharsCloud,
-  deleteCharCloud
+  deleteCharCloud,
+  listenCharsCloud
 };
