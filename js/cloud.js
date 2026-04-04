@@ -157,23 +157,12 @@ const Cloud = (() => {
         return; // finally limpia _syncing
       }
 
-      // Merge: si nube más reciente, usar nube; si local más reciente, mantener local
+      // Nube siempre gana al login — es la fuente de verdad
       const local = Storage.getAllChars();
       let changed = false;
       for (const [id, cloudChar] of Object.entries(cloudChars)) {
-        const localChar = local[id];
-        if (!localChar) {
-          // Personaje solo en nube — traer a local
-          local[id] = cloudChar;
-          changed = true;
-        } else {
-          const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
-          const localTs = new Date(localChar.updatedAt || 0).getTime();
-          if (cloudTs > localTs) {
-            local[id] = cloudChar;
-            changed = true;
-          }
-        }
+        local[id] = cloudChar;
+        changed = true;
       }
 
       if (changed) {
@@ -227,14 +216,8 @@ const Cloud = (() => {
     let changed = false;
 
     for (const [id, cloudChar] of Object.entries(cloudChars)) {
-      const localChar = local[id];
-      const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
-      const localTs = new Date(localChar ? localChar.updatedAt || 0 : 0).getTime();
-
-      if (cloudTs > localTs) {
-        local[id] = cloudChar;
-        changed = true;
-      }
+      local[id] = cloudChar;
+      changed = true;
     }
 
     if (changed) {
