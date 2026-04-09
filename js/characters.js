@@ -535,7 +535,7 @@ const Characters = (() => {
           recharge: 'Largo',
           action: 'Acción',
           range: '9 m',
-          desc: 'Crea un vínculo entre hasta Prof.Bonus criaturas (3 a nivel 5).',
+          desc: 'Crea un vínculo entre hasta Prof.Bonus criaturas (3 a nivel 6).',
           fullDesc: 'Como acción, eliges hasta tu Bono de Competencia (3) en criaturas que puedas ver a 9 m de ti, incluido tú mismo. Las criaturas vinculadas añaden 1d4 a todas sus tiradas de ataque, checks de habilidad y tiradas de salvación mientras permanezcan a 9 m entre sí. El efecto dura 10 minutos. Cada criatura solo puede estar vinculada una vez a la vez. Se recarga con descanso largo.'
         },
         {
@@ -572,15 +572,15 @@ const Characters = (() => {
           fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Cada no-muerto que puedas ver a 9 m de ti debe hacer una tirada de salvación de Sabiduría contra tu CD de conjuro (15). Si falla, queda Expulsado durante 1 minuto. Un no-muerto expulsado debe usar su movimiento para alejarse de ti lo máximo posible, no puede acercarse voluntariamente a ti, y no puede realizar reacciones. Solo puede usar la acción Dash o intentar escapar de un efecto que le impida moverse. Si no tiene adonde huir, puede usar la acción Dodge. A nivel 5 (Destroy Undead), no-muertos de CR 1/2 o menos son destruidos directamente.'
         },
         {
-          id: 'blessed-healer',
-          name: 'Blessed Healer',
-          source: 'Dominio de la Paz · Nivel 1 · Pasiva',
-          type: 'passive',
+          id: 'protective-bond',
+          name: 'Protective Bond',
+          source: 'Dominio de la Paz · Nivel 6',
+          type: 'active',
           recharge: null,
-          action: 'Automático',
-          range: 'Personal',
-          desc: 'Al curar a un aliado con un conjuro, tú también te curas.',
-          fullDesc: 'Cuando lanzas un conjuro que cura a otra criatura (no a ti mismo), tú también recuperas HP. El número de HP que recuperas es igual a 2 + el nivel del slot usado para lanzar el conjuro. Por ejemplo: Healing Word con slot 1 = te curas 3 HP. Cure Wounds con slot 2 = te curas 4 HP. Mass Healing Word con slot 3 = te curas 5 HP. Esta recuperación es automática y no requiere ninguna acción adicional.'
+          action: 'Reacción',
+          range: '9 m',
+          desc: 'Un aliado vinculado puede teletransportarse para recibir el daño en tu lugar.',
+          fullDesc: 'A nivel 6, el Emboldening Bond se vuelve más poderoso con Protective Bond.\n\nCuando una criatura vinculada por tu Emboldening Bond va a recibir daño, otra criatura vinculada que esté a 9 m o menos puede usar su reacción para teletransportarse al espacio de la primera criatura y recibir todo el daño en su lugar.\n\nCondiciones:\n1. Ambas criaturas deben estar actualmente vinculadas por tu Emboldening Bond.\n2. La criatura que interviene debe estar a 9 m o menos de quien va a recibir el daño.\n3. La criatura que interviene debe poder ver a la criatura objetivo.\n4. La criatura que interviene usa su reacción.\n\nEsto convierte el bond en una herramienta de protección activa — los aliados vinculados pueden literalmente interponerse por los demás.'
         },
         {
           id: 'war-caster',
