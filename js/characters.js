@@ -583,6 +583,28 @@ const Characters = (() => {
           fullDesc: 'A nivel 6, el Emboldening Bond se vuelve más poderoso con Protective Bond.\n\nCuando una criatura vinculada por tu Emboldening Bond va a recibir daño, otra criatura vinculada que esté a 9 m o menos puede usar su reacción para teletransportarse al espacio de la primera criatura y recibir todo el daño en su lugar.\n\nCondiciones:\n1. Ambas criaturas deben estar actualmente vinculadas por tu Emboldening Bond.\n2. La criatura que interviene debe estar a 9 m o menos de quien va a recibir el daño.\n3. La criatura que interviene debe poder ver a la criatura objetivo.\n4. La criatura que interviene usa su reacción.\n\nEsto convierte el bond en una herramienta de protección activa — los aliados vinculados pueden literalmente interponerse por los demás.'
         },
         {
+          id: 'servirse-poder-divino',
+          name: 'Servirse del Poder Divino',
+          source: 'Clérigo base · Nivel 2',
+          type: 'active',
+          recharge: 'Largo',
+          action: 'Acción adicional',
+          range: 'Personal',
+          desc: 'Gasta un uso de Channel Divinity para recuperar un slot gastado (máx nivel 2 a nivel 6).',
+          fullDesc: 'Como acción adicional, tocas tu símbolo sagrado, pronuncias una oración y recuperas un espacio de conjuro gastado, cuyo nivel no puede ser superior a la mitad de tu bonificador por competencia redondeando hacia arriba.\n\nA nivel 6 con Prof.Bonus +3: puedes recuperar slots de hasta nivel 2 (mitad de 3 = 1,5 → redondeado arriba = 2).\n\nUsos por descanso largo:\n· Nivel 2: 1 uso\n· Nivel 6: 2 usos ← actual\n· Nivel 18: 3 usos\n\nMuy útil para recuperar un slot de nivel 2 después de un encuentro corto sin necesitar descanso largo.'
+        },
+        {
+          id: 'versatilidad-trucos',
+          name: 'Versatilidad de Trucos',
+          source: 'Clérigo base · Nivel 4',
+          type: 'passive',
+          recharge: null,
+          action: 'Pasiva',
+          range: 'Personal',
+          desc: 'Al obtener una Mejora de Característica puedes cambiar un cantrip por otro de la lista de clérigo.',
+          fullDesc: 'Cuando alcanzas un nivel en esta clase que otorga el rasgo Mejora de Característica (niveles 4, 8, 12, 16, 19), puedes sustituir un truco que hayas aprendido con el rasgo Lanzamiento de Conjuros de esta clase por otro truco de la lista de conjuros de clérigo.\n\nEsto te permite adaptar tus cantrips a medida que la campaña avanza. Por ejemplo, si Toll the Dead deja de ser útil en algún momento, puedes cambiarlo por Guidance o Sacred Flame en el siguiente nivel con Mejora de Característica.'
+        },
+        {
           id: 'war-caster',
           name: 'War Caster',
           source: 'Dote · Pasiva',
