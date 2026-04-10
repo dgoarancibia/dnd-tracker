@@ -138,6 +138,26 @@ const Storage = (() => {
     }
   }
 
+  // Exporta solo el personaje activo en formato compatible con export_to_pdf.py
+  function exportCharJSON(char) {
+    try {
+      const blob = new Blob([JSON.stringify(char, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const safeName = (char.name || 'personaje').replace(/[^a-zA-Z0-9_\-áéíóúñ ]/g, '').replace(/\s+/g, '_');
+      a.href     = url;
+      a.download = `${safeName}_lvl${char.nivel || 1}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return true;
+    } catch (e) {
+      console.error('Export char error:', e);
+      return false;
+    }
+  }
+
   function exportDiaryTxt(char) {
     try {
       const lines = (char.diary || []).map(e => {
@@ -244,6 +264,7 @@ const Storage = (() => {
     getBackupTimestamp,
     setBackupTimestamp,
     exportJSON,
+    exportCharJSON,
     exportDiaryTxt,
     importJSON,
     autoBackup,

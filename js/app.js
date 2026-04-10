@@ -2987,6 +2987,16 @@ const App = (() => {
     }
   }
 
+  function exportCharForPDF() {
+    if (!_char) { showToast('No hay personaje activo'); return; }
+    const ok = Storage.exportCharJSON(_char);
+    if (ok) {
+      showToast('📄 JSON exportado — usá export_to_pdf.py para generar el PDF');
+    } else {
+      showToast('Error al exportar JSON');
+    }
+  }
+
   function importBackup(input) {
     const file = input.files[0];
     if (!file) return;
@@ -3100,8 +3110,8 @@ const App = (() => {
     openSpellDetail, closeSpellDetail,
     openFeatureDetail, closeFeatureDetail,
 
-    // Backup
-    doBackup, importBackup,
+    // Backup / Export
+    doBackup, importBackup, exportCharForPDF,
 
     // Toast
     showToast,

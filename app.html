@@ -136,6 +136,11 @@
         <input type="file" accept=".json" style="display:none" onchange="App.importBackup(this);App.closeHeaderMenu()">
       </label>
 
+      <!-- Exportar hoja de personaje PDF -->
+      <button class="hm-btn" onclick="App.exportCharForPDF();App.closeHeaderMenu()" title="Exporta JSON para rellenar la hoja oficial D&D 2024">
+        📄 Exportar hoja PDF
+      </button>
+
       <div class="hm-divider"></div>
 
       <!-- Tema -->
@@ -566,7 +571,7 @@
 
 <script src="js/storage.js?v=35"></script>
 <script src="js/characters.js?v=35"></script>
-<script src="js/app.js?v=32"></script>
+<script src="js/app.js?v=33"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.
      Guard de auth: si no hay sesión activa, redirige al home. -->
