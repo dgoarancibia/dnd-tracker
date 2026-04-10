@@ -871,6 +871,13 @@ waitForFirebase(() => {
     document.getElementById('homeLoading').style.display = 'none';
 
     if (user) {
+      // Si venía de app.html sin sesión, redirigir de vuelta
+      const redirect = sessionStorage.getItem('dnd_redirect_after_login');
+      if (redirect) {
+        sessionStorage.removeItem('dnd_redirect_after_login');
+        window.location.replace(redirect);
+        return;
+      }
       showCharsScreen(user);
     } else {
       // Solo mostrar login si la pantalla de chars no está visible (no logout)

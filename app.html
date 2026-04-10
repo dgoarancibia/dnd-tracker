@@ -564,13 +564,28 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=30"></script>
+<script src="js/storage.js?v=35"></script>
 <script src="js/characters.js?v=35"></script>
 <script src="js/app.js?v=32"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
-     luego cloud.js (classic) puede usarlo al cargarse después -->
+     luego cloud.js (classic) puede usarlo al cargarse después.
+     Guard de auth: si no hay sesión activa, redirige al home. -->
 <script type="module">
   await import('./js/firebase.js');
+
+  // Guard: esperar primer evento de auth antes de mostrar la app
+  await new Promise(resolve => {
+    const unsub = FirebaseApp.onAuthChange(user => {
+      unsub();
+      if (!user) {
+        // Sin sesión: guardar la ruta destino y redirigir al home
+        sessionStorage.setItem('dnd_redirect_after_login', 'app.html');
+        window.location.replace('./index.html');
+      }
+      resolve(user);
+    });
+  });
+
   await import('./js/cloud.js');
 </script>
 <script>
