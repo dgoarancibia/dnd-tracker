@@ -106,6 +106,186 @@ const Characters = (() => {
     for: 'FUE', des: 'DES', con: 'CON', int: 'INT', sab: 'SAB', car: 'CAR'
   };
 
+  // ── RAZAS_CONFIG (D&D 2024) ────────────────────────────────────────────────
+  // bonus: [+2, +1] a stats libres elegidos por el jugador (2024)
+  // traits: rasgos clave de la raza
+  // speed: velocidad en pies (por defecto 30)
+  // resistances: resistencias a tipos de daño
+  // languages: idiomas que habla
+  // skillProfs: proficiencias de habilidad que otorga
+  // weaponProfs: proficiencias de armas
+  // darkvision: alcance en metros (0 = sin darkvision)
+  const RAZAS_CONFIG = {
+    'Humano': {
+      emoji: '👤',
+      speed: 30,
+      darkvision: 0,
+      traits: [
+        'Versatile — proficiencia en una habilidad a elección',
+        'Heroic Inspiration — 1 vez por descanso largo, tirar dado de ventaja',
+      ],
+      resistances: [],
+      languages: ['Común', 'Un idioma a elección'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Elfo': {
+      emoji: '🧝',
+      speed: 30,
+      darkvision: 18,
+      traits: [
+        'Fey Ancestry — ventaja en saves contra ser encantado, inmune a dormir mágico',
+        'Keen Senses — proficiencia en Percepción',
+        'Trance — solo necesita 4 h de meditación en vez de 8 h de sueño',
+        'Elven Lineage — elige sublinaje (Drow, Alto Elfo o Elfo de Bosque) para rasgos adicionales',
+      ],
+      resistances: [],
+      languages: ['Común', 'Élfico'],
+      skillProfs: ['percepcion'],
+      weaponProfs: [],
+    },
+    'Enano': {
+      emoji: '⛏️',
+      speed: 30,
+      darkvision: 18,
+      traits: [
+        'Dwarven Resilience — ventaja en saves contra veneno, resistencia a daño de veneno',
+        'Stonecunning — Tremorsense 18 m en piedra sin pulir (Sabiduría, bonus acción)',
+        'Dwarven Toughness — HP máximo +1 por nivel',
+      ],
+      resistances: ['Veneno'],
+      languages: ['Común', 'Enano'],
+      skillProfs: [],
+      weaponProfs: ['Hacha de batalla', 'Hacha de mano', 'Martillo ligero', 'Martillo de guerra'],
+    },
+    'Halfling': {
+      emoji: '🦶',
+      speed: 30,
+      darkvision: 0,
+      traits: [
+        'Brave — ventaja en saves contra el estado Asustado',
+        'Halfling Nimbleness — puede moverse a través del espacio de criaturas más grandes',
+        'Luck — cuando saca 1 en ataque, check o save, puede tirar de nuevo (debe usar el nuevo)',
+        'Naturally Stealthy — puede intentar esconderse tras criaturas de tamaño Mediano o mayor',
+      ],
+      resistances: [],
+      languages: ['Común'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Dragonborn': {
+      emoji: '🐉',
+      speed: 30,
+      darkvision: 0,
+      traits: [
+        'Draconic Ancestry — elige tipo de dragón (fuego, frío, ácido, rayo, veneno…)',
+        'Breath Weapon — acción bonus, área según tipo (cono 15ft o línea 30ft), save DEX/CON, daño escala con nivel',
+        'Damage Resistance — resistencia al tipo de daño de tu linaje dracónico',
+        'Draconic Flight (nv5) — acción bonus para volar 10 m hasta fin del turno',
+      ],
+      resistances: ['Según linaje dracónico'],
+      languages: ['Común', 'Dracónico'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Gnomo': {
+      emoji: '🔧',
+      speed: 30,
+      darkvision: 18,
+      traits: [
+        'Gnomish Cunning — ventaja en saves de INT, SAB y CAR contra magia',
+        'Gnomish Lineage — elige sublinaje (Gnomo de Bosque o Gnomo de Roca) para rasgos adicionales',
+      ],
+      resistances: [],
+      languages: ['Común', 'Gnómico'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Medio-Elfo': {
+      emoji: '🧑‍🤝‍🧑',
+      speed: 30,
+      darkvision: 18,
+      traits: [
+        'Fey Ancestry — ventaja en saves contra ser encantado, inmune a dormir mágico',
+        'Skillful — proficiencia en una habilidad a elección',
+        'Elven Lineage — elige un linaje élfico para rasgos adicionales',
+      ],
+      resistances: [],
+      languages: ['Común', 'Élfico'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Medio-Orco': {
+      emoji: '💪',
+      speed: 30,
+      darkvision: 18,
+      traits: [
+        'Adrenaline Rush — acción bonus para Dash, gana PV temporales = prof bonus',
+        'Relentless Endurance — 1 vez por descanso largo: cuando caés a 0 HP, quedás en 1 HP en su lugar',
+      ],
+      resistances: [],
+      languages: ['Común', 'Orco'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Tiefling': {
+      emoji: '😈',
+      speed: 30,
+      darkvision: 18,
+      traits: [
+        'Fiendish Legacy — elige linaje (Abyssal, Chthonic o Infernal) para conjuros innatos',
+        'Otherworldly Presence — conocés el cantrip Thaumaturgy (SAB, INT o CAR)',
+      ],
+      resistances: ['Fuego (linaje Infernal)'],
+      languages: ['Común', 'Infernal'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Aasimar': {
+      emoji: '😇',
+      speed: 30,
+      darkvision: 18,
+      traits: [
+        'Celestial Resistance — resistencia a daño necrótico y radiante',
+        'Healing Hands — acción: toca criatura y cura nº de PV = prof bonus (Long Rest)',
+        'Light Bearer — conocés el cantrip Light',
+        'Celestial Revelation (nv3) — acción bonus: Heavenly Wings, Inner Radiance o Necrotic Shroud',
+      ],
+      resistances: ['Necrótico', 'Radiante'],
+      languages: ['Común', 'Celestial'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Goliath': {
+      emoji: '🏔️',
+      speed: 35,
+      darkvision: 0,
+      traits: [
+        'Giant Ancestry — elige linaje de gigante para una habilidad activa (Cloud, Fire, Frost, Hill, Stone o Storm)',
+        'Large Form (nv5) — acción bonus: tamaño Grande por 10 min, 1 vez por Long Rest',
+        'Powerful Build — cuenta como tamaño Grande para cargar/empujar/arrastrar',
+      ],
+      resistances: [],
+      languages: ['Común', 'Gigante'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+    'Orco': {
+      emoji: '🪓',
+      speed: 30,
+      darkvision: 18,
+      traits: [
+        'Adrenaline Rush — acción bonus para Dash, gana PV temporales = prof bonus',
+        'Relentless Endurance — 1 vez por Long Rest: al caer a 0 HP, quedás en 1 HP',
+        'Powerful Build — cuenta como Grande para cargar/empujar',
+      ],
+      resistances: [],
+      languages: ['Común', 'Orco'],
+      skillProfs: [],
+      weaponProfs: [],
+    },
+  };
+
   const SKILLS_DEF = [
     { id: 'acrobacias',       name: 'Acrobacias',       stat: 'des' },
     { id: 'arcanos',          name: 'Arcanos',           stat: 'int' },
@@ -1011,8 +1191,50 @@ const Characters = (() => {
     return result;
   }
 
+  // ── applyRaza: aplica rasgos de raza al objeto personaje ─────────────────
+  // razaNombre: string, statBonus2/statBonus1: claves de stat (ej: 'con', 'des')
+  function applyRaza(char, razaNombre, statBonus2, statBonus1) {
+    const cfg = RAZAS_CONFIG[razaNombre];
+    if (!cfg) return char;
+
+    char.raza = razaNombre;
+
+    // Aplicar bonus +2 / +1 a los stats elegidos
+    if (statBonus2 && char.stats[statBonus2] !== undefined) {
+      char.stats[statBonus2] += 2;
+    }
+    if (statBonus1 && char.stats[statBonus1] !== undefined && statBonus1 !== statBonus2) {
+      char.stats[statBonus1] += 1;
+    }
+
+    // Velocidad
+    char.velocidad = cfg.speed || 30;
+
+    // Resistencias
+    if (cfg.resistances && cfg.resistances.length) {
+      char.resistances = [...(char.resistances || []), ...cfg.resistances];
+    }
+
+    // Proficiencias de habilidad
+    if (cfg.skillProfs && cfg.skillProfs.length) {
+      char.skillProfs = [...new Set([...(char.skillProfs || []), ...cfg.skillProfs])];
+    }
+
+    // Darkvision: guardar como rasgo de especie en speciesTraits
+    const traits = [];
+    if (cfg.darkvision > 0) traits.push(`Visión en penumbra ${cfg.darkvision} m`);
+    if (cfg.traits) traits.push(...cfg.traits);
+    char.speciesTraits = traits.join('\n');
+
+    // Idiomas
+    char.languages = cfg.languages || ['Común'];
+
+    return char;
+  }
+
   // ── buildDefaultChar: crea personaje con features y hechizos por clase ────
-  function buildDefaultChar(name, claseNombre, nivel) {
+  // razaOpts: { name, statBonus2, statBonus1 } — opcional
+  function buildDefaultChar(name, claseNombre, nivel, razaOpts) {
     nivel = nivel || 1;
     const cfg    = CLASES_CONFIG[claseNombre] || CLASES_CONFIG['Guerrero'];
     const slots  = calcMulticlassSlots([{ name: claseNombre, level: nivel }]);
@@ -1022,7 +1244,7 @@ const Characters = (() => {
     const featList = feats ? (typeof feats.features === 'function' ? feats.features(nivel) : feats.features) : [];
     const spells = (CLASE_SPELLS[claseNombre] || []).map(s => ({ ...s }));
 
-    return {
+    const char = {
       id: 'char-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       name,
       clase:            claseNombre,
@@ -1075,6 +1297,13 @@ const Characters = (() => {
       createdAt:    new Date().toISOString(),
       updatedAt:    new Date().toISOString(),
     };
+
+    // Aplicar raza si se proveyó
+    if (razaOpts && razaOpts.name) {
+      applyRaza(char, razaOpts.name, razaOpts.statBonus2 || null, razaOpts.statBonus1 || null);
+    }
+
+    return char;
   }
 
   /* ── LEVEL UP ── */
@@ -1116,6 +1345,7 @@ const Characters = (() => {
     CLASES_CONFIG,
     CLASE_FEATURES,
     CLASE_SPELLS,
+    RAZAS_CONFIG,
     SKILLS_DEF,
     STAT_NAMES,
     LURSEY_IFTTT,
@@ -1138,6 +1368,7 @@ const Characters = (() => {
     getLevelFromXP,
     createNew,
     buildDefaultChar,
+    applyRaza,
     buildLursey,
     applyLevelUp,
   };

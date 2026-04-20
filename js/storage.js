@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 3;   // Incrementar al cambiar el esquema
+  const DATA_VERSION = 4;   // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -30,6 +30,20 @@ const Storage = (() => {
         }];
       }
       char._dataVersion = 3;
+    }
+    if (char._dataVersion < 4) {
+      // v3 → v4: rellenar hechizos base para clases que tienen catálogo pero el personaje fue
+      //          creado antes de que buildDefaultChar los añadiera automáticamente.
+      //          Solo se aplica si el array de spells está completamente vacío.
+      if (!Array.isArray(char.spells) || char.spells.length === 0) {
+        const catalog = (typeof Characters !== 'undefined' && Characters.CLASE_SPELLS)
+          ? Characters.CLASE_SPELLS[char.clase] || []
+          : [];
+        if (catalog.length > 0) {
+          char.spells = catalog.map(s => ({ ...s }));
+        }
+      }
+      char._dataVersion = 4;
     }
     return char;
   }

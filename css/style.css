@@ -4939,3 +4939,57 @@ input[type=number] { -moz-appearance: textfield; }
   border-color: var(--gold-dim);
   color: var(--gold);
 }
+
+/* ── Raza chips (wizard de creación) ── */
+.raza-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+@media (max-width: 400px) {
+  .raza-chip-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.raza-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 4px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg3);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  min-height: 52px;
+}
+.raza-chip:hover { border-color: var(--gold-dim); background: var(--bg2); }
+.raza-chip.selected {
+  border-color: var(--gold);
+  background: rgba(201,151,58,0.12);
+}
+.raza-chip-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.raza-chip-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-hi);
+  text-align: center;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+.raza-chip.selected .raza-chip-name { color: var(--gold); }
+
+/* Sección bonus de raza */
+.stat-bonus-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.stat-bonus-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}

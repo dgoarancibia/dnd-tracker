@@ -1292,9 +1292,12 @@ const App = (() => {
         <span class="passive-label">Resistencias</span>
         <div class="resistances-list" id="resList">`;
 
-    (c.resistances || ['Veneno (Enano)']).forEach(r => {
-      htmlDer += `<span class="resistance-tag">${r}</span>`;
-    });
+    const resArr = c.resistances && c.resistances.length ? c.resistances : [];
+    if (resArr.length === 0) {
+      htmlDer += `<span style="font-size:11px;color:var(--text-dim);font-style:italic;">Ninguna</span>`;
+    } else {
+      resArr.forEach(r => { htmlDer += `<span class="resistance-tag">${r}</span>`; });
+    }
 
     htmlDer += `</div>
       </div>
@@ -1310,6 +1313,11 @@ const App = (() => {
         <span class="passive-label">Nivel</span>
         <span class="passive-val">${c.nivel}</span>
       </div>
+      ${c.raza ? `
+      <div class="passive-row">
+        <span class="passive-label">Raza</span>
+        <span class="passive-val" style="font-size:12px;">${c.raza}</span>
+      </div>` : ''}
       <div class="passive-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
         <span class="passive-label">Clase${(c.classes||[]).length > 1 ? 's' : ''}</span>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">

@@ -699,15 +699,50 @@
     <button class="modal-close-x" onclick="closeCreateModal()">✕</button>
     <div class="modal-title" id="createModalTitle">✦ Nuevo personaje</div>
 
-    <!-- Nombre + Raza en fila -->
-    <div class="form-row">
-      <div class="form-group" style="flex:2">
-        <label class="form-label" for="cmName">Nombre</label>
-        <input class="form-input" id="cmName" type="text" placeholder="Ej: Aldric de la Llama" maxlength="40">
+    <!-- Nombre -->
+    <div class="form-group">
+      <label class="form-label" for="cmName">Nombre</label>
+      <input class="form-input" id="cmName" type="text" placeholder="Ej: Aldric de la Llama" maxlength="40">
+    </div>
+
+    <!-- Raza: chips táctiles -->
+    <div class="form-group">
+      <label class="form-label">Raza <span style="color:var(--text-dim);font-size:9px;">(opc.)</span></label>
+      <div class="raza-chip-grid" id="razaChipGrid">
+        <!-- generado por JS -->
       </div>
-      <div class="form-group" style="flex:1">
-        <label class="form-label" for="cmRaza">Raza <span style="color:var(--text-dim);font-size:9px;">(opc.)</span></label>
-        <input class="form-input" id="cmRaza" type="text" placeholder="Humano, Elfo…" maxlength="30">
+    </div>
+
+    <!-- Bonus de stats de raza (solo cuando hay raza seleccionada) -->
+    <div id="cmRazaBonusSection" style="display:none;">
+      <div class="wiz-section-label" style="margin-top:6px;">Bonus de estadística (D&amp;D 2024)</div>
+      <div class="stat-bonus-row">
+        <div class="stat-bonus-group">
+          <label class="form-label" style="font-size:10px;">+2 a:</label>
+          <div class="form-select-wrap">
+            <select class="form-select" id="cmBonus2">
+              <option value="for">FUE</option>
+              <option value="des">DES</option>
+              <option value="con">CON</option>
+              <option value="int">INT</option>
+              <option value="sab">SAB</option>
+              <option value="car">CAR</option>
+            </select>
+          </div>
+        </div>
+        <div class="stat-bonus-group">
+          <label class="form-label" style="font-size:10px;">+1 a:</label>
+          <div class="form-select-wrap">
+            <select class="form-select" id="cmBonus1">
+              <option value="for">FUE</option>
+              <option value="des">DES</option>
+              <option value="con">CON</option>
+              <option value="int">INT</option>
+              <option value="sab" selected>SAB</option>
+              <option value="car">CAR</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -756,8 +791,8 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/storage.js?v=35"></script>
-<script src="js/characters.js?v=35"></script>
+<script src="js/storage.js?v=36"></script>
+<script src="js/characters.js?v=36"></script>
 <script type="module" src="js/firebase.js?v=35"></script>
 <script>
 // ═══════════════════════════════════════════════════
@@ -963,7 +998,14 @@ const _CLASE_EMOJI = {
   'Monje':'👊','Paladín':'⚡','Pícaro':'🗡️','Brujo':'👁️'
 };
 
+// Razas — se lee desde Characters.RAZAS_CONFIG cuando está disponible
+const _RAZAS_LISTA = [
+  'Humano','Elfo','Enano','Halfling','Dragonborn',
+  'Gnomo','Medio-Elfo','Medio-Orco','Tiefling','Aasimar','Goliath'
+];
+
 let _selectedClase = 'Clérigo';
+let _selectedRaza  = '';   // '' = sin raza elegida
 
 function _buildClaseChips(selected) {
   const grid = document.getElementById('claseChipGrid');
@@ -982,6 +1024,39 @@ function selectClaseChip(el, name) {
   document.querySelectorAll('.clase-chip').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   _selectedClase = name;
+}
+
+function _buildRazaChips(selected) {
+  const grid = document.getElementById('razaChipGrid');
+  if (!grid) return;
+  const razaCfg = (typeof Characters !== 'undefined' && Characters.RAZAS_CONFIG) || {};
+  // Chip "Ninguna" primero
+  let html = `<button type="button"
+    class="raza-chip ${!selected ? 'selected' : ''}"
+    onclick="selectRazaChip(this,'')"
+    title="Sin raza específica">
+    <span class="raza-chip-icon">—</span>
+    <span class="raza-chip-name">Ninguna</span>
+  </button>`;
+  html += _RAZAS_LISTA.map(r => {
+    const emoji = razaCfg[r]?.emoji || '🧑';
+    return `<button type="button"
+      class="raza-chip ${r === selected ? 'selected' : ''}"
+      onclick="selectRazaChip(this,'${r}')"
+      title="${r}">
+      <span class="raza-chip-icon">${emoji}</span>
+      <span class="raza-chip-name">${r}</span>
+    </button>`;
+  }).join('');
+  grid.innerHTML = html;
+}
+
+function selectRazaChip(el, name) {
+  document.querySelectorAll('.raza-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedRaza = name;
+  // Mostrar/ocultar sección de bonus de stats
+  document.getElementById('cmRazaBonusSection').style.display = name ? '' : 'none';
 }
 
 let _multiclaseCount = 0;
@@ -1027,15 +1102,17 @@ function _collectMulticlaseRows() {
 function openCreateModal() {
   _editId = null;
   _selectedClase = 'Clérigo';
+  _selectedRaza  = '';
   _multiclaseCount = 0;
   document.getElementById('createModalTitle').textContent = '✦ Nuevo personaje';
   document.getElementById('saveBtn').textContent = 'Crear personaje';
   document.getElementById('cmName').value  = '';
   document.getElementById('cmNivel').value = '1';
-  document.getElementById('cmRaza').value  = '';
   document.getElementById('cmMulticlaseRows').innerHTML = '';
   document.getElementById('cmMulticlaseSection').style.display = '';
+  document.getElementById('cmRazaBonusSection').style.display = 'none';
   _buildClaseChips('Clérigo');
+  _buildRazaChips('');
   document.getElementById('createModal').classList.add('show');
   setTimeout(() => document.getElementById('cmName').focus(), 80);
 }
@@ -1045,13 +1122,14 @@ function openEditModal(id) {
   if (!c) return;
   _editId = id;
   _selectedClase = c.clase || 'Clérigo';
+  _selectedRaza  = c.raza  || '';
   _multiclaseCount = 0;
   document.getElementById('createModalTitle').textContent = '✎ Editar personaje';
   document.getElementById('saveBtn').textContent = 'Guardar';
   document.getElementById('cmName').value  = c.name;
   document.getElementById('cmNivel').value = c.nivel;
-  document.getElementById('cmRaza').value  = c.raza || '';
   document.getElementById('cmMulticlaseRows').innerHTML = '';
+  document.getElementById('cmRazaBonusSection').style.display = 'none'; // no re-apply on edit
   // En edición mostramos las clases secundarias existentes
   const secondaries = (c.classes || []).slice(1);
   secondaries.forEach(sc => {
@@ -1065,6 +1143,7 @@ function openEditModal(id) {
     }, 10);
   });
   _buildClaseChips(_selectedClase);
+  _buildRazaChips(_selectedRaza);
   document.getElementById('createModal').classList.add('show');
   setTimeout(() => document.getElementById('cmName').focus(), 80);
 }
@@ -1077,7 +1156,6 @@ function closeCreateModal() {
 function saveCreateModal() {
   const name  = document.getElementById('cmName').value.trim();
   const nivel = Math.min(20, Math.max(1, parseInt(document.getElementById('cmNivel').value) || 1));
-  const raza  = document.getElementById('cmRaza').value.trim();
   if (!name) { document.getElementById('cmName').focus(); return; }
 
   // Construir array de clases
@@ -1095,7 +1173,7 @@ function saveCreateModal() {
     const c = Storage.getChar(_editId);
     if (c) {
       c.name    = name;
-      c.raza    = raza;
+      c.raza    = _selectedRaza;
       c.clase   = _selectedClase;
       c.nivel   = nivel;
       c.classes = allClasses;
@@ -1107,13 +1185,21 @@ function saveCreateModal() {
   } else {
     // Crear con features y hechizos correctos según clase
     const newChar = Characters.buildDefaultChar(name, _selectedClase, nivel);
-    newChar.raza    = raza;
     newChar.classes = allClasses;
     newChar.spellSlots = Characters.calcMulticlassSlots(allClasses);
+
+    // Aplicar raza con bonus de stat elegidos
+    if (_selectedRaza) {
+      const bonus2 = document.getElementById('cmBonus2')?.value || 'for';
+      const bonus1 = document.getElementById('cmBonus1')?.value || 'sab';
+      Characters.applyRaza(newChar, _selectedRaza, bonus2, bonus1);
+    }
+
     Storage.saveChar(newChar);
     Storage.setActiveId(newChar.id);
     const clasesLabel = allClasses.map(c => `${c.name} ${c.level}`).join(' / ');
-    showToast(`${name} · ${clasesLabel}`);
+    const razaLabel   = _selectedRaza ? ` · ${_selectedRaza}` : '';
+    showToast(`${name}${razaLabel} · ${clasesLabel}`);
   }
 
   closeCreateModal();
