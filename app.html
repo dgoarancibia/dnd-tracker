@@ -156,6 +156,7 @@
   <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Ítems</button>
   <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
   <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
+  <button class="tab-btn" data-tab="biblioteca" onclick="App.switchTab('biblioteca')">📚 Biblioteca</button>
 </nav>
 
 <!-- CONTENIDO TABS -->
@@ -183,6 +184,92 @@
   <div class="tab-panel two-col" id="tab-habilidades">
     <div class="two-col-left" id="col-hab-izq"><!-- renderizado por app.js --></div>
     <div class="two-col-right" id="col-hab-der"><!-- renderizado por app.js --></div>
+  </div>
+
+  <!-- ══ TAB BIBLIOTECA ══ -->
+  <div class="tab-panel bib-panel" id="tab-biblioteca">
+    <!-- Sidebar izquierda: lista de libros -->
+    <div class="bib-sidebar" id="bibSidebar">
+      <div class="bib-sidebar-header">
+        <span class="bib-sidebar-title">📚 Manuales</span>
+        <label class="bib-upload-btn" title="Cargar PDF">
+          <span>+ PDF</span>
+          <input type="file" accept="application/pdf" multiple id="bibFileInput" style="display:none">
+        </label>
+      </div>
+      <div class="bib-book-list" id="bibBookList">
+        <div class="bib-empty-state">
+          <div class="bib-empty-icon">📖</div>
+          <div class="bib-empty-title">Sin manuales</div>
+          <div class="bib-empty-sub">Cargá un PDF con el botón<br>+ PDF para empezar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Área principal: búsqueda + resultados / visor -->
+    <div class="bib-main" id="bibMain">
+      <!-- Barra de búsqueda -->
+      <div class="bib-search-bar">
+        <div class="bib-search-wrap">
+          <span class="bib-search-icon">🔍</span>
+          <input type="text" class="bib-search-input" id="bibSearchInput"
+                 placeholder="Buscar en todos los manuales…"
+                 oninput="Biblioteca.onSearchInput(this.value)">
+          <button class="bib-search-clear" id="bibSearchClear"
+                  onclick="Biblioteca.clearSearch()" title="Limpiar">✕</button>
+        </div>
+        <div class="bib-search-scope" id="bibSearchScope"></div>
+      </div>
+
+      <!-- Estado: sin libro seleccionado -->
+      <div class="bib-welcome" id="bibWelcome">
+        <div class="bib-welcome-icon">📜</div>
+        <div class="bib-welcome-title">Bienvenido a la Biblioteca</div>
+        <div class="bib-welcome-sub">Seleccioná un manual para leerlo<br>o usá el buscador para encontrar reglas</div>
+      </div>
+
+      <!-- Resultados de búsqueda -->
+      <div class="bib-results" id="bibResults" style="display:none">
+        <div class="bib-results-header" id="bibResultsHeader"></div>
+        <div class="bib-results-list" id="bibResultsList"></div>
+      </div>
+
+      <!-- Visor de PDF -->
+      <div class="bib-viewer" id="bibViewer" style="display:none">
+        <div class="bib-viewer-toolbar">
+          <button class="bib-tb-btn" onclick="Biblioteca.prevPage()" title="Página anterior">‹</button>
+          <span class="bib-page-info">
+            Pág. <input type="number" class="bib-page-input" id="bibPageNum" min="1" value="1"
+                        onchange="Biblioteca.goToPage(parseInt(this.value))"
+                        onkeydown="if(event.key==='Enter')Biblioteca.goToPage(parseInt(this.value))">
+            / <span id="bibPageTotal">1</span>
+          </span>
+          <button class="bib-tb-btn" onclick="Biblioteca.nextPage()" title="Página siguiente">›</button>
+          <div class="bib-tb-sep"></div>
+          <button class="bib-tb-btn" onclick="Biblioteca.zoomOut()" title="Alejar">−</button>
+          <span class="bib-zoom-label" id="bibZoomLabel">100%</span>
+          <button class="bib-tb-btn" onclick="Biblioteca.zoomIn()" title="Acercar">+</button>
+          <button class="bib-tb-btn" onclick="Biblioteca.fitWidth()" title="Ajustar ancho">↔</button>
+          <div class="bib-tb-sep"></div>
+          <span class="bib-book-title-bar" id="bibBookTitleBar"></span>
+          <div style="flex:1"></div>
+          <button class="bib-tb-btn bib-tb-danger" onclick="Biblioteca.deleteCurrentBook()" title="Eliminar manual">🗑</button>
+        </div>
+        <div class="bib-canvas-wrap" id="bibCanvasWrap">
+          <canvas id="bibCanvas"></canvas>
+        </div>
+      </div>
+
+      <!-- Loading overlay -->
+      <div class="bib-loading" id="bibLoading" style="display:none">
+        <div class="bib-loading-spinner"></div>
+        <div class="bib-loading-text" id="bibLoadingText">Indexando páginas…</div>
+        <div class="bib-loading-progress">
+          <div class="bib-loading-bar" id="bibLoadingBar"></div>
+        </div>
+        <div class="bib-loading-sub" id="bibLoadingSub"></div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -572,6 +659,7 @@
 <script src="js/storage.js?v=35"></script>
 <script src="js/characters.js?v=35"></script>
 <script src="js/app.js?v=33"></script>
+<script src="js/biblioteca.js?v=1"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.
      Guard de auth: si no hay sesión activa, redirige al home. -->

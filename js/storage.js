@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 2;   // Incrementar al cambiar el esquema
+  const DATA_VERSION = 3;   // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -19,6 +19,17 @@ const Storage = (() => {
       if (!Array.isArray(char.diary)) char.diary = [];
       if (!Array.isArray(char.ifttt)) char.ifttt = [];
       char._dataVersion = 2;
+    }
+    if (char._dataVersion < 3) {
+      // v2 → v3: agregar campo classes[] para soporte multi-clase
+      if (!char.classes || !Array.isArray(char.classes) || char.classes.length === 0) {
+        char.classes = [{
+          name:     char.clase    || 'Guerrero',
+          level:    char.nivel    || 1,
+          subclass: char.subclase || '',
+        }];
+      }
+      char._dataVersion = 3;
     }
     return char;
   }

@@ -318,6 +318,11 @@
     color: var(--text-mid);
     white-space: nowrap;
   }
+  .clase-badge-sec {
+    background: rgba(201,151,58,0.04);
+    border-color: rgba(201,151,58,0.12);
+    color: var(--text-dim);
+  }
   .char-raza {
     font-size: 12px;
     color: var(--text-dim);
@@ -690,50 +695,49 @@
 
 <!-- MODAL CREAR / EDITAR -->
 <div class="modal-overlay" id="createModal">
-  <div class="modal">
+  <div class="modal modal-wizard">
     <button class="modal-close-x" onclick="closeCreateModal()">✕</button>
     <div class="modal-title" id="createModalTitle">✦ Nuevo personaje</div>
 
-    <div class="form-group">
-      <label class="form-label" for="cmName">Nombre</label>
-      <input class="form-input" id="cmName" type="text" placeholder="Ej: Aldric de la Llama" maxlength="40"
-             onkeydown="if(event.key==='Enter') document.getElementById('cmClase').focus()">
-    </div>
-
+    <!-- Nombre + Raza en fila -->
     <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="cmClase">Clase</label>
-        <div class="form-select-wrap">
-          <select class="form-select" id="cmClase">
-            <option>Bárbaro</option>
-            <option>Bardo</option>
-            <option selected>Clérigo</option>
-            <option>Druida</option>
-            <option>Explorador</option>
-            <option>Guerrero</option>
-            <option>Hechicero</option>
-            <option>Mago</option>
-            <option>Monje</option>
-            <option>Paladín</option>
-            <option>Pícaro</option>
-            <option>Brujo</option>
-          </select>
-        </div>
+      <div class="form-group" style="flex:2">
+        <label class="form-label" for="cmName">Nombre</label>
+        <input class="form-input" id="cmName" type="text" placeholder="Ej: Aldric de la Llama" maxlength="40">
       </div>
-      <div class="form-group" style="max-width:90px;">
-        <label class="form-label" for="cmNivel">Nivel</label>
-        <input class="form-input" id="cmNivel" type="number" min="1" max="20" value="1" style="text-align:center;">
+      <div class="form-group" style="flex:1">
+        <label class="form-label" for="cmRaza">Raza <span style="color:var(--text-dim);font-size:9px;">(opc.)</span></label>
+        <input class="form-input" id="cmRaza" type="text" placeholder="Humano, Elfo…" maxlength="30">
       </div>
     </div>
 
+    <!-- Clase principal: chips táctiles -->
     <div class="form-group">
-      <label class="form-label" for="cmRaza">Raza <span style="color:var(--text-dim);font-size:9px;">(opcional)</span></label>
-      <input class="form-input" id="cmRaza" type="text" placeholder="Humano, Elfo, Enano…" maxlength="30">
+      <label class="form-label">Clase principal</label>
+      <div class="clase-chip-grid" id="claseChipGrid">
+        <!-- generado por JS -->
+      </div>
+    </div>
+
+    <!-- Nivel principal -->
+    <div class="form-group" style="max-width:120px;">
+      <label class="form-label" for="cmNivel">Nivel</label>
+      <input class="form-input" id="cmNivel" type="number" min="1" max="20" value="1" style="text-align:center;"
+             inputmode="numeric">
+    </div>
+
+    <!-- Multi-clase (solo al crear) -->
+    <div id="cmMulticlaseSection">
+      <div class="wiz-section-label">
+        <span>Multi-clase</span>
+        <button class="btn-add-multiclase" type="button" onclick="addMulticlaseRow()">+ Agregar clase</button>
+      </div>
+      <div id="cmMulticlaseRows"></div>
     </div>
 
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeCreateModal()">Cancelar</button>
-      <button class="btn-primary" id="saveBtn" onclick="saveCreateModal()">Crear</button>
+      <button class="btn-primary" id="saveBtn" onclick="saveCreateModal()">Crear personaje</button>
     </div>
   </div>
 </div>
@@ -917,7 +921,9 @@ function renderGrid() {
         </div>
       </div>
       <div class="char-meta">
-        <span class="clase-badge">${_esc(c.clase)}</span>
+        ${(c.classes && c.classes.length > 1)
+          ? c.classes.map((cl, i) => `<span class="clase-badge${i>0?' clase-badge-sec':''}">${_esc(cl.name)} ${cl.level}</span>`).join('')
+          : `<span class="clase-badge">${_esc(c.clase)}</span>`}
         ${sub ? `<span class="char-raza">${_esc(sub)}</span>` : ''}
       </div>
       <div class="char-stats">
@@ -945,16 +951,91 @@ function playChar(id) {
 }
 
 // ═══════════════════════════════════════════════════
-// MODAL CREAR / EDITAR
+// MODAL CREAR / EDITAR — Wizard con chips de clase
 // ═══════════════════════════════════════════════════
+const _CLASES_LISTA = [
+  'Bárbaro','Bardo','Clérigo','Druida','Explorador',
+  'Guerrero','Hechicero','Mago','Monje','Paladín','Pícaro','Brujo'
+];
+const _CLASE_EMOJI = {
+  'Bárbaro':'⚔️','Bardo':'🎵','Clérigo':'✝️','Druida':'🌿',
+  'Explorador':'🏹','Guerrero':'🛡️','Hechicero':'🔥','Mago':'🔮',
+  'Monje':'👊','Paladín':'⚡','Pícaro':'🗡️','Brujo':'👁️'
+};
+
+let _selectedClase = 'Clérigo';
+
+function _buildClaseChips(selected) {
+  const grid = document.getElementById('claseChipGrid');
+  if (!grid) return;
+  grid.innerHTML = _CLASES_LISTA.map(c => `
+    <button type="button"
+      class="clase-chip ${c === selected ? 'selected' : ''}"
+      onclick="selectClaseChip(this,'${c}')"
+      title="${c}">
+      <span class="clase-chip-icon">${_CLASE_EMOJI[c] || '⚔️'}</span>
+      <span class="clase-chip-name">${c}</span>
+    </button>`).join('');
+}
+
+function selectClaseChip(el, name) {
+  document.querySelectorAll('.clase-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedClase = name;
+}
+
+let _multiclaseCount = 0;
+
+function addMulticlaseRow() {
+  _multiclaseCount++;
+  const id = `mc_row_${_multiclaseCount}`;
+  const container = document.getElementById('cmMulticlaseRows');
+  const div = document.createElement('div');
+  div.className = 'mc-row';
+  div.id = id;
+  div.innerHTML = `
+    <div class="form-select-wrap mc-select-wrap">
+      <select class="form-select mc-clase-select" id="mc_clase_${_multiclaseCount}">
+        ${_CLASES_LISTA.map(c => `<option>${c}</option>`).join('')}
+      </select>
+    </div>
+    <input type="number" class="form-input mc-nivel-input" id="mc_nivel_${_multiclaseCount}"
+           value="1" min="1" max="19" inputmode="numeric" title="Nivel en esta clase">
+    <button type="button" class="mc-remove-btn" onclick="removeMulticlaseRow('${id}')">✕</button>`;
+  container.appendChild(div);
+}
+
+function removeMulticlaseRow(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function _collectMulticlaseRows() {
+  const rows = document.querySelectorAll('#cmMulticlaseRows .mc-row');
+  const result = [];
+  rows.forEach(row => {
+    const sel = row.querySelector('.mc-clase-select');
+    const inp = row.querySelector('.mc-nivel-input');
+    if (sel && inp) {
+      const lvl = Math.min(19, Math.max(1, parseInt(inp.value) || 1));
+      result.push({ name: sel.value, level: lvl, subclass: '' });
+    }
+  });
+  return result;
+}
+
 function openCreateModal() {
   _editId = null;
+  _selectedClase = 'Clérigo';
+  _multiclaseCount = 0;
   document.getElementById('createModalTitle').textContent = '✦ Nuevo personaje';
-  document.getElementById('saveBtn').textContent = 'Crear';
+  document.getElementById('saveBtn').textContent = 'Crear personaje';
   document.getElementById('cmName').value  = '';
-  document.getElementById('cmClase').value = 'Clérigo';
   document.getElementById('cmNivel').value = '1';
   document.getElementById('cmRaza').value  = '';
+  document.getElementById('cmMulticlaseRows').innerHTML = '';
+  document.getElementById('cmMulticlaseSection').style.display = '';
+  _buildClaseChips('Clérigo');
   document.getElementById('createModal').classList.add('show');
   setTimeout(() => document.getElementById('cmName').focus(), 80);
 }
@@ -963,12 +1044,27 @@ function openEditModal(id) {
   const c = Storage.getChar(id);
   if (!c) return;
   _editId = id;
+  _selectedClase = c.clase || 'Clérigo';
+  _multiclaseCount = 0;
   document.getElementById('createModalTitle').textContent = '✎ Editar personaje';
   document.getElementById('saveBtn').textContent = 'Guardar';
   document.getElementById('cmName').value  = c.name;
-  document.getElementById('cmClase').value = c.clase;
   document.getElementById('cmNivel').value = c.nivel;
   document.getElementById('cmRaza').value  = c.raza || '';
+  document.getElementById('cmMulticlaseRows').innerHTML = '';
+  // En edición mostramos las clases secundarias existentes
+  const secondaries = (c.classes || []).slice(1);
+  secondaries.forEach(sc => {
+    addMulticlaseRow();
+    const lastCount = _multiclaseCount;
+    setTimeout(() => {
+      const sel = document.getElementById(`mc_clase_${lastCount}`);
+      const inp = document.getElementById(`mc_nivel_${lastCount}`);
+      if (sel) sel.value = sc.name;
+      if (inp) inp.value = sc.level;
+    }, 10);
+  });
+  _buildClaseChips(_selectedClase);
   document.getElementById('createModal').classList.add('show');
   setTimeout(() => document.getElementById('cmName').focus(), 80);
 }
@@ -980,36 +1076,44 @@ function closeCreateModal() {
 
 function saveCreateModal() {
   const name  = document.getElementById('cmName').value.trim();
-  const clase = document.getElementById('cmClase').value;
   const nivel = Math.min(20, Math.max(1, parseInt(document.getElementById('cmNivel').value) || 1));
   const raza  = document.getElementById('cmRaza').value.trim();
   if (!name) { document.getElementById('cmName').focus(); return; }
 
+  // Construir array de clases
+  const mainClass   = { name: _selectedClase, level: nivel, subclass: '' };
+  const secondaries = _collectMulticlaseRows();
+  // Asegurar que el total de niveles no supere 20
+  const totalLevels = nivel + secondaries.reduce((s, c) => s + c.level, 0);
+  if (totalLevels > 20) {
+    showToast('El nivel total no puede superar 20');
+    return;
+  }
+  const allClasses = [mainClass, ...secondaries];
+
   if (_editId) {
     const c = Storage.getChar(_editId);
     if (c) {
-      c.name = name;
-      c.raza = raza;
-      if (c.nivel !== nivel || c.clase !== clase) {
-        c.clase = clase;
-        const updated = Characters.applyLevelUp(c, nivel, 0);
-        Storage.saveChar(updated);
-      } else {
-        Storage.saveChar(c);
-      }
+      c.name    = name;
+      c.raza    = raza;
+      c.clase   = _selectedClase;
+      c.nivel   = nivel;
+      c.classes = allClasses;
+      c.spellSlots = Characters.calcMulticlassSlots(allClasses);
+      Characters.applyLevelUp(c, nivel, 0);
+      Storage.saveChar(c);
     }
     showToast('Personaje actualizado');
   } else {
-    const newChar = Characters.createNew(name, clase);
-    newChar.raza = raza;
-    if (nivel > 1) {
-      const leveled = Characters.applyLevelUp(newChar, nivel, 0);
-      Storage.saveChar(leveled);
-    } else {
-      Storage.saveChar(newChar);
-    }
+    // Crear con features y hechizos correctos según clase
+    const newChar = Characters.buildDefaultChar(name, _selectedClase, nivel);
+    newChar.raza    = raza;
+    newChar.classes = allClasses;
+    newChar.spellSlots = Characters.calcMulticlassSlots(allClasses);
+    Storage.saveChar(newChar);
     Storage.setActiveId(newChar.id);
-    showToast('Personaje creado · ' + name);
+    const clasesLabel = allClasses.map(c => `${c.name} ${c.level}`).join(' / ');
+    showToast(`${name} · ${clasesLabel}`);
   }
 
   closeCreateModal();

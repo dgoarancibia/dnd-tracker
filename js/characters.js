@@ -717,6 +717,366 @@ const Characters = (() => {
     return Array(9).fill(0);
   }
 
+  /* ══════════════════════════════════════════════════════
+     CATÁLOGOS POR CLASE
+  ══════════════════════════════════════════════════════ */
+
+  // ── CLASE_FEATURES: recursos y features descriptivas por clase ─────────────
+  const CLASE_FEATURES = {
+    'Clérigo': {
+      resources: (nivel) => [
+        { id:'channel-divinity', name:'Channel Divinity',
+          current: nivel >= 6 ? 3 : nivel >= 2 ? 2 : 1,
+          max:     nivel >= 6 ? 3 : nivel >= 2 ? 2 : 1,
+          recharge:'short', note:'Turn Undead · Divine Spark · Balm of Peace' }
+      ],
+      features: [
+        'Spellcasting (SAB)', 'Channel Divinity', 'Subclase (nv3)',
+        'Ability Score Improvement (nv4)', 'Destroy Undead (nv5)',
+        'Divine Intervention (nv10)',
+      ],
+    },
+    'Bárbaro': {
+      resources: (nivel) => [
+        { id:'rage', name:'Rage',
+          current: nivel>=17?6:nivel>=12?5:nivel>=9?4:nivel>=6?3:2,
+          max:     nivel>=17?6:nivel>=12?5:nivel>=9?4:nivel>=6?3:2,
+          recharge:'long', note:'Ventaja STR · Resistencia físico · +daño' }
+      ],
+      features: [
+        'Rage', 'Unarmored Defense (CA = 10 + DES + CON)', 'Reckless Attack',
+        'Danger Sense (ventaja saves DES)', 'Extra Attack (nv5)',
+        'Fast Movement (nv5, +10 ft)', 'Feral Instinct (nv7)',
+        'Brutal Critical (nv9)', 'Relentless Rage (nv11)',
+        'Persistent Rage (nv15)', 'Indomitable Might (nv18)',
+        'Primal Champion (nv20, +4 STR/CON)',
+      ],
+    },
+    'Bardo': {
+      resources: (nivel) => [
+        { id:'bardic-inspiration', name:'Bardic Inspiration',
+          current: Math.max(1, Math.floor((nivel-10)/2)+5 > 0 ? nivel >= 5 ? Math.floor((Math.max(0,nivel-10)/2)+4) : 1 : 1),
+          max: nivel >= 20 ? 6 : nivel >= 15 ? 5 : nivel >= 10 ? 4 : nivel >= 5 ? 3 : 1,
+          recharge: nivel >= 5 ? 'short' : 'long',
+          note: `d${nivel>=15?12:nivel>=10?10:nivel>=5?8:6} · ${nivel>=5?'Short':'Long'} rest` }
+      ],
+      features: [
+        'Bardic Inspiration', 'Jack of All Trades', 'Song of Rest (nv2)',
+        'Expertise (x2 nv3)', 'Countercharm (nv6)', 'Magical Secrets (nv10)',
+        'Superior Inspiration (nv20)',
+      ],
+    },
+    'Druida': {
+      resources: (nivel) => [
+        { id:'wild-shape', name:'Wild Shape',
+          current: 2, max: 2, recharge:'short',
+          note: nivel>=18?'Bestia CR sin límite':nivel>=8?`CR ${nivel>=8?1:0.5}`:'CR 1/4' }
+      ],
+      features: [
+        'Druidic (idioma secreto)', 'Spellcasting (SAB)', 'Wild Shape',
+        'Timeless Body (nv18, no envejece)', 'Beast Spells (nv18)',
+        'Archdruid (nv20, Wild Shape ilimitado)',
+      ],
+    },
+    'Explorador': {
+      resources: (nivel) => [],
+      features: [
+        'Favored Enemy', 'Natural Explorer', 'Fighting Style (nv2)',
+        'Spellcasting (SAB, nv2)', 'Primeval Awareness (nv3)',
+        'Extra Attack (nv5)', 'Land\'s Stride (nv8)',
+        'Hide in Plain Sight (nv10)', 'Vanish (nv14)',
+        'Feral Senses (nv18)', 'Foe Slayer (nv20)',
+      ],
+    },
+    'Guerrero': {
+      resources: (nivel) => [
+        { id:'action-surge', name:'Action Surge',
+          current: nivel >= 17 ? 2 : 1, max: nivel >= 17 ? 2 : 1,
+          recharge:'short', note:'Turno extra de acciones' },
+        { id:'second-wind', name:'Second Wind',
+          current: 1, max: 1, recharge:'short',
+          note:`Recupera 1d10+${nivel} HP como acción bonus` },
+      ],
+      features: [
+        'Fighting Style', 'Second Wind', 'Action Surge (nv2)',
+        'Extra Attack (nv5, x2)', 'Indomitable (nv9)',
+        'Extra Attack x3 (nv11)', 'Extra Attack x4 (nv20)',
+      ],
+    },
+    'Hechicero': {
+      resources: (nivel) => [
+        { id:'sorcery-points', name:'Sorcery Points',
+          current: nivel, max: nivel, recharge:'long',
+          note:'Metamagic · Flexible Casting' }
+      ],
+      features: [
+        'Spellcasting (CAR)', 'Sorcerous Origin',
+        'Font of Magic (nv2)', 'Metamagic (nv3)',
+        'Ability Score Improvement (nv4)', 'Sorcerous Restoration (nv20)',
+      ],
+    },
+    'Mago': {
+      resources: (nivel) => [
+        { id:'arcane-recovery', name:'Arcane Recovery',
+          current: 1, max: 1, recharge:'long',
+          note:`Recupera hasta ${Math.ceil(nivel/2)} niveles de slots (Short Rest · 1/día)` }
+      ],
+      features: [
+        'Spellcasting (INT)', 'Arcane Recovery', 'Arcane Tradition (nv2)',
+        'Ability Score Improvement (nv4)', 'Spell Mastery (nv18)',
+        'Signature Spells (nv20)',
+      ],
+    },
+    'Monje': {
+      resources: (nivel) => [
+        { id:'ki', name:'Ki', current: nivel, max: nivel,
+          recharge:'short', note:'Flurry of Blows · Patient Defense · Step of the Wind' },
+        { id:'stunning-strike', name:'Stunning Strike', current: 0, max: 0,
+          recharge:'short', note:'Gasta 1 Ki después de golpear → Save CON o aturdido' },
+      ],
+      features: [
+        'Unarmored Defense (CA = 10 + DES + SAB)', 'Martial Arts',
+        'Ki (nv2)', 'Unarmored Movement (nv2)', 'Deflect Missiles (nv3)',
+        'Slow Fall (nv4)', 'Extra Attack (nv5)', 'Stunning Strike (nv5)',
+        'Ki-Empowered Strikes (nv6)', 'Evasion (nv7)',
+        'Diamond Soul (nv14, prof todos los saves)', 'Timeless Body (nv15)',
+        'Empty Body (nv18)', 'Perfect Self (nv20)',
+      ],
+    },
+    'Paladín': {
+      resources: (nivel) => [
+        { id:'lay-on-hands', name:'Lay on Hands',
+          current: nivel * 5, max: nivel * 5,
+          recharge:'long', note:`${nivel*5} HP de pool · 5 HP para curar · 1 HP para curar enfermedad` },
+        { id:'channel-divinity', name:'Channel Divinity',
+          current: 1, max: 1, recharge:'short', note:'Sacred Weapon · Turn the Unholy' },
+        { id:'divine-smite', name:'Divine Smite', current: 0, max: 0,
+          recharge:'never', note:'Gasta slots después de golpear para +2d8 daño radiante' },
+      ],
+      features: [
+        'Lay on Hands', 'Divine Sense', 'Fighting Style (nv2)',
+        'Spellcasting (CAR, nv2)', 'Divine Smite (nv2)',
+        'Channel Divinity (nv3)', 'Sacred Oath (nv3)',
+        'Extra Attack (nv5)', 'Aura of Protection (nv6, +CAR saves)',
+        'Aura of Courage (nv10)', 'Cleansing Touch (nv14)',
+      ],
+    },
+    'Pícaro': {
+      resources: (nivel) => [
+        { id:'cunning-action', name:'Cunning Action', current: 0, max: 0,
+          recharge:'never', note:'Bonus action: Dash · Disengage · Hide' },
+        { id:'uncanny-dodge', name:'Uncanny Dodge', current: 0, max: 0,
+          recharge:'never', note:'Reacción: mitad de daño de un ataque visible' },
+      ],
+      features: (nivel) => [
+        `Sneak Attack (${Math.ceil(nivel/2)}d6)`, 'Thieves\' Cant',
+        'Cunning Action (nv2)', 'Uncanny Dodge (nv5)',
+        'Evasion (nv7)', 'Reliable Talent (nv11)',
+        'Blindsense (nv14)', 'Slippery Mind (nv15)',
+        'Elusive (nv18)', 'Stroke of Luck (nv20)',
+      ],
+    },
+    'Brujo': {
+      resources: (nivel) => {
+        const wSlots = WARLOCK_SLOTS[nivel] || [2];
+        const maxSlots = wSlots[0] || 2;
+        return [
+          { id:'pact-slots', name:'Pact Magic Slots',
+            current: maxSlots, max: maxSlots,
+            recharge:'short', note:`Slot nivel ${nivel>=9?5:nivel>=7?4:nivel>=5?3:nivel>=3?2:1} · Short/Long rest` },
+          { id:'eldritch-invocations', name:'Eldritch Invocations', current: 0, max: 0,
+            recharge:'never', note:'Poderes especiales de Pact' },
+        ];
+      },
+      features: [
+        'Otherworldly Patron', 'Pact Magic', 'Eldritch Invocations (nv2)',
+        'Pact Boon (nv3)', 'Ability Score Improvement (nv4)',
+        'Mystic Arcanum (nv11+)', 'Eldritch Master (nv20)',
+      ],
+    },
+  };
+
+  // ── CLASE_SPELLS: hechizos base por clase ─────────────────────────────────
+  // Catálogo representativo para empezar. El usuario puede agregar más después.
+  const CLASE_SPELLS = {
+
+    'Clérigo': [], // Lursey ya define sus propios; nuevo clérigo empieza sin lista fija
+
+    'Druida': [
+      { id:'shillelagh',  name:'Shillelagh',      level:0, castTime:'Acción bonus', range:'Toque', duration:'1 min',    concentration:false, combat:true,  desc:'Arma de madera usa SAB en vez de FUE, daño 1d8.' },
+      { id:'guidance',    name:'Guidance',         level:0, castTime:'Acción',       range:'Toque', duration:'1 min',    concentration:true,  combat:false, desc:'Otorga 1d4 a una tirada de habilidad.' },
+      { id:'produce-flame', name:'Produce Flame',  level:0, castTime:'Acción',       range:'Uno mismo', duration:'10 min', concentration:false, combat:true, desc:'Llama en la mano: ilumina 10ft o 1d8 fuego al lanzar.' },
+      { id:'entangle',    name:'Entangle',          level:1, castTime:'Acción',       range:'27 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Save FUE o restringido en área de plantas (18ft²).' },
+      { id:'healing-word-d', name:'Healing Word',  level:1, castTime:'Acción bonus', range:'18 m', duration:'Inst.',    concentration:false, combat:false, desc:'1d4+SAB HP. Escala +1d4 por nivel superior.' },
+      { id:'faerie-fire', name:'Faerie Fire',       level:1, castTime:'Acción',       range:'18 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Save DES o brillan → ventaja en ataques contra ellos.' },
+      { id:'thunderwave-d', name:'Thunderwave',    level:1, castTime:'Acción',       range:'Uno mismo (15ft)', duration:'Inst.', concentration:false, combat:true, desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 10ft.' },
+      { id:'spike-growth',name:'Spike Growth',     level:2, castTime:'Acción',       range:'45 m', duration:'10 min',   concentration:true,  combat:true,  desc:'Área difícil 20ft radio · 2d4 perforante por 5ft caminados.' },
+      { id:'moonbeam',    name:'Moonbeam',          level:2, castTime:'Acción',       range:'36 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Cilindro 5ft · save CON · 2d10 radiante por turno.' },
+      { id:'flaming-sphere', name:'Flaming Sphere', level:2, castTime:'Acción',      range:'18 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Esfera 5ft · 2d6 fuego save DES · movible bonus action.' },
+    ],
+
+    'Bardo': [
+      { id:'vicious-mockery', name:'Vicious Mockery', level:0, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true,  desc:'Save SAB o 1d4 psíquico + desventaja en próximo ataque.' },
+      { id:'minor-illusion',  name:'Minor Illusion',  level:0, castTime:'Acción', range:'9 m',  duration:'1 min', concentration:false, combat:false, desc:'Sonido o imagen inanimada de cubo 5ft.' },
+      { id:'prestidigitation-b', name:'Prestidigitation', level:0, castTime:'Acción', range:'3 m', duration:'Hasta 1h', concentration:false, combat:false, desc:'Truco menor: limpiar, encender, sabor, etc.' },
+      { id:'healing-word-b',  name:'Healing Word',    level:1, castTime:'Acción bonus', range:'18 m', duration:'Inst.', concentration:false, combat:false, desc:'1d4+CAR HP · como bonus action.' },
+      { id:'thunderwave-b',   name:'Thunderwave',     level:1, castTime:'Acción', range:'Uno mismo (15ft)', duration:'Inst.', concentration:false, combat:true, desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 10ft.' },
+      { id:'dissonant-whispers', name:'Dissonant Whispers', level:1, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true, desc:'Save SAB o 3d6 psíquico y huye. Escala +1d6 por nivel.' },
+      { id:'hold-person-b',   name:'Hold Person',     level:2, castTime:'Acción', range:'18 m', duration:'1 min', concentration:true,  combat:true,  desc:'Save SAB o paralizado. Repite save c/turno.' },
+      { id:'suggestion',      name:'Suggestion',      level:2, castTime:'Acción', range:'9 m',  duration:'8 h',   concentration:true,  combat:false, desc:'Save SAB o sigue sugerencia razonable.' },
+      { id:'shatter',         name:'Shatter',         level:2, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true,  desc:'Esfera 10ft · save CON · 3d8 trueno. +1d8 por nivel.' },
+    ],
+
+    'Hechicero': [
+      { id:'fire-bolt-s',   name:'Fire Bolt',      level:0, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d10 fuego. (2d10 nv5, 3d10 nv11).' },
+      { id:'ray-of-frost',  name:'Ray of Frost',   level:0, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d8 frío · vel -10ft hasta tu turno.' },
+      { id:'mage-hand-s',   name:'Mage Hand',      level:0, castTime:'Acción', range:'9 m',  duration:'1 min', concentration:false, combat:false, desc:'Mano espectral puede manipular objetos hasta 5 kg.' },
+      { id:'burning-hands', name:'Burning Hands',  level:1, castTime:'Acción', range:'Cono 15ft', duration:'Inst.', concentration:false, combat:true, desc:'Save DES · 3d6 fuego. +1d6 por nivel superior.' },
+      { id:'chromatic-orb', name:'Chromatic Orb',  level:1, castTime:'Acción', range:'27 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 3d8 de tipo elegido. +1d8 por nivel.' },
+      { id:'magic-missile-s', name:'Magic Missile', level:1, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true, desc:'3 dardos infalibles · 1d4+1 fuerza c/u. +1 dardo por nivel.' },
+      { id:'scorching-ray', name:'Scorching Ray',  level:2, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'3 ataques a distancia · 2d6 fuego c/u. +1 rayo por nivel.' },
+      { id:'mirror-image',  name:'Mirror Image',   level:2, castTime:'Acción', range:'Uno mismo', duration:'1 min', concentration:false, combat:true, desc:'3 duplicados ilusorios. Ataques pueden golpear duplicado.' },
+      { id:'misty-step-s',  name:'Misty Step',     level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m a lugar visible.' },
+    ],
+
+    'Mago': [
+      { id:'fire-bolt',     name:'Fire Bolt',      level:0, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d10 fuego. Escala con nivel.' },
+      { id:'mage-hand',     name:'Mage Hand',      level:0, castTime:'Acción', range:'9 m',  duration:'1 min', concentration:false, combat:false, desc:'Mano espectral manipula objetos hasta 5 kg.' },
+      { id:'prestidigitation', name:'Prestidigitation', level:0, castTime:'Acción', range:'3 m', duration:'Hasta 1h', concentration:false, combat:false, desc:'Trucos menores: limpiar, encender, sabor...' },
+      { id:'minor-illusion-m', name:'Minor Illusion', level:0, castTime:'Acción', range:'9 m', duration:'1 min', concentration:false, combat:false, desc:'Imagen o sonido pequeño.' },
+      { id:'magic-missile', name:'Magic Missile',  level:1, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'3 dardos infalibles · 1d4+1 fuerza c/u. +1 dardo por nivel.' },
+      { id:'shield',        name:'Shield',          level:1, castTime:'Reacción', range:'Uno mismo', duration:'1 ronda', concentration:false, combat:true, desc:'Reacción · +5 CA hasta inicio de tu próximo turno.' },
+      { id:'thunderwave-m', name:'Thunderwave',    level:1, castTime:'Acción', range:'Uno mismo (15ft)', duration:'Inst.', concentration:false, combat:true, desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 10ft.' },
+      { id:'detect-magic',  name:'Detect Magic',   level:1, castTime:'Acción', range:'Uno mismo', duration:'10 min', concentration:true, combat:false, ritual:true, desc:'Detecta magia en 9 m · ritual.' },
+      { id:'misty-step',    name:'Misty Step',     level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m a lugar visible.' },
+      { id:'mirror-image-m', name:'Mirror Image',  level:2, castTime:'Acción', range:'Uno mismo', duration:'1 min', concentration:false, combat:true, desc:'3 duplicados ilusorios desvían ataques.' },
+      { id:'web',           name:'Web',             level:2, castTime:'Acción', range:'18 m', duration:'1 h',   concentration:true,  combat:true,  desc:'Tela 4.5m cubo · restringido · save DES o atrapado.' },
+      { id:'fireball',      name:'Fireball',        level:3, castTime:'Acción', range:'45 m', duration:'Inst.', concentration:false, combat:true,  desc:'Esfera 20ft · save DES · 8d6 fuego. +1d6 por nivel.' },
+      { id:'counterspell',  name:'Counterspell',   level:3, castTime:'Reacción', range:'18 m', duration:'Inst.', concentration:false, combat:true, desc:'Cancela un hechizo de nv3 o menos. Superior: check INT.' },
+      { id:'fly',           name:'Fly',             level:3, castTime:'Acción', range:'Toque', duration:'10 min', concentration:true, combat:false, desc:'Velocidad vuelo 18 m a criatura voluntaria.' },
+    ],
+
+    'Brujo': [
+      { id:'eldritch-blast', name:'Eldritch Blast', level:0, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'Rayo de fuerza · 1d10 · +1 rayo a nv5/11/17.' },
+      { id:'toll-dead-w',    name:'Toll the Dead',  level:0, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true,  desc:'Save SAB · 1d8 necrótico (1d12 si ya herido).' },
+      { id:'minor-illusion-w', name:'Minor Illusion', level:0, castTime:'Acción', range:'9 m', duration:'1 min', concentration:false, combat:false, desc:'Sonido o imagen estática cubo 5ft.' },
+      { id:'hex',            name:'Hex',             level:1, castTime:'Acción bonus', range:'27 m', duration:'1 h', concentration:true, combat:true, desc:'Maldición: +1d6 necrótico en ataques · desventaja en check elegido.' },
+      { id:'arms-of-hadar',  name:'Arms of Hadar',   level:1, castTime:'Acción', range:'Uno mismo (10ft)', duration:'Inst.', concentration:false, combat:true, desc:'Save FUE · 2d6 necrótico · no puede tomar reacciones hasta su turno.' },
+      { id:'hellish-rebuke', name:'Hellish Rebuke',  level:1, castTime:'Reacción', range:'18 m', duration:'Inst.', concentration:false, combat:true, desc:'Reacción al ser golpeado · save DES · 2d10 fuego. +1d10 por nivel.' },
+      { id:'misty-step-w',   name:'Misty Step',      level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m.' },
+      { id:'hold-person-w',  name:'Hold Person',     level:2, castTime:'Acción', range:'18 m', duration:'1 min', concentration:true, combat:true, desc:'Save SAB o paralizado (humanoides). Repite save c/turno.' },
+    ],
+
+    'Paladín': [
+      { id:'bless',          name:'Bless',           level:1, castTime:'Acción', range:'9 m', duration:'1 min', concentration:true, combat:true, desc:'Hasta 3 criaturas: +1d4 en ataques y saves.' },
+      { id:'cure-wounds-p',  name:'Cure Wounds',     level:1, castTime:'Acción', range:'Toque', duration:'Inst.', concentration:false, combat:false, desc:'1d8+CAR HP. +1d8 por nivel superior.' },
+      { id:'divine-favor',   name:'Divine Favor',    level:1, castTime:'Acción bonus', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Ataques de arma: +1d4 radiante hasta fin.' },
+      { id:'shield-of-faith', name:'Shield of Faith', level:1, castTime:'Acción bonus', range:'18 m', duration:'10 min', concentration:true, combat:true, desc:'+2 CA a criatura elegida.' },
+      { id:'thunderous-smite', name:'Thunderous Smite', level:1, castTime:'Acción bonus', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Primer golpe: +2d6 trueno · save FUE o empujado 10ft.' },
+      { id:'aid',            name:'Aid',              level:2, castTime:'Acción', range:'9 m', duration:'8 h', concentration:false, combat:false, desc:'3 aliados: HP max y actual +5. +5 por nivel superior.' },
+      { id:'branding-smite', name:'Branding Smite',  level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Golpe: +2d6 radiante · objetivo brillante · no puede ser invisible.' },
+      { id:'misty-step-p',   name:'Misty Step',      level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m.' },
+      { id:'daylight',       name:'Daylight',         level:3, castTime:'Acción', range:'18 m', duration:'1 h', concentration:false, combat:false, desc:'Esfera de luz brillante 18 m de radio.' },
+      { id:'revivify-p',     name:'Revivify',         level:3, castTime:'Acción', range:'Toque', duration:'Inst.', concentration:false, combat:false, desc:'Revive criatura muerta hace <1 min con 1 HP.' },
+    ],
+
+    'Explorador': [
+      { id:'hunters-mark',   name:'Hunter\'s Mark',  level:1, castTime:'Acción bonus', range:'27 m', duration:'1 h', concentration:true, combat:true, desc:'Presa: +1d6 daño en ataques · ventaja en percepción/sigilo vs ella.' },
+      { id:'ensnaring-strike', name:'Ensnaring Strike', level:1, castTime:'Acción bonus', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Golpe: save FUE o atrapado. 1d6 perforante por turno atrapado.' },
+      { id:'hail-of-thorns', name:'Hail of Thorns',  level:1, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:true, combat:true, desc:'Golpe a distancia: +1d10 perforante al objetivo y adyacentes (save DES mitad).' },
+      { id:'pass-without-trace', name:'Pass Without Trace', level:2, castTime:'Acción', range:'Uno mismo', duration:'1 h', concentration:true, combat:false, desc:'+10 sigilo a tus compañeros en 9 m · no dejan rastro.' },
+      { id:'spike-growth-r', name:'Spike Growth',    level:2, castTime:'Acción', range:'45 m', duration:'10 min', concentration:true, combat:true, desc:'Área difícil 20ft · 2d4 perforante por cada 5ft.' },
+    ],
+  };
+
+  // ── calcMulticlassSlots: tabla oficial PHB de multiclase ──────────────────
+  function calcMulticlassSlots(classes) {
+    let casterLevels = 0;
+    let hasWarlock = false;
+    let warlockLevel = 0;
+
+    for (const c of classes) {
+      const cfg = CLASES_CONFIG[c.name];
+      if (!cfg) continue;
+      if (cfg.slotTable === 'full')    casterLevels += c.level;
+      if (cfg.slotTable === 'half')    casterLevels += Math.floor(c.level / 2);
+      if (cfg.slotTable === 'warlock') { hasWarlock = true; warlockLevel = Math.max(warlockLevel, c.level); }
+    }
+
+    const baseRow = FULL_CASTER_SLOTS[casterLevels] || Array(9).fill(0);
+    const result = {};
+    for (let i = 1; i <= 9; i++) {
+      result[i] = { current: baseRow[i-1] || 0, max: baseRow[i-1] || 0 };
+    }
+    return result;
+  }
+
+  // ── buildDefaultChar: crea personaje con features y hechizos por clase ────
+  function buildDefaultChar(name, claseNombre, nivel) {
+    nivel = nivel || 1;
+    const cfg    = CLASES_CONFIG[claseNombre] || CLASES_CONFIG['Guerrero'];
+    const slots  = calcMulticlassSlots([{ name: claseNombre, level: nivel }]);
+    const feats  = CLASE_FEATURES[claseNombre];
+    const resrcs = feats ? feats.resources(nivel) : [];
+    // features puede ser array o función (ej: Pícaro)
+    const featList = feats ? (typeof feats.features === 'function' ? feats.features(nivel) : feats.features) : [];
+    const spells = (CLASE_SPELLS[claseNombre] || []).map(s => ({ ...s }));
+
+    return {
+      id: 'char-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      name,
+      clase:            claseNombre,
+      classes:          [{ name: claseNombre, level: nivel, subclass: '' }],
+      subclase:         '',
+      raza:             '',
+      trasfondo:        '',
+      deity:            '',
+      alignment:        '',
+      nivel,
+      xp:               0,
+
+      stats: { for:10, des:10, con:10, int:10, sab:10, car:10 },
+
+      hp:    { current: cfg.hitDie, max: cfg.hitDie, temp: 0 },
+      velocidad: 30,
+
+      savingThrows:    cfg.savingThrows || [],
+      skillProfs:      [],
+      skillExpertise:  [],
+
+      spellcastingStat: cfg.spellcastingStat,
+      hitDie:           cfg.hitDie,
+      spellSlots:       slots,
+      hitDice:          { current: nivel, max: nivel },
+
+      resources:        resrcs,
+      turn:             { action: false, bonus: false, reaction: false, movement: false },
+      concentration:    null,
+      conditions:       [],
+      inspiration:      false,
+
+      spells,
+      preparedToday:    [],
+
+      weapons:          [],
+      armor:            { name: '', base_ca: 10, add_dex: true, shield: false, shield_bonus: 2 },
+      attunement:       ['', '', ''],
+      magicItems:       [],
+      consumables:      [],
+      currency:         { pp: 0, gp: 0, sp: 0, cp: 0 },
+      notes:            '',
+
+      bonuses: { ca: 0, savesAll: 0, saves: {}, skills: {}, init: 0, hpMax: 0, ataque: 0 },
+
+      diary:            [],
+      ifttt:            [],
+
+      _dataVersion: 3,
+      createdAt:    new Date().toISOString(),
+      updatedAt:    new Date().toISOString(),
+    };
+  }
+
   /* ── LEVEL UP ── */
 
   function applyLevelUp(char, newLevel, hpGained) {
@@ -726,18 +1086,26 @@ const Characters = (() => {
     char.hitDice.max = newLevel;
     char.hitDice.current = Math.min(char.hitDice.current + 1, newLevel);
 
-    // Actualizar spell slots
-    const newSlotRow = getSlotsForClass(char.clase, newLevel);
+    // Sincronizar classes[0].level con el nivel principal
+    if (!char.classes || !char.classes.length) {
+      char.classes = [{ name: char.clase, level: newLevel, subclass: char.subclase || '' }];
+    } else {
+      char.classes[0].level = newLevel;
+    }
+
+    // Actualizar spell slots (usa multiclase si hay varias clases)
+    const newSlots = calcMulticlassSlots(char.classes);
     for (let i = 1; i <= 9; i++) {
-      const newMax = newSlotRow[i-1] || 0;
-      const old = char.spellSlots[i] || { current: 0, max: 0 };
+      const newMax = newSlots[i]?.max || 0;
+      const old    = char.spellSlots[i] || { current: 0, max: 0 };
       if (newMax > old.max) {
-        // Slots nuevos empiezan llenos
         char.spellSlots[i] = { current: old.current + (newMax - old.max), max: newMax };
       } else {
         char.spellSlots[i] = { current: Math.min(old.current, newMax), max: newMax };
       }
     }
+
+    return char;
   }
 
   /* ── EXPORTS PÚBLICOS ── */
@@ -746,6 +1114,8 @@ const Characters = (() => {
     PROF_BONUS,
     XP_THRESHOLDS,
     CLASES_CONFIG,
+    CLASE_FEATURES,
+    CLASE_SPELLS,
     SKILLS_DEF,
     STAT_NAMES,
     LURSEY_IFTTT,
@@ -761,11 +1131,13 @@ const Characters = (() => {
     calcHPMaxSuggested,
     calcCA,
     getSlotsForClass,
+    calcMulticlassSlots,
     getPreparedMax,
     getXPForLevel,
     getNextLevelXP,
     getLevelFromXP,
     createNew,
+    buildDefaultChar,
     buildLursey,
     applyLevelUp,
   };

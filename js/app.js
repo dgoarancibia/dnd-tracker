@@ -446,6 +446,7 @@ const App = (() => {
       conjuros: _renderConjurosTab,
       equipo: _renderEquipoTab,
       habilidades: _renderHabilidadesTab,
+      biblioteca: () => { if (typeof Biblioteca !== 'undefined') Biblioteca.onTabActivated(); },
     };
     if (renders[name]) renders[name]();
   }
@@ -1308,6 +1309,14 @@ const App = (() => {
       <div class="passive-row">
         <span class="passive-label">Nivel</span>
         <span class="passive-val">${c.nivel}</span>
+      </div>
+      <div class="passive-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <span class="passive-label">Clase${(c.classes||[]).length > 1 ? 's' : ''}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">
+          ${(c.classes && c.classes.length ? c.classes : [{ name: c.clase, level: c.nivel, subclass: c.subclase || '' }])
+            .map((cl, i) => `<span class="char-class-chip${i===0?' primary':''}">${cl.name} ${cl.level}${cl.subclass ? ' · ' + cl.subclass : ''}</span>`)
+            .join('')}
+        </div>
       </div>
       <div class="passive-row">
         <span class="passive-label">Iniciativa</span>
@@ -2723,8 +2732,15 @@ const App = (() => {
       ? 8 + newProf + Characters.calcMod(_char.stats[_char.spellcastingStat])
       : null;
 
-    const slots = Characters.getSlotsForClass(_char.clase, newLevel);
-    const slotsStr = slots.map((n, i) => n > 0 ? `Nvl${i+1}: ${n}` : '').filter(Boolean).join(' · ');
+    // Calcular slots usando multiclase (actualizar nivel de clase principal)
+    const previewClasses = (_char.classes && _char.classes.length
+      ? _char.classes.map((cl, i) => i === 0 ? { ...cl, level: newLevel } : cl)
+      : [{ name: _char.clase, level: newLevel, subclass: '' }]);
+    const newSlots = Characters.calcMulticlassSlots(previewClasses);
+    const slotsStr = Object.entries(newSlots)
+      .filter(([, v]) => v.max > 0)
+      .map(([k, v]) => `Nvl${k}: ${v.max}`)
+      .join(' · ');
 
     document.getElementById('luPreview').innerHTML =
       `Nivel: <strong>${_char.nivel} → ${newLevel}</strong><br>

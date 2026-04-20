@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v52';
+const CACHE = 'dnd-tracker-v53';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -11,6 +11,7 @@ self.addEventListener('install', e => {
       './js/characters.js',
       './js/storage.js',
       './js/cloud.js',
+      './js/biblioteca.js',
       './icons/favicon.png',
     ])).then(() => self.skipWaiting())
   );
@@ -34,6 +35,20 @@ self.addEventListener('fetch', e => {
     url.hostname.includes('googleapis.com') ||
     url.hostname.includes('gstatic.com') && url.pathname.includes('firebasejs')
   ) return;
+
+  // pdf.js CDN — cache-first (necesario para Biblioteca offline)
+  if (url.hostname.includes('cdnjs.cloudflare.com') && url.pathname.includes('pdf')) {
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        if (res.ok) {
+          const toCache = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, toCache));
+        }
+        return res;
+      }).catch(() => caches.match(e.request)))
+    );
+    return;
+  }
 
   // Google Fonts — cache-first (solo si respuesta ok)
   if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
