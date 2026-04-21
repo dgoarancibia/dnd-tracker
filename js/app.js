@@ -214,7 +214,10 @@ const App = (() => {
 
   // Notebook state
   let _notebookOpen = false;
-  let _notebookTab  = 'diary'; // 'diary' | 'log'
+  let _notebookTab  = 'diary'; // 'diary' | 'log' | 'stats'
+  let _diaryCatFilter = '';    // '' = todas las categorías
+  let _diarySearch    = '';    // texto de búsqueda
+  let _newDiaryCat    = '';    // categoría de la próxima entrada
 
   function toggleNotebook() {
     _notebookOpen = !_notebookOpen;
@@ -229,11 +232,14 @@ const App = (() => {
 
   function switchNotebookTab(tab) {
     _notebookTab = tab;
-    document.getElementById('nbTabDiary').classList.toggle('active', tab === 'diary');
-    document.getElementById('nbTabLog').classList.toggle('active', tab === 'log');
-    document.getElementById('nbPaneDiary').style.display = tab === 'diary' ? 'flex' : 'none';
-    document.getElementById('nbPaneLog').style.display   = tab === 'log'   ? 'flex' : 'none';
-    if (tab === 'log') _renderCombatLog();
+    document.getElementById('nbTabDiary').classList.toggle('active',  tab === 'diary');
+    document.getElementById('nbTabLog').classList.toggle('active',    tab === 'log');
+    document.getElementById('nbTabStats').classList.toggle('active',  tab === 'stats');
+    document.getElementById('nbPaneDiary').style.display  = tab === 'diary'  ? 'flex' : 'none';
+    document.getElementById('nbPaneLog').style.display    = tab === 'log'    ? 'flex' : 'none';
+    document.getElementById('nbPaneStats').style.display  = tab === 'stats'  ? 'flex' : 'none';
+    if (tab === 'log')   _renderCombatLog();
+    else if (tab === 'stats') _renderCampaignStats();
     else _renderDiaryEntries();
   }
 
@@ -2779,14 +2785,38 @@ const App = (() => {
     toggleNotebook();
   }
 
+  const _DIARY_CAT_EMOJI = { combate:'🗡️', lugar:'📍', historia:'📖', npc:'🧑', nota:'💡', '':'📝' };
+  const _DIARY_CAT_COLOR = {
+    combate:  'rgba(200,80,80,0.18)',
+    lugar:    'rgba(80,160,200,0.18)',
+    historia: 'rgba(180,120,60,0.18)',
+    npc:      'rgba(140,100,200,0.18)',
+    nota:     'rgba(80,180,120,0.18)',
+    '':       'transparent',
+  };
+
   function _renderDiaryEntries() {
-    const entries = (_char.diary || []).slice(); // cronológico, más antiguo primero
+    let entries = (_char.diary || []).slice(); // cronológico, más antiguo primero
+
+    // Filtrar por categoría
+    if (_diaryCatFilter) {
+      entries = entries.filter(e => (e.cat || '') === _diaryCatFilter);
+    }
+    // Filtrar por búsqueda
+    if (_diarySearch) {
+      const q = _diarySearch.toLowerCase();
+      entries = entries.filter(e => e.text.toLowerCase().includes(q));
+    }
 
     const container = document.getElementById('diaryEntries');
     if (!container) return;
 
-    if (entries.length === 0) {
+    if ((_char.diary || []).length === 0) {
       container.innerHTML = `<div class="empty-state"><div class="es-icon">📓</div><div class="es-title">Sin notas aún</div><div class="es-text">Escribe algo y presiona Enter para guardar.</div></div>`;
+      return;
+    }
+    if (entries.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><div class="es-title">Sin resultados</div><div class="es-text">Prueba con otro filtro o búsqueda.</div></div>`;
       return;
     }
 
@@ -2800,8 +2830,23 @@ const App = (() => {
         html += `<div class="diary-day-sep"><span>${day}</span></div>`;
         lastDay = day;
       }
-      html += `<div class="diary-bubble" data-id="${e.id}">
-        <div class="diary-bubble-text">${e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+      const cat   = e.cat || '';
+      const emoji = _DIARY_CAT_EMOJI[cat] || '📝';
+      const catBg = _DIARY_CAT_COLOR[cat]  || 'transparent';
+      const catTag = cat
+        ? `<span class="diary-cat-tag" style="background:${catBg}">${emoji} ${cat}</span>`
+        : '';
+
+      // Highlight búsqueda
+      let textHtml = e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+      if (_diarySearch) {
+        const re = new RegExp(`(${_diarySearch.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+        textHtml = textHtml.replace(re, '<mark class="diary-highlight">$1</mark>');
+      }
+
+      html += `<div class="diary-bubble" data-id="${e.id}" style="${catBg !== 'transparent' ? `border-left:3px solid ${catBg.replace('0.18','0.6')}` : ''}">
+        ${catTag}
+        <div class="diary-bubble-text">${textHtml}</div>
         <div class="diary-bubble-meta">
           <span class="diary-bubble-time">${time}</span>
           <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">✕</button>
@@ -2809,8 +2854,8 @@ const App = (() => {
       </div>`;
     });
     container.innerHTML = html;
-    // Auto-scroll al fondo (más reciente)
-    container.scrollTop = container.scrollHeight;
+    // Auto-scroll al fondo (más reciente) solo si no hay filtros activos
+    if (!_diaryCatFilter && !_diarySearch) container.scrollTop = container.scrollHeight;
   }
 
   function addDiaryEntry() {
@@ -2821,7 +2866,8 @@ const App = (() => {
     const entry = {
       id: 'e-' + Date.now(),
       timestamp: new Date().toISOString(),
-      text
+      text,
+      cat: _newDiaryCat || '',
     };
 
     if (!_char.diary) _char.diary = [];
@@ -2830,6 +2876,24 @@ const App = (() => {
     textarea.value = '';
     textarea.style.height = 'auto';
     _renderDiaryEntries();
+  }
+
+  function filterDiarySearch(query) {
+    _diarySearch = query.trim();
+    _renderDiaryEntries();
+  }
+
+  function selectDiaryCat(el, cat) {
+    _diaryCatFilter = cat;
+    document.querySelectorAll('#diaryCatBar .diary-cat-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    _renderDiaryEntries();
+  }
+
+  function setNewDiaryCat(el, cat) {
+    _newDiaryCat = cat;
+    document.querySelectorAll('.diary-new-cat-btn').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
   }
 
   function deleteDiaryEntry(id) {
@@ -2842,6 +2906,143 @@ const App = (() => {
   }
 
   function filterDiary() { /* no-op, kept for compat */ }
+
+  /* ── Stats de Campaña ── */
+  function _renderCampaignStats() {
+    const panel = document.getElementById('statsPanel');
+    if (!panel || !_char) return;
+
+    const c = _char;
+    const diary   = c.diary   || [];
+    const log     = _combatLog;
+    const spells  = c.spells  || [];
+    const weapons = c.weapons || [];
+
+    // Días desde creación
+    const created  = new Date(c.createdAt || Date.now());
+    const now      = new Date();
+    const daysSince = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+
+    // Entradas de diario por categoría
+    const catCounts = { combate:0, lugar:0, historia:0, npc:0, nota:0, '':0 };
+    diary.forEach(e => { catCounts[e.cat || '']++; });
+
+    // Hechizos más lanzados (desde el combat log)
+    const spellUsage = {};
+    log.forEach(e => {
+      if (e.type === 'spell' && e.text) {
+        const match = e.text.match(/🔮\s+(.+?)\s+\(/);
+        if (match) spellUsage[match[1]] = (spellUsage[match[1]] || 0) + 1;
+      }
+    });
+    const topSpells = Object.entries(spellUsage).sort((a,b) => b[1]-a[1]).slice(0, 3);
+
+    // HP total perdido (desde log)
+    let totalDmg = 0;
+    log.forEach(e => {
+      if (e.type === 'damage') {
+        const m = e.text.match(/−(\d+)/);
+        if (m) totalDmg += parseInt(m[1]);
+      }
+    });
+
+    // HP total curado
+    let totalHeal = 0;
+    log.forEach(e => {
+      if (e.type === 'heal') {
+        const m = e.text.match(/\+(\d+)/);
+        if (m) totalHeal += parseInt(m[1]);
+      }
+    });
+
+    // Slots gastados (estimado desde log)
+    let slotsUsed = 0;
+    log.forEach(e => { if (e.type === 'spell') slotsUsed++; });
+
+    // Recursos usados
+    let resourcesUsed = 0;
+    log.forEach(e => { if (e.type === 'resource') resourcesUsed++; });
+
+    // Rounds de combate jugados (aprox)
+    const combatRounds = Math.max(_combatRound, 0);
+
+    const totalNotes = diary.length;
+
+    // Construir HTML
+    const statCard = (icon, label, value, sub='') => `
+      <div class="cs-card">
+        <div class="cs-icon">${icon}</div>
+        <div class="cs-body">
+          <div class="cs-value">${value}</div>
+          <div class="cs-label">${label}</div>
+          ${sub ? `<div class="cs-sub">${sub}</div>` : ''}
+        </div>
+      </div>`;
+
+    let html = `<div class="cs-section-title">Aventura</div>
+    <div class="cs-grid">
+      ${statCard('📅', 'Días aventurando', daysSince > 0 ? daysSince : '< 1')}
+      ${statCard('📓', 'Notas totales', totalNotes, totalNotes > 0 ? `${catCounts.combate} combate · ${catCounts.historia} historia · ${catCounts.lugar} lugar` : '')}
+      ${statCard('⚔️', 'Rounds de combate', combatRounds)}
+    </div>`;
+
+    html += `<div class="cs-section-title">Combate</div>
+    <div class="cs-grid">
+      ${statCard('💔', 'Daño recibido', totalDmg > 0 ? totalDmg + ' HP' : '0 HP')}
+      ${statCard('💚', 'Curación total', totalHeal > 0 ? '+' + totalHeal + ' HP' : '—')}
+      ${statCard('✨', 'Slots usados', slotsUsed > 0 ? slotsUsed : '0')}
+      ${statCard('⚡', 'Recursos usados', resourcesUsed > 0 ? resourcesUsed : '0')}
+    </div>`;
+
+    if (topSpells.length > 0) {
+      html += `<div class="cs-section-title">Hechizos más usados</div>
+      <div class="cs-spell-list">
+        ${topSpells.map(([name, count], i) =>
+          `<div class="cs-spell-row">
+            <span class="cs-spell-rank">#${i+1}</span>
+            <span class="cs-spell-name">${name}</span>
+            <span class="cs-spell-count">${count}×</span>
+          </div>`).join('')}
+      </div>`;
+    }
+
+    // Distribución del diario por categoría
+    if (totalNotes > 0) {
+      const cats = [
+        { key:'combate',  emoji:'🗡️', label:'Combate' },
+        { key:'historia', emoji:'📖', label:'Historia' },
+        { key:'lugar',    emoji:'📍', label:'Lugar' },
+        { key:'npc',      emoji:'🧑', label:'NPC' },
+        { key:'nota',     emoji:'💡', label:'Notas' },
+        { key:'',         emoji:'📝', label:'Sin categoría' },
+      ].filter(c => catCounts[c.key] > 0);
+
+      if (cats.length > 0) {
+        html += `<div class="cs-section-title">Diario por categoría</div>
+        <div class="cs-cat-dist">
+          ${cats.map(c => `
+            <div class="cs-cat-row">
+              <span class="cs-cat-emoji">${c.emoji}</span>
+              <span class="cs-cat-label">${c.label}</span>
+              <div class="cs-cat-bar-wrap">
+                <div class="cs-cat-bar-fill" style="width:${Math.round(catCounts[c.key]/totalNotes*100)}%"></div>
+              </div>
+              <span class="cs-cat-num">${catCounts[c.key]}</span>
+            </div>`).join('')}
+        </div>`;
+      }
+    }
+
+    if (totalDmg === 0 && slotsUsed === 0 && totalNotes === 0) {
+      html = `<div class="empty-state" style="margin-top:40px;">
+        <div class="es-icon">📊</div>
+        <div class="es-title">Sin datos aún</div>
+        <div class="es-text">Las estadísticas se acumularán a medida que juegues.</div>
+      </div>`;
+    }
+
+    panel.innerHTML = html;
+  }
 
   function exportDiary() {
     Storage.exportDiaryTxt(_char);
@@ -3122,9 +3323,10 @@ const App = (() => {
     // Level up
     openLevelUp, closeLevelUp, applyLevelUp,
 
-    // Notebook (diario + log)
+    // Notebook (diario + log + stats)
     toggleNotebook, switchNotebookTab,
     toggleDiary, addDiaryEntry, deleteDiaryEntry, filterDiary, exportDiary,
+    filterDiarySearch, selectDiaryCat, setNewDiaryCat,
     toggleCombatLog, clearCombatLog, exportCombatLog,
 
     // IFTTT

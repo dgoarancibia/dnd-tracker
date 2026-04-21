@@ -4993,3 +4993,198 @@ input[type=number] { -moz-appearance: textfield; }
   gap: 4px;
   flex: 1;
 }
+
+/* ── Diario: buscador y chips de categoría ── */
+.diary-search-bar {
+  padding: 8px 12px 4px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.diary-search-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-hi);
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+.diary-search-input:focus { border-color: var(--gold-dim); }
+
+.diary-cat-bar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+.diary-cat-bar::-webkit-scrollbar { display: none; }
+
+.diary-cat-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-mid);
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+.diary-cat-chip.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(201,151,58,0.1);
+}
+
+/* Selector de categoría al componer nueva entrada */
+.diary-new-cat-row {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px 0;
+}
+.diary-new-cat-btn {
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.diary-new-cat-btn.active {
+  opacity: 1;
+  border-color: var(--gold);
+}
+
+/* Tag de categoría dentro de la burbuja */
+.diary-cat-tag {
+  display: inline-block;
+  font-size: 10px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-bottom: 4px;
+  color: var(--text-hi);
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+/* Highlight de búsqueda */
+mark.diary-highlight {
+  background: rgba(201,151,58,0.35);
+  color: var(--text-hi);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ── Stats de campaña ── */
+.cs-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-mid);
+  padding: 14px 14px 6px;
+}
+.cs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 12px;
+}
+.cs-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cs-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.cs-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-hi);
+  font-family: 'Cinzel', serif;
+}
+.cs-label {
+  font-size: 10px;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cs-sub {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Hechizos más usados */
+.cs-spell-list { padding: 0 12px; }
+.cs-spell-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cs-spell-row:last-child { border-bottom: none; }
+.cs-spell-rank {
+  font-size: 10px;
+  color: var(--gold);
+  font-weight: 700;
+  width: 20px;
+}
+.cs-spell-name { flex: 1; font-size: 13px; color: var(--text-hi); }
+.cs-spell-count {
+  font-size: 11px;
+  color: var(--text-mid);
+  background: var(--bg3);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* Distribución por categoría */
+.cs-cat-dist { padding: 0 12px 12px; }
+.cs-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cs-cat-emoji { font-size: 14px; flex-shrink: 0; }
+.cs-cat-label {
+  font-size: 11px;
+  color: var(--text-mid);
+  width: 70px;
+  flex-shrink: 0;
+}
+.cs-cat-bar-wrap {
+  flex: 1;
+  background: var(--bg3);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+}
+.cs-cat-bar-fill {
+  height: 100%;
+  background: var(--gold-dim);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.cs-cat-num {
+  font-size: 11px;
+  color: var(--text-mid);
+  width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+}

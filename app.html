@@ -277,21 +277,46 @@
 <!-- FAB UNIFICADO -->
 <button class="fab" id="notebookFab" onclick="App.toggleNotebook()" title="Diario / Log">📓<span class="fab-log-badge" id="combatLogFab" style="display:none"></span></button>
 
-<!-- PANEL NOTEBOOK (diario + log) -->
+<!-- PANEL NOTEBOOK (diario + log + stats) -->
 <div class="diary-panel" id="notebookPanel">
   <!-- Header con sub-tabs -->
   <div class="diary-header">
     <div class="nb-tabs">
       <button class="nb-tab active" id="nbTabDiary"  onclick="App.switchNotebookTab('diary')">📓 Diario</button>
       <button class="nb-tab"        id="nbTabLog"    onclick="App.switchNotebookTab('log')">⚔ Log<span class="nb-badge" id="nbLogBadge"></span></button>
+      <button class="nb-tab"        id="nbTabStats"  onclick="App.switchNotebookTab('stats')">📊 Stats</button>
     </div>
     <button class="diary-close-btn" onclick="App.toggleNotebook()">✕</button>
   </div>
 
   <!-- SUB-TAB: DIARIO -->
   <div class="nb-pane" id="nbPaneDiary">
+    <!-- Buscador -->
+    <div class="diary-search-bar">
+      <input class="diary-search-input" id="diarySearch" type="search"
+             placeholder="🔍 Buscar notas…"
+             oninput="App.filterDiarySearch(this.value)">
+    </div>
+    <!-- Chips de categoría -->
+    <div class="diary-cat-bar" id="diaryCatBar">
+      <button class="diary-cat-chip active" data-cat="" onclick="App.selectDiaryCat(this,'')">Todas</button>
+      <button class="diary-cat-chip" data-cat="combate"  onclick="App.selectDiaryCat(this,'combate')">🗡️ Combate</button>
+      <button class="diary-cat-chip" data-cat="lugar"    onclick="App.selectDiaryCat(this,'lugar')">📍 Lugar</button>
+      <button class="diary-cat-chip" data-cat="historia" onclick="App.selectDiaryCat(this,'historia')">📖 Historia</button>
+      <button class="diary-cat-chip" data-cat="npc"      onclick="App.selectDiaryCat(this,'npc')">🧑 NPC</button>
+      <button class="diary-cat-chip" data-cat="nota"     onclick="App.selectDiaryCat(this,'nota')">💡 Nota</button>
+    </div>
     <div class="diary-entries" id="diaryEntries"></div>
     <div class="diary-compose">
+      <!-- Selector de categoría de la entrada nueva -->
+      <div class="diary-new-cat-row">
+        <button class="diary-new-cat-btn active" data-cat="" onclick="App.setNewDiaryCat(this,'')">📝</button>
+        <button class="diary-new-cat-btn" data-cat="combate"  onclick="App.setNewDiaryCat(this,'combate')">🗡️</button>
+        <button class="diary-new-cat-btn" data-cat="lugar"    onclick="App.setNewDiaryCat(this,'lugar')">📍</button>
+        <button class="diary-new-cat-btn" data-cat="historia" onclick="App.setNewDiaryCat(this,'historia')">📖</button>
+        <button class="diary-new-cat-btn" data-cat="npc"      onclick="App.setNewDiaryCat(this,'npc')">🧑</button>
+        <button class="diary-new-cat-btn" data-cat="nota"     onclick="App.setNewDiaryCat(this,'nota')">💡</button>
+      </div>
       <textarea class="diary-textarea" id="diaryInput" rows="1"
                 placeholder="Escribe una nota…"
                 oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"
@@ -311,6 +336,13 @@
     </div>
     <div class="diary-entries" id="combatLogEntries">
       <div class="empty-state"><div class="es-icon">⚔️</div><div class="es-title">Sin eventos</div><div class="es-text">Las acciones aparecerán aquí.</div></div>
+    </div>
+  </div>
+
+  <!-- SUB-TAB: STATS DE CAMPAÑA -->
+  <div class="nb-pane" id="nbPaneStats" style="display:none">
+    <div class="stats-panel" id="statsPanel">
+      <!-- generado por JS -->
     </div>
   </div>
 </div>
@@ -658,7 +690,7 @@
 
 <script src="js/storage.js?v=36"></script>
 <script src="js/characters.js?v=36"></script>
-<script src="js/app.js?v=34"></script>
+<script src="js/app.js?v=35"></script>
 <script src="js/biblioteca.js?v=1"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.
