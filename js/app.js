@@ -1377,7 +1377,11 @@ const App = (() => {
       ${c.spellcastingStat ? `
       <div class="passive-row">
         <span class="passive-label">CD de Conjuros</span>
-        <span class="passive-val">${Characters.calcCD(c)}</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="passive-val">${Characters.calcCD(c)}</span>
+          <input type="number" class="bonus-input-sm" value="${(c.bonuses&&c.bonuses.cd)||0}"
+                 onchange="App.setBonus('cd', this.value)" onclick="this.select()" title="Bonus extra al CD (ítems, rasgos…)">
+        </div>
       </div>
       <div class="passive-row">
         <span class="passive-label">Bonus Ataque</span>
@@ -2498,7 +2502,7 @@ const App = (() => {
   // setBonus('ca', 1) / setBonus('savesAll', 1) / setBonus('saves.sab', 1) / setBonus('skills.perspicacia', 1)
   function setBonus(key, val) {
     if (!_char) return;
-    if (!_char.bonuses) _char.bonuses = { ca:0, savesAll:0, saves:{}, skills:{}, init:0, hpMax:0, ataque:0 };
+    if (!_char.bonuses) _char.bonuses = { ca:0, savesAll:0, saves:{}, skills:{}, init:0, hpMax:0, ataque:0, cd:0 };
     const n = parseInt(val);
     if (isNaN(n)) return;
     if (key.includes('.')) {

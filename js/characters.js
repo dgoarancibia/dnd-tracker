@@ -320,9 +320,10 @@ const Characters = (() => {
 
   function calcCD(char) {
     if (!char.spellcastingStat) return null;
-    const prof = calcProfBonus(char.nivel);
-    const mod  = calcMod(char.stats[char.spellcastingStat]);
-    return 8 + prof + mod;
+    const prof  = calcProfBonus(char.nivel);
+    const mod   = calcMod(char.stats[char.spellcastingStat]);
+    const bonus = (char.bonuses && char.bonuses.cd) || 0;
+    return 8 + prof + mod + bonus;
   }
 
   function calcAtaqueBonus(char) {
@@ -702,6 +703,7 @@ const Characters = (() => {
         init: 0,         // Alert feat, ítems
         hpMax: 0,        // Tough feat, ítems permanentes (≠ temp HP)
         ataque: 0,       // arma mágica +1/+2/+3
+        cd: 0,           // bonus extra al CD de conjuros (Bloodwell Vial, Arcane Grimoire, etc.)
       },
 
       diary: [],
@@ -1289,7 +1291,7 @@ const Characters = (() => {
       currency:         { pp: 0, gp: 0, sp: 0, cp: 0 },
       notes:            '',
 
-      bonuses: { ca: 0, savesAll: 0, saves: {}, skills: {}, init: 0, hpMax: 0, ataque: 0 },
+      bonuses: { ca: 0, savesAll: 0, saves: {}, skills: {}, init: 0, hpMax: 0, ataque: 0, cd: 0 },
 
       diary:            [],
       ifttt:            [],
