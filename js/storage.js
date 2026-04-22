@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 4;   // Incrementar al cambiar el esquema
+  const DATA_VERSION = 5;   // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -44,6 +44,11 @@ const Storage = (() => {
         }
       }
       char._dataVersion = 4;
+    }
+    if (char._dataVersion < 5) {
+      // v4 → v5: agregar campo exhaustion
+      if (typeof char.exhaustion !== 'number') char.exhaustion = 0;
+      char._dataVersion = 5;
     }
     return char;
   }

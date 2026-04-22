@@ -4994,6 +4994,87 @@ input[type=number] { -moz-appearance: textfield; }
   flex: 1;
 }
 
+/* ── Agotamiento (Exhaustion) ── */
+.exhaustion-block {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.exh-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.exh-btn {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text-hi);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.exh-btn:hover:not(:disabled) { border-color: var(--gold-dim); background: var(--bg3); }
+.exh-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.exh-level {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-width: 24px;
+  text-align: center;
+  line-height: 1;
+}
+.exh-level.active  { color: #e0c060; }
+.exh-level.warning { color: #e08040; }
+.exh-level.danger  { color: var(--hp-red); }
+
+.exh-pips {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 6px;
+}
+.exh-pip {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.exh-pip:hover { border-color: var(--gold-dim); }
+.exh-pip.filled  { background: #c8a040; border-color: #c8a040; }
+.exh-pip.warning { background: #d06020; border-color: #d06020; }
+.exh-pip.danger  { background: var(--hp-red); border-color: var(--hp-red); }
+.exh-pip.dead    { background: #222; border-color: var(--hp-red); }
+
+.exh-effect {
+  font-size: 11px;
+  color: #e08040;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.exh-none {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* Header chip de exhaustion */
+.hdr-status-chip.exhaustion      { background: rgba(200,160,60,0.2);  color: #e0c060; border-color: rgba(200,160,60,0.4); }
+.hdr-status-chip.exhaustion-warn { background: rgba(200,100,40,0.2);  color: #e08040; border-color: rgba(200,100,40,0.4); }
+.hdr-status-chip.exhaustion-dead { background: rgba(180,50,50,0.2);   color: var(--hp-red); border-color: rgba(180,50,50,0.4); }
+
 /* ── Diario: buscador y chips de categoría ── */
 .diary-search-bar {
   padding: 8px 12px 4px;

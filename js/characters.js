@@ -1275,6 +1275,7 @@ const Characters = (() => {
       turn:             { action: false, bonus: false, reaction: false, movement: false },
       concentration:    null,
       conditions:       [],
+      exhaustion:       0,
       inspiration:      false,
 
       spells,

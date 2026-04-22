@@ -339,6 +339,11 @@ const App = (() => {
       const name = sp ? sp.name : _char.concentration;
       html += `<span class="hdr-status-chip conc" onclick="App.switchTab('combate')" title="Romper concentración · toca Combate">◆ ${name}</span>`;
     }
+    // Agotamiento activo
+    if (_char.exhaustion > 0) {
+      const exClass = _char.exhaustion >= 6 ? 'exhaustion-dead' : _char.exhaustion >= 3 ? 'exhaustion-warn' : 'exhaustion';
+      html += `<span class="hdr-status-chip ${exClass}" onclick="App.switchTab('combate')" title="Agotamiento nivel ${_char.exhaustion}">😴 Ago. ${_char.exhaustion}</span>`;
+    }
     // Condiciones activas (máx 3 visibles)
     const conds = (_char.conditions || []).slice(0, 3);
     conds.forEach(cid => {
@@ -541,6 +546,35 @@ const App = (() => {
     html += `</div>`; // cierra resources-grid
 
     // DESCANSOS — en header, no duplicar aquí
+
+    // AGOTAMIENTO (Exhaustion)
+    const EXHAUSTION_EFFECTS = [
+      null, // nivel 0 = sin efecto
+      'Desventaja en pruebas de habilidad (D20 Tests)',
+      'Velocidad reducida a la mitad',
+      'Desventaja en tiradas de ataque y salvación',
+      'Máximo de HP reducido a la mitad',
+      'Velocidad reducida a 0',
+      'Muerte',
+    ];
+    const exhaustion = c.exhaustion || 0;
+    const exEffect   = exhaustion > 0 ? EXHAUSTION_EFFECTS[exhaustion] : null;
+
+    html += `
+    <div class="exhaustion-block">
+      <div class="rc-header" style="margin-bottom:8px;">
+        <span class="rc-name">Agotamiento</span>
+        <div class="exh-controls">
+          <button class="exh-btn minus" onclick="App.adjustExhaustion(-1)" ${exhaustion <= 0 ? 'disabled' : ''}>−</button>
+          <span class="exh-level ${exhaustion > 0 ? (exhaustion >= 5 ? 'danger' : exhaustion >= 3 ? 'warning' : 'active') : ''}">${exhaustion}</span>
+          <button class="exh-btn plus" onclick="App.adjustExhaustion(1)" ${exhaustion >= 6 ? 'disabled' : ''}>+</button>
+        </div>
+      </div>
+      <div class="exh-pips">
+        ${[1,2,3,4,5,6].map(n => `<div class="exh-pip ${n <= exhaustion ? (exhaustion >= 6 ? 'dead' : exhaustion >= 5 ? 'danger' : exhaustion >= 3 ? 'warning' : 'filled') : ''}" onclick="App.setExhaustion(${n === exhaustion ? 0 : n})" title="Nivel ${n}: ${EXHAUSTION_EFFECTS[n]}"></div>`).join('')}
+      </div>
+      ${exEffect ? `<div class="exh-effect">${exEffect}${exhaustion >= 2 ? '<br><span style="opacity:0.7;font-size:10px;">+ efectos anteriores acumulados</span>' : ''}</div>` : '<div class="exh-none">Sin agotamiento</div>'}
+    </div>`;
 
     // CONDICIONES
     const CONDITIONS = [
@@ -2162,6 +2196,29 @@ const App = (() => {
      CONDICIONES
   ══════════════════════════════════════════════════════ */
 
+  function adjustExhaustion(delta) {
+    if (!_char) return;
+    const prev = _char.exhaustion || 0;
+    const next = Math.max(0, Math.min(6, prev + delta));
+    if (next === prev) return;
+    _char.exhaustion = next;
+    _saveChar(true);
+    const labels = ['sin agotamiento','nivel 1','nivel 2','nivel 3','nivel 4','nivel 5','☠ nivel 6 — muerte'];
+    _logCombat(delta > 0
+      ? `⚠ Agotamiento aumenta a ${labels[next]}`
+      : `✦ Agotamiento reduce a ${labels[next]}`, 'cond');
+    _renderCombateIzq();
+    _updateHeaderStatus();
+  }
+
+  function setExhaustion(level) {
+    if (!_char) return;
+    _char.exhaustion = Math.max(0, Math.min(6, level));
+    _saveChar(true);
+    _renderCombateIzq();
+    _updateHeaderStatus();
+  }
+
   function toggleCondition(id) {
     if (!_char) return;
     const idx = _char.conditions.indexOf(id);
@@ -2679,6 +2736,10 @@ const App = (() => {
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">✕</span><span>Condiciones eliminadas</span></div>`;
     if (c.concentration)
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">◆</span><span>Concentración rota</span></div>`;
+    if (c.exhaustion > 0) {
+      const newEx = Math.max(0, c.exhaustion - 1);
+      summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">😴</span><span>Agotamiento ${c.exhaustion} → ${newEx}</span></div>`;
+    }
 
     document.getElementById('lrSummary').innerHTML = summaryHtml;
     document.getElementById('longRestModal').classList.add('show');
@@ -2711,6 +2772,8 @@ const App = (() => {
     c.turn = { action: false, bonus: false, reaction: false, movement: false };
     c.concentration = null;
     c.conditions = [];
+    // Descanso largo reduce exhaustion en 1 (PHB 2024)
+    if (c.exhaustion > 0) c.exhaustion = Math.max(0, c.exhaustion - 1);
 
     closeLongRest();
     _saveChar(true);
@@ -3299,6 +3362,7 @@ const App = (() => {
 
     // Condiciones
     toggleCondition, clearConditions,
+    adjustExhaustion, setExhaustion,
     toggleInspiration,
 
     // Conjuros
