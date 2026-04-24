@@ -746,6 +746,41 @@
     transition: color 0.15s, border-color 0.15s;
   }
   .mc-remove-btn:hover { color: #e07070; border-color: rgba(200,60,60,0.4); }
+
+  /* Subraza chips — más compactos que los de raza */
+  .subraza-chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 4px;
+  }
+  .subraza-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .subraza-chip:hover { background: var(--bg3); border-color: var(--gold-dim); }
+  .subraza-chip.selected {
+    background: rgba(201,151,58,0.12);
+    border-color: var(--gold);
+  }
+  .subraza-chip-icon { font-size: 13px; line-height: 1; }
+  .subraza-chip-name {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .subraza-chip.selected .subraza-chip-name { color: var(--gold); }
 </style>
 </head>
 <body>
@@ -824,9 +859,24 @@
       </div>
     </div>
 
-    <!-- Bonus de stats de raza (solo cuando hay raza seleccionada) -->
+    <!-- Subraza + rasgos manuales (aparece al elegir raza) -->
     <div id="cmRazaBonusSection" style="display:none;">
-      <div class="wiz-section-label" style="margin-top:6px;">Bonus de estadística (D&amp;D 2024)</div>
+      <!-- Subraza / variante (solo si la raza tiene opciones) -->
+      <div id="cmSubrazaSection" style="display:none;">
+        <div class="wiz-section-label" style="margin-top:8px;">Variante / Subraza</div>
+        <div class="subraza-chip-grid" id="subrazaChipGrid">
+          <!-- generado por JS -->
+        </div>
+      </div>
+
+      <!-- Rasgos adicionales manuales -->
+      <div class="wiz-section-label" style="margin-top:8px;">Rasgos adicionales <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">(feats, variantes, notas…)</span></div>
+      <textarea class="form-input" id="cmExtraTraits" rows="2"
+        placeholder="Ej: Squat Nimbleness — +1 velocidad y prof en Atletismo o Acrobacias…"
+        style="resize:none;font-size:13px;font-family:'Jost',sans-serif;min-height:56px;"></textarea>
+
+      <!-- Bonus de stats -->
+      <div class="wiz-section-label" style="margin-top:8px;">Bonus de estadística (D&amp;D 2024)</div>
       <div class="stat-bonus-row">
         <div class="stat-bonus-group">
           <label class="form-label" style="font-size:10px;">+2 a:</label>
@@ -1162,12 +1212,39 @@ function _buildRazaChips(selected) {
   grid.innerHTML = html;
 }
 
+let _selectedSubraza = '';
+
+function _buildSubrazaChips(razaNombre, selected) {
+  const section = document.getElementById('cmSubrazaSection');
+  const grid    = document.getElementById('subrazaChipGrid');
+  if (!section || !grid) return;
+  const razaCfg  = (typeof Characters !== 'undefined' && Characters.RAZAS_CONFIG) || {};
+  const subraces = razaCfg[razaNombre]?.subraces || [];
+  if (subraces.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  grid.innerHTML = subraces.map(s => `
+    <button type="button" class="subraza-chip ${s.name === selected ? 'selected' : ''}"
+      onclick="selectSubrazaChip(this,'${s.name.replace(/'/g,"\\'")}')">
+      <span class="subraza-chip-icon">${s.emoji || '✦'}</span>
+      <span class="subraza-chip-name">${s.name}</span>
+    </button>`).join('');
+}
+
+function selectSubrazaChip(el, name) {
+  document.querySelectorAll('.subraza-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedSubraza = name;
+}
+
 function selectRazaChip(el, name) {
   document.querySelectorAll('.raza-chip').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   _selectedRaza = name;
   // Mostrar/ocultar sección de bonus de stats
   document.getElementById('cmRazaBonusSection').style.display = name ? '' : 'none';
+  // Construir chips de subraza si la raza tiene variantes
+  _selectedSubraza = '';
+  _buildSubrazaChips(name, '');
 }
 
 let _multiclaseCount = 0;
@@ -1212,8 +1289,9 @@ function _collectMulticlaseRows() {
 
 function openCreateModal() {
   _editId = null;
-  _selectedClase = 'Clérigo';
-  _selectedRaza  = '';
+  _selectedClase   = 'Clérigo';
+  _selectedRaza    = '';
+  _selectedSubraza = '';
   _multiclaseCount = 0;
   document.getElementById('createModalTitle').textContent = '✦ Nuevo personaje';
   document.getElementById('saveBtn').textContent = 'Crear personaje';
@@ -1222,6 +1300,10 @@ function openCreateModal() {
   document.getElementById('cmMulticlaseRows').innerHTML = '';
   document.getElementById('cmMulticlaseSection').style.display = '';
   document.getElementById('cmRazaBonusSection').style.display = 'none';
+  const subSec = document.getElementById('cmSubrazaSection');
+  if (subSec) subSec.style.display = 'none';
+  const extraT = document.getElementById('cmExtraTraits');
+  if (extraT) extraT.value = '';
   _buildClaseChips('Clérigo');
   _buildRazaChips('');
   document.getElementById('createModal').classList.add('show');
@@ -1232,8 +1314,9 @@ function openEditModal(id) {
   const c = Storage.getChar(id);
   if (!c) return;
   _editId = id;
-  _selectedClase = c.clase || 'Clérigo';
-  _selectedRaza  = c.raza  || '';
+  _selectedClase   = c.clase   || 'Clérigo';
+  _selectedRaza    = c.raza    || '';
+  _selectedSubraza = c.subraza || '';
   _multiclaseCount = 0;
   document.getElementById('createModalTitle').textContent = '✎ Editar personaje';
   document.getElementById('saveBtn').textContent = 'Guardar';
@@ -1241,6 +1324,10 @@ function openEditModal(id) {
   document.getElementById('cmNivel').value = c.nivel;
   document.getElementById('cmMulticlaseRows').innerHTML = '';
   document.getElementById('cmRazaBonusSection').style.display = 'none'; // no re-apply on edit
+  const subSec = document.getElementById('cmSubrazaSection');
+  if (subSec) subSec.style.display = 'none';
+  const extraT = document.getElementById('cmExtraTraits');
+  if (extraT) extraT.value = '';
   // En edición mostramos las clases secundarias existentes
   const secondaries = (c.classes || []).slice(1);
   secondaries.forEach(sc => {
@@ -1304,12 +1391,24 @@ function saveCreateModal() {
       const bonus2 = document.getElementById('cmBonus2')?.value || 'for';
       const bonus1 = document.getElementById('cmBonus1')?.value || 'sab';
       Characters.applyRaza(newChar, _selectedRaza, bonus2, bonus1);
+      // Aplicar subraza si fue seleccionada
+      if (_selectedSubraza) {
+        Characters.applySubraza(newChar, _selectedSubraza);
+      }
+    }
+
+    // Agregar rasgos adicionales manuales (feats, variantes, notas del DM…)
+    const extraTraits = document.getElementById('cmExtraTraits')?.value.trim();
+    if (extraTraits) {
+      newChar.speciesTraits = (newChar.speciesTraits ? newChar.speciesTraits + '\n' : '') + extraTraits;
     }
 
     Storage.saveChar(newChar);
     Storage.setActiveId(newChar.id);
     const clasesLabel = allClasses.map(c => `${c.name} ${c.level}`).join(' / ');
-    const razaLabel   = _selectedRaza ? ` · ${_selectedRaza}` : '';
+    const razaLabel   = _selectedRaza
+      ? ` · ${_selectedSubraza ? _selectedSubraza : _selectedRaza}`
+      : '';
     showToast(`${name}${razaLabel} · ${clasesLabel}`);
   }
 

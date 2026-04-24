@@ -351,9 +351,40 @@
 <div class="ifttt-overlay" id="iftttOverlay">
   <div class="ifttt-overlay-header">
     <span class="ifttt-overlay-title">⚔️ Guía de Combate</span>
+    <button class="ifttt-add-btn" onclick="App.openIftttForm()" title="Agregar entrada">＋</button>
     <button class="ifttt-overlay-close" onclick="App.closeIfttt()">✕</button>
   </div>
   <div class="ifttt-overlay-body" id="iftttBody"></div>
+</div>
+
+<!-- MODAL GUÍA DE COMBATE — AGREGAR / EDITAR -->
+<div class="modal-overlay" id="iftttFormModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span id="iftttFormTitle">Nueva entrada</span>
+      <button class="modal-close" onclick="App.closeIftttForm()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px;">
+      <label class="form-label">Sección</label>
+      <input class="form-input" id="ifSection" placeholder="Ej: Apertura, En Combate, Trucos…">
+      <label class="form-label">Trigger / Condición</label>
+      <input class="form-input" id="ifTrigger" placeholder="Ej: turno 1, enemigo reagrupa…">
+      <label class="form-label">Acción</label>
+      <textarea class="form-input" id="ifAction" rows="3" placeholder="Ej: Spirit Guardians + busca posición central" style="resize:none;"></textarea>
+      <label class="form-label">Etiqueta</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="ifTagGroup">
+        <button type="button" class="if-tag-btn selected" data-tag="siempre" onclick="App.selectIftttTag(this)">Siempre</button>
+        <button type="button" class="if-tag-btn" data-tag="si" onclick="App.selectIftttTag(this)">Si</button>
+        <button type="button" class="if-tag-btn" data-tag="tip" onclick="App.selectIftttTag(this)">Tip</button>
+        <button type="button" class="if-tag-btn" data-tag="feat" onclick="App.selectIftttTag(this)">Feat</button>
+        <button type="button" class="if-tag-btn" data-tag="subclase" onclick="App.selectIftttTag(this)">Subclase</button>
+      </div>
+    </div>
+    <div class="modal-footer" style="gap:10px;">
+      <button class="btn-secondary" onclick="App.closeIftttForm()">Cancelar</button>
+      <button class="btn-primary" onclick="App.saveIftttForm()">Guardar</button>
+    </div>
+  </div>
 </div>
 
 <!-- BACKDROP PARA OVERLAYS -->

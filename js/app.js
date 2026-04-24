@@ -76,8 +76,10 @@ const App = (() => {
       });
       _char.preparedToday = savedPrepared;
 
-      // Ifttt, features, slotPriority y combatTips: siempre desde master (es solo texto/guía)
-      _char.ifttt = freshLursey.ifttt;
+      // Ifttt: si el personaje guardado tiene entradas propias, las respeta; si está vacío usa el master
+      if (!_char.ifttt || _char.ifttt.length === 0) {
+        _char.ifttt = freshLursey.ifttt;
+      }
       _char.features = freshLursey.features;
       _char.slotPriority = freshLursey.slotPriority;
       _char.combatTips = freshLursey.combatTips;
@@ -3246,19 +3248,99 @@ const App = (() => {
     const ifttt = _char.ifttt || [];
     const sections = [...new Set(ifttt.map(i => i.section))];
     let html = '';
+
+    const _tagLabel = t => {
+      if (t === 'siempre') return 'Siempre';
+      if (t === 'tip')     return 'Tip';
+      if (t === 'feat')    return 'Feat';
+      if (t === 'subclase') return 'Subclase';
+      return 'Si';
+    };
+
     sections.forEach(sec => {
-      html += `<div class="section-divider">${sec}</div>`;
-      ifttt.filter(i => i.section === sec).forEach(item => {
+      html += `<div class="section-divider">${_esc(sec)}</div>`;
+      ifttt.filter(i => i.section === sec).forEach((item, _idx) => {
+        const idx = ifttt.indexOf(item);
         html += `
         <div class="ifttt-item">
-          <span class="if-tag ${item.tag}">${item.tag === 'siempre' ? 'Siempre' : 'Si'}</span>
-          <span class="ifttt-text"><em style="color:var(--text-mid);font-style:normal;">${item.trigger}</em> → ${item.action}</span>
+          <span class="if-tag ${item.tag || 'si'}">${_tagLabel(item.tag)}</span>
+          <span class="ifttt-text">
+            <em style="color:var(--text-mid);font-style:normal;">${_esc(item.trigger)}</em>
+            ${item.trigger ? ' → ' : ''}${_esc(item.action)}
+          </span>
+          <span class="ifttt-item-actions">
+            <button class="ifttt-edit-btn" onclick="App.openIftttForm(${idx})" title="Editar">✎</button>
+            <button class="ifttt-del-btn"  onclick="App.deleteIftttEntry(${idx})" title="Eliminar">✕</button>
+          </span>
         </div>`;
       });
     });
 
-    if (!html) html = `<div style="padding:20px;color:var(--text-dim);font-style:italic;">No hay guía de combate configurada.</div>`;
+    if (!html) html = `<div class="ifttt-empty">No hay entradas todavía. Pulsa <strong>＋</strong> para agregar tips, feats o reglas de combate.</div>`;
     document.getElementById('iftttBody').innerHTML = html;
+  }
+
+  let _iftttEditIdx = null; // null = nueva entrada
+
+  function openIftttForm(idx) {
+    _iftttEditIdx = (idx !== undefined) ? idx : null;
+    const entry = (idx !== undefined) ? (_char.ifttt || [])[idx] : null;
+    document.getElementById('iftttFormTitle').textContent = entry ? 'Editar entrada' : 'Nueva entrada';
+    document.getElementById('ifSection').value = entry ? (entry.section || '') : '';
+    document.getElementById('ifTrigger').value = entry ? (entry.trigger || '') : '';
+    document.getElementById('ifAction').value  = entry ? (entry.action  || '') : '';
+    // Tag buttons
+    const tag = entry ? (entry.tag || 'siempre') : 'siempre';
+    document.querySelectorAll('#ifTagGroup .if-tag-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.tag === tag);
+    });
+    document.getElementById('iftttFormModal').classList.add('show');
+  }
+
+  function closeIftttForm() {
+    document.getElementById('iftttFormModal').classList.remove('show');
+    _iftttEditIdx = null;
+  }
+
+  function selectIftttTag(el) {
+    document.querySelectorAll('#ifTagGroup .if-tag-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function saveIftttForm() {
+    const section = document.getElementById('ifSection').value.trim();
+    const trigger = document.getElementById('ifTrigger').value.trim();
+    const action  = document.getElementById('ifAction').value.trim();
+    const tagBtn  = document.querySelector('#ifTagGroup .if-tag-btn.selected');
+    const tag     = tagBtn ? tagBtn.dataset.tag : 'siempre';
+
+    if (!action) { document.getElementById('ifAction').focus(); return; }
+    if (!section) { document.getElementById('ifSection').focus(); return; }
+
+    if (!_char.ifttt) _char.ifttt = [];
+    const entry = { section, trigger, action, tag };
+
+    if (_iftttEditIdx !== null && _iftttEditIdx >= 0) {
+      _char.ifttt[_iftttEditIdx] = entry;
+    } else {
+      _char.ifttt.push(entry);
+    }
+    _saveChar();
+    closeIftttForm();
+    _renderIftttBody();
+    showToast((_iftttEditIdx !== null) ? 'Entrada actualizada' : 'Entrada agregada');
+  }
+
+  function deleteIftttEntry(idx) {
+    if (!_char.ifttt || idx < 0 || idx >= _char.ifttt.length) return;
+    _char.ifttt.splice(idx, 1);
+    _saveChar();
+    _renderIftttBody();
+    showToast('Entrada eliminada');
+  }
+
+  function _esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function closeAllOverlays() {
@@ -3418,7 +3500,9 @@ const App = (() => {
     toggleCombatLog, clearCombatLog, exportCombatLog,
 
     // IFTTT
-    openIfttt, closeIfttt, closeAllOverlays, closeConfirm,
+    openIfttt, closeIfttt, openIftttForm, closeIftttForm,
+    selectIftttTag, saveIftttForm, deleteIftttEntry,
+    closeAllOverlays, closeConfirm,
 
     // Detalle spell
     openSpellDetail, closeSpellDetail,

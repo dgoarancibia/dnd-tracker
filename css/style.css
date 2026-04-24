@@ -2782,12 +2782,50 @@ input[type=number] { -moz-appearance: textfield; }
   margin-top: 1px;
 }
 
-.if-tag.si { background: rgba(74,138,90,0.2); color: #6ab87a; border: 1px solid rgba(74,138,90,0.25); }
-.if-tag.siempre { background: rgba(201,151,58,0.2); color: var(--gold-light); border: 1px solid rgba(201,151,58,0.25); }
+.if-tag.si       { background: rgba(74,138,90,0.2); color: #6ab87a; border: 1px solid rgba(74,138,90,0.25); }
+.if-tag.siempre  { background: rgba(201,151,58,0.2); color: var(--gold-light); border: 1px solid rgba(201,151,58,0.25); }
+.if-tag.tip      { background: rgba(100,160,220,0.18); color: #7ec8e3; border: 1px solid rgba(100,160,220,0.25); }
+.if-tag.feat     { background: rgba(180,100,220,0.18); color: #c87ee3; border: 1px solid rgba(180,100,220,0.25); }
+.if-tag.subclase { background: rgba(220,110,80,0.18); color: #e38870; border: 1px solid rgba(220,110,80,0.25); }
 
 .ifttt-text { font-size: 14px; color: var(--text); line-height: 1.45; flex: 1; }
 .ifttt-text strong { color: var(--gold-light); font-weight: 600; }
 .ifttt-text em { color: #6ab87a; font-style: normal; }
+
+/* IFTTT — botones editar/eliminar por entrada */
+.ifttt-item-actions { display: flex; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; margin-top: 1px; }
+.ifttt-item:hover .ifttt-item-actions { opacity: 1; }
+.ifttt-edit-btn, .ifttt-del-btn {
+  background: none; border: none; cursor: pointer; font-size: 13px;
+  padding: 2px 5px; border-radius: 4px; line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.ifttt-edit-btn { color: var(--text-dim); }
+.ifttt-edit-btn:hover { background: rgba(201,151,58,0.15); color: var(--gold); }
+.ifttt-del-btn  { color: var(--text-dim); }
+.ifttt-del-btn:hover { background: rgba(180,60,60,0.2); color: #e07070; }
+
+/* Botón "+" en el header del overlay IFTTT */
+.ifttt-add-btn {
+  background: none; border: 1px solid var(--gold-dim); color: var(--gold-light);
+  border-radius: 50%; width: 26px; height: 26px; font-size: 16px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s; margin-right: 4px;
+}
+.ifttt-add-btn:hover { background: rgba(201,151,58,0.18); color: var(--gold); }
+
+/* IFTTT Form — tag buttons */
+.if-tag-btn {
+  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px;
+  text-transform: uppercase; padding: 4px 10px; border-radius: 4px;
+  background: var(--bg3); border: 1px solid var(--border-dim);
+  color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+}
+.if-tag-btn.selected, .if-tag-btn:hover { border-color: var(--gold-dim); color: var(--gold-light); background: rgba(201,151,58,0.12); }
+
+/* Empty state IFTTT */
+.ifttt-empty { padding: 24px 16px; color: var(--text-dim); font-style: italic; font-size: 13px; text-align: center; line-height: 1.6; }
+.ifttt-empty strong { color: var(--gold-light); font-style: normal; }
 
 /* ═══ MODALS ═══ */
 .modal-overlay {
@@ -2817,6 +2855,43 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .modal.wide { max-width: 700px; }
+
+/* Variante header/footer para modales con título + botón close */
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
+  color: var(--gold-light); text-transform: uppercase;
+}
+.modal-close {
+  background: none; border: none; color: var(--text-dim); font-size: 16px;
+  cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1;
+  transition: color 0.15s;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 14px 16px; }
+.modal-footer {
+  display: flex; justify-content: flex-end; padding: 12px 16px;
+  border-top: 1px solid var(--border); gap: 8px;
+}
+.btn-primary {
+  background: var(--gold-dim); color: var(--bg); font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  border: none; border-radius: var(--radius-sm); padding: 8px 16px; cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--gold); }
+.btn-secondary {
+  background: var(--bg3); color: var(--text-dim); font-family: 'Jost', sans-serif;
+  font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 8px 14px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.btn-secondary:hover { background: var(--bg2); color: var(--text); }
+.form-label {
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim); margin-bottom: 2px;
+}
 
 .modal-title {
   font-family: 'Cinzel', serif;
