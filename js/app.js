@@ -63,12 +63,14 @@ const App = (() => {
       return;
     }
 
-    // Sincronizar datos maestros desde characters.js (spells/ifttt)
+    // ── Sincronizar datos maestros desde characters.js ──────────────────────
     // Preserva: spellSlots usados, preparedToday, cantidades de consumables
+    // Aplica a TODOS los personajes (no solo Lursey)
+
     if (_char.id === 'lursey-brumaclara') {
+      // Lursey tiene sync completo: spells, features, consumables, resources, slotPriority, combatTips
       const freshLursey = Characters.buildLursey();
 
-      // Spells: merge preservando estado prepared del personaje guardado
       const savedPrepared = _char.preparedToday || [];
       _char.spells = freshLursey.spells.map(freshSpell => {
         const saved = (_char.spells || []).find(s => s.id === freshSpell.id);
@@ -76,40 +78,65 @@ const App = (() => {
       });
       _char.preparedToday = savedPrepared;
 
-      // Ifttt: si el personaje guardado tiene entradas propias, las respeta; si está vacío usa el master
-      if (!_char.ifttt || _char.ifttt.length === 0) {
-        _char.ifttt = freshLursey.ifttt;
-      }
-      _char.features = freshLursey.features;
+      if (!_char.ifttt || _char.ifttt.length === 0) _char.ifttt = freshLursey.ifttt;
+      _char.features     = freshLursey.features;
       _char.slotPriority = freshLursey.slotPriority;
-      _char.combatTips = freshLursey.combatTips;
+      _char.combatTips   = freshLursey.combatTips;
 
-      // Consumables: solo agregar los que no existen — respeta cantidades guardadas
       const savedCons = _char.consumables || [];
       freshLursey.consumables.forEach(fresh => {
         const exists = savedCons.find(s => s.id === fresh.id);
         if (!exists) savedCons.push(fresh);
-        else {
-          // Actualizar metadatos (name, desc, category) pero NO qty
-          exists.name     = fresh.name;
-          exists.desc     = fresh.desc;
-          exists.category = fresh.category;
-        }
+        else { exists.name = fresh.name; exists.desc = fresh.desc; exists.category = fresh.category; }
       });
       _char.consumables = savedCons;
 
-      // Resources: actualiza max/name/note desde master, preserva current
       freshLursey.resources.forEach(fresh => {
         const saved = (_char.resources || []).find(r => r.id === fresh.id);
         if (saved) {
-          saved.name = fresh.name;
-          saved.max  = fresh.max;
-          saved.note = fresh.note;
+          saved.name = fresh.name; saved.max = fresh.max; saved.note = fresh.note;
           if (saved.current > saved.max) saved.current = saved.max;
         }
       });
 
       Storage.saveChar(_char);
+
+    } else {
+      // Otros personajes: sync de catálogo de spells por clase
+      // Solo añade hechizos del catálogo que no existan aún — preserva los del usuario
+      const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[_char.clase]) || [];
+      if (catalog.length > 0) {
+        const savedPrepared = _char.preparedToday || [];
+        const existingIds   = new Set((_char.spells || []).map(s => s.id));
+        const newSpells     = catalog.filter(s => !existingIds.has(s.id)).map(s => ({ ...s }));
+        if (newSpells.length > 0) {
+          _char.spells = [...(_char.spells || []), ...newSpells];
+          Storage.saveChar(_char);
+        }
+        _char.preparedToday = savedPrepared;
+      }
+
+      // Sync de recursos por clase: actualizar max/note si el nivel escaló (por si el personaje
+      // fue creado con una versión anterior antes de que applyLevelUp actualizara recursos)
+      const claseFeat = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[_char.clase];
+      if (claseFeat) {
+        const freshResrcs = claseFeat.resources(_char.nivel || 1, _char.subclase || '');
+        freshResrcs.forEach(fresh => {
+          const saved = (_char.resources || []).find(r => r.id === fresh.id);
+          if (saved) {
+            if (fresh.max !== saved.max) {
+              const gained = fresh.max - saved.max;
+              saved.max = fresh.max;
+              if (gained > 0) saved.current = Math.min(saved.current + gained, saved.max);
+              if (fresh.note) saved.note = fresh.note;
+            }
+          } else {
+            // Recurso nuevo que no existía (personaje creado antes del sprint1 fix)
+            if (!_char.resources) _char.resources = [];
+            _char.resources.push({ ...fresh });
+          }
+        });
+      }
     }
 
     _applyTheme(localStorage.getItem('dnd_theme') || 'dark');
@@ -2724,6 +2751,23 @@ const App = (() => {
     (_char.resources || []).forEach(r => {
       if (r.recharge === 'short') r.current = r.max;
     });
+
+    // Brujo: Pact Magic — todos sus spell slots recargan en descanso corto
+    const hasWarlock = (_char.classes || []).some(c => c.name === 'Brujo');
+    if (hasWarlock) {
+      const warlockLevel = ((_char.classes || []).find(c => c.name === 'Brujo') || {}).level || _char.nivel;
+      const pactLevel    = Characters.WARLOCK_SLOT_LEVEL
+        ? Characters.WARLOCK_SLOT_LEVEL[warlockLevel] || 1
+        : (warlockLevel >= 9 ? 5 : warlockLevel >= 7 ? 4 : warlockLevel >= 5 ? 3 : warlockLevel >= 3 ? 2 : 1);
+      const pactCount    = (Characters.WARLOCK_SLOTS || {})[warlockLevel]?.[0] || 0;
+      if (_char.spellSlots && pactCount > 0) {
+        const cur = _char.spellSlots[pactLevel] || { current: 0, max: pactCount };
+        _char.spellSlots[pactLevel] = {
+          current: Math.min(cur.max, cur.current + pactCount),
+          max: cur.max,
+        };
+      }
+    }
 
     // Consumir dados
     _char.hitDice.current = Math.max(0, _char.hitDice.current - qty);

@@ -1225,10 +1225,15 @@ const Characters = (() => {
     ],
   };
 
+  // Nivel de slot de Pact Magic según nivel de Brujo (PHB)
+  const WARLOCK_SLOT_LEVEL = {
+    1:1, 2:1, 3:2, 4:2, 5:3, 6:3, 7:4, 8:4, 9:5,
+    10:5, 11:5, 12:5, 13:5, 14:5, 15:5, 16:5, 17:5, 18:5, 19:5, 20:5
+  };
+
   // ── calcMulticlassSlots: tabla oficial PHB de multiclase ──────────────────
   function calcMulticlassSlots(classes) {
     let casterLevels = 0;
-    let hasWarlock = false;
     let warlockLevel = 0;
 
     for (const c of classes) {
@@ -1236,13 +1241,26 @@ const Characters = (() => {
       if (!cfg) continue;
       if (cfg.slotTable === 'full')    casterLevels += c.level;
       if (cfg.slotTable === 'half')    casterLevels += Math.floor(c.level / 2);
-      if (cfg.slotTable === 'warlock') { hasWarlock = true; warlockLevel = Math.max(warlockLevel, c.level); }
+      if (cfg.slotTable === 'warlock') warlockLevel = Math.max(warlockLevel, c.level);
     }
 
     const baseRow = FULL_CASTER_SLOTS[casterLevels] || Array(9).fill(0);
     const result = {};
     for (let i = 1; i <= 9; i++) {
       result[i] = { current: baseRow[i-1] || 0, max: baseRow[i-1] || 0 };
+    }
+
+    // Pact Magic del Brujo: slots separados que se añaden a su nivel de slot correspondiente
+    // PHB: Warlock pact slots no se mezclan con los slots de multiclase para recuperación,
+    // pero sí comparten el pool de slots disponibles del mismo nivel
+    if (warlockLevel > 0) {
+      const pactCount = (WARLOCK_SLOTS[warlockLevel] || [1])[0] || 0;
+      const pactLevel = WARLOCK_SLOT_LEVEL[warlockLevel] || 1;
+      // Sumar los Pact Slots al nivel correspondiente
+      result[pactLevel] = {
+        current: (result[pactLevel]?.current || 0) + pactCount,
+        max:     (result[pactLevel]?.max     || 0) + pactCount,
+      };
     }
     return result;
   }
@@ -1520,6 +1538,8 @@ const Characters = (() => {
     SKILLS_DEF,
     STAT_NAMES,
     LURSEY_IFTTT,
+    WARLOCK_SLOTS,
+    WARLOCK_SLOT_LEVEL,
     calcMod,
     calcProfBonus,
     calcCD,
