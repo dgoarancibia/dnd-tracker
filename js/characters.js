@@ -411,11 +411,33 @@ const Characters = (() => {
 
   function calcCA(char) {
     const { armor } = char;
-    if (!armor) return 10;
+    const desMod = calcMod(char.stats.des);
+    const conMod = calcMod(char.stats.con);
+    const sabMod = calcMod(char.stats.sab);
+    const bonus  = (char.bonuses && char.bonuses.ca) || 0;
+
+    // Unarmored Defense: solo aplica cuando el personaje no lleva armadura
+    // (armor.base_ca == 10 y add_dex == true → sin armadura real)
+    const isUnarmored = !armor || (armor.base_ca === 10 && armor.add_dex && !armor.name);
+
+    if (isUnarmored) {
+      if (char.clase === 'Bárbaro') {
+        // Bárbaro: 10 + DES + CON (sin escudo cambia la fórmula, pero escudo sí suma)
+        const shield = (armor && armor.shield) ? (armor.shield_bonus || 2) : 0;
+        return 10 + desMod + conMod + shield + bonus;
+      }
+      if (char.clase === 'Monje') {
+        // Monje: 10 + DES + SAB (sin escudo — Monje no puede usar escudo)
+        return 10 + desMod + sabMod + bonus;
+      }
+    }
+
+    // Armadura normal (o clase sin Unarmored Defense)
+    if (!armor) return 10 + bonus;
     let ca = armor.base_ca || 10;
-    if (armor.add_dex) ca += calcMod(char.stats.des);
-    if (armor.shield) ca += armor.shield_bonus || 2;
-    ca += (char.bonuses && char.bonuses.ca) || 0;
+    if (armor.add_dex) ca += desMod;
+    if (armor.shield)  ca += armor.shield_bonus || 2;
+    ca += bonus;
     return ca;
   }
 

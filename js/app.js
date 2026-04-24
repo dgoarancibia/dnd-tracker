@@ -885,6 +885,28 @@ const App = (() => {
 
   function _renderConjurosTab() {
     const c = _char;
+    const cfg = Characters.CLASES_CONFIG[c.clase];
+
+    // Empty state para clases sin magia (Bárbaro, Guerrero base, Pícaro base, Monje)
+    if (!cfg || cfg.slotTable === null) {
+      const noMagicMsg = {
+        'Bárbaro':  'El Bárbaro no tiene magia. Sus recursos (Rage, etc.) aparecen en el tab Combate.',
+        'Guerrero': 'El Guerrero base no tiene conjuros. Si eres Eldritch Knight, agrega la subclase en Habilidades para desbloquear magia.',
+        'Pícaro':   'El Pícaro base no tiene conjuros. Si eres Arcane Trickster, agrega la subclase en Habilidades para desbloquear magia.',
+        'Monje':    'El Monje no usa slots de conjuro. Sus puntos de Ki aparecen en el tab Combate.',
+      };
+      const msg = noMagicMsg[c.clase] || `${c.clase} no tiene conjuros en este nivel.`;
+      const emptyHtml = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:12px;color:var(--text-dim);text-align:center;">
+          <div style="font-size:36px;opacity:0.4;">⚔️</div>
+          <div style="font-family:'Cinzel',serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--text-mid);">Sin magia arcana</div>
+          <div style="font-size:13px;line-height:1.5;max-width:280px;">${msg}</div>
+        </div>`;
+      document.getElementById('col-conjuros-izq').innerHTML = emptyHtml;
+      document.getElementById('col-conjuros-der').innerHTML = '';
+      return;
+    }
+
     const prepared = c.preparedToday || [];
     const preparedMax = Characters.getPreparedMax(c);
     const preparedCount = (c.spells || []).filter(s =>
@@ -893,7 +915,6 @@ const App = (() => {
 
     // Aviso para half-casters en nivel 1 (sin slots aún)
     const totalSlots = Object.values(c.spellSlots || {}).reduce((s, v) => s + (v.max || 0), 0);
-    const cfg = Characters.CLASES_CONFIG[c.clase];
     const _noSlotsYet = totalSlots === 0 && cfg && cfg.slotTable === 'half' && c.nivel < 2;
 
     _renderConjurosIzq();

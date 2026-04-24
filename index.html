@@ -700,6 +700,50 @@
   .clase-chip.selected .clase-chip-name,
   .raza-chip.selected .raza-chip-name { color: var(--gold); }
 
+  /* Stats grid del wizard */
+  .stats-grid-wiz {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .stat-wiz-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 4px 6px;
+    transition: border-color 0.15s;
+  }
+  .stat-wiz-cell:focus-within { border-color: var(--gold-dim); }
+  .stat-wiz-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .stat-wiz-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    padding: 0;
+    outline: none;
+  }
+  .stat-wiz-mod {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
   /* Sección bonus de raza */
   .stat-bonus-row { display: flex; gap: 12px; margin-bottom: 6px; }
   .stat-bonus-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
@@ -920,6 +964,17 @@
       <label class="form-label" for="cmNivel">Nivel</label>
       <input class="form-input" id="cmNivel" type="number" min="1" max="20" value="1" style="text-align:center;"
              inputmode="numeric">
+    </div>
+
+    <!-- Estadísticas base -->
+    <div class="form-group">
+      <div class="wiz-section-label" style="padding-top:0;border-top:none;margin-bottom:6px;">
+        <span>Estadísticas</span>
+        <span style="font-family:'Jost',sans-serif;font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);">Standard Array: 15 14 13 12 10 8</span>
+      </div>
+      <div class="stats-grid-wiz" id="cmStatsGrid">
+        <!-- generado por JS -->
+      </div>
     </div>
 
     <!-- Multi-clase (solo al crear) -->
@@ -1168,6 +1223,55 @@ const _RAZAS_LISTA = [
 let _selectedClase = 'Clérigo';
 let _selectedRaza  = '';   // '' = sin raza elegida
 
+// ── Stats wizard ──────────────────────────────────────
+const _STAT_KEYS  = ['for','des','con','int','sab','car'];
+const _STAT_NAMES = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
+
+function _buildStatsGrid(vals) {
+  // vals: { for:10, des:10, ... } o null para defaults
+  const defaults = vals || { for:10, des:10, con:10, int:10, sab:10, car:10 };
+  const grid = document.getElementById('cmStatsGrid');
+  if (!grid) return;
+  grid.innerHTML = _STAT_KEYS.map(k => {
+    const v   = defaults[k] || 10;
+    const mod = Math.floor((v - 10) / 2);
+    const modStr = (mod >= 0 ? '+' : '') + mod;
+    return `
+      <div class="stat-wiz-cell">
+        <span class="stat-wiz-label">${_STAT_NAMES[k]}</span>
+        <input class="stat-wiz-input" type="number" id="cmStat_${k}"
+               value="${v}" min="1" max="20" inputmode="numeric"
+               onclick="this.select()"
+               oninput="_updateStatMod('${k}',this.value)">
+        <span class="stat-wiz-mod" id="cmStatMod_${k}">${modStr}</span>
+      </div>`;
+  }).join('');
+}
+
+function _updateStatMod(key, val) {
+  const v   = Math.min(20, Math.max(1, parseInt(val) || 10));
+  const mod = Math.floor((v - 10) / 2);
+  const el  = document.getElementById(`cmStatMod_${key}`);
+  if (el) el.textContent = (mod >= 0 ? '+' : '') + mod;
+}
+
+function _collectStats() {
+  const stats = {};
+  _STAT_KEYS.forEach(k => {
+    const el = document.getElementById(`cmStat_${k}`);
+    stats[k] = el ? Math.min(20, Math.max(1, parseInt(el.value) || 10)) : 10;
+  });
+  return stats;
+}
+
+function applyStandardArray() {
+  const values = [15, 14, 13, 12, 10, 8];
+  _STAT_KEYS.forEach((k, i) => {
+    const el = document.getElementById(`cmStat_${k}`);
+    if (el) { el.value = values[i]; _updateStatMod(k, values[i]); }
+  });
+}
+
 function _buildClaseChips(selected) {
   const grid = document.getElementById('claseChipGrid');
   if (!grid) return;
@@ -1306,6 +1410,7 @@ function openCreateModal() {
   if (extraT) extraT.value = '';
   _buildClaseChips('Clérigo');
   _buildRazaChips('');
+  _buildStatsGrid(null);
   document.getElementById('createModal').classList.add('show');
   setTimeout(() => document.getElementById('cmName').focus(), 80);
 }
@@ -1342,6 +1447,7 @@ function openEditModal(id) {
   });
   _buildClaseChips(_selectedClase);
   _buildRazaChips(_selectedRaza);
+  _buildStatsGrid(c.stats || null);
   document.getElementById('createModal').classList.add('show');
   setTimeout(() => document.getElementById('cmName').focus(), 80);
 }
@@ -1375,6 +1481,7 @@ function saveCreateModal() {
       c.clase   = _selectedClase;
       c.nivel   = nivel;
       c.classes = allClasses;
+      c.stats   = _collectStats();
       c.spellSlots = Characters.calcMulticlassSlots(allClasses);
       Characters.applyLevelUp(c, nivel, 0);
       Storage.saveChar(c);
@@ -1385,6 +1492,15 @@ function saveCreateModal() {
     const newChar = Characters.buildDefaultChar(name, _selectedClase, nivel);
     newChar.classes = allClasses;
     newChar.spellSlots = Characters.calcMulticlassSlots(allClasses);
+
+    // Aplicar estadísticas del wizard
+    const wizStats = _collectStats();
+    newChar.stats = wizStats;
+    // Recalcular HP máx con CON real (buildDefaultChar usa CON 10)
+    const conMod = Math.floor((wizStats.con - 10) / 2);
+    const hitDie = newChar.hitDie || 8;
+    newChar.hp.max     = hitDie + (nivel - 1) * (Math.floor(hitDie / 2) + 1) + conMod * nivel;
+    newChar.hp.current = newChar.hp.max;
 
     // Aplicar raza con bonus de stat elegidos
     if (_selectedRaza) {
