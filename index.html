@@ -635,6 +635,117 @@
     transition: border-color 0.15s, color 0.15s;
   }
   .theme-btn:hover { border-color: var(--gold); color: var(--text); }
+
+  /* ── Wizard de creación ── */
+  .modal-wizard { max-width: 520px; width: 95vw; }
+
+  /* Grids */
+  .clase-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-top: 4px;
+  }
+  .raza-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+  }
+
+  /* Base compartida clase y raza */
+  .clase-chip,
+  .raza-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    min-height: 54px;
+    user-select: none;
+  }
+  .clase-chip:hover,
+  .raza-chip:hover {
+    background: var(--bg3);
+    border-color: var(--gold-dim);
+  }
+  .clase-chip.selected,
+  .raza-chip.selected {
+    background: rgba(201,151,58,0.12);
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px rgba(201,151,58,0.3);
+  }
+  .clase-chip:active,
+  .raza-chip:active { transform: scale(0.95); }
+
+  .clase-chip-icon,
+  .raza-chip-icon { font-size: 17px; line-height: 1; }
+
+  .clase-chip-name,
+  .raza-chip-name {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+  }
+  .clase-chip.selected .clase-chip-name,
+  .raza-chip.selected .raza-chip-name { color: var(--gold); }
+
+  /* Sección bonus de raza */
+  .stat-bonus-row { display: flex; gap: 12px; margin-bottom: 6px; }
+  .stat-bonus-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+  /* Sección multi-clase */
+  .wiz-section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-add-multiclase {
+    background: none;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-add-multiclase:hover { background: rgba(201,151,58,0.12); }
+  .mc-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .mc-select-wrap { flex: 1; }
+  .mc-nivel-input { width: 58px !important; text-align: center; flex-shrink: 0; }
+  .mc-remove-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-mid);
+    border-radius: 6px;
+    padding: 5px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .mc-remove-btn:hover { color: #e07070; border-color: rgba(200,60,60,0.4); }
 </style>
 </head>
 <body>
