@@ -889,6 +889,11 @@ const App = (() => {
       s.level > 0 && !s.domain && !s.mi && prepared.includes(s.id)
     ).length;
 
+    // Aviso para half-casters en nivel 1 (sin slots aún)
+    const totalSlots = Object.values(c.spellSlots || {}).reduce((s, v) => s + (v.max || 0), 0);
+    const cfg = Characters.CLASES_CONFIG[c.clase];
+    const _noSlotsYet = totalSlots === 0 && cfg && cfg.slotTable === 'half' && c.nivel < 2;
+
     _renderConjurosIzq();
 
     // Columna derecha: preparados hoy
@@ -939,10 +944,25 @@ const App = (() => {
       });
     }
 
-    htmlDer += `
-    <div class="note-block" style="margin-top:12px;">
-      <strong>Máx preparados:</strong> ${preparedMax} = SAB mod (${Characters.calcMod(c.stats.sab) >= 0 ? '+' : ''}${Characters.calcMod(c.stats.sab)}) + Nvl (${c.nivel})
-    </div>`;
+    if (_noSlotsYet) {
+      htmlDer += `
+      <div class="note-block" style="margin-top:12px;border-color:rgba(201,151,58,0.4);background:rgba(201,151,58,0.07);">
+        <strong style="color:var(--gold);">⚠ Nivel 1 — sin slots aún</strong><br>
+        <span style="font-size:11px;color:var(--text-mid);">
+          ${c.clase === 'Explorador' ? 'El Explorador' : 'El Paladín'} es un <em>half-caster</em>:
+          obtiene sus primeros slots de conjuro al <strong>nivel 2</strong>.
+          Puedes ver y preparar los hechizos, pero no podrás lanzarlos hasta entonces.
+        </span>
+      </div>`;
+    } else {
+      const castStat     = c.spellcastingStat || 'sab';
+      const castStatName = (Characters.STAT_NAMES[castStat] || castStat.toUpperCase());
+      const castMod      = Characters.calcMod(c.stats[castStat]);
+      htmlDer += `
+      <div class="note-block" style="margin-top:12px;">
+        <strong>Máx preparados:</strong> ${preparedMax} = ${castStatName} mod (${castMod >= 0 ? '+' : ''}${castMod}) + Nvl (${c.nivel})
+      </div>`;
+    }
 
     document.getElementById('col-conjuros-der').innerHTML = htmlDer;
   }
