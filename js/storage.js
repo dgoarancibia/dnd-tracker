@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 6;   // Incrementar al cambiar el esquema
+  const DATA_VERSION = 7;   // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -54,6 +54,32 @@ const Storage = (() => {
       // v5 → v6: agregar campo subraza
       if (typeof char.subraza !== 'string') char.subraza = '';
       char._dataVersion = 6;
+    }
+    if (char._dataVersion < 7) {
+      // v6 → v7: rellenar features vacías para personajes creados antes del fix
+      // Lursey tiene sus features desde buildLursey(); solo aplica a non-Lursey
+      if (char.id !== 'lursey-brumaclara' && (!Array.isArray(char.features) || char.features.length === 0)) {
+        const claseFeat = (typeof Characters !== 'undefined' && Characters.CLASE_FEATURES)
+          ? Characters.CLASE_FEATURES[char.clase]
+          : null;
+        if (claseFeat) {
+          const rawFeats = typeof claseFeat.features === 'function'
+            ? claseFeat.features(char.nivel || 1)
+            : (claseFeat.features || []);
+          char.features = rawFeats.map(f => {
+            if (typeof f === 'object' && f !== null) return { ...f };
+            const name = String(f);
+            return {
+              id:     name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'),
+              name, source: char.clase, type:'passive',
+              action:null, range:null, recharge:null, desc:'', fullDesc:'',
+            };
+          });
+        } else {
+          char.features = char.features || [];
+        }
+      }
+      char._dataVersion = 7;
     }
     return char;
   }

@@ -2699,8 +2699,8 @@ const App = (() => {
     const conMod = Characters.calcMod(_char.stats.con);
     const heal = Math.max(0, result + conMod * qty);
 
-    // Recargar Channel Divinity y recursos de descanso corto
-    _char.resources.forEach(r => {
+    // Recargar recursos de descanso corto (Rage, Ki, Channel Divinity, etc.)
+    (_char.resources || []).forEach(r => {
       if (r.recharge === 'short') r.current = r.max;
     });
 
@@ -2718,7 +2718,12 @@ const App = (() => {
     _renderCombateTab();
     _updateCombatHUD();
     _logCombat(`↺ Descanso corto · +${heal} HP`, 'rest');
-    showToast(`Descanso corto · +${heal} HP · CD recargado`);
+    // Mensaje: listar qué recursos recargados (máx 2 nombres)
+    const recharged = (_char.resources || []).filter(r => r.recharge === 'short' && r.max > 0).map(r => r.name);
+    const rechargeLabel = recharged.length
+      ? ` · ${recharged.slice(0, 2).join(', ')} recargado${recharged.length > 1 ? 's' : ''}`
+      : '';
+    showToast(`Descanso corto · +${heal} HP${rechargeLabel}`);
   }
 
   function longRest() {

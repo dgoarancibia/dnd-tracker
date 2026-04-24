@@ -1322,9 +1322,30 @@ const Characters = (() => {
     const slots  = calcMulticlassSlots([{ name: claseNombre, level: nivel }]);
     const feats  = CLASE_FEATURES[claseNombre];
     const resrcs = feats ? feats.resources(nivel) : [];
-    // features puede ser array o función (ej: Pícaro)
-    const featList = feats ? (typeof feats.features === 'function' ? feats.features(nivel) : feats.features) : [];
+    // features puede ser array de strings o función que devuelve strings/objects
+    const rawFeats = feats ? (typeof feats.features === 'function' ? feats.features(nivel) : (feats.features || [])) : [];
+    // Normalizar: convertir strings a objetos de feature compatibles con el renderer
+    const featList = rawFeats.map(f => {
+      if (typeof f === 'object' && f !== null) return f; // ya es objeto completo
+      // string → objeto mínimo
+      const name = String(f);
+      return {
+        id:     name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'),
+        name,
+        source: claseNombre,
+        type:   'passive',
+        action: null,
+        range:  null,
+        recharge: null,
+        desc:   '',
+        fullDesc: '',
+      };
+    });
     const spells = (CLASE_SPELLS[claseNombre] || []).map(s => ({ ...s }));
+
+    // HP correcto según nivel: dado1 + promedio*(nivel-1) + CON mod * nivel
+    // Con CON 10 (mod 0) es simplemente dado1 + (floor(die/2)+1)*(nivel-1)
+    const hpMax = cfg.hitDie + (nivel - 1) * (Math.floor(cfg.hitDie / 2) + 1);
 
     const char = {
       id: 'char-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
@@ -1342,7 +1363,7 @@ const Characters = (() => {
 
       stats: { for:10, des:10, con:10, int:10, sab:10, car:10 },
 
-      hp:    { current: cfg.hitDie, max: cfg.hitDie, temp: 0 },
+      hp:    { current: hpMax, max: hpMax, temp: 0 },
       velocidad: 30,
 
       savingThrows:    cfg.savingThrows || [],
@@ -1354,6 +1375,7 @@ const Characters = (() => {
       spellSlots:       slots,
       hitDice:          { current: nivel, max: nivel },
 
+      features:         featList,
       resources:        resrcs,
       turn:             { action: false, bonus: false, reaction: false, movement: false },
       concentration:    null,
@@ -1377,7 +1399,7 @@ const Characters = (() => {
       diary:            [],
       ifttt:            [],
 
-      _dataVersion: 6,
+      _dataVersion: 7,
       createdAt:    new Date().toISOString(),
       updatedAt:    new Date().toISOString(),
     };
@@ -1416,6 +1438,49 @@ const Characters = (() => {
       } else {
         char.spellSlots[i] = { current: Math.min(old.current, newMax), max: newMax };
       }
+    }
+
+    // Actualizar recursos de clase que escalan por nivel (Rage, Ki, Channel Divinity, etc.)
+    const feats = CLASE_FEATURES[char.clase];
+    if (feats) {
+      const newResrcs = feats.resources(newLevel, char.subclase || '');
+      // Merge: actualizar max de recursos existentes y agregar recursos nuevos
+      newResrcs.forEach(newR => {
+        const existing = (char.resources || []).find(r => r.id === newR.id);
+        if (existing) {
+          const gained = newR.max - existing.max;
+          existing.max = newR.max;
+          if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
+          // Actualizar nota (puede cambiar con nivel/subclase)
+          if (newR.note) existing.note = newR.note;
+        } else {
+          // Recurso nuevo desbloqueado con este nivel
+          if (!char.resources) char.resources = [];
+          char.resources.push({ ...newR });
+        }
+      });
+
+      // Actualizar features (lista puede crecer con el nivel)
+      const rawNewFeats = typeof feats.features === 'function'
+        ? feats.features(newLevel)
+        : (feats.features || []);
+      // Normalizar strings → objetos
+      const newFeatList = rawNewFeats.map(f => {
+        if (typeof f === 'object' && f !== null) return f;
+        const name = String(f);
+        return {
+          id:     name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'),
+          name, source: char.clase, type:'passive',
+          action:null, range:null, recharge:null, desc:'', fullDesc:'',
+        };
+      });
+      // Agregar features nuevas que no existan aún (por id)
+      newFeatList.forEach(f => {
+        if (!char.features) char.features = [];
+        if (!char.features.find(e => e.id === f.id)) {
+          char.features.push({ ...f });
+        }
+      });
     }
 
     return char;
