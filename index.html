@@ -905,6 +905,18 @@
 
     <!-- Subraza + rasgos manuales (aparece al elegir raza) -->
     <div id="cmRazaBonusSection" style="display:none;">
+      <!-- Custom Race: nombre libre + rasgos (solo si eligió Custom) -->
+      <div id="cmCustomRazaSection" style="display:none;">
+        <div class="wiz-section-label" style="margin-top:8px;">Nombre de la raza</div>
+        <input class="form-input" id="cmCustomRazaNombre" type="text" maxlength="40"
+               placeholder="Ej: Kenku, Tortle, Changeling…"
+               style="font-size:13px;font-family:'Jost',sans-serif;">
+        <div class="wiz-section-label" style="margin-top:8px;">Rasgos de la raza <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">(uno por línea o descripción libre)</span></div>
+        <textarea class="form-input" id="cmCustomRazaTraits" rows="3"
+          placeholder="Ej: Darkvision 18m&#10;Natural Armor — CA 17 sin armadura&#10;Hold Breath — puede aguantar la respiración 1 hora"
+          style="resize:none;font-size:13px;font-family:'Jost',sans-serif;min-height:72px;"></textarea>
+      </div>
+
       <!-- Subraza / variante (solo si la raza tiene opciones) -->
       <div id="cmSubrazaSection" style="display:none;">
         <div class="wiz-section-label" style="margin-top:8px;">Variante / Subraza</div>
@@ -913,8 +925,8 @@
         </div>
       </div>
 
-      <!-- Rasgos adicionales manuales -->
-      <div class="wiz-section-label" style="margin-top:8px;">Rasgos adicionales <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">(feats, variantes, notas…)</span></div>
+      <!-- Rasgos adicionales manuales (para todas las razas) -->
+      <div class="wiz-section-label" style="margin-top:8px;">Rasgos adicionales <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">(feats, variantes, notas del DM…)</span></div>
       <textarea class="form-input" id="cmExtraTraits" rows="2"
         placeholder="Ej: Squat Nimbleness — +1 velocidad y prof en Atletismo o Acrobacias…"
         style="resize:none;font-size:13px;font-family:'Jost',sans-serif;min-height:56px;"></textarea>
@@ -1210,10 +1222,10 @@ const _CLASES_LISTA = [
 ];
 
 
-// Razas — se lee desde Characters.RAZAS_CONFIG cuando está disponible
+// Razas oficiales D&D 2024 PHB
 const _RAZAS_LISTA = [
   'Humano','Elfo','Enano','Halfling','Dragonborn',
-  'Gnomo','Medio-Elfo','Medio-Orco','Tiefling','Aasimar','Goliath'
+  'Gnomo','Orco','Tiefling','Aasimar','Goliath','Custom'
 ];
 
 let _selectedClase = 'Clérigo';
@@ -1337,9 +1349,20 @@ function selectRazaChip(el, name) {
   _selectedRaza = name;
   // Mostrar/ocultar sección de bonus de stats
   document.getElementById('cmRazaBonusSection').style.display = name ? '' : 'none';
-  // Construir chips de subraza si la raza tiene variantes
+  // Custom Race: mostrar sección de nombre+rasgos; ocultar bonus de stats y subraza
+  const isCustom = name === 'Custom';
+  const customSec = document.getElementById('cmCustomRazaSection');
+  if (customSec) customSec.style.display = isCustom ? '' : 'none';
+  // Bonus de stats solo para razas no-Custom
+  const bonusSec = document.getElementById('cmRazaBonusSection')
+    .querySelector('.wiz-section-label[data-bonus]');
+  // Construir chips de subraza si la raza tiene variantes (no aplica a Custom)
   _selectedSubraza = '';
-  _buildSubrazaChips(name, '');
+  if (!isCustom) _buildSubrazaChips(name, '');
+  else {
+    const subSec = document.getElementById('cmSubrazaSection');
+    if (subSec) subSec.style.display = 'none';
+  }
 }
 
 let _multiclaseCount = 0;
@@ -1397,6 +1420,12 @@ function openCreateModal() {
   document.getElementById('cmRazaBonusSection').style.display = 'none';
   const subSec = document.getElementById('cmSubrazaSection');
   if (subSec) subSec.style.display = 'none';
+  const customSec = document.getElementById('cmCustomRazaSection');
+  if (customSec) customSec.style.display = 'none';
+  const customN = document.getElementById('cmCustomRazaNombre');
+  if (customN) customN.value = '';
+  const customT = document.getElementById('cmCustomRazaTraits');
+  if (customT) customT.value = '';
   const extraT = document.getElementById('cmExtraTraits');
   if (extraT) extraT.value = '';
   _buildClaseChips('Clérigo');
@@ -1494,7 +1523,7 @@ function saveCreateModal() {
     newChar.hp.current = newChar.hp.max;
 
     // Aplicar raza con bonus de stat elegidos
-    if (_selectedRaza) {
+    if (_selectedRaza && _selectedRaza !== 'Custom') {
       const bonus2 = document.getElementById('cmBonus2')?.value || 'for';
       const bonus1 = document.getElementById('cmBonus1')?.value || 'sab';
       Characters.applyRaza(newChar, _selectedRaza, bonus2, bonus1);
@@ -1502,6 +1531,14 @@ function saveCreateModal() {
       if (_selectedSubraza) {
         Characters.applySubraza(newChar, _selectedSubraza);
       }
+    }
+
+    // Custom Race: nombre libre + rasgos definidos por el usuario
+    if (_selectedRaza === 'Custom') {
+      const customNombre = document.getElementById('cmCustomRazaNombre')?.value.trim();
+      const customTraits = document.getElementById('cmCustomRazaTraits')?.value.trim();
+      if (customNombre) newChar.raza = customNombre;
+      if (customTraits) newChar.speciesTraits = customTraits;
     }
 
     // Agregar rasgos adicionales manuales (feats, variantes, notas del DM…)
@@ -1514,7 +1551,9 @@ function saveCreateModal() {
     Storage.setActiveId(newChar.id);
     const clasesLabel = allClasses.map(c => `${c.name} ${c.level}`).join(' / ');
     const razaLabel   = _selectedRaza
-      ? ` · ${_selectedSubraza ? _selectedSubraza : _selectedRaza}`
+      ? ` · ${_selectedRaza === 'Custom'
+          ? (document.getElementById('cmCustomRazaNombre')?.value.trim() || 'Custom')
+          : (_selectedSubraza || _selectedRaza)}`
       : '';
     showToast(`${name}${razaLabel} · ${clasesLabel}`);
   }

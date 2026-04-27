@@ -228,23 +228,6 @@ const Characters = (() => {
         },
       ],
     },
-    'Medio-Elfo': {
-      emoji: '🧑‍🤝‍🧑', speed: 30, darkvision: 18,
-      traits: [
-        'Fey Ancestry — ventaja en saves contra ser encantado, inmune a dormir mágico',
-        'Skillful — proficiencia en una habilidad a elección',
-        'Elven Lineage — elige un linaje élfico para rasgos adicionales',
-      ],
-      resistances: [], languages: ['Común', 'Élfico'], skillProfs: [], weaponProfs: [],
-    },
-    'Medio-Orco': {
-      emoji: '💪', speed: 30, darkvision: 18,
-      traits: [
-        'Adrenaline Rush — acción bonus para Dash, gana PV temporales = prof bonus',
-        'Relentless Endurance — 1 vez por descanso largo: cuando caés a 0 HP, quedás en 1 HP',
-      ],
-      resistances: [], languages: ['Común', 'Orco'], skillProfs: [], weaponProfs: [],
-    },
     'Tiefling': {
       emoji: '😈', speed: 30, darkvision: 18,
       traits: ['Otherworldly Presence — conocés el cantrip Thaumaturgy (SAB, INT o CAR)'],
@@ -308,13 +291,18 @@ const Characters = (() => {
       ],
     },
     'Orco': {
-      emoji: '🪓', speed: 30, darkvision: 18,
+      speed: 30, darkvision: 18,
       traits: [
         'Adrenaline Rush — acción bonus para Dash, gana PV temporales = prof bonus',
         'Relentless Endurance — 1 vez por Long Rest: al caer a 0 HP, quedás en 1 HP',
         'Powerful Build — cuenta como Grande para cargar/empujar',
       ],
       resistances: [], languages: ['Común', 'Orco'], skillProfs: [], weaponProfs: [],
+    },
+    'Custom': {
+      speed: 30, darkvision: 0,
+      traits: [],
+      resistances: [], languages: ['Común'], skillProfs: [], weaponProfs: [],
     },
   };
 
