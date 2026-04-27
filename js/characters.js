@@ -1120,6 +1120,211 @@ const Characters = (() => {
     },
   };
 
+  // ── SUBCLASES_CONFIG: recursos y features adicionales por subclase ──────────
+  // Estructura: { 'NombreSubclase': { clase, resources(nivel), features[] } }
+  const SUBCLASES_CONFIG = {
+
+    // ── GUERRERO ──────────────────────────────────────────────────────────────
+    'Battle Master': {
+      clase: 'Guerrero',
+      resources: (nivel) => {
+        // Superiority Dice: d8 a d10(nv10) a d12(nv18), cantidad 4→5(nv7)→6(nv15)
+        const diceCount = nivel >= 15 ? 6 : nivel >= 7 ? 5 : 4;
+        const diceSide  = nivel >= 18 ? 12 : nivel >= 10 ? 10 : 8;
+        return [
+          { id:'superiority-dice', name:'Superiority Dice',
+            current: diceCount, max: diceCount, recharge:'short',
+            note:`d${diceSide} · Gasta 1 por maniobra · CD = 8+prof+FUE/DES` },
+        ];
+      },
+      features: (nivel) => [
+        { id:'bm-combat-superiority', name:'Combat Superiority',
+          source:'Battle Master · Nv3', type:'active', action:'Varía', range:'Varía', recharge:'Short Rest',
+          desc:`${nivel>=15?6:nivel>=7?5:4} Superiority Dice (d${nivel>=18?12:nivel>=10?10:8}). Gasta 1 dado al usar una maniobra.`,
+          fullDesc:'Tus maniobras funcionan adicionando el dado de superioridad al daño, saves del enemigo u otros efectos. El CD es 8 + Prof + mod FUE o DES.\n\nSe recargan con descanso corto o largo.' },
+        { id:'bm-know-your-enemy', name:'Know Your Enemy',
+          source:'Battle Master · Nv7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Tras observar 1 min a una criatura, el DM te dice si es superior/inferior/igual a ti en 2 características.',
+          fullDesc:'Si pasas al menos 1 minuto observando o interactuando con otra criatura fuera de combate, puedes aprender cierta información sobre sus capacidades comparadas con las tuyas. El DM te dice si la criatura es superior, inferior o aproximadamente igual en cuanto a 2 de las siguientes características: FUE, DES, CON, CA, puntos de golpe actuales, nivel de clase total (si es que tiene alguno).' },
+        { id:'bm-improved-combat-superiority', name:'Improved Combat Superiority',
+          source:`Battle Master · ${nivel>=18?'Nv18':'Nv10'}`, type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:`Tus Superiority Dice son d${nivel>=18?12:10} (mejorado desde d${nivel>=18?10:8}).`,
+          fullDesc:'A nivel 10 tus dados de superioridad se convierten en d10. A nivel 18 se convierten en d12.' },
+        { id:'bm-relentless', name:'Relentless',
+          source:'Battle Master · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Si no te quedan Superiority Dice al tirar iniciativa, recuperas 1.',
+          fullDesc:'A partir del nivel 15, cuando tiras iniciativa y no tienes dados de superioridad restantes, recuperas 1 dado de superioridad.' },
+      ],
+      // Maniobras: el usuario elige 3(nv3)+1(nv7)+1(nv10)+1(nv15) = hasta 6
+      maneuvers: [
+        { id:'mn-commander-strike',   name:"Commander's Strike",   desc:'Acción bonus: un aliado usa su reacción para atacar.' },
+        { id:'mn-disarming-attack',   name:'Disarming Attack',      desc:'+1d8 daño; save FUE o suelta un objeto.' },
+        { id:'mn-distracting-strike', name:'Distracting Strike',    desc:'+1d8 daño; siguiente ataque contra el objetivo tiene ventaja.' },
+        { id:'mn-evasive-footwork',   name:'Evasive Footwork',      desc:'+1d8 a CA mientras te mueves.' },
+        { id:'mn-feinting-attack',    name:'Feinting Attack',       desc:'Acción bonus: ventaja en siguiente ataque + 1d8 daño.' },
+        { id:'mn-goading-attack',     name:'Goading Attack',        desc:'+1d8 daño; save SAB o desventaja en ataques a otros.' },
+        { id:'mn-lunging-attack',     name:'Lunging Attack',        desc:'+1,5m alcance melee + 1d8 daño.' },
+        { id:'mn-maneuvering-attack', name:'Maneuvering Attack',    desc:'+1d8 daño; aliado se mueve sin ataques de oportunidad.' },
+        { id:'mn-menacing-attack',    name:'Menacing Attack',       desc:'+1d8 daño; save SAB o Asustado hasta fin de tu turno.' },
+        { id:'mn-parry',              name:'Parry',                  desc:'Reacción: reduce daño recibido en 1d8+DES.' },
+        { id:'mn-precision-attack',   name:'Precision Attack',      desc:'Antes de tirar: +1d8 al ataque.' },
+        { id:'mn-pushing-attack',     name:'Pushing Attack',        desc:'+1d8 daño; save FUE o empujado 4,5m.' },
+        { id:'mn-rally',              name:'Rally',                  desc:'Acción bonus: aliado gana 1d8+CAR HP temporales.' },
+        { id:'mn-riposte',            name:'Riposte',               desc:'Reacción al fallar enemigo: ataca con +1d8 daño.' },
+        { id:'mn-sweeping-attack',    name:'Sweeping Attack',       desc:'Si golpeas: 1d8 daño a otra criatura adyacente (sin tirada).' },
+        { id:'mn-trip-attack',        name:'Trip Attack',           desc:'+1d8 daño; save FUE o tumbado (Prone).' },
+      ],
+    },
+
+    'Champion': {
+      clase: 'Guerrero',
+      resources: () => [],
+      features: () => [
+        { id:'champ-improved-critical', name:'Improved Critical',
+          source:'Champion · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Tus ataques son críticos con 19-20 (en lugar de solo 20).',
+          fullDesc:'Tus tiradas de ataque con armas hacen un golpe crítico con un resultado de 19 o 20 en el dado.' },
+        { id:'champ-remarkable-athlete', name:'Remarkable Athlete',
+          source:'Champion · Nv7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Suma la mitad de tu Prof Bonus a checks de FUE/DES/CON sin proficiencia. Salto largo +FUE mod.',
+          fullDesc:'Puedes añadir la mitad de tu bonificador de competencia (redondeando hacia arriba) a cualquier tirada de características de Fuerza, Destreza o Constitución que no use tu bonificador de competencia. Además, cuando haces un salto largo, la distancia que puedes cubrir aumenta en un número de pies igual a tu modificador de Fuerza.' },
+        { id:'champ-superior-critical', name:'Superior Critical',
+          source:'Champion · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Tus ataques son críticos con 18-20.',
+          fullDesc:'A nivel 15, tus tiradas de ataque con armas hacen un golpe crítico con un resultado de 18, 19 o 20.' },
+        { id:'champ-survivor', name:'Survivor',
+          source:'Champion · Nv18', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Al inicio de tu turno, si tienes entre 1 y la mitad de tu HP máx, recuperas 5 + CON mod HP.',
+          fullDesc:'Alcanzas la cúspide de la resiliencia en combate. Al inicio de cada uno de tus turnos, recuperas puntos de golpe iguales a 5 + tu modificador de Constitución si no tienes más de la mitad de tus puntos de golpe. No ganas este beneficio si tienes 0 puntos de golpe.' },
+      ],
+    },
+
+    'Eldritch Knight': {
+      clase: 'Guerrero',
+      resources: (nivel) => {
+        // EK usa slots de tercio-caster (floor(nivel/3))
+        const ekLevel = Math.floor(nivel / 3);
+        return []; // Los slots van en spellSlots directamente
+      },
+      features: () => [
+        { id:'ek-spellcasting', name:'Spellcasting (INT)',
+          source:'Eldritch Knight · Nv3', type:'active', action:'Varía', range:'Varía', recharge:null,
+          desc:'Lanzas conjuros de Mago usando INT. Slots de tercio-caster (nivel 3+).',
+          fullDesc:'A nivel 3 puedes lanzar conjuros de la lista del Mago. Usas Inteligencia como stat de conjuro.\n\nSlots: Nv3→2 slots nv1 · Nv4→3 · Nv7→4 + 1nv2 · Nv10→4/2/0 · Nv13→4/3 · Nv16→4/3/2 · Nv19→4/3/3/1' },
+        { id:'ek-war-magic', name:'War Magic',
+          source:'Eldritch Knight · Nv7', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
+          desc:'Al lanzar un cantrip, puedes atacar con arma como acción bonus.',
+          fullDesc:'Cuando usas tu acción para lanzar un cantrip, puedes hacer un ataque con arma como acción adicional.' },
+        { id:'ek-eldritch-strike', name:'Eldritch Strike',
+          source:'Eldritch Knight · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando golpeas a un enemigo, desventaja en su save contra tu próximo conjuro.',
+          fullDesc:'Cuando golpeas a una criatura con un ataque de arma, esa criatura tiene desventaja en la siguiente tirada de salvación que haga contra un conjuro que lanzas antes del final de tu siguiente turno.' },
+      ],
+    },
+
+    // ── CLÉRIGO ───────────────────────────────────────────────────────────────
+    'Dominio de la Paz': {
+      clase: 'Clérigo',
+      resources: (nivel) => [
+        { id:'channel-divinity', name:'Channel Divinity',
+          current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
+          max:     nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
+          recharge:'short',
+          note:'Balm of Peace · Emboldening Bond · Turn Undead' },
+        { id:'bond', name:'Emboldening Bond',
+          current: nivel >= 9 ? 4 : nivel >= 5 ? 3 : nivel >= 2 ? 2 : 1,
+          max:     nivel >= 9 ? 4 : nivel >= 5 ? 3 : nivel >= 2 ? 2 : 1,
+          recharge:'long',
+          note:'1d4 en ataque/save/check · 9m · max = prof bonus' },
+      ],
+      features: () => [],
+    },
+
+    // ── DRUIDA ────────────────────────────────────────────────────────────────
+    'Círculo de la Luna': {
+      clase: 'Druida',
+      resources: (nivel) => [
+        { id:'wild-shape', name:'Wild Shape',
+          current: 2, max: 2, recharge:'short',
+          note:`CR máx ${nivel>=18?'sin límite':nivel>=9?3:nivel>=6?2:1} · Elementales (nv10)` },
+      ],
+      features: () => [
+        { id:'moon-combat-wild-shape', name:'Combat Wild Shape',
+          source:'Círculo de la Luna · Nv2', type:'active', action:'Acción bonus', range:'Personal', recharge:'Short Rest',
+          desc:'Transforma usando acción bonus. Gasta slots para curar 1d8 HP por nivel del slot.',
+          fullDesc:'Cuando estás en forma salvaje, puedes usar una acción adicional para gastar un espacio de conjuro y recuperar 1d8 puntos de golpe por nivel del espacio gastado.' },
+        { id:'moon-elemental-wild-shape', name:'Elemental Wild Shape',
+          source:'Círculo de la Luna · Nv10', type:'active', action:'Acción', range:'Personal', recharge:'Short Rest',
+          desc:'Gasta 2 usos de Wild Shape para transformarte en un elemental (aire, tierra, fuego, agua).',
+          fullDesc:'Puedes gastar dos usos de Wild Shape al mismo tiempo para transformarte en un elemental de aire, tierra, fuego o agua.' },
+      ],
+    },
+
+    // ── PÍCARO ────────────────────────────────────────────────────────────────
+    'Arcane Trickster': {
+      clase: 'Pícaro',
+      resources: () => [],
+      features: () => [
+        { id:'at-spellcasting', name:'Spellcasting (INT)',
+          source:'Arcane Trickster · Nv3', type:'active', action:'Varía', range:'Varía', recharge:null,
+          desc:'Conjuros de Mago usando INT. Slots de tercio-caster.',
+          fullDesc:'Usas Inteligencia como stat de conjuro. Accedes a una lista limitada de conjuros de Mago, principalmente de las escuelas de Encantamiento e Ilusión.' },
+        { id:'at-misdirection', name:'Misdirection',
+          source:'Arcane Trickster · Nv13', type:'active', action:'Acción bonus', range:'9m', recharge:null,
+          desc:'Haz que una criatura mire a otro lado — otorgas ventaja a tus aliados para esconderse.',
+          fullDesc:'Puedes usar una acción adicional para redirigir la atención de una criatura que puedas ver y que esté a 9 metros.' },
+      ],
+    },
+
+    // ── MONJE ─────────────────────────────────────────────────────────────────
+    'Way of the Open Hand': {
+      clase: 'Monje',
+      resources: () => [],
+      features: () => [
+        { id:'woh-open-hand-technique', name:'Open Hand Technique',
+          source:'Way of the Open Hand · Nv3', type:'active', action:'Acción (Flurry)', range:'Melee', recharge:null,
+          desc:'Al usar Flurry of Blows: tumba, empuja 4,5m o niega reacciones hasta fin de su turno.',
+          fullDesc:'Cuando golpeas con Flurry of Blows, puedes imponer uno de estos efectos: el objetivo debe superar un save de DES o caer Prone; el objetivo debe superar un save de FUE o ser empujado hasta 4,5 metros; el objetivo no puede hacer reacciones hasta el inicio de tu próximo turno.' },
+        { id:'woh-wholeness-of-body', name:'Wholeness of Body',
+          source:'Way of the Open Hand · Nv6', type:'active', action:'Acción bonus', range:'Personal', recharge:'Long Rest',
+          desc:'Recupera HP iguales a 3 × tu nivel de Monje (1/Long Rest).',
+          fullDesc:'Ganas la capacidad de curarte a ti mismo. Como acción adicional, puedes recuperar puntos de golpe iguales a tres veces tu nivel de monje. Debes terminar un descanso largo antes de poder usar esta habilidad de nuevo.' },
+      ],
+    },
+
+    // ── BÁRBARO ───────────────────────────────────────────────────────────────
+    'Path of the Berserker': {
+      clase: 'Bárbaro',
+      resources: () => [],
+      features: () => [
+        { id:'berserk-frenzy', name:'Frenzy',
+          source:'Path of the Berserker · Nv3', type:'active', action:'Acción bonus (en Rage)', range:'Melee', recharge:'Long Rest',
+          desc:'Mientras estás en Rage, puedes atacar como acción bonus en cada turno. Al terminar el Rage, sufres 1 nivel de agotamiento.',
+          fullDesc:'Puedes entrar en un frenesí cuando rages. Si lo haces, mientras dure tu rage puedes hacer un ataque adicional con arma como acción adicional en cada uno de tus turnos. Al terminar el rage, sufres un nivel de agotamiento.' },
+        { id:'berserk-mindless-rage', name:'Mindless Rage',
+          source:'Path of the Berserker · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'No puedes ser Encantado ni Asustado mientras estás en Rage. Si lo estás al comenzar, el efecto se suspende.',
+          fullDesc:'No puedes ser encantado ni asustado mientras estás en furia. Si estás encantado o asustado cuando comienzas tu furia, el efecto queda suspendido durante la furia.' },
+      ],
+    },
+
+    // ── PALADÍN ───────────────────────────────────────────────────────────────
+    'Oath of Devotion': {
+      clase: 'Paladín',
+      resources: (nivel) => [
+        { id:'channel-divinity-pal', name:'Channel Divinity',
+          current: 1, max: 1, recharge:'short',
+          note:'Sacred Weapon · Turn the Unholy' },
+      ],
+      features: () => [
+        { id:'dev-sacred-weapon', name:'Sacred Weapon',
+          source:'Oath of Devotion · Nv3', type:'active', action:'Acción bonus', range:'Personal', recharge:'Short/Long Rest',
+          desc:'Canal: arma brilla (20ft luz), +CAR mod a tiradas de ataque por 1 min.',
+          fullDesc:'Como acción adicional, puedes imbuid un arma que sostienes con energía positiva, usando tu Canalizar Divinidad. Durante 1 minuto, añades tu modificador de Carisma a las tiradas de ataque hechas con esa arma (mínimo +1). El arma también emite luz brillante en un radio de 6 metros y luz tenue 6 metros más. Si el arma ya está mágica, los bonificadores se acumulan.' },
+      ],
+    },
+  };
+
   // ── CLASE_SPELLS: hechizos base por clase ─────────────────────────────────
   // Catálogo representativo para empezar. El usuario puede agregar más después.
   const CLASE_SPELLS = {
@@ -1342,6 +1547,53 @@ const Characters = (() => {
     return char;
   }
 
+  // ── applySubclase: aplica recursos y features de subclase al personaje ─────
+  function applySubclase(char, subclaseName) {
+    if (!subclaseName) return char;
+    const sub = SUBCLASES_CONFIG[subclaseName];
+    if (!sub) return char;
+
+    char.subclase = subclaseName;
+
+    // Actualizar classes[0].subclass también
+    if (char.classes && char.classes.length > 0) {
+      char.classes[0].subclass = subclaseName;
+    }
+
+    // Aplicar recursos de subclase (merge: actualizar existentes, agregar nuevos)
+    const nivel = char.nivel || 1;
+    const newResrcs = sub.resources(nivel);
+    newResrcs.forEach(r => {
+      const existing = (char.resources || []).find(e => e.id === r.id);
+      if (existing) {
+        // Actualizar max si cambió
+        const gained = r.max - existing.max;
+        existing.max = r.max;
+        if (gained > 0) existing.current = Math.min(existing.current + gained, r.max);
+        if (r.note) existing.note = r.note;
+      } else {
+        if (!char.resources) char.resources = [];
+        char.resources.push({ ...r });
+      }
+    });
+
+    // Aplicar features de subclase (solo agregar las que no existen por id)
+    const newFeats = typeof sub.features === 'function' ? sub.features(nivel) : (sub.features || []);
+    newFeats.forEach(f => {
+      if (!char.features) char.features = [];
+      if (!char.features.find(e => e.id === f.id)) {
+        char.features.push({ ...f });
+      }
+    });
+
+    // Para Battle Master: inicializar maneuvers elegidas (vacías) si no existen
+    if (sub.maneuvers && !char.maneuvers) {
+      char.maneuvers = [];
+    }
+
+    return char;
+  }
+
   // ── buildDefaultChar: crea personaje con features y hechizos por clase ────
   // razaOpts: { name, statBonus2, statBonus1 } — opcional
   function buildDefaultChar(name, claseNombre, nivel, razaOpts) {
@@ -1522,6 +1774,7 @@ const Characters = (() => {
     CLASES_CONFIG,
     CLASE_FEATURES,
     CLASE_SPELLS,
+    SUBCLASES_CONFIG,
     RAZAS_CONFIG,
     SKILLS_DEF,
     STAT_NAMES,
@@ -1549,6 +1802,7 @@ const Characters = (() => {
     buildDefaultChar,
     applyRaza,
     applySubraza,
+    applySubclase,
     buildLursey,
     applyLevelUp,
   };

@@ -5343,3 +5343,91 @@ mark.diary-highlight {
   text-align: right;
   flex-shrink: 0;
 }
+
+/* ══════════════════════════════════════════════════════
+   SUBCLASE MODAL
+══════════════════════════════════════════════════════ */
+
+.subclase-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subclase-chip {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2);
+  color: var(--text-mid);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.subclase-chip:hover {
+  border-color: var(--gold-dim);
+  color: var(--text);
+}
+
+.subclase-chip.selected {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 15%, var(--bg2));
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+/* Battle Master maneuver grid */
+.maneuvers-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.maneuver-option {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2);
+  cursor: pointer;
+  gap: 2px;
+  transition: all 0.15s ease;
+}
+
+.maneuver-option:hover {
+  border-color: var(--gold-dim);
+}
+
+.maneuver-option.selected {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, var(--bg2));
+}
+
+.maneuver-option strong {
+  font-size: 13px;
+  color: var(--text-hi);
+}
+
+.maneuver-option.selected strong {
+  color: var(--gold-light);
+}
+
+.maneuver-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.empty-state-mini {
+  text-align: center;
+  padding: 12px;
+  color: var(--text-dim);
+  font-size: 12px;
+  background: var(--bg2);
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+}

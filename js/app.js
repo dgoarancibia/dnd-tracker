@@ -787,6 +787,34 @@ const App = (() => {
       });
     }
 
+    // Battle Master maneuvers — mostrar las elegidas
+    if (c.subclase === 'Battle Master' && c.maneuvers && c.maneuvers.length > 0) {
+      const allSubs = Characters.SUBCLASES_CONFIG;
+      const bmSub = allSubs && allSubs['Battle Master'];
+      const allManeuverDefs = (bmSub && bmSub.maneuvers) || [];
+      const nivel = c.nivel || 1;
+      const diceCount = nivel >= 15 ? 6 : nivel >= 7 ? 5 : 4;
+      const diceSide  = nivel >= 18 ? 12 : nivel >= 10 ? 10 : 8;
+      html += `<div class="section-hd" style="margin-top:16px;">🗡 Maniobras (d${diceSide} × ${diceCount})</div>`;
+      c.maneuvers.forEach(mId => {
+        const mDef = allManeuverDefs.find(m => m.id === mId);
+        if (!mDef) return;
+        html += `<div class="feat-card">
+          <div class="feat-top"><span class="feat-name">${mDef.name}</span><span class="feat-badge feat-active">1 dado</span></div>
+          <div class="feat-desc">${mDef.desc}</div>
+        </div>`;
+      });
+    }
+
+    // Si es Battle Master pero no tiene maniobras elegidas aún
+    if (c.subclase === 'Battle Master' && (!c.maneuvers || c.maneuvers.length === 0)) {
+      html += `<div class="section-hd" style="margin-top:16px;">🗡 Maniobras</div>
+        <div class="empty-state-mini">
+          <div>Elige tus maniobras en Habilidades → Subclase</div>
+          <button class="btn btn-gold" style="margin-top:8px;font-size:12px;padding:6px 14px;" onclick="App.openSubclaseModal()">Elegir maniobras</button>
+        </div>`;
+    }
+
     // Prioridad de slots
     const prio = c.slotPriority || [];
     if (prio.length > 0) {
@@ -1430,7 +1458,10 @@ const App = (() => {
         <span class="passive-val" style="font-size:12px;">${c.raza}</span>
       </div>` : ''}
       <div class="passive-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
-        <span class="passive-label">Clase${(c.classes||[]).length > 1 ? 's' : ''}</span>
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span class="passive-label">Clase${(c.classes||[]).length > 1 ? 's' : ''}</span>
+          <button class="btn-edit-stats" style="font-size:10px;padding:2px 6px;" onclick="App.openSubclaseModal()" title="Elegir subclase">Subclase</button>
+        </div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">
           ${(c.classes && c.classes.length ? c.classes : [{ name: c.clase, level: c.nivel, subclass: c.subclase || '' }])
             .map((cl, i) => `<span class="char-class-chip${i===0?' primary':''}">${cl.name} ${cl.level}${cl.subclass ? ' · ' + cl.subclass : ''}</span>`)
@@ -2684,6 +2715,152 @@ const App = (() => {
     _saveChar();
   }
 
+  /* ══════════════════════════════════════════════════════
+     SUBCLASE MODAL
+  ══════════════════════════════════════════════════════ */
+
+  function openSubclaseModal() {
+    if (!_char) return;
+    const clase = _char.clase;
+    // Obtener subclases disponibles para esta clase
+    const allSubs = Characters.SUBCLASES_CONFIG || {};
+    const available = Object.keys(allSubs).filter(k => allSubs[k].clase === clase);
+
+    if (available.length === 0) {
+      showToast('No hay subclases registradas para ' + clase);
+      return;
+    }
+
+    const current = _char.subclase || '';
+    const hasBM = current === 'Battle Master';
+
+    // Construir HTML del modal
+    let chipsHTML = available.map(name => `
+      <button class="subclase-chip ${name === current ? 'selected' : ''}"
+              onclick="App._selectSubclaseChip(this, '${name.replace(/'/g, "\\'")}')">${name}</button>
+    `).join('');
+
+    // Battle Master maneuvers section (mostrar si ya es BM o si se seleccionó BM)
+    const bmSub = allSubs['Battle Master'];
+    const allManeuvers = bmSub ? bmSub.maneuvers : [];
+    const selectedManeuvers = _char.maneuvers || [];
+    const nivel = _char.nivel || 1;
+    const maxManeuvers = nivel >= 15 ? 6 : nivel >= 10 ? 5 : nivel >= 7 ? 4 : 3;
+
+    let maneuversHTML = '';
+    if (allManeuvers.length > 0) {
+      maneuversHTML = `
+      <div id="bmManeuversSection" style="display:${current === 'Battle Master' ? 'block' : 'none'};margin-top:14px;">
+        <div class="form-label" style="margin-bottom:6px;">Maniobras elegidas (máx ${maxManeuvers} a nivel ${nivel})</div>
+        <div class="maneuvers-grid">
+          ${allManeuvers.map(m => `
+            <label class="maneuver-option ${selectedManeuvers.includes(m.id) ? 'selected' : ''}">
+              <input type="checkbox" value="${m.id}" ${selectedManeuvers.includes(m.id) ? 'checked' : ''}
+                     onchange="App._toggleManeuver(this, ${maxManeuvers})" style="display:none;">
+              <strong>${m.name}</strong>
+              <span class="maneuver-desc">${m.desc}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>`;
+    }
+
+    const overlay = document.getElementById('subclaseModalOverlay');
+    if (!overlay) {
+      // Crear el modal dinámicamente si no existe
+      const div = document.createElement('div');
+      div.id = 'subclaseModalOverlay';
+      div.className = 'modal-overlay';
+      div.style.cssText = 'display:flex;align-items:flex-start;overflow-y:auto;';
+      div.innerHTML = `
+        <div class="modal" style="max-height:90vh;overflow-y:auto;">
+          <div class="modal-header">
+            <span id="subclaseModalTitle">Subclase de ${clase}</span>
+          </div>
+          <div class="modal-body" id="subclaseModalBody"></div>
+          <div class="modal-footer">
+            <button class="btn-secondary" onclick="App.closeSubclaseModal()">Cancelar</button>
+            <button class="btn-primary" onclick="App.saveSubclase()">Aplicar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(div);
+    }
+
+    const titleEl = document.getElementById('subclaseModalTitle');
+    const bodyEl  = document.getElementById('subclaseModalBody');
+    if (titleEl) titleEl.textContent = `Subclase de ${clase}`;
+    if (bodyEl) {
+      bodyEl.innerHTML = `
+        <div class="form-label" style="margin-bottom:8px;">Elige tu subclase:</div>
+        <div class="subclase-chips">${chipsHTML}</div>
+        ${maneuversHTML}
+      `;
+    }
+
+    // Guardar la selección actual temporalmente
+    window._pendingSubclase = current;
+
+    document.getElementById('subclaseModalOverlay').style.display = 'flex';
+  }
+
+  function _selectSubclaseChip(el, name) {
+    document.querySelectorAll('.subclase-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    window._pendingSubclase = name;
+    // Mostrar/ocultar sección de maniobras BM
+    const bmSection = document.getElementById('bmManeuversSection');
+    if (bmSection) {
+      bmSection.style.display = name === 'Battle Master' ? 'block' : 'none';
+    }
+  }
+
+  function _toggleManeuver(checkbox, maxCount) {
+    const label = checkbox.closest('.maneuver-option');
+    if (checkbox.checked) {
+      // Contar cuántas están seleccionadas
+      const checked = document.querySelectorAll('.maneuver-option input[type=checkbox]:checked');
+      if (checked.length > maxCount) {
+        checkbox.checked = false;
+        showToast(`Máximo ${maxCount} maniobras a este nivel`);
+        return;
+      }
+      label && label.classList.add('selected');
+    } else {
+      label && label.classList.remove('selected');
+    }
+  }
+
+  function saveSubclase() {
+    const newSubclase = window._pendingSubclase;
+    if (!newSubclase || !_char) {
+      closeSubclaseModal();
+      return;
+    }
+
+    // Aplicar subclase
+    Characters.applySubclase(_char, newSubclase);
+
+    // Para Battle Master: guardar maniobras elegidas
+    if (newSubclase === 'Battle Master') {
+      const checked = document.querySelectorAll('#bmManeuversSection input[type=checkbox]:checked');
+      _char.maneuvers = Array.from(checked).map(cb => cb.value);
+    }
+
+    _saveChar();
+    closeSubclaseModal();
+
+    // Refrescar UI — renderizar tab activo
+    _renderHabilidadesTab();
+    if (_activeTab === 'combate') _renderCombateTab();
+
+    showToast(`Subclase "${newSubclase}" aplicada`);
+  }
+
+  function closeSubclaseModal() {
+    const overlay = document.getElementById('subclaseModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
   function setXP(val) {
     const newXP = Math.max(0, val);
     _char.xp = newXP;
@@ -3565,6 +3742,9 @@ const App = (() => {
 
     // Habilidades
     editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP,
+
+    // Subclase
+    openSubclaseModal, _selectSubclaseChip, _toggleManeuver, saveSubclase, closeSubclaseModal,
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,

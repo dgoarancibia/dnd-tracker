@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 8;   // Incrementar al cambiar el esquema
+  const DATA_VERSION = 9;   // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -96,6 +96,27 @@ const Storage = (() => {
         }
       }
       char._dataVersion = 8;
+    }
+    if (char._dataVersion < 9) {
+      // v8 → v9: aplicar subclase si char.subclase está seteado pero los recursos/features
+      // de la subclase no existen aún (personajes creados antes del sistema de subclases)
+      if (char.subclase && typeof Characters !== 'undefined' && Characters.applySubclase) {
+        const sub = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[char.subclase];
+        if (sub) {
+          // Solo aplicar si no hay features ni recursos de la subclase ya
+          const hasSubFeature = (char.features || []).some(f =>
+            f.source && f.source.toLowerCase().includes(char.subclase.toLowerCase())
+          );
+          if (!hasSubFeature) {
+            Characters.applySubclase(char, char.subclase);
+          }
+        }
+      }
+      // Asegurar campo maneuvers existe para Battle Master
+      if (char.subclase === 'Battle Master' && !char.maneuvers) {
+        char.maneuvers = [];
+      }
+      char._dataVersion = 9;
     }
     return char;
   }
