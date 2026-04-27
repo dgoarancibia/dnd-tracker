@@ -437,9 +437,11 @@
     inset: 0;
     background: rgba(0,0,0,0.75);
     z-index: 100;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .modal-overlay.show { display: flex; }
   .modal {
@@ -450,6 +452,9 @@
     width: 100%;
     max-width: 440px;
     position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .modal-title {
     font-family: 'Cinzel', serif;
