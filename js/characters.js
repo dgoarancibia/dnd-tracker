@@ -1021,10 +1021,37 @@ const Characters = (() => {
           current: 1, max: 1, recharge:'short',
           note:`Recupera 1d10+${nivel} HP como acción bonus` },
       ],
-      features: [
-        'Fighting Style', 'Second Wind', 'Action Surge (nv2)',
-        'Extra Attack (nv5, x2)', 'Indomitable (nv9)',
-        'Extra Attack x3 (nv11)', 'Extra Attack x4 (nv20)',
+      features: (nivel) => [
+        {
+          id: 'fighting-style', name: 'Fighting Style',
+          source: 'Guerrero · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Elige un estilo de combate especializado que te da un beneficio pasivo permanente.',
+          fullDesc: 'Adoptas un estilo de combate particular como especialidad. Elige una de las siguientes opciones (no puedes tomar la misma opción dos veces):\n\n• Archery — +2 a tiradas de ataque con armas a distancia.\n• Blind Fighting — Tienes visión ciega en 3 m. Puedes ver criaturas invisibles que no estén ocultas.\n• Defense — +1 CA mientras llevas armadura.\n• Dueling — +2 al daño con arma de una mano cuando no llevas otra arma (escudo sí está permitido).\n• Great Weapon Fighting — Cuando sacás 1 o 2 en un dado de daño con arma de dos manos o versátil (dos manos), volvés a tirar ese dado y usás el nuevo resultado.\n• Interception — Reacción: reducís el daño de un aliado cercano en 1d10 + Prof Bonus.\n• Protection — Reacción: imponés desventaja en el ataque de un enemigo visible a un aliado a 1,5 m. Requiere escudo.\n• Superior Technique — Aprendés una maniobra de Battle Master (1 Superiority Die d6, recarga Short Rest).\n• Thrown Weapon Fighting — +2 al daño con armas arrojadizas; podés sacar un arma arrojadiza como parte del ataque.\n• Two-Weapon Fighting — Al atacar con arma ligera en la mano secundaria, podés sumar el mod de stat al daño.\n• Unarmed Fighting — Ataques desarmados hacen 1d6 de daño (1d8 si las dos manos libres). Agarras → 1d4 daño al inicio del turno.',
+        },
+        {
+          id: 'second-wind', name: 'Second Wind',
+          source: 'Guerrero · Nivel 1', type: 'active', action: 'Acción bonus', range: 'Personal', recharge: 'short',
+          desc: 'Recuperás 1d10 + nivel de Guerrero HP como acción bonus.',
+          fullDesc: 'Tenés una reserva de resistencia que podés usar para protegerte del daño.\n\nComo acción adicional, recuperás puntos de golpe iguales a 1d10 + tu nivel de Guerrero.\n\nUna vez que usás esta habilidad, debés terminar un descanso corto o largo para poder usarla de nuevo.\n\nEscala: el bonus fijo (nivel de Guerrero) crece con cada nivel, haciéndolo más valioso a medida que subís.',
+        },
+        {
+          id: 'action-surge', name: 'Action Surge',
+          source: `Guerrero · Nivel 2${nivel >= 17 ? ' (×2)' : ''}`, type: 'active', action: 'Sin acción', range: 'Personal', recharge: 'short',
+          desc: `Tomás una acción adicional completa en tu turno. ${nivel >= 17 ? '2 usos por descanso.' : '1 uso por descanso corto/largo.'}`,
+          fullDesc: 'A partir del nivel 2, podés esforzarte más allá de tus límites normales por un momento.\n\nEn tu turno podés tomar una acción adicional encima de tu acción normal y posible acción adicional.\n\nUna vez que usás esta habilidad, debés terminar un descanso corto o largo antes de poder usarla de nuevo. A partir del nivel 17, podés usarla dos veces antes de necesitar descanso, pero solo una vez por turno.\n\nNo otorga una acción adicional extra — podés usar la nueva acción para Atacar (incluyendo Extra Attack), Lanzar Hechizo, Dash, Disengage, Dodge, Help, Hide, Search o Use Object.',
+        },
+        {
+          id: 'extra-attack', name: `Extra Attack${nivel >= 20 ? ' (×4)' : nivel >= 11 ? ' (×3)' : nivel >= 5 ? ' (×2)' : ''}`,
+          source: `Guerrero · Nivel ${nivel >= 20 ? 20 : nivel >= 11 ? 11 : 5}`, type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: `Al usar la acción Atacar, podés atacar ${nivel >= 20 ? 4 : nivel >= 11 ? 3 : 2} veces.`,
+          fullDesc: 'A partir del nivel 5, cada vez que tomás la acción Atacar podés atacar dos veces, en lugar de una.\n\nEl número de ataques aumenta a tres cuando alcanzás el nivel 11 en esta clase, y a cuatro cuando alcanzás el nivel 20.\n\nNota: esto se suma a cualquier ataque adicional de Action Surge. Un Guerrero de nivel 11 con Action Surge puede hacer 6 ataques en un turno (3 + 3).',
+        },
+        {
+          id: 'indomitable', name: 'Indomitable',
+          source: 'Guerrero · Nivel 9', type: 'active', action: 'Ninguna (reacción implícita)', range: 'Personal', recharge: 'long',
+          desc: 'Podés repetir una tirada de salvación fallida (1 uso/Long Rest; 2 usos nv13; 3 usos nv17).',
+          fullDesc: 'A partir del nivel 9, podés volver a tirar una tirada de salvación fallida. Si lo hacés, debés usar el nuevo resultado.\n\nPodés usar esta habilidad una vez entre descansos largos. A nivel 13 podés usarla dos veces, y a nivel 17 tres veces.\n\nClave: se usa después de ver el resultado fallido, antes de que el efecto se aplique. No tiene costo de acción — simplemente declarás que re-tirás.',
+        },
       ],
     },
     'Hechicero': {
