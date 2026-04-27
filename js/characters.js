@@ -1003,13 +1003,80 @@ const Characters = (() => {
       ],
     },
     'Explorador': {
-      resources: (nivel) => [],
-      features: [
-        'Favored Enemy', 'Natural Explorer', 'Fighting Style (nv2)',
-        'Spellcasting (SAB, nv2)', 'Primeval Awareness (nv3)',
-        'Extra Attack (nv5)', 'Land\'s Stride (nv8)',
-        'Hide in Plain Sight (nv10)', 'Vanish (nv14)',
-        'Feral Senses (nv18)', 'Foe Slayer (nv20)',
+      resources: (nivel) => [
+        { id:'hunters-mark-uses', name:"Hunter's Mark",
+          current: nivel >= 17 ? 3 : nivel >= 9 ? 2 : 1,
+          max:     nivel >= 17 ? 3 : nivel >= 9 ? 2 : 1,
+          recharge:'long',
+          note:'Lanzalo sin gastar slot (usos por Long Rest)' },
+      ],
+      features: (nivel) => [
+        {
+          id: 'favored-enemy', name: "Favored Enemy",
+          source: 'Explorador · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Elegís un tipo de enemigo favorito. Ventaja en checks de SAB (Supervivencia) para rastrearlo y en checks de INT para recordar información sobre él.',
+          fullDesc: 'A nivel 1 elegís un tipo de criatura favorita: Aberraciones, Bestias, Celestiales, Constructos, Dragones, Elementales, Feéricos, Fiends, Gigantes, Humanoides (elige 2 razas), Muertos Vivientes, Monstruosidades, Limos u Plantas.\n\nBeneficios:\n• Ventaja en tiradas de SAB (Supervivencia) para rastrear a tus enemigos favoritos.\n• Ventaja en tiradas de INT para recordar información sobre ellos.\n• Aprendés un idioma adicional hablado por uno de tus tipos de enemigo favoritos.\n\nA nivel 6 elegís un enemigo favorito adicional y aprendés otro idioma.\n\n2024 PHB: Esta habilidad fue rediseñada. El Ranger ahora tiene Favored Enemy como parte de su subclase (Hunter) o como habilidad base más general. Consultá con tu DM qué versión usan.',
+        },
+        {
+          id: 'natural-explorer', name: 'Natural Explorer',
+          source: 'Explorador · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Sos experto en un tipo de terreno. Beneficios de movimiento, rastreo y forrajeo en ese terreno.',
+          fullDesc: 'Elegís un tipo de terreno favorito: Ártico, Costa, Desierto, Bosque, Pradera, Montaña, Pantano o el Underdark.\n\nCuando hacés un check de INT o SAB relacionado con tu terreno favorito, tu Prof Bonus se duplica.\n\nAdicional en tu terreno favorito (de viaje con grupo):\n• Terreno difícil no ralentiza el viaje del grupo.\n• El grupo no puede perderse salvo por medios mágicos.\n• Incluso cuando te distraés, sos igual de alerta.\n• Si viajás solo, podés moverse sigilosamente a paso normal.\n• Cuando buscás comida, encontrás el doble de lo normal.\n• Al rastrear criaturas, sabés su número exacto, tamaño y tiempo que llevan ahí.\n\nA niveles 6 y 10 elegís terrenos favoritos adicionales.',
+        },
+        {
+          id: 'ranger-fighting-style', name: 'Fighting Style',
+          source: 'Explorador · Nivel 2', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Estilo de combate especializado. El Ranger tiene acceso a un subconjunto de estilos.',
+          fullDesc: 'A nivel 2 adoptás un estilo de combate especializado. Las opciones disponibles para el Ranger son:\n\n• Archery — +2 a tiradas de ataque con armas a distancia.\n• Blind Fighting — Visión ciega 3 m. Podés ver criaturas invisibles no ocultas.\n• Defense — +1 CA mientras llevás armadura.\n• Druidic Warrior — Aprendés dos cantrips de la lista del Druida (SAB como stat de conjuro). Cuentan como conjuros de Ranger.\n• Dueling — +2 al daño con arma de una mano sin otra arma en la otra mano.\n• Thrown Weapon Fighting — +2 al daño con armas arrojadizas; podés sacarlas como parte del ataque.\n• Two-Weapon Fighting — Sumás el mod de stat al daño del ataque con la mano secundaria.',
+        },
+        {
+          id: 'ranger-spellcasting', name: 'Spellcasting (SAB)',
+          source: 'Explorador · Nivel 2', type: 'active', action: 'Varía', range: 'Varía', recharge: null,
+          desc: 'Lanzás conjuros de Ranger usando SAB. Half-caster: slots empiezan en nv2.',
+          fullDesc: 'A nivel 2 aprendés a usar la magia de la naturaleza.\n\nStat de conjuro: Sabiduría (SAB)\nCD de conjuros: 8 + Prof Bonus + mod SAB\nBonus de ataque: Prof Bonus + mod SAB\n\nConjuros conocidos: empezás con 2 conjuros de nivel 1. Aprendés más al subir de nivel (siempre según la tabla del Ranger).\n\nSlots: Half-caster. No tenés slots en nivel 1, empezás con 2 slots de nivel 1 en nivel 2. Los slots aumentan más lento que los full-casters.\n\nHunter\'s Mark: Desde el PHB 2024, Hunter\'s Mark es parte de la habilidad de clase del Ranger y puede lanzarse sin gastar slot un número de veces por Long Rest (igual a tu mod SAB mínimo 1).',
+        },
+        {
+          id: 'primeval-awareness', name: 'Primeval Awareness',
+          source: 'Explorador · Nivel 3', type: 'active', action: 'Acción', range: 'Varía', recharge: null,
+          desc: 'Gastás un slot para detectar tipos de criaturas en un radio según el nivel del slot.',
+          fullDesc: 'A nivel 3, podés usar tu acción y gastar un slot de conjuro de Ranger para enfocar tu conciencia en la región circundante.\n\nDurante 1 minuto por nivel del slot gastado, podés sentir si los siguientes tipos de criaturas están presentes en un radio de 1,5 km (6 km en terreno favorito): Aberraciones, Celestiales, Dragones, Elementales, Feéricos, Fiends o Muertos Vivientes.\n\nNo sabés la ubicación ni el número, solo si están presentes o no dentro del radio.',
+        },
+        {
+          id: 'extra-attack-ranger', name: 'Extra Attack',
+          source: 'Explorador · Nivel 5', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Al usar la acción Atacar, atacás dos veces en lugar de una.',
+          fullDesc: 'A partir del nivel 5, cada vez que tomás la acción Atacar podés atacar dos veces en lugar de una.\n\nEsto se aplica a todos los ataques de arma. Hunter\'s Mark te permite añadir 1d6 de daño a cada ataque que conecte contra el objetivo marcado.',
+        },
+        {
+          id: 'lands-stride', name: "Land's Stride",
+          source: 'Explorador · Nivel 8', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'El terreno difícil no mágico no te ralentiza. Ventaja en saves contra plantas mágicas que obstaculizan.',
+          fullDesc: 'A partir del nivel 8, moverte a través de terreno difícil no mágico no te cuesta movimiento extra.\n\nAdemás, tenés ventaja en las tiradas de salvación contra plantas que estén creadas o manipuladas mágicamente para impedir el movimiento (como las creadas por el conjuro Entangle o Spike Growth).\n\nTambién podés atravesar plantas no mágicas sin que te ralenticen y sin recibir daño de ellas si tienen espinas, agujas u otro tipo de peligro similar.',
+        },
+        {
+          id: 'hide-in-plain-sight', name: 'Hide in Plain Sight',
+          source: 'Explorador · Nivel 10', type: 'active', action: '1 minuto de preparación', range: 'Personal', recharge: null,
+          desc: 'Podés camuflarte quedándote inmóvil hasta quedar casi invisible (+10 a Sigilo).',
+          fullDesc: 'A partir del nivel 10, podés pasar 1 minuto creando camuflaje para vos mismo. Debés tener acceso a barro, suciedad, plantas, hollín u otros materiales naturales con los que crear el camuflaje.\n\nUna vez camuflado de esta manera, podés intentar esconderte presionándote contra una superficie sólida como un árbol o una pared que sea al menos tan alta y ancha como vos.\n\nObtenes un +10 a las tiradas de Sigilo siempre que no te muevas. Si te movés, el camuflaje pierde efectividad y pierdes este beneficio.',
+        },
+        {
+          id: 'vanish', name: 'Vanish',
+          source: 'Explorador · Nivel 14', type: 'active', action: 'Acción bonus', range: 'Personal', recharge: null,
+          desc: 'Podés usar Hide como acción bonus. No podés ser rastreado por medios no mágicos.',
+          fullDesc: 'A partir del nivel 14, podés usar la acción Esconderse como acción adicional en tu turno.\n\nAdemás, no podés ser rastreado por medios no mágicos, salvo que elijas dejar rastro.',
+        },
+        {
+          id: 'feral-senses', name: 'Feral Senses',
+          source: 'Explorador · Nivel 18', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Sentidos sobrehumanos: no tenés desventaja atacando criaturas invisibles si podés oírlas.',
+          fullDesc: 'A partir del nivel 18, ganás sentidos sobrenaturales que te ayudan a combatir criaturas que no podés ver.\n\nCuando atacás a una criatura que no podés ver, tu incapacidad para verla no impone desventaja en tus tiradas de ataque contra ella, siempre que puedas oírla y no estés cegado ni ensordecido.\n\nAdemás, sos consciente de la ubicación de cualquier criatura invisible a 9 m de vos, siempre que la criatura no esté oculta de vos y no estés incapacitado.',
+        },
+        {
+          id: 'foe-slayer', name: 'Foe Slayer',
+          source: 'Explorador · Nivel 20', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Una vez por turno podés sumar tu mod SAB a la tirada de ataque o de daño contra tu Favored Enemy.',
+          fullDesc: 'Al nivel 20 te convertís en un cazador sin par contra tus enemigos.\n\nUna vez en cada uno de tus turnos, podés sumar tu modificador de Sabiduría a la tirada de ataque o a la tirada de daño de un ataque que hagas contra uno de tus enemigos favoritos.\n\nPodés elegir usar este beneficio antes o después de la tirada, pero antes de que el DM determine si el ataque impacta o falla.',
+        },
       ],
     },
     'Guerrero': {
