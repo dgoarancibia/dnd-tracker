@@ -1427,7 +1427,7 @@ const Characters = (() => {
       diary:            [],
       ifttt:            [],
 
-      _dataVersion: 7,
+      _dataVersion: 8,
       createdAt:    new Date().toISOString(),
       updatedAt:    new Date().toISOString(),
     };

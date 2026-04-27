@@ -2281,6 +2281,15 @@ input[type=number] { -moz-appearance: textfield; }
 .save-val { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; color: var(--gold-light); }
 .save-prof-icon { font-size: 10px; color: var(--gold); }
 
+/* Toggle de proficiencia en saving throw — clickeable */
+.save-prof-toggle {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; color: var(--border); padding: 0 2px;
+  transition: color 0.15s; line-height: 1; flex-shrink: 0;
+}
+.save-prof-toggle.active { color: var(--gold); }
+.save-prof-toggle:hover { color: var(--gold-light); }
+
 /* XP TRACKER */
 .xp-block {
   background: var(--bg3);

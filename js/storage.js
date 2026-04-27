@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 7;   // Incrementar al cambiar el esquema
+  const DATA_VERSION = 8;   // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -80,6 +80,22 @@ const Storage = (() => {
         }
       }
       char._dataVersion = 7;
+    }
+    if (char._dataVersion < 8) {
+      // v7 → v8: corregir savingThrows desde CLASES_CONFIG
+      // Solo aplica si el array tiene menos throws de los esperados (datos incompletos)
+      if (char.id !== 'lursey-brumaclara') {
+        const cfg = (typeof Characters !== 'undefined' && Characters.CLASES_CONFIG)
+          ? Characters.CLASES_CONFIG[char.clase]
+          : null;
+        if (cfg && Array.isArray(cfg.savingThrows)) {
+          // Combinar: mantener los que ya tenía + agregar los del catálogo que falten
+          const existing = new Set(char.savingThrows || []);
+          cfg.savingThrows.forEach(s => existing.add(s));
+          char.savingThrows = Array.from(existing);
+        }
+      }
+      char._dataVersion = 8;
     }
     return char;
   }

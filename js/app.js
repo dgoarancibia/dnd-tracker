@@ -1342,7 +1342,8 @@ const App = (() => {
       const bonusStat = (c.bonuses && c.bonuses.saves && c.bonuses.saves[stat]) || 0;
       htmlIzq += `
       <div class="save-row">
-        ${hasProf ? `<span class="save-prof-icon">★</span>` : '<span style="width:14px;display:inline-block;"></span>'}
+        <button class="save-prof-toggle ${hasProf ? 'active' : ''}"
+          onclick="App.toggleSavingThrow('${stat}')" title="${hasProf ? 'Quitar' : 'Agregar'} proficiencia">★</button>
         <span class="save-name">${STAT_LABELS[stat]}</span>
         <span class="save-val ${hasProf ? 'prof' : ''}">${save >= 0 ? '+' : ''}${save}</span>
         <input type="number" class="bonus-input-sm" value="${bonusStat}"
@@ -2669,6 +2670,15 @@ const App = (() => {
     _renderHabilidadesTab();
   }
 
+  function toggleSavingThrow(stat) {
+    if (!_char.savingThrows) _char.savingThrows = [];
+    const idx = _char.savingThrows.indexOf(stat);
+    if (idx >= 0) _char.savingThrows.splice(idx, 1);
+    else _char.savingThrows.push(stat);
+    _saveChar();
+    _renderHabilidadesTab();
+  }
+
   function setVelocidad(val) {
     _char.velocidad = val;
     _saveChar();
@@ -3554,7 +3564,7 @@ const App = (() => {
     setNotes,
 
     // Habilidades
-    editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, setVelocidad, setXP,
+    editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP,
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,
