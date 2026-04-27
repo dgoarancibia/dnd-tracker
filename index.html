@@ -661,17 +661,15 @@
   .clase-chip,
   .raza-chip {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 8px 4px;
+    padding: 7px 6px;
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: 8px;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s, transform 0.1s;
-    min-height: 54px;
+    min-height: 34px;
     user-select: none;
   }
   .clase-chip:hover,
@@ -688,13 +686,10 @@
   .clase-chip:active,
   .raza-chip:active { transform: scale(0.95); }
 
-  .clase-chip-icon,
-  .raza-chip-icon { font-size: 17px; line-height: 1; }
-
   .clase-chip-name,
   .raza-chip-name {
     font-family: 'Cinzel', serif;
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--text-mid);
     text-align: center;
@@ -704,6 +699,7 @@
   }
   .clase-chip.selected .clase-chip-name,
   .raza-chip.selected .raza-chip-name { color: var(--gold); }
+
 
   /* Stats grid del wizard */
   .stats-grid-wiz {
@@ -806,8 +802,8 @@
   .subraza-chip {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
+    justify-content: center;
+    padding: 5px 12px;
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -820,10 +816,9 @@
     background: rgba(201,151,58,0.12);
     border-color: var(--gold);
   }
-  .subraza-chip-icon { font-size: 13px; line-height: 1; }
   .subraza-chip-name {
     font-family: 'Cinzel', serif;
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--text-mid);
     text-transform: uppercase;
@@ -1213,11 +1208,7 @@ const _CLASES_LISTA = [
   'Bárbaro','Bardo','Clérigo','Druida','Explorador',
   'Guerrero','Hechicero','Mago','Monje','Paladín','Pícaro','Brujo'
 ];
-const _CLASE_EMOJI = {
-  'Bárbaro':'⚔️','Bardo':'🎵','Clérigo':'✝️','Druida':'🌿',
-  'Explorador':'🏹','Guerrero':'🛡️','Hechicero':'🔥','Mago':'🔮',
-  'Monje':'👊','Paladín':'⚡','Pícaro':'🗡️','Brujo':'👁️'
-};
+
 
 // Razas — se lee desde Characters.RAZAS_CONFIG cuando está disponible
 const _RAZAS_LISTA = [
@@ -1285,7 +1276,6 @@ function _buildClaseChips(selected) {
       class="clase-chip ${c === selected ? 'selected' : ''}"
       onclick="selectClaseChip(this,'${c}')"
       title="${c}">
-      <span class="clase-chip-icon">${_CLASE_EMOJI[c] || '⚔️'}</span>
       <span class="clase-chip-name">${c}</span>
     </button>`).join('');
 }
@@ -1305,16 +1295,13 @@ function _buildRazaChips(selected) {
     class="raza-chip ${!selected ? 'selected' : ''}"
     onclick="selectRazaChip(this,'')"
     title="Sin raza específica">
-    <span class="raza-chip-icon">—</span>
     <span class="raza-chip-name">Ninguna</span>
   </button>`;
   html += _RAZAS_LISTA.map(r => {
-    const emoji = razaCfg[r]?.emoji || '🧑';
     return `<button type="button"
       class="raza-chip ${r === selected ? 'selected' : ''}"
       onclick="selectRazaChip(this,'${r}')"
       title="${r}">
-      <span class="raza-chip-icon">${emoji}</span>
       <span class="raza-chip-name">${r}</span>
     </button>`;
   }).join('');
@@ -1334,7 +1321,6 @@ function _buildSubrazaChips(razaNombre, selected) {
   grid.innerHTML = subraces.map(s => `
     <button type="button" class="subraza-chip ${s.name === selected ? 'selected' : ''}"
       onclick="selectSubrazaChip(this,'${s.name.replace(/'/g,"\\'")}')">
-      <span class="subraza-chip-icon">${s.emoji || '✦'}</span>
       <span class="subraza-chip-name">${s.name}</span>
     </button>`).join('');
 }
