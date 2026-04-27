@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v72';
+const CACHE = 'dnd-tracker-v73';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -12,6 +12,8 @@ self.addEventListener('install', e => {
       './js/storage.js',
       './js/cloud.js',
       './js/biblioteca.js',
+      './js/export_pdf.js',
+      './DnD_2024_Character-Sheet.pdf',
       './icons/favicon.png',
     ])).then(() => self.skipWaiting())
   );

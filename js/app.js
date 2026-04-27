@@ -3924,13 +3924,19 @@ const App = (() => {
     }
   }
 
-  function exportCharForPDF() {
+  async function exportCharForPDF() {
     if (!_char) { showToast('No hay personaje activo'); return; }
-    const ok = Storage.exportCharJSON(_char);
-    if (ok) {
-      showToast('📄 JSON exportado — usá export_to_pdf.py para generar el PDF');
-    } else {
-      showToast('Error al exportar JSON');
+    if (typeof ExportPDF === 'undefined') {
+      showToast('Módulo PDF no cargado, intentá de nuevo');
+      return;
+    }
+    showToast('Generando PDF…');
+    try {
+      await ExportPDF.downloadPDF(_char);
+      showToast('PDF descargado');
+    } catch (e) {
+      console.error('PDF export error:', e);
+      showToast('Error generando PDF: ' + e.message);
     }
   }
 
