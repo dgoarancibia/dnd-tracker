@@ -147,6 +147,20 @@ const App = (() => {
     _updateCombatHUD();
     _setupHPSwipe();
 
+    // Disparar elecciones pendientes si el personaje tiene elecciones sin resolver
+    // (esperar un tick para que el DOM esté listo)
+    setTimeout(() => {
+      if (_char && _char.id !== 'lursey-brumaclara') {
+        const pending = Characters.getPendingChoices(_char, _char.nivel || 1);
+        if (pending.length > 0) {
+          openChoicesQueue(pending, () => {
+            _renderCombateTab();
+            _renderHabilidadesTab();
+          });
+        }
+      }
+    }, 400);
+
     // Botón undo
     _undoBtn = document.getElementById('undoBtn');
     if (_undoBtn) {
@@ -779,10 +793,29 @@ const App = (() => {
         const badge = f.type === 'passive'
           ? `<span class="feat-badge feat-passive">Pasiva</span>`
           : `<span class="feat-badge feat-active">Activa</span>`;
+
+        // Si la feature tiene una elección asociada, mostrar la opción elegida
+        let displayDesc = f.desc;
+        let choiceBtn = '';
+        const claseCfg = Characters.CHOICES_CONFIG[c.clase] || [];
+        const linkedChoice = claseCfg.find(ch => ch.id === f.id || f.id.startsWith(ch.id.replace(/-\d+$/,'')));
+        if (linkedChoice && linkedChoice.type === 'pick1') {
+          const chosenId = c.choices && c.choices[linkedChoice.id];
+          if (chosenId) {
+            const opt = linkedChoice.options.find(o => o.id === chosenId);
+            if (opt) {
+              displayDesc = `<strong style="color:var(--gold-light);">${opt.name}</strong>${opt.desc ? ' — ' + opt.desc : ''}`;
+            }
+          } else {
+            displayDesc = `<em style="color:var(--text-dim);">Sin elegir</em>`;
+            choiceBtn = `<button class="btn-choice-inline" onclick="event.stopPropagation();App._promptChoice('${linkedChoice.id}')">Elegir</button>`;
+          }
+        }
+
         html += `<div class="feat-card" onclick="App.openFeatureDetail('${f.id}')">
-          <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}</div>
+          <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}${choiceBtn}</div>
           <div class="feat-source">${f.source}</div>
-          <div class="feat-desc">${f.desc}</div>
+          <div class="feat-desc">${displayDesc}</div>
         </div>`;
       });
     }
@@ -2861,6 +2894,250 @@ const App = (() => {
     if (overlay) overlay.style.display = 'none';
   }
 
+  /* ══════════════════════════════════════════════════════
+     SISTEMA DE ELECCIONES GENÉRICO
+     Maneja: pick1, asi, pickSkills
+  ══════════════════════════════════════════════════════ */
+
+  // Cola de elecciones pendientes
+  let _choiceQueue = [];
+  let _choiceQueueCallback = null;
+
+  // Punto de entrada: recibe lista de choices pendientes y un callback final
+  function openChoicesQueue(pendingChoices, onComplete) {
+    _choiceQueue = [...pendingChoices];
+    _choiceQueueCallback = onComplete || null;
+    _processNextChoice();
+  }
+
+  function _processNextChoice() {
+    if (_choiceQueue.length === 0) {
+      // Cola vacía — ejecutar callback
+      if (_choiceQueueCallback) _choiceQueueCallback();
+      _choiceQueueCallback = null;
+      return;
+    }
+    const choice = _choiceQueue.shift();
+    _openChoiceModal(choice);
+  }
+
+  function _openChoiceModal(choice) {
+    // Crear overlay si no existe
+    let overlay = document.getElementById('choiceModalOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'choiceModalOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:flex-start;overflow-y:auto;z-index:1100;';
+      overlay.innerHTML = `
+        <div class="modal" style="max-height:90vh;overflow-y:auto;min-width:320px;">
+          <div class="modal-header">
+            <span id="choiceModalTitle"></span>
+          </div>
+          <div class="modal-body" id="choiceModalBody"></div>
+          <div class="modal-footer">
+            <button class="btn-secondary" id="choiceSkipBtn" onclick="App._skipChoice()">Omitir</button>
+            <button class="btn-primary" id="choiceSaveBtn" onclick="App._saveChoice()">Confirmar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+
+    const titleEl = document.getElementById('choiceModalTitle');
+    const bodyEl  = document.getElementById('choiceModalBody');
+    window._currentChoice = choice;
+
+    titleEl.textContent = choice.label;
+
+    if (choice.type === 'pick1') {
+      _renderPick1(bodyEl, choice);
+    } else if (choice.type === 'asi') {
+      _renderASI(bodyEl, choice);
+    } else if (choice.type === 'pickSkills') {
+      _renderPickSkills(bodyEl, choice);
+    }
+
+    overlay.style.display = 'flex';
+  }
+
+  function _renderPick1(bodyEl, choice) {
+    const current = _char && _char.choices && _char.choices[choice.id];
+    bodyEl.innerHTML = `
+      <p class="choice-prompt">${choice.prompt || 'Elegí una opción:'}</p>
+      <div class="choice-options-list">
+        ${choice.options.map(opt => `
+          <label class="choice-option ${current === opt.id ? 'selected' : ''}">
+            <input type="radio" name="pick1" value="${opt.id}"
+                   ${current === opt.id ? 'checked' : ''}
+                   onchange="App._onPick1Change(this)">
+            <div class="choice-opt-content">
+              <strong>${opt.name}</strong>
+              ${opt.desc ? `<span class="choice-opt-desc">${opt.desc}</span>` : ''}
+            </div>
+          </label>
+        `).join('')}
+      </div>`;
+  }
+
+  function _renderASI(bodyEl, choice) {
+    const STAT_LABELS = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
+    const stats = _char ? _char.stats : { for:10, des:10, con:10, int:10, sab:10, car:10 };
+    bodyEl.innerHTML = `
+      <p class="choice-prompt">Ganás +2 a un atributo, o +1/+1 a dos atributos distintos.</p>
+      <div class="asi-mode-toggle">
+        <button class="asi-mode-btn active" id="asiMode-single" onclick="App._setASIMode('single')">+2 a uno</button>
+        <button class="asi-mode-btn" id="asiMode-split"  onclick="App._setASIMode('split')">+1/+1 a dos</button>
+      </div>
+      <div id="asiSingleSection">
+        <div class="choice-options-list asi-grid">
+          ${Object.keys(STAT_LABELS).map(s => `
+            <label class="choice-option asi-option">
+              <input type="radio" name="asiSingle" value="${s}" onchange="App._onASISingleChange(this)">
+              <div class="choice-opt-content">
+                <strong>${STAT_LABELS[s]}</strong>
+                <span class="choice-opt-desc">${stats[s]} → ${stats[s]+2}</span>
+              </div>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+      <div id="asiSplitSection" style="display:none;">
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Elegí dos atributos distintos:</p>
+        <div class="choice-options-list asi-grid" id="asiSplitGrid">
+          ${Object.keys(STAT_LABELS).map(s => `
+            <label class="choice-option asi-option">
+              <input type="checkbox" name="asiSplit" value="${s}" onchange="App._onASISplitChange(this)">
+              <div class="choice-opt-content">
+                <strong>${STAT_LABELS[s]}</strong>
+                <span class="choice-opt-desc">${stats[s]} → ${stats[s]+1}</span>
+              </div>
+            </label>
+          `).join('')}
+        </div>
+      </div>`;
+    window._asiMode = 'single';
+  }
+
+  function _renderPickSkills(bodyEl, choice) {
+    const count = choice.count || 2;
+    const alreadyExpert = (_char && _char.skillExpertise) || [];
+    bodyEl.innerHTML = `
+      <p class="choice-prompt">${choice.prompt || `Elegí ${count} skills:`} (elegí ${count})</p>
+      <div class="choice-options-list">
+        ${Characters.SKILLS_DEF.map(sk => {
+          const isExpert = alreadyExpert.includes(sk.id);
+          return `
+          <label class="choice-option ${isExpert ? 'disabled' : ''}">
+            <input type="checkbox" name="pickSkill" value="${sk.id}"
+                   ${isExpert ? 'disabled checked' : ''}
+                   onchange="App._onPickSkillChange(this, ${count})">
+            <div class="choice-opt-content">
+              <strong>${sk.name}</strong>
+              ${isExpert ? '<span class="choice-opt-desc">Ya tenés Expertise</span>' : ''}
+            </div>
+          </label>`;
+        }).join('')}
+      </div>`;
+  }
+
+  function _onPick1Change(radio) {
+    document.querySelectorAll('#choiceModalBody .choice-option').forEach(el => el.classList.remove('selected'));
+    radio.closest('.choice-option').classList.add('selected');
+  }
+
+  function _setASIMode(mode) {
+    window._asiMode = mode;
+    document.getElementById('asiMode-single').classList.toggle('active', mode === 'single');
+    document.getElementById('asiMode-split').classList.toggle('active', mode === 'split');
+    document.getElementById('asiSingleSection').style.display = mode === 'single' ? 'block' : 'none';
+    document.getElementById('asiSplitSection').style.display  = mode === 'split'  ? 'block' : 'none';
+    // Deselect all
+    document.querySelectorAll('[name="asiSingle"],[name="asiSplit"]').forEach(i => {
+      i.checked = false;
+      i.closest('.choice-option').classList.remove('selected');
+    });
+  }
+
+  function _onASISingleChange(radio) {
+    document.querySelectorAll('#asiSingleSection .choice-option').forEach(el => el.classList.remove('selected'));
+    radio.closest('.choice-option').classList.add('selected');
+  }
+
+  function _onASISplitChange(checkbox) {
+    const checked = document.querySelectorAll('[name="asiSplit"]:checked');
+    if (checked.length > 2) {
+      checkbox.checked = false;
+      showToast('Solo podés elegir 2 atributos');
+      return;
+    }
+    checkbox.closest('.choice-option').classList.toggle('selected', checkbox.checked);
+  }
+
+  function _onPickSkillChange(checkbox, max) {
+    const checked = document.querySelectorAll('[name="pickSkill"]:checked:not(:disabled)');
+    if (checked.length > max) {
+      checkbox.checked = false;
+      showToast(`Solo podés elegir ${max} skills`);
+      return;
+    }
+    checkbox.closest('.choice-option').classList.toggle('selected', checkbox.checked);
+  }
+
+  function _saveChoice() {
+    const choice = window._currentChoice;
+    if (!choice || !_char) { _processNextChoice(); return; }
+
+    let value = null;
+
+    if (choice.type === 'pick1') {
+      const radio = document.querySelector('[name="pick1"]:checked');
+      if (!radio) { showToast('Elegí una opción'); return; }
+      value = radio.value;
+    } else if (choice.type === 'asi') {
+      const mode = window._asiMode || 'single';
+      if (mode === 'single') {
+        const radio = document.querySelector('[name="asiSingle"]:checked');
+        if (!radio) { showToast('Elegí un atributo'); return; }
+        value = { mode:'single', stat: radio.value };
+      } else {
+        const checks = Array.from(document.querySelectorAll('[name="asiSplit"]:checked'));
+        if (checks.length !== 2) { showToast('Elegí exactamente 2 atributos'); return; }
+        value = { mode:'split', stat1: checks[0].value, stat2: checks[1].value };
+      }
+    } else if (choice.type === 'pickSkills') {
+      const checks = Array.from(document.querySelectorAll('[name="pickSkill"]:checked:not(:disabled)'));
+      const count = choice.count || 2;
+      if (checks.length !== count) { showToast(`Elegí exactamente ${count} skills`); return; }
+      value = checks.map(c => c.value);
+    }
+
+    if (value !== null) {
+      Characters.applyChoice(_char, choice.id, value);
+      _saveChar();
+    }
+
+    // Cerrar modal y procesar la siguiente elección
+    document.getElementById('choiceModalOverlay').style.display = 'none';
+    _processNextChoice();
+  }
+
+  function _skipChoice() {
+    document.getElementById('choiceModalOverlay').style.display = 'none';
+    _processNextChoice();
+  }
+
+  // Abre una elección puntual (desde botón "Elegir" en feature card)
+  function _promptChoice(choiceId) {
+    if (!_char) return;
+    const claseCfg = Characters.CHOICES_CONFIG[_char.clase] || [];
+    const choice = claseCfg.find(c => c.id === choiceId);
+    if (!choice) return;
+    openChoicesQueue([choice], () => {
+      _renderCombateTab();
+      _renderHabilidadesTab();
+    });
+  }
+
   function setXP(val) {
     const newXP = Math.max(0, val);
     _char.xp = newXP;
@@ -3121,6 +3398,15 @@ const App = (() => {
     _renderCombateTab();
     _renderHabilidadesTab();
     showToast(`¡Nivel ${newLevel}! ✦`);
+
+    // Disparar elecciones pendientes para el nuevo nivel
+    const pending = Characters.getPendingChoices(_char, newLevel);
+    if (pending.length > 0) {
+      openChoicesQueue(pending, () => {
+        _renderCombateTab();
+        _renderHabilidadesTab();
+      });
+    }
   }
 
   /* ══════════════════════════════════════════════════════
@@ -3745,6 +4031,10 @@ const App = (() => {
 
     // Subclase
     openSubclaseModal, _selectSubclaseChip, _toggleManeuver, saveSubclase, closeSubclaseModal,
+
+    // Elecciones de personaje
+    openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice,
+    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onPickSkillChange,
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,

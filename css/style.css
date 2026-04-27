@@ -5431,3 +5431,127 @@ mark.diary-highlight {
   border-radius: 8px;
   border: 1px dashed var(--border);
 }
+
+/* ══════════════════════════════════════════════════════
+   SISTEMA DE ELECCIONES
+══════════════════════════════════════════════════════ */
+
+.choice-prompt {
+  font-size: 13px;
+  color: var(--text-mid);
+  margin-bottom: 10px;
+}
+
+.choice-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.choice-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.choice-option input[type="radio"],
+.choice-option input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+}
+
+.choice-option:hover {
+  border-color: var(--gold-dim);
+}
+
+.choice-option.selected {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, var(--bg2));
+}
+
+.choice-option.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.choice-opt-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.choice-opt-content strong {
+  font-size: 13px;
+  color: var(--text-hi);
+}
+
+.choice-option.selected .choice-opt-content strong {
+  color: var(--gold-light);
+}
+
+.choice-opt-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ASI */
+.asi-mode-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.asi-mode-btn {
+  flex: 1;
+  padding: 7px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2);
+  color: var(--text-mid);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.asi-mode-btn.active {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 15%, var(--bg2));
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.asi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* Botón inline en feature card */
+.btn-choice-inline {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--gold-dim);
+  background: transparent;
+  color: var(--gold);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-choice-inline:hover {
+  background: color-mix(in srgb, var(--gold) 15%, transparent);
+}

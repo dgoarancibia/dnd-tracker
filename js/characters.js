@@ -1772,8 +1772,9 @@ const Characters = (() => {
 
       diary:            [],
       ifttt:            [],
+      choices:          {},
 
-      _dataVersion: 8,
+      _dataVersion: 9,
       createdAt:    new Date().toISOString(),
       updatedAt:    new Date().toISOString(),
     };
@@ -1860,6 +1861,207 @@ const Characters = (() => {
     return char;
   }
 
+  /* ══════════════════════════════════════════════════════
+     CHOICES_CONFIG — elecciones que el jugador debe hacer
+     Tipos:
+       pick1   → elige 1 opción de una lista
+       pickN   → elige N opciones de una lista (como maneuvers)
+       asi     → Ability Score Improvement: +2 a 1 stat, o +1/+1, o feat
+       pickSkills → elige N skills para proficiencia/expertise
+  ══════════════════════════════════════════════════════ */
+
+  const FIGHTING_STYLES_FIGHTER = [
+    { id:'fs-archery',         name:'Archery',              desc:'+2 a tiradas de ataque con armas a distancia.' },
+    { id:'fs-blind-fighting',  name:'Blind Fighting',       desc:'Visión ciega 3 m. Podés ver criaturas invisibles no ocultas.' },
+    { id:'fs-defense',         name:'Defense',              desc:'+1 CA mientras llevás armadura.' },
+    { id:'fs-dueling',         name:'Dueling',              desc:'+2 al daño con arma de una mano (sin otra arma).' },
+    { id:'fs-great-weapon',    name:'Great Weapon Fighting',desc:'Tirás de nuevo 1s y 2s en dados de daño con armas de dos manos.' },
+    { id:'fs-interception',    name:'Interception',         desc:'Reacción: reducís daño a aliado cercano en 1d10+Prof Bonus.' },
+    { id:'fs-protection',      name:'Protection',           desc:'Reacción: desventaja al atacante de un aliado a 1,5 m. Requiere escudo.' },
+    { id:'fs-superior-technique', name:'Superior Technique',desc:'Aprendés 1 maniobra de BM (1 Superiority Die d6).' },
+    { id:'fs-thrown-weapon',   name:'Thrown Weapon Fighting',desc:'+2 al daño con armas arrojadizas.' },
+    { id:'fs-two-weapon',      name:'Two-Weapon Fighting',  desc:'Sumás mod de stat al daño del ataque con mano secundaria.' },
+    { id:'fs-unarmed',         name:'Unarmed Fighting',     desc:'Ataques sin arma hacen 1d6 (1d8 manos libres). Agarre: 1d4/turno.' },
+  ];
+
+  const FIGHTING_STYLES_RANGER = [
+    { id:'fs-archery',         name:'Archery',              desc:'+2 a tiradas de ataque con armas a distancia.' },
+    { id:'fs-blind-fighting',  name:'Blind Fighting',       desc:'Visión ciega 3 m. Podés ver criaturas invisibles no ocultas.' },
+    { id:'fs-defense',         name:'Defense',              desc:'+1 CA mientras llevás armadura.' },
+    { id:'fs-druidic-warrior', name:'Druidic Warrior',      desc:'Aprendés 2 cantrips de Druida (SAB). Cuentan como conjuros de Ranger.' },
+    { id:'fs-dueling',         name:'Dueling',              desc:'+2 al daño con arma de una mano (sin otra arma).' },
+    { id:'fs-thrown-weapon',   name:'Thrown Weapon Fighting',desc:'+2 al daño con armas arrojadizas.' },
+    { id:'fs-two-weapon',      name:'Two-Weapon Fighting',  desc:'Sumás mod de stat al daño del ataque con mano secundaria.' },
+  ];
+
+  const FAVORED_ENEMIES = [
+    'Aberraciones','Bestias','Celestiales','Constructos','Dragones',
+    'Elementales','Feéricos','Fiends','Gigantes','Humanoides',
+    'Muertos Vivientes','Monstruosidades','Limos','Plantas',
+  ];
+
+  const TERRENOS = [
+    'Ártico','Costa','Desierto','Bosque','Pradera',
+    'Montaña','Pantano','Underdark',
+  ];
+
+  const ASI_STATS = ['for','des','con','int','sab','car'];
+
+  const CHOICES_CONFIG = {
+    'Guerrero': [
+      { id:'fighting-style',  level:1,  type:'pick1',     label:'Fighting Style',
+        prompt:'Elegí tu estilo de combate:',
+        options: FIGHTING_STYLES_FIGHTER },
+      { id:'asi-4',           level:4,  type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-6',           level:6,  type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-8',           level:8,  type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-12',          level:12, type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-14',          level:14, type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-16',          level:16, type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-19',          level:19, type:'asi',       label:'Ability Score Improvement' },
+      { id:'fighting-style-2',level:10, type:'pick1',     label:'Fighting Style adicional',
+        prompt:'Elegí un segundo estilo de combate:',
+        options: FIGHTING_STYLES_FIGHTER },
+    ],
+    'Explorador': [
+      { id:'favored-enemy-1', level:1,  type:'pick1',     label:'Favored Enemy',
+        prompt:'Elegí tu tipo de enemigo favorito:',
+        options: FAVORED_ENEMIES.map(e => ({ id:'fe-'+e.toLowerCase().replace(/[^a-z]/g,'-'), name:e, desc:'' })) },
+      { id:'natural-explorer-1', level:1, type:'pick1',   label:'Natural Explorer (terreno)',
+        prompt:'Elegí tu terreno favorito:',
+        options: TERRENOS.map(t => ({ id:'te-'+t.toLowerCase().replace(/[^a-z]/g,'-'), name:t, desc:'' })) },
+      { id:'fighting-style-r', level:2, type:'pick1',     label:'Fighting Style',
+        prompt:'Elegí tu estilo de combate:',
+        options: FIGHTING_STYLES_RANGER },
+      { id:'favored-enemy-2', level:6,  type:'pick1',     label:'Favored Enemy adicional',
+        prompt:'Elegí un segundo tipo de enemigo favorito:',
+        options: FAVORED_ENEMIES.map(e => ({ id:'fe2-'+e.toLowerCase().replace(/[^a-z]/g,'-'), name:e, desc:'' })) },
+      { id:'natural-explorer-2', level:6, type:'pick1',   label:'Natural Explorer adicional',
+        prompt:'Elegí un segundo terreno favorito:',
+        options: TERRENOS.map(t => ({ id:'te2-'+t.toLowerCase().replace(/[^a-z]/g,'-'), name:t, desc:'' })) },
+      { id:'asi-4',           level:4,  type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-8',           level:8,  type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-12',          level:12, type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-16',          level:16, type:'asi',       label:'Ability Score Improvement' },
+      { id:'asi-19',          level:19, type:'asi',       label:'Ability Score Improvement' },
+    ],
+    'Bárbaro': [
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Bardo': [
+      { id:'expertise-3', level:3, type:'pickSkills', count:2, label:'Expertise (×2)',
+        prompt:'Elegí 2 skills para tener Expertise (doble Prof Bonus):' },
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Clérigo': [
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Druida': [
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Hechicero': [
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Mago': [
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Monje': [
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Paladín': [
+      { id:'fighting-style', level:2, type:'pick1', label:'Fighting Style',
+        prompt:'Elegí tu estilo de combate:',
+        options: FIGHTING_STYLES_FIGHTER.filter(f =>
+          ['fs-defense','fs-dueling','fs-great-weapon','fs-protection','fs-blind-fighting','fs-interception'].includes(f.id)
+        )},
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Pícaro': [
+      { id:'expertise-1', level:1, type:'pickSkills', count:2, label:'Expertise inicial (×2)',
+        prompt:'Elegí 2 skills para tener Expertise:' },
+      { id:'expertise-6', level:6, type:'pickSkills', count:2, label:'Expertise adicional (×2)',
+        prompt:'Elegí 2 skills más para Expertise:' },
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-10', level:10, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+    'Brujo': [
+      { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
+    ],
+  };
+
+  // Devuelve las elecciones pendientes para un char dado un nivel objetivo
+  function getPendingChoices(char, targetLevel) {
+    const claseCfg = CHOICES_CONFIG[char.clase] || [];
+    const existing = char.choices || {};
+    return claseCfg.filter(c => c.level <= targetLevel && !existing[c.id]);
+  }
+
+  // Aplica una elección al char object
+  function applyChoice(char, choiceId, value) {
+    if (!char.choices) char.choices = {};
+    char.choices[choiceId] = value;
+
+    // Si es ASI, aplicar al stat directamente
+    if (choiceId.startsWith('asi-')) {
+      if (value.mode === 'single' && value.stat) {
+        char.stats[value.stat] = (char.stats[value.stat] || 10) + 2;
+      } else if (value.mode === 'split' && value.stat1 && value.stat2) {
+        char.stats[value.stat1] = (char.stats[value.stat1] || 10) + 1;
+        char.stats[value.stat2] = (char.stats[value.stat2] || 10) + 1;
+      }
+    }
+
+    // Si es expertise, aplicar a skillExpertise
+    if (choiceId.startsWith('expertise-') && Array.isArray(value)) {
+      if (!char.skillExpertise) char.skillExpertise = [];
+      value.forEach(s => {
+        if (!char.skillExpertise.includes(s)) char.skillExpertise.push(s);
+      });
+    }
+
+    return char;
+  }
+
   /* ── EXPORTS PÚBLICOS ── */
 
   return {
@@ -1869,6 +2071,7 @@ const Characters = (() => {
     CLASE_FEATURES,
     CLASE_SPELLS,
     SUBCLASES_CONFIG,
+    CHOICES_CONFIG,
     RAZAS_CONFIG,
     SKILLS_DEF,
     STAT_NAMES,
@@ -1894,6 +2097,8 @@ const Characters = (() => {
     getLevelFromXP,
     createNew,
     buildDefaultChar,
+    getPendingChoices,
+    applyChoice,
     applyRaza,
     applySubraza,
     applySubclase,
