@@ -161,7 +161,8 @@ const Cloud = (() => {
       const local = Storage.getAllChars();
       let changed = false;
       for (const [id, cloudChar] of Object.entries(cloudChars)) {
-        local[id] = cloudChar;
+        // Aplicar migraciones locales antes de guardar (ej: features por nivel)
+        local[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
         changed = true;
       }
 
@@ -216,7 +217,8 @@ const Cloud = (() => {
     let changed = false;
 
     for (const [id, cloudChar] of Object.entries(cloudChars)) {
-      local[id] = cloudChar;
+      // Aplicar migraciones locales antes de guardar
+      local[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
       changed = true;
     }
 
@@ -288,10 +290,11 @@ const Cloud = (() => {
     try {
       const cloudChars = await FirebaseApp.loadAllCharsCloud(_uid);
       for (const char of Object.values(cloudChars)) {
-        Storage.saveCharRaw(char);
+        const migrated = Storage.migrateChar ? Storage.migrateChar(char) : char;
+        Storage.saveCharRaw(migrated);
       }
       const activeId = Storage.getActiveId();
-      const freshChar = activeId ? cloudChars[activeId] : null;
+      const freshChar = activeId ? (Storage.migrateChar ? Storage.migrateChar(cloudChars[activeId]) : cloudChars[activeId]) : null;
       if (window.App && freshChar) {
         App.reloadChar(freshChar);
       }

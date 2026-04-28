@@ -421,6 +421,7 @@ const Storage = (() => {
     exportDiaryTxt,
     importJSON,
     autoBackup,
-    isFirstRun
+    isFirstRun,
+    migrateChar: _migrate,   // expuesto para cloud.js
   };
 })();
