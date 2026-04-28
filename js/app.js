@@ -7,6 +7,29 @@
 const App = (() => {
 
   let _char = null;         // personaje activo en memoria
+
+  // Recalcula features de clase según nivel desde CLASE_FEATURES (fuente de verdad).
+  // Llamar SIEMPRE que _char cambie de fuente externa (cloud, switchChar, import).
+  function _refreshCharFeatures(c) {
+    if (!c || c.id === 'lursey-brumaclara') return;
+    const claseFeat = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[c.clase];
+    if (!claseFeat || typeof claseFeat.features !== 'function') return;
+    const nivel = c.nivel || 1;
+    const rawFeats = claseFeat.features(nivel);
+    const claseFeatList = rawFeats.map(f => {
+      if (typeof f === 'object' && f !== null) return { ...f };
+      const n = String(f);
+      return { id: n.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-'), name:n, source:c.clase, type:'passive', action:null, range:null, recharge:null, desc:'', fullDesc:'' };
+    });
+    const subFeatures = (c.features || []).filter(f =>
+      f.source && c.subclase && f.source.toLowerCase().includes(c.subclase.toLowerCase())
+    );
+    const subIds = new Set(subFeatures.map(f => f.id));
+    c.features = [
+      ...claseFeatList.filter(f => !subIds.has(f.id)),
+      ...subFeatures,
+    ];
+  }
   let _activeTab = 'combate';
   let _toastTimer = null;
   let _concAlertTimer = null;
@@ -135,28 +158,8 @@ const App = (() => {
           }
         });
 
-        // Regenerar features de clase según nivel actual — SIEMPRE, sin importar lo guardado.
-        // Esto es la fuente de verdad: CLASE_FEATURES[clase].features(nivel).
-        // Se preservan las features de subclase (identificadas por source que contiene la subclase).
-        if (typeof claseFeat.features === 'function') {
-          const nivel = _char.nivel || 1;
-          const rawFeats = claseFeat.features(nivel);
-          const claseFeatList = rawFeats.map(f => {
-            if (typeof f === 'object' && f !== null) return { ...f };
-            const n = String(f);
-            return { id: n.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-'), name:n, source:_char.clase, type:'passive', action:null, range:null, recharge:null, desc:'', fullDesc:'' };
-          });
-          // Conservar features de subclase guardadas
-          const subFeatures = (_char.features || []).filter(f =>
-            f.source && _char.subclase && f.source.toLowerCase().includes(_char.subclase.toLowerCase())
-          );
-          const subIds = new Set(subFeatures.map(f => f.id));
-          _char.features = [
-            ...claseFeatList.filter(f => !subIds.has(f.id)),
-            ...subFeatures,
-          ];
-        }
       }
+      _refreshCharFeatures(_char);
     }
 
     _applyTheme(localStorage.getItem('dnd_theme') || 'dark');
@@ -3967,6 +3970,7 @@ const App = (() => {
       count => {
         input.value = '';
         _char = Storage.getActiveChar();
+        _refreshCharFeatures(_char);
         _populateCharSelector();
         _renderHeader();
         _renderActiveTab();
@@ -3988,6 +3992,7 @@ const App = (() => {
     _saveChar();
     Storage.setActiveId(id);
     _char = Storage.getActiveChar();
+    _refreshCharFeatures(_char);
     _renderHeader();
     _renderActiveTab();
     showToast(`Personaje: ${_char.name}`);
@@ -4097,6 +4102,9 @@ const App = (() => {
     undoLastChange, toggleTheme,
     reloadChar(char) {
       _char = char || Storage.getActiveChar();
+      if (_char && _char.id !== 'lursey-brumaclara') {
+        _refreshCharFeatures(_char);
+      }
       if (_char) {
         _renderHeader();
         _renderActiveTab();
