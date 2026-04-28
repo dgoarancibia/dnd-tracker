@@ -1496,12 +1496,8 @@ const Characters = (() => {
 
     'Eldritch Knight': {
       clase: 'Guerrero',
-      resources: (nivel) => {
-        // EK usa slots de tercio-caster (floor(nivel/3))
-        const ekLevel = Math.floor(nivel / 3);
-        return []; // Los slots van en spellSlots directamente
-      },
-      features: () => [
+      resources: () => [],  // Los slots van en spellSlots directamente
+      features: (nivel) => [
         { id:'ek-spellcasting', name:'Spellcasting (INT)',
           source:'Eldritch Knight · Nv3', type:'active', action:'Varía', range:'Varía', recharge:null,
           desc:'Lanzas conjuros de Mago usando INT. Slots de tercio-caster (nivel 3+).',
@@ -1514,6 +1510,159 @@ const Characters = (() => {
           source:'Eldritch Knight · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Cuando golpeas a un enemigo, desventaja en su save contra tu próximo conjuro.',
           fullDesc:'Cuando golpeas a una criatura con un ataque de arma, esa criatura tiene desventaja en la siguiente tirada de salvación que haga contra un conjuro que lanzas antes del final de tu siguiente turno.' },
+        ...(nivel >= 15 ? [{ id:'ek-arcane-charge', name:'Arcane Charge',
+          source:'Eldritch Knight · Nv15', type:'active', action:'Acción libre (Action Surge)', range:'Personal', recharge:null,
+          desc:'Cuando usás Action Surge, podés teleportarte hasta 9 m a un lugar que puedas ver.',
+          fullDesc:'A nivel 15, cuando usas tu Action Surge puedes teleportarte hasta 9 metros a un espacio desocupado que puedas ver, antes o después de la acción adicional.' }] : []),
+      ],
+    },
+
+    // ── GUERRERO adicionales ──────────────────────────────────────────────────
+    'Samurai': {
+      clase: 'Guerrero',
+      resources: (nivel) => [
+        { id:'fighting-spirit', name:'Fighting Spirit',
+          current: 3, max: 3, recharge:'long',
+          note:`+${nivel >= 15 ? 10 : 5} HP temp · ventaja en ataques 1 ronda` },
+      ],
+      features: (nivel) => [
+        { id:'sam-bonus-proficiency', name:'Bonus Proficiency',
+          source:'Samurai · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Ganás proficiencia en Historia, Perspicacia, Actuación o Persuasión.',
+          fullDesc:'Cuando eliges este arquetipo al nivel 3, ganas proficiencia en una de estas habilidades: Historia, Perspicacia, Actuación o Persuasión.' },
+        { id:'sam-fighting-spirit', name:'Fighting Spirit',
+          source:'Samurai · Nv3', type:'active', action:'Acción bonus', range:'Personal', recharge:'Long Rest',
+          desc:`3/Long Rest · acción bonus: ventaja en todos los ataques este turno + ${nivel >= 15 ? 10 : 5} HP temporales.`,
+          fullDesc:'A partir de nivel 3, la intensidad del combate te potencia. Como acción adicional puedes darte ventaja en todas las tiradas de ataque con arma hasta el final del turno. Cuando haces esto, también ganas puntos de golpe temporales (5 a nivel 3, 10 a nivel 15). Puedes usar esta habilidad tres veces. Recuperas todos los usos después de un descanso largo.' },
+        ...(nivel >= 7 ? [{ id:'sam-elegant-courtier', name:'Elegant Courtier',
+          source:'Samurai · Nv7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Sumás SAB mod a saves de SAB. Proficiencia en Persuasión (ya contada).',
+          fullDesc:'Tu entrenamiento y disciplina te han refinado. Puedes añadir tu modificador de Sabiduría a cualquier tirada de salvación de Sabiduría que hagas que no use ya tu modificador de Sabiduría. Además, ganas proficiencia en Persuasión si no la tenías.' }] : []),
+        ...(nivel >= 10 ? [{ id:'sam-tireless-spirit', name:'Tireless Spirit',
+          source:'Samurai · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Si tirás iniciativa sin usos de Fighting Spirit, recuperás 1 uso.',
+          fullDesc:'A partir del nivel 10, cuando tiras iniciativa y no te quedan usos de Fighting Spirit, recuperas 1 uso.' }] : []),
+        ...(nivel >= 15 ? [{ id:'sam-rapid-strike', name:'Rapid Strike',
+          source:'Samurai · Nv15', type:'active', action:'Ninguna (en tu turno)', range:'Melee', recharge:null,
+          desc:'Cambiás ventaja en un ataque por un ataque extra (sin acción).',
+          fullDesc:'Aprendes a intercambiar precisión por velocidad de ataque. Si tienes ventaja en una tirada de ataque con arma durante tu turno, puedes renunciar a esa ventaja para hacer un ataque adicional con esa arma como parte de la misma acción. No puedes usar esta característica más de una vez por turno.' }] : []),
+        ...(nivel >= 18 ? [{ id:'sam-strength-before-death', name:'Strength Before Death',
+          source:'Samurai · Nv18', type:'active', action:'Reacción', range:'Personal', recharge:'Long Rest',
+          desc:'1/Long Rest: si caés a 0 HP, hacés un turno extra inmediato antes de caer inconsciente.',
+          fullDesc:'Tu espíritu de guerrero puede retener brevemente el velo de la muerte. Si caes a 0 puntos de golpe y no mueres directamente, puedes retrasar el caer inconsciente. Inmediatamente después del ataque o efecto que te redujo a 0 puntos de golpe, tomas un turno especial adicional. Mientras dura ese turno, otros no pueden caer inconscientes o morir por daño, y tú eres inmune a efectos que te incapaciten. Después de ese turno, caes inconsciente. Una vez usas esta habilidad, no puedes volver a usarla hasta terminar un descanso largo.' }] : []),
+      ],
+    },
+
+    'Rune Knight': {
+      clase: 'Guerrero',
+      resources: (nivel) => [
+        { id:'giant-might', name:'Giant\'s Might',
+          current: nivel >= 15 ? 2 : 1, max: nivel >= 15 ? 2 : 1, recharge:'long',
+          note:`Grande (Large) · +${nivel >= 18 ? Math.ceil(nivel/4)*2 : nivel >= 10 ? '1d8':'1d6'} daño · ventaja FUE/CON` },
+      ],
+      features: (nivel) => [
+        { id:'rk-rune-shaping', name:'Rune Carver',
+          source:'Rune Knight · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:`Podés tallar ${nivel >= 7 ? nivel >= 10 ? nivel >= 15 ? 5 : 4 : 3 : 2} runas en armas/armadura/ropa. Cada runa tiene un efecto pasivo y uno activo.`,
+          fullDesc:'Puedes usar un descanso largo para tallar runas mágicas en armas, armaduras o prendas de vestir. El número de runas que puedes conocer y tallar aumenta: 2 a nivel 3, 3 a nivel 7, 4 a nivel 10, 5 a nivel 15.' },
+        { id:'rk-giants-might', name:"Giant's Might",
+          source:'Rune Knight · Nv3', type:'active', action:'Acción bonus', range:'Personal', recharge:'Long Rest',
+          desc:`${nivel >= 15 ? 2 : 1}/Long Rest · crecés a tamaño Large · ventaja en FUE · +1d${nivel >= 18 ? 10 : nivel >= 10 ? 8 : 6} daño durante 1 min.`,
+          fullDesc:'Como acción adicional, puedes invocar el poder de los gigantes para crecer de tamaño. Durante 1 minuto, tienes tamaño Grande (si el espacio lo permite), ventaja en las tiradas de Fuerza y ganas un dado de daño extra en ataques con arma.' },
+        ...(nivel >= 7 ? [{ id:'rk-runic-shield', name:'Runic Shield',
+          source:'Rune Knight · Nv7', type:'active', action:'Reacción', range:'18 m', recharge:null,
+          desc:'Cuando un aliado que podés ver es golpeado, forzás al atacante a tirar de nuevo.',
+          fullDesc:'A nivel 7, aprendes a invocar runas para proteger a tus aliados. Cuando una criatura que puedas ver golpea a otra criatura a 18 metros de ti con una tirada de ataque, puedes usar tu reacción para invocar tu escudo rúnico. El atacante debe tirar de nuevo la tirada de ataque y usar el resultado más bajo.' }] : []),
+        ...(nivel >= 10 ? [{ id:'rk-great-stature', name:'Great Stature',
+          source:'Rune Knight · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Crecés permanentemente 3-12 cm. Tus ataques con Giant\'s Might hacen +1d8 en lugar de +1d6.',
+          fullDesc:'A nivel 10, las runas que tallaste en ti han ampliado tu forma. Tu altura aumenta entre 3 y 12 cm (tira 1d4 × 2.5 cm). Además, el dado de daño extra otorgado por Giant\'s Might aumenta a 1d8.' }] : []),
+        ...(nivel >= 15 ? [{ id:'rk-runic-juggernaut', name:'Runic Juggernaut',
+          source:'Rune Knight · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Giant\'s Might: podés crecer a tamaño Huge. Dado de daño extra aumenta a 1d10. Tirada 2/Long Rest.',
+          fullDesc:'A nivel 15, aprendes a amplificar tus runas para crecer aún más. Cuando usas Giant\'s Might, puedes elegir crecer a tamaño Enorme (si el espacio lo permite). El dado de daño extra también aumenta a 1d10.' }] : []),
+        ...(nivel >= 18 ? [{ id:'rk-master-of-runes', name:'Master of Runes',
+          source:'Rune Knight · Nv18', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Podés invocar los efectos de cada runa dos veces por descanso corto/largo (antes 1 vez).',
+          fullDesc:'A nivel 18, puedes invocar los efectos de tus runas dos veces por cada descanso corto o largo, en lugar de una vez.' }] : []),
+      ],
+    },
+
+    // ── EXPLORADOR ────────────────────────────────────────────────────────────
+    'Hunter': {
+      clase: 'Explorador',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'hunter-prey', name:'Hunter\'s Prey',
+          source:'Hunter · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Elegís una presa: Colossus Slayer (+1d8 si herido), Giant Killer (reacción al fallar), o Horde Breaker (atacar criatura extra adyacente).',
+          fullDesc:'Al nivel 3 ganas una de estas ventajas:\n\n• Colossus Slayer: cuando golpeas a una criatura que ya está herida, haces +1d8 de daño adicional (1/turno).\n• Giant Killer: cuando una criatura de tamaño Grande+ adyacente a ti falla un ataque, puedes usar tu reacción para atacarla.\n• Horde Breaker: una vez por turno, cuando hagas un ataque, puedes hacer otro ataque sin coste de acción contra una criatura diferente dentro de alcance y adyacente al objetivo original.' },
+        ...(nivel >= 7 ? [{ id:'hunter-defensive', name:'Defensive Tactics',
+          source:'Hunter · Nv7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Elegís: Escape the Horde (sin ataques de oportunidad en Disengage), Multiattack Defense (+4 CA contra misma criatura que ya atacó), o Steel Will (ventaja en saves contra Miedo).',
+          fullDesc:'A nivel 7 ganas una de estas tácticas defensivas:\n\n• Escape the Horde: los ataques de oportunidad contra ti tienen desventaja.\n• Multiattack Defense: si una criatura te golpea, ganas +4 CA contra todos sus ataques posteriores en ese turno.\n• Steel Will: ventaja en tiradas de salvación para no ser Asustado.' }] : []),
+        ...(nivel >= 11 ? [{ id:'hunter-multiattack', name:'Multiattack',
+          source:'Hunter · Nv11', type:'active', action:'Acción', range:'Varía', recharge:null,
+          desc:'Elegís: Volley (ataques a distancia en área 10ft radio) o Whirlwind Attack (ataques melee a todas criaturas adyacentes).',
+          fullDesc:'A nivel 11 ganas una de estas versiones de Multiattack:\n\n• Volley: puedes usar tu acción para disparar a cualquier número de criaturas dentro de un radio de 3 metros a un punto elegido dentro de tu alcance. Cada criatura debe superar un save de DES o recibir el daño de uno de tus ataques normales.\n• Whirlwind Attack: puedes usar tu acción para hacer un ataque cuerpo a cuerpo contra cualquier número de criaturas dentro de tu alcance, con una tirada de ataque separada para cada una.' }] : []),
+        ...(nivel >= 15 ? [{ id:'hunter-superior-defense', name:'Superior Hunter\'s Defense',
+          source:'Hunter · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Elegís: Evasion (sin daño en saves de DES exitosos), Stand Against the Tide (enemigo falla save FUE → ataca a otro), o Uncanny Dodge (reacción para reducir daño a la mitad).',
+          fullDesc:'A nivel 15 ganas una de estas defensas superiores:\n\n• Evasion: cuando haces una tirada de salvación de Destreza exitosa para evitar daño, no recibes daño (y la mitad si fallas).\n• Stand Against the Tide: cuando un enemigo falla un ataque contra ti, puedes usar tu reacción para forzarlo a atacar a otra criatura de tu elección.\n• Uncanny Dodge: cuando un atacante visible te golpea, usas tu reacción para reducir el daño a la mitad.' }] : []),
+      ],
+    },
+
+    'Beast Master': {
+      clase: 'Explorador',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'bm-ranger-companion', name:'Ranger\'s Companion',
+          source:'Beast Master · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Tenés una bestia compañera que actúa en tu iniciativa. Puede atacar usando tu acción bonus.',
+          fullDesc:'A nivel 3 ganas la servicio de una bestia. Elige un animal CR ≤ 1/4 con velocidad de vuelo, o CR ≤ 1/2 sin ella. Añade tu Prof Bonus a sus tiradas de ataque, daño, saves y percepción. La bestia actúa en tu turno. Puedes usar tu acción bonus para ordenarle que ataque.' },
+        ...(nivel >= 7 ? [{ id:'bm-exceptional-training', name:'Exceptional Training',
+          source:'Beast Master · Nv7', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
+          desc:'Como bonus action, puedes ordenarle a tu compañero que haga Dash, Disengage, Dodge o Help.',
+          fullDesc:'A nivel 7, en cualquiera de tus turnos cuando tu compañero no ataque, puedes usar una acción adicional para ordenarle que haga la acción Dash, Disengage, Dodge o Help. Además los ataques de tu compañero ahora cuentan como mágicos.' }] : []),
+        ...(nivel >= 11 ? [{ id:'bm-bestial-fury', name:'Bestial Fury',
+          source:'Beast Master · Nv11', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Tu compañero puede hacer dos ataques cuando vos usás tu acción para ordenarle que ataque.',
+          fullDesc:'A nivel 11, tu compañero puede atacar dos veces cuando usas tu acción para ordenarle que realice el ataque de la acción Atacar.' }] : []),
+        ...(nivel >= 15 ? [{ id:'bm-share-spells', name:'Share Spells',
+          source:'Beast Master · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando te lanzás un conjuro a vos mismo, puede afectar también a tu compañero si está a 9 m.',
+          fullDesc:'A nivel 15, cuando lanzas un conjuro que solo te afecta a ti, puedes hacer que también afecte a tu compañero bestial si está a 9 metros.' }] : []),
+      ],
+    },
+
+    'Gloom Stalker': {
+      clase: 'Explorador',
+      resources: (nivel) => [
+        { id:'dread-ambusher', name:'Dread Ambusher',
+          current: 1, max: 1, recharge:'long',
+          note:'Primeras 2 rondas de combate: velocidad +3m, ataque extra +1d8 daño' },
+      ],
+      features: (nivel) => [
+        { id:'gs-umbral-sight', name:'Umbral Sight',
+          source:'Gloom Stalker · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Visión en oscuridad total (no requiere Darkvision). Criaturas con Darkvision no pueden verte en oscuridad.',
+          fullDesc:'A nivel 3 adquieres visión en la oscuridad total hasta 18 metros. Si ya tienes Darkvision, su alcance aumenta 18 metros. Las criaturas con Darkvision no tienen ventaja especial para detectarte en oscuridad.' },
+        { id:'gs-dread-ambusher', name:'Dread Ambusher',
+          source:'Gloom Stalker · Nv3', type:'active', action:'Iniciativa', range:'Personal', recharge:'Long Rest',
+          desc:'Primeras 2 rondas de combate: velocidad +3 m. En la primera ronda: 1 ataque extra que hace +1d8 daño.',
+          fullDesc:'A nivel 3 dominas las emboscadas. En la primera ronda de cada combate tu velocidad aumenta 3 metros. Si atacas antes de que tu objetivo tome su primer turno: un ataque extra que hace 1d8 de daño adicional. A partir de nivel 11 también puedes aturdir a la criatura.' },
+        ...(nivel >= 7 ? [{ id:'gs-iron-mind', name:'Iron Mind',
+          source:'Gloom Stalker · Nv7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Proficiencia en saves de SAB. Si ya la tenés, en saves de INT o CAR.',
+          fullDesc:'A nivel 7 has aprendido a armarte contra efectos mentales. Ganas proficiencia en las tiradas de salvación de Sabiduría. Si ya tienes esa proficiencia, ganas proficiencia en tiradas de salvación de Inteligencia o Carisma (tu elección).' }] : []),
+        ...(nivel >= 11 ? [{ id:'gs-stalkers-flurry', name:'Stalker\'s Flurry',
+          source:'Gloom Stalker · Nv11', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Una vez por turno, si fallás un ataque, podés hacer otro ataque inmediatamente.',
+          fullDesc:'A nivel 11 aprendes a atacar con rapidez despiadada. Una vez en cada uno de tus turnos cuando falles un ataque con arma, puedes hacer otro ataque con arma como parte de la misma acción.' }] : []),
+        ...(nivel >= 15 ? [{ id:'gs-shadowy-dodge', name:'Shadowy Dodge',
+          source:'Gloom Stalker · Nv15', type:'active', action:'Reacción', range:'Personal', recharge:null,
+          desc:'Cuando alguien te ataca: podés usar reacción para imponerle desventaja en esa tirada.',
+          fullDesc:'A nivel 15, puedes usar tu reacción para esquivar más eficazmente. Cuando una criatura hace una tirada de ataque contra ti y aún no puedes verla, puedes usar tu reacción para imponer desventaja en esa tirada.' }] : []),
       ],
     },
 
@@ -1568,6 +1717,91 @@ const Characters = (() => {
           source:'Arcane Trickster · Nv13', type:'active', action:'Acción bonus', range:'9m', recharge:null,
           desc:'Haz que una criatura mire a otro lado — otorgas ventaja a tus aliados para esconderse.',
           fullDesc:'Puedes usar una acción adicional para redirigir la atención de una criatura que puedas ver y que esté a 9 metros.' },
+      ],
+    },
+
+    'Thief': {
+      clase: 'Pícaro',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'thief-fast-hands', name:'Fast Hands',
+          source:'Thief · Nv3', type:'active', action:'Acción bonus', range:'Varía', recharge:null,
+          desc:'Usás Cunning Action para también hacer: Sleight of Hand, usar herramientas de ladrón, o interactuar con un objeto.',
+          fullDesc:'A nivel 3 puedes usar la acción adicional que te otorga Cunning Action para hacer una prueba de Destreza (Juego de Manos), usar tus herramientas de ladrón para desactivar una trampa o abrir una cerradura, o tomar la acción de Uso de Objeto.' },
+        { id:'thief-second-story', name:'Second-Story Work',
+          source:'Thief · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Escalada sin penalización de velocidad. Salto largo y alto usando DES en lugar de FUE.',
+          fullDesc:'A nivel 3 ganas la habilidad de escalar más rápido que lo normal; trepar ya no cuesta movimiento adicional. Además cuando haces un salto largo, la distancia que recorres aumenta en un número de pies igual a tu modificador de Destreza.' },
+        ...(nivel >= 9 ? [{ id:'thief-supreme-sneak', name:'Supreme Sneak',
+          source:'Thief · Nv9', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Podés intentar esconderte como acción bonus si te moviste no más de la mitad de tu velocidad.',
+          fullDesc:'A nivel 9, puedes usar una acción adicional para intentar esconderte. Si te mueves no más de la mitad de tu velocidad en el mismo turno, haces la prueba de Sigilo con ventaja.' }] : []),
+        ...(nivel >= 13 ? [{ id:'thief-use-magic-device', name:'Use Magic Device',
+          source:'Thief · Nv13', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Podés usar objetos mágicos que normalmente requieren ser de una clase específica, raza u otro requisito.',
+          fullDesc:'A nivel 13 has aprendido suficiente sobre el funcionamiento de la magia que puedes improvisar el uso de elementos para los que no fuiste entrenado. Ignoras todos los requisitos de clase, raza y nivel para el uso de objetos mágicos.' }] : []),
+        ...(nivel >= 17 ? [{ id:'thief-thief-reflexes', name:'Thief\'s Reflexes',
+          source:'Thief · Nv17', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'En la primera ronda de cada combate, podés tomar dos turnos (al inicio y al final de la ronda).',
+          fullDesc:'A nivel 17 te vuelves especialmente bueno en emboscadas y actuaciones rápidas. Puedes tomar dos turnos durante la primera ronda de cualquier combate. Tomas tu primer turno con tu iniciativa normal y tu segundo turno con tu iniciativa menos 10.' }] : []),
+      ],
+    },
+
+    'Phantom': {
+      clase: 'Pícaro',
+      resources: (nivel) => [
+        { id:'tokens-of-the-departed', name:'Tokens of the Departed',
+          current: nivel >= 9 ? 2 : 1, max: nivel >= 9 ? 2 : 1, recharge:'long',
+          note:'Token de alma · +1d8 daño necrótico · proficiencia temporal' },
+      ],
+      features: (nivel) => [
+        { id:'ph-whispers-dead', name:'Whispers of the Dead',
+          source:'Phantom · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:'Short/Long Rest',
+          desc:'Tras un descanso corto/largo, ganás proficiencia en una habilidad o herramienta hasta el próximo descanso.',
+          fullDesc:'A nivel 3 los susurros de los muertos que te rodean pueden otorgarte conocimiento. Cuando terminas un descanso corto o largo, ganas proficiencia en una habilidad o herramienta de tu elección hasta que uses esta característica de nuevo.' },
+        { id:'ph-wails-from-grave', name:'Wails from the Grave',
+          source:'Phantom · Nv3', type:'active', action:'Sneak Attack', range:'18 m', recharge:'Long Rest',
+          desc:`Inmediatamente después de aplicar Sneak Attack a un humanoide vivo, hacés ${Math.ceil(nivel/2)}d6 daño necrótico a una segunda criatura a 9 m.`,
+          fullDesc:'A nivel 3 puedes canalizar el dolor de los muertos. Inmediatamente después de hacer daño de Sneak Attack en tu turno, puedes hacer que un segundo objetivo dentro de 9 metros sufra la mitad del daño de Sneak Attack (redondeado hacia abajo) en daño necrótico, sin tirada de ataque. Puedes usar esta habilidad un número de veces igual a tu Prof Bonus por descanso largo.' },
+        ...(nivel >= 9 ? [{ id:'ph-tokens-departed', name:'Tokens of the Departed',
+          source:'Phantom · Nv9', type:'active', action:'Reacción', range:'18 m', recharge:'Long Rest',
+          desc:'Cuando una criatura a 18 m muere, podés crear un token de su alma. Gasta el token: +1d8 necrótico al daño, o proficiencia en una habilidad/herramienta que tenía el muerto.',
+          fullDesc:'A nivel 9, cuando una criatura muere a 18 metros de ti puedes usar tu reacción para crear un pequeño token de su alma. Este token se mantiene durante 10 minutos. Puedes gastar el token para añadir 1d8 de daño necrótico extra a tu Sneak Attack, o para ganar proficiencia en una habilidad o herramienta que tuviera la criatura.' }] : []),
+        ...(nivel >= 13 ? [{ id:'ph-ghost-walk', name:'Ghost Walk',
+          source:'Phantom · Nv13', type:'active', action:'Acción bonus', range:'Personal', recharge:'Long Rest',
+          desc:'1/Long Rest: te volvés incorpóreo hasta por 10 min. Podés pasar a través de objetos/criaturas, sos resistente a no-mágicos, ignorás terreno difícil.',
+          fullDesc:'A nivel 13 puedes asumir una forma etérea parecida a un fantasma. Como acción adicional puedes volverte incorpóreo hasta 10 minutos (hasta 1 hora a nivel 17). Mientras sos incorpóreo: puedes mover a través de otras criaturas y objetos como terreno difícil; sufres 1d10 de fuerza si terminás el turno dentro de un objeto; resistencia a daño de ataques no mágicos; no puedes ser Agarrado, Prone, Restringido, Aturdido. Puedes terminar antes con bonus action.' }] : []),
+        ...(nivel >= 17 ? [{ id:'ph-death-knell', name:'Death\'s Friend',
+          source:'Phantom · Nv17', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Wails from the Grave ya no cuesta un uso. Cuando hacés Sneak Attack, una de tus Sneak Attack dice puede ser necrótico en lugar del tipo normal.',
+          fullDesc:'A nivel 17 los muertos y tú son verdaderos aliados. Ganas estas ventajas:\n\n• Puedes usar Wails from the Grave sin gastar ningún uso.\n• Cuando haces daño de Sneak Attack, un dado del daño de Sneak Attack puede ser necrótico en lugar del tipo de daño normal del arma.' }] : []),
+      ],
+    },
+
+    'Swashbuckler': {
+      clase: 'Pícaro',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'sw-fancy-footwork', name:'Fancy Footwork',
+          source:'Swashbuckler · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Si atacás a una criatura en melee durante tu turno, no te hace ataque de oportunidad ese turno.',
+          fullDesc:'A nivel 3 aprendes a maniobrar ágilmente. Durante tu turno, si haces un ataque cuerpo a cuerpo contra una criatura, esa criatura no puede hacer ataques de oportunidad contra ti por el resto de tu turno.' },
+        { id:'sw-rakish-audacity', name:'Rakish Audacity',
+          source:'Swashbuckler · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Podés hacer Sneak Attack si sos el único enemigo adyacente al objetivo (no necesitás ventaja). Sumás CAR mod a tiradas de iniciativa.',
+          fullDesc:'A nivel 3 tu confianza en combate aumenta tu agilidad mental. Ganas estos beneficios:\n\n• Tu modificador de Carisma se suma a las tiradas de iniciativa.\n• No necesitas ventaja para hacer Sneak Attack si solo tú estás adyacente al objetivo y nadie te tiene Desventaja.' },
+        ...(nivel >= 9 ? [{ id:'sw-panache', name:'Panache',
+          source:'Swashbuckler · Nv9', type:'active', action:'Acción bonus', range:'9 m', recharge:null,
+          desc:'Acción bonus: desafío a una criatura. Enemigo: tiene desventaja en ataques a otros y no puede moverte como parte de su acción. Aliado/neutral: Encantado mientras permanezca a 18m.',
+          fullDesc:'A nivel 9 tu desenvoltura en batalla puede influir sobre los demás. Como acción adicional, puedes hacer una prueba de Carisma (Persuasión) contra la Perspicacia pasiva de una criatura que pueda oírte y que esté a 18 metros.\n\n• Si la criatura es hostil y fallas: sin efecto.\n• Si la criatura es hostil y tienes éxito: tiene desventaja en tiradas de ataque contra criaturas que no seas tú, y no puede moverte como parte de su movimiento.\n• Si la criatura no es hostil: está Encantada por ti durante 1 minuto o hasta que tú o tus compañeros le hagáis daño.' }] : []),
+        ...(nivel >= 13 ? [{ id:'sw-elegant-maneuver', name:'Elegant Maneuver',
+          source:'Swashbuckler · Nv13', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
+          desc:'Acción bonus: ventaja en el próximo check de Atletismo o Acrobacias de este turno.',
+          fullDesc:'A nivel 13 puedes usar una acción adicional en tu turno para tener ventaja en la siguiente prueba de Atletismo o Acrobacias que hagas en ese mismo turno.' }] : []),
+        ...(nivel >= 17 ? [{ id:'sw-master-duelist', name:'Master Duelist',
+          source:'Swashbuckler · Nv17', type:'active', action:'Ninguna', range:'Personal', recharge:'Short/Long Rest',
+          desc:'1/Short Rest: si fallás un ataque, podés tirar de nuevo con ventaja.',
+          fullDesc:'A nivel 17 tu maestría en duelos es incomparable. Si fallas una tirada de ataque, puedes tirar de nuevo con ventaja. Una vez que uses esta habilidad, debes terminar un descanso corto o largo antes de volver a usarla.' }] : []),
       ],
     },
 
@@ -1705,11 +1939,39 @@ const Characters = (() => {
     ],
 
     'Explorador': [
-      { id:'hunters-mark',   name:'Hunter\'s Mark',  level:1, castTime:'Acción bonus', range:'27 m', duration:'1 h', concentration:true, combat:true, desc:'Presa: +1d6 daño en ataques · ventaja en percepción/sigilo vs ella.' },
-      { id:'ensnaring-strike', name:'Ensnaring Strike', level:1, castTime:'Acción bonus', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Golpe: save FUE o atrapado. 1d6 perforante por turno atrapado.' },
-      { id:'hail-of-thorns', name:'Hail of Thorns',  level:1, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:true, combat:true, desc:'Golpe a distancia: +1d10 perforante al objetivo y adyacentes (save DES mitad).' },
-      { id:'pass-without-trace', name:'Pass Without Trace', level:2, castTime:'Acción', range:'Uno mismo', duration:'1 h', concentration:true, combat:false, desc:'+10 sigilo a tus compañeros en 9 m · no dejan rastro.' },
-      { id:'spike-growth-r', name:'Spike Growth',    level:2, castTime:'Acción', range:'45 m', duration:'10 min', concentration:true, combat:true, desc:'Área difícil 20ft · 2d4 perforante por cada 5ft.' },
+      // Nivel 1
+      { id:'hunters-mark',    name:"Hunter's Mark",    level:1, castTime:'Acción bonus', range:'27 m',       duration:'1 h',    concentration:true,  combat:true,  desc:'Presa: +1d6 daño en ataques · ventaja en Percepción/Sigilo vs ella. Transferible.' },
+      { id:'ensnaring-strike',name:'Ensnaring Strike',  level:1, castTime:'Acción bonus', range:'Uno mismo',  duration:'1 min',  concentration:true,  combat:true,  desc:'Golpe: save FUE o atrapado. 1d6 perforante por turno atrapado.' },
+      { id:'hail-of-thorns',  name:'Hail of Thorns',   level:1, castTime:'Acción bonus', range:'Uno mismo',  duration:'Inst.',  concentration:true,  combat:true,  desc:'Golpe a distancia: +1d10 perforante al objetivo y adyacentes (save DES mitad).' },
+      { id:'fog-cloud-r',     name:'Fog Cloud',         level:1, castTime:'Acción',       range:'27 m',       duration:'1 h',    concentration:true,  combat:true,  desc:'Esfera 6m radio de niebla espesa · visibilidad nula.' },
+      { id:'goodberry',       name:'Goodberry',         level:1, castTime:'Acción',       range:'Toque',      duration:'Inst.',  concentration:false, combat:false, desc:'10 bayas mágicas · cada una restaura 1 HP · nutritiva por 1 día.' },
+      { id:'cure-wounds-r',   name:'Cure Wounds',       level:1, castTime:'Acción',       range:'Toque',      duration:'Inst.',  concentration:false, combat:false, desc:'1d8+SAB HP a una criatura.' },
+      // Nivel 2
+      { id:'pass-without-trace', name:'Pass Without Trace', level:2, castTime:'Acción',  range:'Uno mismo',  duration:'1 h',    concentration:true,  combat:false, desc:'+10 sigilo a tus compañeros en 9 m · no dejan rastro.' },
+      { id:'spike-growth-r',  name:'Spike Growth',      level:2, castTime:'Acción',       range:'45 m',       duration:'10 min', concentration:true,  combat:true,  desc:'Área difícil 20ft · 2d4 perforante por cada 5ft de movimiento.' },
+      { id:'misty-step-r',    name:'Misty Step',        level:2, castTime:'Acción bonus', range:'Uno mismo',  duration:'Inst.',  concentration:false, combat:true,  desc:'Teleportación 9 m a lugar visible.' },
+      { id:'silence',         name:'Silence',           level:2, castTime:'Acción',       range:'27 m',       duration:'10 min', concentration:true,  combat:true,  desc:'Esfera 6m: sin sonido · sin conjuros verbales.' },
+      { id:'cordon-of-arrows', name:'Cordon of Arrows', level:2, castTime:'Acción',       range:'1,5 m',      duration:'8 h',    concentration:false, combat:true,  desc:'4 flechas mágicas alrededor tuyo; atacan a quien pase (1d6 perforante, save DES).' },
+      // Nivel 3
+      { id:'lightning-arrow',  name:'Lightning Arrow',  level:3, castTime:'Acción bonus', range:'Uno mismo',  duration:'Inst.',  concentration:true,  combat:true,  desc:'Reemplaza un ataque a distancia: 4d8 relámpago al objetivo, 2d8 a adyacentes (save DES mitad).' },
+      { id:'conjure-animals',  name:'Conjure Animals',  level:3, castTime:'Acción',       range:'18 m',       duration:'1 h',    concentration:true,  combat:true,  desc:'Invoca bestias CR ≤ 2 que obedecen tus órdenes.' },
+      { id:'nondetection',     name:'Nondetection',     level:3, castTime:'Acción',       range:'Toque',      duration:'8 h',    concentration:false, combat:false, desc:'Criatura/objeto no puede ser detectado por magia de adivinación.' },
+    ],
+
+    'Eldritch Knight': [
+      // Cantrips
+      { id:'ek-fire-bolt',     name:'Fire Bolt',          level:0, castTime:'Acción',       range:'36 m',  duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d10 fuego. Escala con nivel (2d10 nv5).' },
+      { id:'ek-booming-blade', name:'Booming Blade',      level:0, castTime:'Acción',       range:'1,5 m', duration:'1 ronda', concentration:false, combat:true, desc:'Ataque melee + daño de trueno si el objetivo se mueve (1d8, luego 1d8 en cada turno).' },
+      { id:'ek-green-flame',   name:"Green-Flame Blade",  level:0, castTime:'Acción',       range:'1,5 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque melee + daño de fuego a un objetivo adyacente (SAB/INT mod).' },
+      { id:'ek-mage-hand',     name:'Mage Hand',          level:0, castTime:'Acción',       range:'9 m',   duration:'1 min', concentration:false, combat:false, desc:'Mano espectral manipula objetos hasta 5 kg.' },
+      // Nivel 1 (escuelas Abjuración/Evocación principalmente)
+      { id:'ek-shield',        name:'Shield',             level:1, castTime:'Reacción',     range:'Personal', duration:'1 ronda', concentration:false, combat:true, desc:'Reacción · +5 CA hasta inicio de tu próximo turno.' },
+      { id:'ek-absorb-elements', name:'Absorb Elements',  level:1, castTime:'Reacción',     range:'Personal', duration:'1 ronda', concentration:false, combat:true, desc:'Reacción al recibir daño elemental: resistencia + +1d6 del mismo tipo en próximo ataque.' },
+      { id:'ek-magic-missile', name:'Magic Missile',      level:1, castTime:'Acción',       range:'36 m',  duration:'Inst.', concentration:false, combat:true,  desc:'3 dardos infalibles · 1d4+1 fuerza c/u. +1 dardo por slot.' },
+      { id:'ek-thunderwave',   name:'Thunderwave',        level:1, castTime:'Acción',       range:'Personal (15ft)', duration:'Inst.', concentration:false, combat:true, desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 10ft.' },
+      // Nivel 2
+      { id:'ek-mirror-image',  name:'Mirror Image',       level:2, castTime:'Acción',       range:'Personal', duration:'1 min', concentration:false, combat:true, desc:'3 duplicados ilusorios desvían ataques.' },
+      { id:'ek-misty-step',    name:'Misty Step',         level:2, castTime:'Acción bonus', range:'Personal', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m a lugar visible.' },
     ],
   };
 
@@ -1884,6 +2146,45 @@ const Characters = (() => {
     // Para Battle Master: inicializar maneuvers elegidas (vacías) si no existen
     if (sub.maneuvers && !char.maneuvers) {
       char.maneuvers = [];
+    }
+
+    // Para subclases conjuradoras (Eldritch Knight, Arcane Trickster):
+    // si existen spells en CLASE_SPELLS[subclaseName], añadirlos al personaje
+    const subSpells = CLASE_SPELLS[subclaseName] || [];
+    if (subSpells.length > 0) {
+      if (!char.spells) char.spells = [];
+      subSpells.forEach(s => {
+        if (!char.spells.find(e => e.id === s.id)) {
+          char.spells.push({ ...s });
+        }
+      });
+      // Si la clase base no es lanzadora, darle slots de tercio-caster
+      const claseCfg = CLASES_CONFIG[char.clase];
+      if (claseCfg && !claseCfg.spellcastingStat) {
+        // Eldritch Knight / Arcane Trickster — INT
+        char.spellcastingStat = 'int';
+        const thirdLevel = Math.floor((char.nivel || 1) / 3);
+        if (thirdLevel >= 1 && (!char.spellSlots || !char.spellSlots[1]?.max)) {
+          char.spellSlots = calcMulticlassSlots([
+            { name: subclaseName === 'Arcane Trickster' ? 'Arcane Trickster' : 'Eldritch Knight', level: char.nivel || 1 }
+          ]);
+          // Fallback manual para tercio-caster si CLASES_CONFIG no lo tiene
+          if (!char.spellSlots[1]?.max) {
+            const THIRD_CASTER = {
+              3:[2,0,0,0,0,0,0,0,0], 4:[3,0,0,0,0,0,0,0,0],
+              7:[4,2,0,0,0,0,0,0,0], 8:[4,2,0,0,0,0,0,0,0],
+              10:[4,3,0,0,0,0,0,0,0], 11:[4,3,0,0,0,0,0,0,0],
+              13:[4,3,2,0,0,0,0,0,0], 14:[4,3,2,0,0,0,0,0,0],
+              16:[4,3,3,0,0,0,0,0,0], 17:[4,3,3,0,0,0,0,0,0],
+              19:[4,3,3,1,0,0,0,0,0], 20:[4,3,3,1,0,0,0,0,0],
+            };
+            const row = THIRD_CASTER[char.nivel || 1] || THIRD_CASTER[Math.max(...Object.keys(THIRD_CASTER).map(Number).filter(k => k <= (char.nivel||1)))] || [0,0,0,0,0,0,0,0,0];
+            const slots = {};
+            for (let i = 1; i <= 9; i++) slots[i] = { current: row[i-1]||0, max: row[i-1]||0 };
+            char.spellSlots = slots;
+          }
+        }
+      }
     }
 
     return char;
@@ -2108,11 +2409,36 @@ const Characters = (() => {
 
   const ASI_STATS = ['for','des','con','int','sab','car'];
 
+  const GUERRERO_SUBCLASES = [
+    { id:'sub-battle-master', name:'Battle Master',   desc:'Maniobras de combate con Superiority Dice. Máximo control táctico.' },
+    { id:'sub-champion',      name:'Champion',        desc:'Críticos con 19-20, atletismo superior. Simple y poderoso.' },
+    { id:'sub-eldritch-knight', name:'Eldritch Knight', desc:'Conjuros de Mago (INT) + combate. Slots de tercio-caster.' },
+    { id:'sub-samurai',       name:'Samurai',         desc:'Fighting Spirit 3/día + ventaja en ataques. Elegante y ofensivo.' },
+    { id:'sub-rune-knight',   name:'Rune Knight',     desc:'Runas mágicas + crecer a tamaño Large. Fuerza bruta mágica.' },
+  ];
+
+  const EXPLORADOR_SUBCLASES = [
+    { id:'sub-hunter',        name:'Hunter',          desc:'Especialista en matar: presa elegida, multiataques en área.' },
+    { id:'sub-beast-master',  name:'Beast Master',    desc:'Compañero bestial que combate junto a vos.' },
+    { id:'sub-gloom-stalker', name:'Gloom Stalker',   desc:'Oscuridad y emboscadas. Extraslot de ataque en la primera ronda.' },
+  ];
+
+  const PICARO_SUBCLASES = [
+    { id:'sub-arcane-trickster', name:'Arcane Trickster', desc:'Conjuros de Mago (INT). Ilusiones y trucos mágicos.' },
+    { id:'sub-thief',         name:'Thief',           desc:'Escalada, Fast Hands, Use Magic Device. Ladrón clásico.' },
+    { id:'sub-phantom',       name:'Phantom',         desc:'Tokens de almas muertas, daño necrótico, forma incorpórea.' },
+    { id:'sub-swashbuckler',  name:'Swashbuckler',    desc:'Carisma en combate, Sneak Attack sin aliados, duelos.' },
+  ];
+
   const CHOICES_CONFIG = {
     'Guerrero': [
       { id:'fighting-style',  level:1,  type:'pick1',     label:'Fighting Style',
         prompt:'Elegí tu estilo de combate:',
         options: FIGHTING_STYLES_FIGHTER },
+      { id:'subclase-3',      level:3,  type:'pick1',     label:'Martial Archetype (Subclase)',
+        prompt:'Elegí tu arquetipo marcial:',
+        options: GUERRERO_SUBCLASES,
+        appliesSubclass: true },
       { id:'asi-4',           level:4,  type:'asi',       label:'Ability Score Improvement' },
       { id:'asi-6',           level:6,  type:'asi',       label:'Ability Score Improvement' },
       { id:'asi-8',           level:8,  type:'asi',       label:'Ability Score Improvement' },
@@ -2134,6 +2460,10 @@ const Characters = (() => {
       { id:'fighting-style-r', level:2, type:'pick1',     label:'Fighting Style',
         prompt:'Elegí tu estilo de combate:',
         options: FIGHTING_STYLES_RANGER },
+      { id:'subclase-3',      level:3,  type:'pick1',     label:'Ranger Conclave (Subclase)',
+        prompt:'Elegí tu conclave de Explorador:',
+        options: EXPLORADOR_SUBCLASES,
+        appliesSubclass: true },
       { id:'favored-enemy-2', level:6,  type:'pick1',     label:'Favored Enemy adicional',
         prompt:'Elegí un segundo tipo de enemigo favorito:',
         options: FAVORED_ENEMIES.map(e => ({ id:'fe2-'+e.toLowerCase().replace(/[^a-z]/g,'-'), name:e, desc:'' })) },
@@ -2212,6 +2542,10 @@ const Characters = (() => {
     'Pícaro': [
       { id:'expertise-1', level:1, type:'pickSkills', count:2, label:'Expertise inicial (×2)',
         prompt:'Elegí 2 skills para tener Expertise:' },
+      { id:'subclase-3',  level:3, type:'pick1',       label:'Roguish Archetype (Subclase)',
+        prompt:'Elegí tu arquetipo de Pícaro:',
+        options: PICARO_SUBCLASES,
+        appliesSubclass: true },
       { id:'expertise-6', level:6, type:'pickSkills', count:2, label:'Expertise adicional (×2)',
         prompt:'Elegí 2 skills más para Expertise:' },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
@@ -2258,6 +2592,22 @@ const Characters = (() => {
       value.forEach(s => {
         if (!char.skillExpertise.includes(s)) char.skillExpertise.push(s);
       });
+    }
+
+    // Si aplica subclase (choice de tipo pick1 con appliesSubclass:true)
+    // value es el id del option elegido (ej: 'sub-battle-master')
+    // Buscamos el nombre real en las listas de subclases
+    const claseCfg = CHOICES_CONFIG[char.clase] || [];
+    const choiceDef = claseCfg.find(c => c.id === choiceId);
+    if (choiceDef && choiceDef.appliesSubclass && typeof value === 'string') {
+      const allSubclaseLists = [GUERRERO_SUBCLASES, EXPLORADOR_SUBCLASES, PICARO_SUBCLASES];
+      let subclaseName = null;
+      for (const list of allSubclaseLists) {
+        const found = list.find(s => s.id === value || s.name === value);
+        if (found) { subclaseName = found.name; break; }
+      }
+      if (!subclaseName) subclaseName = value; // fallback: usar el valor directo
+      applySubclase(char, subclaseName);
     }
 
     return char;
