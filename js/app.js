@@ -116,8 +116,7 @@ const App = (() => {
         _char.preparedToday = savedPrepared;
       }
 
-      // Sync de recursos por clase: actualizar max/note si el nivel escaló (por si el personaje
-      // fue creado con una versión anterior antes de que applyLevelUp actualizara recursos)
+      // Sync de recursos por clase: actualizar max/note si el nivel escaló
       const claseFeat = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[_char.clase];
       if (claseFeat) {
         const freshResrcs = claseFeat.resources(_char.nivel || 1, _char.subclase || '');
@@ -131,11 +130,32 @@ const App = (() => {
               if (fresh.note) saved.note = fresh.note;
             }
           } else {
-            // Recurso nuevo que no existía (personaje creado antes del sprint1 fix)
             if (!_char.resources) _char.resources = [];
             _char.resources.push({ ...fresh });
           }
         });
+
+        // Regenerar features de clase según nivel actual — SIEMPRE, sin importar lo guardado.
+        // Esto es la fuente de verdad: CLASE_FEATURES[clase].features(nivel).
+        // Se preservan las features de subclase (identificadas por source que contiene la subclase).
+        if (typeof claseFeat.features === 'function') {
+          const nivel = _char.nivel || 1;
+          const rawFeats = claseFeat.features(nivel);
+          const claseFeatList = rawFeats.map(f => {
+            if (typeof f === 'object' && f !== null) return { ...f };
+            const n = String(f);
+            return { id: n.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-'), name:n, source:_char.clase, type:'passive', action:null, range:null, recharge:null, desc:'', fullDesc:'' };
+          });
+          // Conservar features de subclase guardadas
+          const subFeatures = (_char.features || []).filter(f =>
+            f.source && _char.subclase && f.source.toLowerCase().includes(_char.subclase.toLowerCase())
+          );
+          const subIds = new Set(subFeatures.map(f => f.id));
+          _char.features = [
+            ...claseFeatList.filter(f => !subIds.has(f.id)),
+            ...subFeatures,
+          ];
+        }
       }
     }
 
