@@ -47,8 +47,15 @@ const ExportPDF = (() => {
   }
 
   // ── API de alto nivel: setText seguro ─────────────────────────────────────
+  let _setCount = 0;
   function _setText(form, name, value) {
-    try { form.getTextField(name).setText(String(value ?? '')); } catch (_) {}
+    try {
+      form.getTextField(name).setText(String(value ?? ''));
+      _setCount++;
+    } catch (e) {
+      // Solo loguear los primeros errores para no saturar
+      if (_setCount < 5) console.warn('[PDF] _setText failed:', name, e.message);
+    }
   }
 
   function _setCheck(form, name, checked) {
@@ -139,13 +146,25 @@ const ExportPDF = (() => {
 
   // ── Función principal ─────────────────────────────────────────────────────
   async function generate(char) {
+    const _dbg = [];
+    const _log = msg => { console.log('[PDF]', msg); _dbg.push(msg); };
+
+    _log('START generate()');
+    _log('PDFLib=' + (typeof PDFLib));
+
     if (typeof PDFLib === 'undefined') {
       throw new Error('pdf-lib no está cargado. Revisa la conexión a internet.');
     }
 
+    _log('loading template...');
     const templateBytes = await _loadTemplate();
+    _log('template loaded: ' + templateBytes.byteLength + ' bytes');
+
     const pdfDoc = await PDFLib.PDFDocument.load(templateBytes.slice(0), { ignoreEncryption: true });
+    _log('pdfDoc loaded, pages=' + pdfDoc.getPageCount());
+
     const form   = pdfDoc.getForm();
+    _log('form fields=' + form.getFields().length);
 
     const nivel  = char.nivel || 1;
     const prof   = profBonus(nivel);
@@ -393,19 +412,72 @@ const ExportPDF = (() => {
     xy.push({ t: '', xMin: 291, xMax: 301, yMin: 677, yMax: 690, value: String(cur.pp || 0) });
     xy.push({ t: '', xMin: 371, xMax: 381, yMin: 677, yMax: 690, value: '' });
 
+    _log('_setText calls succeeded: ' + _setCount);
+    _log('calling _fillByXY with ' + xy.length + ' entries');
     await _fillByXY(pdfDoc, xy);
+    _log('_fillByXY done');
 
-    // ── NeedAppearances — fuerza re-render de todos los campos ────────────
+    // ── Borrar TODOS los /AP streams y activar NeedAppearances ────────────
+    // Los /AP streams del template contienen las apariencias visuales de los
+    // valores originales (Lursey). Si no los borramos, el visor los muestra
+    // en lugar de leer el /V nuevo. Python hace lo mismo: del annot['/AP'].
+    let apDeleted = 0;
+    const pN = PDFLib.PDFName.of.bind(PDFLib.PDFName);
+    for (const page of pdfDoc.getPages()) {
+      let annotsArr = null;
+      try {
+        const raw = page.node.get(pN('Annots'));
+        if (raw) annotsArr = pdfDoc.context.lookup(raw);
+      } catch (_) {}
+      if (!annotsArr || typeof annotsArr.size !== 'function') continue;
+      for (let i = 0; i < annotsArr.size(); i++) {
+        try {
+          const ref = annotsArr.lookup(i);
+          const annot = pdfDoc.context.lookup(ref);
+          if (annot && typeof annot.delete === 'function') {
+            annot.delete(pN('AP'));
+            apDeleted++;
+          }
+        } catch (_) {}
+      }
+    }
+    _log('AP streams deleted: ' + apDeleted);
+
+    // NeedAppearances = true → el visor regenera apariencias desde /V
     try {
-      form.acroForm.set(PDFLib.PDFName.of('NeedAppearances'), PDFLib.PDFBool.True);
-    } catch (_) {}
+      const acroFormRaw = pdfDoc.catalog.get(pN('AcroForm'));
+      if (acroFormRaw) {
+        const acroForm = pdfDoc.context.lookup(acroFormRaw);
+        if (acroForm && acroForm.set) {
+          acroForm.set(pN('NeedAppearances'), PDFLib.PDFBool.True);
+          _log('NeedAppearances set');
+        }
+      }
+    } catch (e) { _log('NeedAppearances error: ' + e.message); }
 
-    return await pdfDoc.save({ updateFieldAppearances: false });
+    _log('saving...');
+    const outBytes = await pdfDoc.save({ updateFieldAppearances: false });
+    _log('saved: ' + outBytes.length + ' bytes');
+    return outBytes;
   }
 
   // ── Descarga el PDF en el browser ────────────────────────────────────────
   async function downloadPDF(char) {
-    const bytes    = await generate(char);
+    let bytes;
+    try {
+      bytes = await generate(char);
+    } catch (e) {
+      alert('❌ Error generando PDF:\n' + e.message);
+      console.error('[PDF] generate() error:', e);
+      throw e;
+    }
+
+    // Verificar que el PDF tiene contenido real (> 100KB)
+    console.log('[PDF] output size:', bytes.length, 'bytes');
+    if (bytes.length < 50000) {
+      alert('⚠️ PDF generado parece vacío (' + bytes.length + ' bytes). Revisa la consola.');
+    }
+
     const blob     = new Blob([bytes], { type: 'application/pdf' });
     const url      = URL.createObjectURL(blob);
     const a        = document.createElement('a');
