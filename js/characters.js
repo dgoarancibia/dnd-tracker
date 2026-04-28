@@ -339,18 +339,18 @@ const Characters = (() => {
   }
 
   function calcCD(char) {
-    if (!char.spellcastingStat) return null;
+    const bonus = (char.bonuses && char.bonuses.cd) || 0;
+    if (!char.spellcastingStat) return bonus ? 8 + bonus : null;
     const prof  = calcProfBonus(char.nivel);
     const mod   = calcMod(char.stats[char.spellcastingStat]);
-    const bonus = (char.bonuses && char.bonuses.cd) || 0;
     return 8 + prof + mod + bonus;
   }
 
   function calcAtaqueBonus(char) {
-    if (!char.spellcastingStat) return null;
+    const bonus = (char.bonuses && char.bonuses.ataque) || 0;
+    if (!char.spellcastingStat) return bonus ? bonus : null;
     const prof = calcProfBonus(char.nivel);
     const mod  = calcMod(char.stats[char.spellcastingStat]);
-    const bonus = (char.bonuses && char.bonuses.ataque) || 0;
     return prof + mod + bonus;
   }
 

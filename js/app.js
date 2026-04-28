@@ -1534,23 +1534,22 @@ const App = (() => {
                  onchange="App.setBonus('init', this.value)" onclick="this.select()" title="Bonus extra a iniciativa">
         </div>
       </div>
-      ${c.spellcastingStat ? `
       <div class="passive-row">
         <span class="passive-label">CD de Conjuros</span>
         <div style="display:flex;align-items:center;gap:6px;">
-          <span class="passive-val">${Characters.calcCD(c)}</span>
+          <span class="passive-val">${Characters.calcCD(c) !== null ? Characters.calcCD(c) : '—'}</span>
           <input type="number" class="bonus-input-sm" value="${(c.bonuses&&c.bonuses.cd)||0}"
                  onchange="App.setBonus('cd', this.value)" onclick="this.select()" title="Bonus extra al CD (ítems, rasgos…)">
         </div>
       </div>
       <div class="passive-row">
-        <span class="passive-label">Bonus Ataque</span>
+        <span class="passive-label">Bonus Ataque Mágico</span>
         <div style="display:flex;align-items:center;gap:6px;">
-          <span class="passive-val">+${Characters.calcAtaqueBonus(c)}</span>
+          <span class="passive-val">${Characters.calcAtaqueBonus(c) !== null ? '+'+Characters.calcAtaqueBonus(c) : '—'}</span>
           <input type="number" class="bonus-input-sm" value="${(c.bonuses&&c.bonuses.ataque)||0}"
                  onchange="App.setBonus('ataque', this.value)" onclick="this.select()" title="Bonus arma mágica">
         </div>
-      </div>` : ''}
+      </div>
     </div>
 
     <!-- XP TRACKER -->
