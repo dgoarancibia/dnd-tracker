@@ -1235,7 +1235,7 @@ const Characters = (() => {
         ...(nivel >= 9 ? [{
           id: 'indomitable', name: `Indomitable (${nivel>=17?3:nivel>=13?2:1} uso${nivel>=13?'s':''})`,
           source: 'Guerrero · Nivel 9', type: 'active', action: 'Ninguna', range: 'Personal', recharge: 'long',
-          desc: `Repetís una tirada de salvación fallida. ${nivel>=17?'3':'nivel>=13?2:1'} uso${nivel>=13?'s':''} por Long Rest.`,
+          desc: `Repetís una tirada de salvación fallida. ${nivel>=17?3:nivel>=13?2:1} uso${nivel>=13?'s':''} por Long Rest.`,
           fullDesc: 'A partir del nivel 9, podés volver a tirar una tirada de salvación fallida. 1 uso (nv9), 2 usos (nv13), 3 usos (nv17).',
         }] : []),
         ...(nivel >= 12 ? [{ id:'fighter-asi-12', name:'Ability Score Improvement', source:'Guerrero · Nivel 12', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),

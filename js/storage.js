@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 10;  // Incrementar al cambiar el esquema
+  const DATA_VERSION = 11;  // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -145,6 +145,33 @@ const Storage = (() => {
         }
       }
       char._dataVersion = 10;
+    }
+    if (char._dataVersion < 11) {
+      // v10 → v11: re-forzar regeneración de features por nivel.
+      // Algunos personajes creados con characters.js viejo pueden tener features
+      // de niveles superiores al actual. Volvemos a correr la misma lógica que v10
+      // para asegurar que queden correctas con el catálogo actualizado.
+      // No tocar Lursey.
+      if (char.id !== 'lursey-brumaclara' && typeof Characters !== 'undefined' && Characters.CLASE_FEATURES) {
+        const claseFeat = Characters.CLASE_FEATURES[char.clase];
+        if (claseFeat && typeof claseFeat.features === 'function') {
+          const rawFeats = claseFeat.features(char.nivel || 1);
+          const subFeatures = (char.features || []).filter(f =>
+            f.source && char.subclase && f.source.toLowerCase().includes(char.subclase.toLowerCase())
+          );
+          const claseFeatList = rawFeats.map(f => {
+            if (typeof f === 'object' && f !== null) return { ...f };
+            const name = String(f);
+            return { id: name.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-'), name, source: char.clase, type:'passive', action:null, range:null, recharge:null, desc:'', fullDesc:'' };
+          });
+          const subIds = new Set(subFeatures.map(f => f.id));
+          char.features = [
+            ...claseFeatList.filter(f => !subIds.has(f.id)),
+            ...subFeatures,
+          ];
+        }
+      }
+      char._dataVersion = 11;
     }
     return char;
   }
