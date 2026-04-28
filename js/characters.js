@@ -1845,6 +1845,75 @@ const Characters = (() => {
       ],
     },
 
+    'Way of Shadow': {
+      clase: 'Monje',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'shadow-arts', name:'Shadow Arts',
+          source:'Way of Shadow · Nv3', type:'active', action:'Acción (Ki)', range:'60 m', recharge:null,
+          desc:'Gastás 2 Ki para lanzar Darkness, Darkvision, Pass Without Trace, o Silence sin componentes. Podés ver en tu propia Darkness.',
+          fullDesc:'Al nivel 3 podés usar tu ki para duplicar los efectos de ciertos conjuros. Como acción podés gastar 2 puntos de ki para lanzar Darkness, Darkvision, Pass Without Trace o Silence sin necesitar componentes de conjuro. También podés gastar 1 punto de ki para lanzar Minor Illusion. Cuando lanzás Darkness con esta feature, podés ver dentro de la oscuridad que creás.' },
+        ...(nivel >= 6 ? [{ id:'shadow-step', name:'Shadow Step',
+          source:'Way of Shadow · Nv6', type:'active', action:'Acción bonus', range:'18 m', recharge:null,
+          desc:'Teletransportate entre dos zonas de penumbra u oscuridad a 18 m. Tenés ventaja en el primer ataque del turno.',
+          fullDesc:'Al nivel 6 ganás la habilidad de moverte de sombra en sombra. Cuando estás en penumbra u oscuridad, como acción adicional podés teletransportarte hasta 18 metros a un espacio desocupado que también esté en penumbra u oscuridad. Después, tenés ventaja en el primer ataque cuerpo a cuerpo que hagas antes del fin del turno.' }] : []),
+        ...(nivel >= 11 ? [{ id:'shadow-cloak', name:'Cloak of Shadows',
+          source:'Way of Shadow · Nv11', type:'active', action:'Acción', range:'Personal', recharge:null,
+          desc:'En penumbra u oscuridad, podés volverte Invisible usando una acción. La invisibilidad termina si atacás o lanzás un conjuro.',
+          fullDesc:'Al nivel 11, cuando estás en un área de penumbra u oscuridad, podés usar tu acción para volverte invisible. La invisibilidad dura hasta que realices un ataque, lances un conjuro o estés en un área de luz brillante.' }] : []),
+        ...(nivel >= 17 ? [{ id:'shadow-opportunist', name:'Opportunist',
+          source:'Way of Shadow · Nv17', type:'active', action:'Reacción', range:'1,5 m', recharge:null,
+          desc:'Cuando una criatura adyacente es golpeada por otro atacante, podés usar tu reacción para atacarla.',
+          fullDesc:'Al nivel 17 podés explotar el momento en que un oponente es golpeado. Cuando una criatura que está a 1,5 metros de ti es golpeada por un ataque de otra criatura, podés usar tu reacción para hacer un ataque cuerpo a cuerpo contra esa criatura.' }] : []),
+      ],
+    },
+
+    'Way of the Four Elements': {
+      clase: 'Monje',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'4e-disciple', name:'Disciple of the Elements',
+          source:'Way of the Four Elements · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Aprendés Elemental Attunement (cantrip gratuito) y dos Elemental Disciplines. Podés lanzar conjuros elementales gastando Ki.',
+          fullDesc:'Al nivel 3 aprendés disciplinas mágicas que canalizan el poder de los cuatro elementos. Conocés Elemental Attunement (sin costo de Ki) y elegís 2 disciplinas elementales adicionales. Cada vez que subís de nivel podés reemplazar una disciplina por otra. Las disciplinas requieren gastar puntos de Ki para activarse (costo equivalente al nivel del conjuro).' },
+        ...(nivel >= 6 ? [{ id:'4e-extra-discipline', name:'Extra Elemental Discipline (Nv6)',
+          source:'Way of the Four Elements · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Aprendés una disciplina elemental adicional. También podés usar disciplinas de nivel más alto (hasta nv3 de conjuro con 3 Ki).',
+          fullDesc:'Al nivel 6 aprendés una disciplina elemental adicional. Algunas disciplinas avanzadas requieren nivel mínimo de monje para aprenderse (indicado en la descripción de cada una). A este nivel ya podés acceder a las disciplinas que lanzan conjuros de nivel 2 y 3.' }] : []),
+        ...(nivel >= 11 ? [{ id:'4e-extra-discipline-11', name:'Extra Elemental Discipline (Nv11)',
+          source:'Way of the Four Elements · Nv11', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Aprendés una tercera disciplina adicional. Podés acceder a disciplinas que requieren nivel 11 (conjuros de hasta nv4 con 4 Ki).',
+          fullDesc:'Al nivel 11 aprendés otra disciplina elemental adicional y podés acceder a las disciplinas que requieren ser al menos nivel 11 de monje. A este nivel podés gastar hasta 4 Ki para lanzar conjuros elementales de nivel 4.' }] : []),
+        ...(nivel >= 17 ? [{ id:'4e-extra-discipline-17', name:'Extra Elemental Discipline (Nv17)',
+          source:'Way of the Four Elements · Nv17', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Aprendés una cuarta disciplina adicional. Podés acceder a disciplinas que requieren nivel 17 (conjuros de hasta nv5 con 5 Ki).',
+          fullDesc:'Al nivel 17 aprendés otra disciplina elemental y podés acceder a las disciplinas más poderosas del camino. Podés gastar hasta 5 Ki para lanzar conjuros elementales de nivel 5.' }] : []),
+      ],
+    },
+
+    'Way of the Astral Self': {
+      clase: 'Monje',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'astral-arms', name:'Arms of the Astral Self',
+          source:'Way of the Astral Self · Nv3', type:'active', action:'Acción bonus (1 Ki)', range:'3 m', recharge:null,
+          desc:'Convocás brazos astrales que duran 10 min. Podés usar SAB en ataques desarmados y atacar a distancia (3 m). Los ataques usan el dado Martial Arts.',
+          fullDesc:'Al nivel 3, podés gastar 1 punto de ki (acción adicional) para hacer surgir los brazos de tu yo astral. Estos brazos están a 3 metros y duran 10 minutos. Mientras estén activos: podés usar tu modificador de SAB en lugar de FUE/DES en tiradas de ataque y daño con ataques desarmados; los ataques desarmados tienen un alcance de 3 metros; si un ataque daña a alguien puede aplicar tu dado de Martial Arts.' },
+        ...(nivel >= 6 ? [{ id:'astral-visage', name:'Visage of the Astral Self',
+          source:'Way of the Astral Self · Nv6', type:'active', action:'Acción bonus (1 Ki)', range:'Personal', recharge:null,
+          desc:'Convocás el rostro astral: ventaja en Intimidación/Perspicacia basadas en SAB, visión en oscuridad 24 m, y entendés todos los idiomas.',
+          fullDesc:'Al nivel 6, podés gastar 1 punto de ki como acción adicional para hacer surgir el rostro de tu yo astral. El rostro dura 10 minutos. Mientras esté activo: tenés ventaja en checks de Intimidación y Perspicacia que usen SAB; tenés visión en la oscuridad hasta 24 metros; entendés todos los idiomas escritos y hablados.' }] : []),
+        ...(nivel >= 11 ? [{ id:'astral-body', name:'Body of the Astral Self',
+          source:'Way of the Astral Self · Nv11', type:'passive', action:'Pasiva (cuando Arms activos)', range:'Personal', recharge:null,
+          desc:'Cuando los Arms of the Astral Self están activos: resistencia a daño contundente/cortante/perforante, y podés usar reacción para reducir daño recibido en 1d10+SAB.',
+          fullDesc:'Al nivel 11, cuando tus Arms of the Astral Self están activos, tu yo astral protege tu cuerpo. Tenés resistencia a daño contundente, cortante y perforante. Además, cuando vos u otra criatura a 1,5 metros que podés ver recibís daño, podés usar tu reacción para reducir ese daño en 1d10 + tu modificador de SAB (mínimo 0).' }] : []),
+        ...(nivel >= 17 ? [{ id:'astral-complete', name:'Awakened Astral Self',
+          source:'Way of the Astral Self · Nv17', type:'active', action:'Acción bonus (5 Ki)', range:'Personal', recharge:null,
+          desc:'Convocás la forma astral completa durante 10 min: beneficios de Arms + Visage, AC +2, ataque extra con los brazos astrales en Ataque total.',
+          fullDesc:'Al nivel 17 podés gastar 5 puntos de ki como acción adicional para hacer surgir la forma completa de tu yo astral. Dura 10 minutos. Obtenés los beneficios de Arms of the Astral Self y Visage of the Astral Self sin gastar ki en ellos. Tu AC aumenta en 2. Cuando usás la acción de Ataque en tu turno, podés hacer dos ataques adicionales con los Arms of the Astral Self.' }] : []),
+      ],
+    },
+
     // ── BÁRBARO ───────────────────────────────────────────────────────────────
     'Path of the Berserker': {
       clase: 'Bárbaro',
@@ -1866,6 +1935,83 @@ const Characters = (() => {
           source:'Path of the Berserker · Nv14', type:'active', action:'Reacción', range:'Melee', recharge:null,
           desc:'Cuando recibís daño de una criatura en 1,5 m, podés usar tu reacción para atacarla.',
           fullDesc:'A nivel 14, cuando recibes daño de una criatura que está a 1,5 metros de ti, puedes usar tu reacción para hacer un ataque cuerpo a cuerpo contra esa criatura.' }] : []),
+      ],
+    },
+
+    'Path of the Totem Warrior': {
+      clase: 'Bárbaro',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'totem-spirit', name:'Totem Spirit',
+          source:'Path of the Totem Warrior · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Elegís un tótem animal (Oso, Águila o Lobo) que te otorga un beneficio especial mientras estás en Rage.',
+          fullDesc:'Al nivel 3 adoptás el espíritu de un animal tótem. Oso: vos y las criaturas adyacentes tienen resistencia a todo daño excepto psíquico mientras rageás. Águila: podés Dash como acción bonus y los ataques de oportunidad contra vos tienen desventaja. Lobo: los aliados cercanos tienen ventaja en ataques cuerpo a cuerpo contra cualquier enemigo adyacente a vos.' },
+        ...(nivel >= 6 ? [{ id:'totem-aspect', name:'Aspect of the Beast',
+          source:'Path of the Totem Warrior · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Ganás un aspecto permanente de tu animal tótem: Oso (cargás el doble), Águila (visión de larga distancia), Lobo (rastreás a ritmo rápido).',
+          fullDesc:'Al nivel 6 ganás un beneficio pasivo de tu tótem. Oso: podés cargar el doble del peso normal. Águila: podés ver hasta 1,5 km sin dificultad, y en condiciones de luz normal podés discernir detalles finos. Lobo: podés rastrear a un ritmo rápido y moverse en sigilo a un ritmo normal.' }] : []),
+        ...(nivel >= 10 ? [{ id:'totem-attunement', name:'Totemic Attunement',
+          source:'Path of the Totem Warrior · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Tercer beneficio de tu tótem durante Rage: Oso (criaturas adyacentes con desventaja vs aliados), Águila (vuelo igual a tu velocidad), Lobo (tumbar enemigos con ataques cuerpo a cuerpo).',
+          fullDesc:'Al nivel 10 ganás un tercer aspecto de tu tótem. Oso: mientras rageás, las criaturas tienen desventaja en ataques contra aliados tuyos que estén a 1,5 m de vos. Águila: podés volar a tu velocidad de movimiento mientras rageás. Lobo: puedes usar tu acción bonus para tumbar a una criatura Grande o menor que hayas golpeado en ese turno.' }] : []),
+        ...(nivel >= 14 ? [{ id:'totem-warrior-14', name:'Totemic Attunement (Nv14)',
+          source:'Path of the Totem Warrior · Nv14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'El vínculo con tu espíritu tótem se profundiza; podés comunicarte con animales de tu tipo en rituales especiales.',
+          fullDesc:'Al nivel 14 podés completar un ritual de 1 hora en el Plano Etéreo para cambiar de animal tótem. También podés lanzar Beast Sense y Speak with Animals como rituales sin gastar slots.' }] : []),
+      ],
+    },
+
+    'Path of the Zealot': {
+      clase: 'Bárbaro',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'zealot-divine-fury', name:'Divine Fury',
+          source:'Path of the Zealot · Nv3', type:'passive', action:'Pasiva', range:'Melee', recharge:null,
+          desc:'Mientras estás en Rage, el primer golpe de cada turno inflige 1d6 + mitad de nivel extra de daño radiante o necrótico.',
+          fullDesc:'Al nivel 3, mientras estás en Rage, el primer ataque que golpees en cada turno de combate inflige daño extra igual a 1d6 + la mitad de tu nivel de bárbaro. El tipo es radiante o necrótico (lo elegís al tomar esta subclase).' },
+        { id:'zealot-warrior-of-gods', name:'Warrior of the Gods',
+          source:'Path of the Zealot · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Los hechizos de resurrección sobre vos no necesitan material costoso. Tu alma está disponible para ser llamada.',
+          fullDesc:'Al nivel 3, tu alma está marcada para la batalla eterna. Los hechizos como Raise Dead, Resurrection o True Resurrection no necesitan componentes materiales costosos cuando se usan en vos.' },
+        ...(nivel >= 6 ? [{ id:'zealot-fanatical-focus', name:'Fanatical Focus',
+          source:'Path of the Zealot · Nv6', type:'active', action:'Ninguna (al fallar save)', range:'Personal', recharge:'Rage',
+          desc:'Cuando fallás un saving throw durante Rage, podés retirar para lanzarlo de nuevo. Usable una vez por Rage.',
+          fullDesc:'Al nivel 6, el fervor que te impulsa a luchar puede protegerte de la magia. Si fallás un saving throw mientras estás en Rage, podés retirar el dado. Debés usar el segundo resultado. Solo podés usar esta feature una vez por Rage.' }] : []),
+        ...(nivel >= 10 ? [{ id:'zealot-zealous-presence', name:'Zealous Presence',
+          source:'Path of the Zealot · Nv10', type:'active', action:'Acción bonus', range:'18 m', recharge:'Long Rest',
+          desc:'Lanzás un grito de batalla que otorga ventaja en ataques y saving throws a hasta 10 aliados durante 1 turno.',
+          fullDesc:'Al nivel 10 podés inspirar a tus aliados con un rugido de batalla. Como acción bonus podés elegir hasta 10 criaturas (incluyéndote) a 18 m. Hasta el inicio de tu próximo turno, esas criaturas tienen ventaja en tiradas de ataque y saving throws.' }] : []),
+        ...(nivel >= 14 ? [{ id:'zealot-rage-beyond-death', name:'Rage Beyond Death',
+          source:'Path of the Zealot · Nv14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Mientras estás en Rage no podés morir por caer a 0 HP. El Rage termina si quedás incapacitado, y entonces sí podés morir normalmente.',
+          fullDesc:'Al nivel 14, el poder divino que te impulsa permite que te mantengas en pie. Mientras estás en Rage, caer a 0 puntos de golpe no te hace caer inconsciente. Pero si el Rage termina mientras estás a 0 HP, seguís las reglas normales de muerte. Morís si recibís suficiente daño como para matarte instantáneamente.' }] : []),
+      ],
+    },
+
+    'Path of Wild Magic': {
+      clase: 'Bárbaro',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'wildmagic-surge', name:'Magic Awareness',
+          source:'Path of Wild Magic · Nv3', type:'active', action:'Acción', range:'30 m', recharge:'Long Rest',
+          desc:'Podés detectar hechizos activos y objetos mágicos en 30 m durante 1 minuto.',
+          fullDesc:'Al nivel 3 podés usar tu acción para abrir tu mente a las corrientes de magia. Hasta el inicio de tu próximo turno, sabés si hay hechizos activos o objetos mágicos a 30 m. Usable una vez por Long Rest.' },
+        { id:'wildmagic-wild-surge', name:'Wild Surge',
+          source:'Path of Wild Magic · Nv3', type:'passive', action:'Pasiva (al entrar en Rage)', range:'Personal', recharge:null,
+          desc:'Cada vez que entrás en Rage, un efecto mágico aleatorio surge de vos (tabla de 8 resultados: escudos de fuerza, teletransporte, daño necrótico, etc.).',
+          fullDesc:'Al nivel 3, la energía mágica descontrolada explota cuando entras en Rage. Tirá un d8 y consultá la tabla de Wild Surge para determinar el efecto. Los efectos duran hasta el fin del Rage salvo que se indique lo contrario.' },
+        ...(nivel >= 6 ? [{ id:'wildmagic-bolstering-magic', name:'Bolstering Magic',
+          source:'Path of Wild Magic · Nv6', type:'active', action:'Acción', range:'Toque', recharge:null,
+          desc:'Podés otorgar a una criatura (incluyéndote) +1d3 a tiradas de ataque y checks de habilidad por 10 minutos, O restaurarle un slot gastado (hasta nivel 3). Usable POD veces por Long Rest.',
+          fullDesc:'Al nivel 6 podés canalizar magia en los aliados. Como acción tocás a una criatura y elegís uno de estos efectos: 1) Por los próximos 10 minutos, puede tirar 1d3 y agregar el resultado a las tiradas de ataque o checks de habilidad que haga. 2) Recupera un slot de hechizo gastado de nivel 3 o menor. Podés usar esta feature tantas veces como tu modificador de POD por Long Rest.' }] : []),
+        ...(nivel >= 10 ? [{ id:'wildmagic-unstable-backlash', name:'Unstable Backlash',
+          source:'Path of Wild Magic · Nv10', type:'active', action:'Reacción', range:'Personal', recharge:null,
+          desc:'Cuando recibís daño o fallás un saving throw durante Rage, podés usar tu reacción para causar otro Wild Surge inmediatamente.',
+          fullDesc:'Al nivel 10, mientras estás en Rage, cuando recibís daño o fallás un saving throw podés usar tu reacción para causar inmediatamente un efecto de Wild Surge (tira en la tabla). El efecto activo de Wild Surge actual termina.' }] : []),
+        ...(nivel >= 14 ? [{ id:'wildmagic-controlled-surge', name:'Controlled Surge',
+          source:'Path of Wild Magic · Nv14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando tiras en la tabla de Wild Surge, podés tirar el dado dos veces y elegir cuál de los dos efectos aplicar.',
+          fullDesc:'Al nivel 14, podés aprovechar la magia salvaje con mayor control. Cada vez que tiras en la tabla de Wild Surge, tirá el d8 dos veces y elegí cuál de los dos efectos ocurre. Si los dos resultados son iguales, ignorá la tabla y elegí vos el efecto.' }] : []),
       ],
     },
 
@@ -1894,6 +2040,99 @@ const Characters = (() => {
           source:'Oath of Devotion · Nv20', type:'active', action:'Acción', range:'Personal', recharge:'Long Rest',
           desc:'Aura de 9 m: 10 radiante a enemigos por turno. Ventaja en saves contra conjuros de fiends/muertos.',
           fullDesc:'A nivel 20, como acción puedes emanar un aura de luz solar. Durante 1 minuto, luz brillante en 9 m y tenue 9 m más. Los enemigos que inicien su turno en la luz brillante reciben 10 daño radiante. Además, tienes ventaja en tiradas de salvación contra conjuros lanzados por fiends o muertos vivientes.' }] : []),
+      ],
+    },
+
+    'Oath of the Ancients': {
+      clase: 'Paladín',
+      resources: (nivel) => [
+        { id:'channel-divinity-anc', name:'Channel Divinity',
+          current: 1, max: 1, recharge:'short',
+          note:'Nature\'s Wrath · Turn the Faithless' },
+      ],
+      features: (nivel) => [
+        { id:'anc-natures-wrath', name:"Nature's Wrath",
+          source:'Oath of the Ancients · Nv3', type:'active', action:'Acción', range:'3 m', recharge:'Short/Long Rest',
+          desc:'Canal: enredás a una criatura con plantas (save FUE o DES para liberarse, velocidad 0 mientras esté atrapada).',
+          fullDesc:'Puedes usar tu Channel Divinity para envolver a una criatura en vides mágicas. Como acción, eliges una criatura a 3 metros. El objetivo debe superar un save de FUE o DES (a su elección) o quedará Restrained. Puede repetir el save al final de cada uno de sus turnos.' },
+        { id:'anc-turn-faithless', name:'Turn the Faithless',
+          source:'Oath of the Ancients · Nv3', type:'active', action:'Acción', range:'9 m', recharge:'Short/Long Rest',
+          desc:'Canal: fiends y fey en 9 m deben superar save de SAB o huir 1 minuto.',
+          fullDesc:'Puedes usar tu Channel Divinity para ahuyentar a los enemigos de la naturaleza. Como acción, presentas tu símbolo sagrado y fiends y fey que puedan verte a 9 metros deben superar un save de SAB o quedar Asustados durante 1 minuto.' },
+        ...(nivel >= 7 ? [{ id:'anc-aura-of-warding', name:'Aura of Warding',
+          source:'Oath of the Ancients · Nv7', type:'passive', action:'Pasiva', range:`${nivel >= 18 ? 9 : 3} m`, recharge:null,
+          desc:`Vos y aliados a ${nivel >= 18 ? 9 : 3} m tienen resistencia al daño de conjuros.`,
+          fullDesc:'A nivel 7, la magia antigua que juraste preservar rodea a tus aliados. Tú y las criaturas amistosas a 3 metros (9 m a nv18) tenéis resistencia al daño causado por conjuros.' }] : []),
+        ...(nivel >= 15 ? [{ id:'anc-undying-sentinel', name:'Undying Sentinel',
+          source:'Oath of the Ancients · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:'Long Rest',
+          desc:'Cuando caés a 0 HP podés quedar en 1 HP en su lugar (1/Long Rest). No envejecés.',
+          fullDesc:'A nivel 15, cuando caerías a 0 puntos de golpe y no morirías instantáneamente, puedes optar por quedar en 1 HP en su lugar. No puedes volver a usar esta feature hasta completar un Long Rest. Además, ya no envejecés.' }] : []),
+        ...(nivel >= 20 ? [{ id:'anc-elder-champion', name:'Elder Champion',
+          source:'Oath of the Ancients · Nv20', type:'active', action:'Acción bonus', range:'Personal', recharge:'Long Rest',
+          desc:'Te transformás en un avatar de la naturaleza (1 min): curación 10 HP/turno, conjuros como acción bonus, aura afecta fiends/fey automáticamente.',
+          fullDesc:'A nivel 20, puedes asumir la forma de una antigua fuerza de la naturaleza. Como acción adicional, te transformas durante 1 minuto: recuperas 10 HP al inicio de cada turno; puedes lanzar conjuros de paladín como acción adicional (además de tu acción normal); los fiends y las fey tienen desventaja en sus saves contra tus conjuros y Channel Divinity.' }] : []),
+      ],
+    },
+
+    'Oath of Vengeance': {
+      clase: 'Paladín',
+      resources: (nivel) => [
+        { id:'channel-divinity-ven', name:'Channel Divinity',
+          current: 1, max: 1, recharge:'short',
+          note:'Abjure Enemy · Vow of Enmity' },
+      ],
+      features: (nivel) => [
+        { id:'ven-abjure-enemy', name:'Abjure Enemy',
+          source:'Oath of Vengeance · Nv3', type:'active', action:'Acción', range:'18 m', recharge:'Short/Long Rest',
+          desc:'Canal: una criatura en 18 m debe superar save de SAB o queda Asustada y con velocidad 0 durante 1 min.',
+          fullDesc:'Puedes usar tu Channel Divinity para abrumar a un enemigo con terror divino. Como acción, eliges una criatura a 18 metros que puedas ver. Debe superar un save de SAB o quedará Asustada y su velocidad se reduce a 0 durante 1 minuto. Puede repetir el save al final de cada uno de sus turnos.' },
+        { id:'ven-vow-of-enmity', name:'Vow of Enmity',
+          source:'Oath of Vengeance · Nv3', type:'active', action:'Acción bonus', range:'3 m', recharge:'Short/Long Rest',
+          desc:'Canal: tenés ventaja en todas las tiradas de ataque contra esa criatura durante 1 min.',
+          fullDesc:'Puedes usar tu Channel Divinity para pronunciar un voto de enmidad contra un enemigo. Como acción adicional, obtienes ventaja en todas las tiradas de ataque contra la criatura durante 1 minuto, o hasta que caiga a 0 HP o quede incapacitada.' },
+        ...(nivel >= 7 ? [{ id:'ven-relentless-avenger', name:'Relentless Avenger',
+          source:'Oath of Vengeance · Nv7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando golpeás con un ataque de oportunidad, podés mover la mitad de tu velocidad sin provocar ataques de oportunidad.',
+          fullDesc:'A nivel 7, tu determinación sobrenatural te hace prácticamente imposible de escapar. Cuando golpeas con un ataque de oportunidad, puedes mover hasta la mitad de tu velocidad inmediatamente después del ataque como parte de la misma reacción. Este movimiento no provoca ataques de oportunidad.' }] : []),
+        ...(nivel >= 15 ? [{ id:'ven-soul-of-vengeance', name:'Soul of Vengeance',
+          source:'Oath of Vengeance · Nv15', type:'passive', action:'Reacción', range:'Melee', recharge:null,
+          desc:'Cuando la criatura bajo tu Vow of Enmity ataca, podés usar tu reacción para hacerle un ataque cuerpo a cuerpo.',
+          fullDesc:'A nivel 15, la autoridad de tu voto de enmidad se vuelve más poderosa. Cuando una criatura bajo tu Vow of Enmity hace un ataque, puedes usar tu reacción para hacer un ataque cuerpo a cuerpo contra esa criatura si está a tu alcance.' }] : []),
+        ...(nivel >= 20 ? [{ id:'ven-avenging-angel', name:'Avenging Angel',
+          source:'Oath of Vengeance · Nv20', type:'active', action:'Acción bonus', range:'Personal', recharge:'Long Rest',
+          desc:'Alas durante 1 hora: vuelo 18 m. Aura de Menace 9 m — enemigos Asustados (save SAB negación).',
+          fullDesc:'A nivel 20, puedes asumir la forma de un ángel vengador. Como acción adicional, obtienes alas con velocidad de vuelo de 18 metros durante 1 hora. Al mismo tiempo, un aura de 9 metros emana de vos: cada criatura hostil a 9 metros que pueda verte debe superar un save de SAB o quedará Asustada de vos durante 1 minuto o hasta que reciba daño.' }] : []),
+      ],
+    },
+
+    'Oath of Glory': {
+      clase: 'Paladín',
+      resources: (nivel) => [
+        { id:'channel-divinity-glo', name:'Channel Divinity',
+          current: 1, max: 1, recharge:'short',
+          note:'Inspiring Smite · Peerless Athlete' },
+      ],
+      features: (nivel) => [
+        { id:'glo-inspiring-smite', name:'Inspiring Smite',
+          source:'Oath of Glory · Nv3', type:'active', action:'Acción bonus (tras Divine Smite)', range:'9 m', recharge:'Short/Long Rest',
+          desc:'Canal: tras usar Divine Smite, distribuís temp HP iguales a 2d8 + nivel entre criaturas a 9 m (incluyéndote).',
+          fullDesc:'Puedes usar tu Channel Divinity inmediatamente después de infligir daño con Divine Smite. Como acción adicional, distribuyes puntos de golpe temporales entre vos y aliados que elijas a 9 metros. El total es 2d8 + tu nivel de paladín, repartido como quieras.' },
+        { id:'glo-peerless-athlete', name:'Peerless Athlete',
+          source:'Oath of Glory · Nv3', type:'active', action:'Acción bonus', range:'Personal', recharge:'Short/Long Rest',
+          desc:'Canal: durante 10 min tenés ventaja en Athletics y Acrobatics, cargas el doble, y tu salto aumenta 3 m horizontal y 1,5 m vertical.',
+          fullDesc:'Como acción adicional, Channel Divinity: durante 10 minutos tienes ventaja en checks de Atletismo y Acrobacia; puedes cargar, empujar o arrastrar el doble de lo normal; la distancia de salto largo aumenta 3 metros y el salto alto 1,5 metros.' },
+        ...(nivel >= 7 ? [{ id:'glo-aura-of-alacrity', name:'Aura of Alacrity',
+          source:'Oath of Glory · Nv7', type:'passive', action:'Pasiva', range:`${nivel >= 18 ? 9 : 3} m`, recharge:null,
+          desc:`Tu velocidad aumenta 3 m. Los aliados a ${nivel >= 18 ? 9 : 3} m también ganan +3 m de velocidad en su primer turno de combate.`,
+          fullDesc:'A nivel 7, tu velocidad aumenta en 3 metros. Además, cuando iniciás un combate y no estás incapacitado, las criaturas amistosas que estén a 3 metros (9 m a nv18) tienen su velocidad aumentada en 3 metros hasta el final de su primer turno.' }] : []),
+        ...(nivel >= 15 ? [{ id:'glo-glorious-defense', name:'Glorious Defense',
+          source:'Oath of Glory · Nv15', type:'active', action:'Reacción', range:'3 m', recharge:null,
+          desc:'Cuando vos o un aliado a 3 m son atacados, podés agregar tu mod de CAR a la CA hasta el final del turno. Si el ataque falla, atacás al atacante.',
+          fullDesc:'A nivel 15, puedes transformar la derrota de un aliado en un momento de gloria. Cuando vos o una criatura amistosa a 3 metros es atacada, podés usar tu reacción para agregar tu modificador de Carisma a la CA del objetivo contra ese ataque. Si el ataque falla como resultado, puedes hacer un ataque cuerpo a cuerpo contra el atacante como parte de la misma reacción si está a tu alcance.' }] : []),
+        ...(nivel >= 20 ? [{ id:'glo-living-legend', name:'Living Legend',
+          source:'Oath of Glory · Nv20', type:'active', action:'Acción bonus', range:'Personal', recharge:'Long Rest',
+          desc:'Durante 1 min: CAR en ataques en lugar de FUE/DES, retirás saves fallados (1/turno), y aliados que salven contra Asustados/Encantados pueden retirar.',
+          fullDesc:'A nivel 20 puedes invocar el poder de tu propia leyenda. Como acción adicional (durante 1 minuto): podés usar CAR en lugar de FUE o DES en tiradas de ataque y daño; cuando fallás un save podés retirar la tirada (1 vez por turno); cuando una criatura amistosa falla un save contra ser Asustada o Encantada, puede retirar.' }] : []),
       ],
     },
 
@@ -2708,6 +2947,27 @@ const Characters = (() => {
     { id:'sub-swashbuckler',  name:'Swashbuckler',    desc:'Carisma en combate, Sneak Attack sin aliados, duelos.' },
   ];
 
+  const PALADIN_SUBCLASES = [
+    { id:'sub-oath-devotion',   name:'Oath of Devotion',      desc:'Sacred Weapon, Aura of Devotion, Holy Nimbus. El paladín clásico.' },
+    { id:'sub-oath-ancients',   name:'Oath of the Ancients',  desc:'Naturaleza y luz: Aura de resistencia a conjuros, Undying Sentinel.' },
+    { id:'sub-oath-vengeance',  name:'Oath of Vengeance',     desc:'Caza implacable: Vow of Enmity, ventaja en ataques, Avenging Angel.' },
+    { id:'sub-oath-glory',      name:'Oath of Glory',         desc:'Heroísmo épico: Inspiring Smite, Aura of Alacrity, Living Legend.' },
+  ];
+
+  const MONJE_SUBCLASES = [
+    { id:'sub-way-open-hand',      name:'Way of the Open Hand',      desc:'Open Hand Technique, Wholeness of Body, Quivering Palm. El Monje clásico.' },
+    { id:'sub-way-shadow',         name:'Way of Shadow',             desc:'Teletransporte entre sombras, invisibilidad, ki para hechizos oscuros.' },
+    { id:'sub-way-four-elements',  name:'Way of the Four Elements',  desc:'Lanzar hechizos elementales (fuego, agua, tierra, aire) gastando Ki.' },
+    { id:'sub-way-astral-self',    name:'Way of the Astral Self',    desc:'Brazos astrales a 3m, rostro astral, forma astral completa nv17.' },
+  ];
+
+  const BARBARO_SUBCLASES = [
+    { id:'sub-path-berserker',     name:'Path of the Berserker',     desc:'Frenzy en Rage, Mindless Rage, Intimidating Presence. Destrucción pura.' },
+    { id:'sub-path-totem-warrior', name:'Path of the Totem Warrior', desc:'Espíritu animal (Oso/Águila/Lobo): resistencia, vuelo o tumbar enemigos.' },
+    { id:'sub-path-zealot',        name:'Path of the Zealot',        desc:'Daño divino extra, no morís en Rage, Zealous Presence para aliados.' },
+    { id:'sub-path-wild-magic',    name:'Path of Wild Magic',        desc:'Wild Surge al ragear, efectos mágicos aleatorios, Bolstering Magic.' },
+  ];
+
   const HECHICERO_SUBCLASES = [
     { id:'sub-draconic-bloodline', name:'Draconic Bloodline', desc:'Origen dracónico: AC natural, resistencia elemental, alas nv14.' },
     { id:'sub-wild-magic',         name:'Wild Magic',         desc:'Magia impredecible: Wild Surge, Tides of Chaos, Bend Luck.' },
@@ -2773,6 +3033,10 @@ const Characters = (() => {
       { id:'asi-19',          level:19, type:'asi',       label:'Ability Score Improvement' },
     ],
     'Bárbaro': [
+      { id:'subclase-3', level:3, type:'pick1', label:'Primal Path (Subclase)',
+        prompt:'Elegí tu camino primordial:',
+        options: BARBARO_SUBCLASES,
+        appliesSubclass: true },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
@@ -2825,6 +3089,10 @@ const Characters = (() => {
       { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
     ],
     'Monje': [
+      { id:'subclase-3', level:3, type:'pick1', label:'Monastic Tradition (Subclase)',
+        prompt:'Elegí tu tradición monástica:',
+        options: MONJE_SUBCLASES,
+        appliesSubclass: true },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
@@ -2837,6 +3105,10 @@ const Characters = (() => {
         options: FIGHTING_STYLES_FIGHTER.filter(f =>
           ['fs-defense','fs-dueling','fs-great-weapon','fs-protection','fs-blind-fighting','fs-interception'].includes(f.id)
         )},
+      { id:'subclase-3', level:3, type:'pick1', label:'Sacred Oath (Subclase)',
+        prompt:'Elegí tu juramento sagrado:',
+        options: PALADIN_SUBCLASES,
+        appliesSubclass: true },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
@@ -2908,7 +3180,7 @@ const Characters = (() => {
     const claseCfg = CHOICES_CONFIG[char.clase] || [];
     const choiceDef = claseCfg.find(c => c.id === choiceId);
     if (choiceDef && choiceDef.appliesSubclass && typeof value === 'string') {
-      const allSubclaseLists = [GUERRERO_SUBCLASES, EXPLORADOR_SUBCLASES, PICARO_SUBCLASES, HECHICERO_SUBCLASES, MAGO_SUBCLASES, BRUJO_SUBCLASES];
+      const allSubclaseLists = [GUERRERO_SUBCLASES, EXPLORADOR_SUBCLASES, PICARO_SUBCLASES, HECHICERO_SUBCLASES, MAGO_SUBCLASES, BRUJO_SUBCLASES, BARBARO_SUBCLASES, MONJE_SUBCLASES, PALADIN_SUBCLASES];
       let subclaseName = null;
       for (const list of allSubclaseLists) {
         const found = list.find(s => s.id === value || s.name === value);
