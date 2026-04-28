@@ -47,55 +47,83 @@ const ExportPDF = (() => {
     return _templateCache;
   }
 
+  // ── _resolve — resuelve una referencia indirecta si es necesario ─────────
+  function _resolve(pdfDoc, obj) {
+    if (!obj) return null;
+    // PDFRef: referencia indirecta → resolver
+    if (obj.constructor && obj.constructor.name === 'PDFRef') {
+      return pdfDoc.context.lookup(obj);
+    }
+    return obj;
+  }
+
+  // ── _getText — decodifica un PDFString a texto ────────────────────────────
+  function _getText(obj) {
+    if (!obj) return '';
+    if (obj.decodeText) return obj.decodeText();
+    const s = obj.toString();
+    // PDFString viene como (texto) o <hex>
+    if (s.startsWith('(') && s.endsWith(')')) return s.slice(1, -1);
+    return s;
+  }
+
   // ── patch_fields — equivalente al Python ─────────────────────────────────
   // Recorre TODAS las anotaciones del PDF, limpia cada campo y luego:
   // 1) si hay entrada en xyValues que coincide por nombre+posición → usa ese valor
   // 2) si hay entrada en xyRename que coincide → renombra el /T y asigna valor
   // 3) si el nombre está en fieldValues → usa ese valor
+  //
+  // IMPORTANTE: usa .get() + _resolve() en lugar de lookupMaybe() con type
+  // constraint, que lanza excepción cuando el valor es una referencia indirecta.
   async function _patchFields(pdfDoc, fieldValues, xyValues, xyRename) {
     // xyValues : [{ t, xMin, xMax, yMin, yMax, value }]
     // xyRename : [{ t, xMin, xMax, yMin, yMax, newName, value }]
-    xyValues = xyValues || [];
+    xyValues = xyValues ? [...xyValues] : [];
     xyRename = xyRename || [];
+
+    const pN = PDFLib.PDFName.of.bind(PDFLib.PDFName);
 
     const pages = pdfDoc.getPages();
     for (const page of pages) {
-      const annotsRef = page.node.lookupMaybe(
-        PDFLib.PDFName.of('Annots'), PDFLib.PDFArray
-      );
-      if (!annotsRef) continue;
+      // Usar .get() para obtener el raw value (puede ser PDFRef o PDFArray)
+      // y luego resolver la referencia manualmente — evita el bug de lookupMaybe
+      const annotsRaw = page.node.get(pN('Annots'));
+      if (!annotsRaw) continue;
+      const annots = _resolve(pdfDoc, annotsRaw);
+      if (!annots || !annots.size) continue;
 
-      for (let i = 0; i < annotsRef.size(); i++) {
-        const ref   = annotsRef.lookup(i);
-        const annot = (ref instanceof PDFLib.PDFDict)
-          ? ref
-          : pdfDoc.context.lookup(ref);
-        if (!annot || !(annot instanceof PDFLib.PDFDict)) continue;
+      for (let i = 0; i < annots.size(); i++) {
+        const ref   = annots.lookup(i);
+        const annot = _resolve(pdfDoc, ref);
+        if (!annot || !annot.get) continue;
 
         // Obtener nombre de campo (/T)
-        const tObj = annot.lookupMaybe(PDFLib.PDFName.of('T'));
-        let   t    = tObj ? (tObj.decodeText ? tObj.decodeText() : tObj.toString().replace(/[()]/g,'')) : '';
+        const tRaw = annot.get(pN('T'));
+        let t = tRaw ? _getText(_resolve(pdfDoc, tRaw)) : '';
 
         // Obtener tipo de campo (/FT)
-        const ftObj = annot.lookupMaybe(PDFLib.PDFName.of('FT'));
-        const ft    = ftObj ? ftObj.toString() : '';
+        const ftRaw = annot.get(pN('FT'));
+        const ft = ftRaw ? ftRaw.toString() : '';
 
         // Obtener posición (/Rect)
-        const rectArr = annot.lookupMaybe(PDFLib.PDFName.of('Rect'), PDFLib.PDFArray);
         let ax = 0, ay = 0;
-        if (rectArr) {
-          try {
-            ax = rectArr.lookup(0).asNumber();
-            ay = rectArr.lookup(1).asNumber();
-          } catch (_) {}
+        const rectRaw = annot.get(pN('Rect'));
+        if (rectRaw) {
+          const rect = _resolve(pdfDoc, rectRaw);
+          if (rect && rect.lookup) {
+            try {
+              ax = rect.lookup(0).asNumber();
+              ay = rect.lookup(1).asNumber();
+            } catch (_) {}
+          }
         }
 
         // 0) Renombrar si coincide con xyRename
         for (const r of xyRename) {
           if (t === r.t && ax >= r.xMin && ax <= r.xMax && ay >= r.yMin && ay <= r.yMax) {
-            annot.set(PDFLib.PDFName.of('T'), PDFLib.PDFString.of(r.newName));
+            annot.set(pN('T'), PDFLib.PDFString.of(r.newName));
             t = r.newName;
-            xyValues = [...xyValues, { t: r.newName, xMin: r.xMin, xMax: r.xMax, yMin: r.yMin, yMax: r.yMax, value: r.value }];
+            xyValues.push({ t: r.newName, xMin: r.xMin, xMax: r.xMax, yMin: r.yMin, yMax: r.yMax, value: r.value });
             break;
           }
         }
@@ -103,11 +131,11 @@ const ExportPDF = (() => {
         // 1) Limpiar campo
         if (ft || t) {
           if (ft === '/Btn') {
-            annot.set(PDFLib.PDFName.of('V'),  PDFLib.PDFName.of('Off'));
-            annot.set(PDFLib.PDFName.of('AS'), PDFLib.PDFName.of('Off'));
+            annot.set(pN('V'),  PDFLib.PDFName.of('Off'));
+            annot.set(pN('AS'), PDFLib.PDFName.of('Off'));
           } else {
-            annot.set(PDFLib.PDFName.of('V'), PDFLib.PDFString.of(''));
-            annot.delete(PDFLib.PDFName.of('AP'));
+            annot.set(pN('V'), PDFLib.PDFString.of(''));
+            annot.delete(pN('AP'));
           }
         }
 
@@ -129,12 +157,14 @@ const ExportPDF = (() => {
         if (matchedVal !== null) {
           const valStr = String(matchedVal ?? '');
           if (ft === '/Btn') {
-            const v = PDFLib.PDFName.of(valStr.startsWith('/') ? valStr.slice(1) : 'Off');
-            annot.set(PDFLib.PDFName.of('V'),  v);
-            annot.set(PDFLib.PDFName.of('AS'), v);
+            // Los checkboxes usan /Yes o /Off (sin el slash en PDFName.of)
+            const onVal = valStr === '/Yes' || valStr === 'Yes' || valStr === 'true' || valStr === 'Yes';
+            const v = PDFLib.PDFName.of(onVal ? 'Yes' : 'Off');
+            annot.set(pN('V'),  v);
+            annot.set(pN('AS'), v);
           } else {
-            annot.set(PDFLib.PDFName.of('V'), PDFLib.PDFString.of(valStr));
-            annot.delete(PDFLib.PDFName.of('AP'));
+            annot.set(pN('V'), PDFLib.PDFString.of(valStr));
+            annot.delete(pN('AP'));
           }
         }
       }
@@ -431,11 +461,12 @@ const ExportPDF = (() => {
 
     // ── NeedAppearances ───────────────────────────────────────────────────
     try {
-      const acroForm = pdfDoc.catalog.lookupMaybe(
-        PDFLib.PDFName.of('AcroForm'), PDFLib.PDFDict
-      );
-      if (acroForm) {
-        acroForm.set(PDFLib.PDFName.of('NeedAppearances'), PDFLib.PDFBool.True);
+      const acroFormRaw = pdfDoc.catalog.get(PDFLib.PDFName.of('AcroForm'));
+      if (acroFormRaw) {
+        const acroForm = _resolve(pdfDoc, acroFormRaw);
+        if (acroForm && acroForm.set) {
+          acroForm.set(PDFLib.PDFName.of('NeedAppearances'), PDFLib.PDFBool.True);
+        }
       }
     } catch (_) {}
 
