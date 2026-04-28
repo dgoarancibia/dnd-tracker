@@ -1877,11 +1877,257 @@ const Characters = (() => {
           current: 1, max: 1, recharge:'short',
           note:'Sacred Weapon · Turn the Unholy' },
       ],
-      features: () => [
+      features: (nivel) => [
         { id:'dev-sacred-weapon', name:'Sacred Weapon',
           source:'Oath of Devotion · Nv3', type:'active', action:'Acción bonus', range:'Personal', recharge:'Short/Long Rest',
           desc:'Canal: arma brilla (20ft luz), +CAR mod a tiradas de ataque por 1 min.',
-          fullDesc:'Como acción adicional, puedes imbuid un arma que sostienes con energía positiva, usando tu Canalizar Divinidad. Durante 1 minuto, añades tu modificador de Carisma a las tiradas de ataque hechas con esa arma (mínimo +1). El arma también emite luz brillante en un radio de 6 metros y luz tenue 6 metros más. Si el arma ya está mágica, los bonificadores se acumulan.' },
+          fullDesc:'Como acción adicional, puedes imbuir un arma que sostienes con energía positiva. Durante 1 minuto, añades tu modificador de Carisma a las tiradas de ataque hechas con esa arma (mínimo +1). El arma también emite luz brillante en un radio de 6 metros.' },
+        ...(nivel >= 7 ? [{ id:'dev-aura-of-devotion', name:'Aura of Devotion',
+          source:'Oath of Devotion · Nv7', type:'passive', action:'Pasiva', range:'3 m (9m nv18)', recharge:null,
+          desc:`Vos y aliados a ${nivel >= 18 ? 9 : 3} m no podés ser Encantados mientras estés consciente.`,
+          fullDesc:'A nivel 7, tú y las criaturas amistosas a 3 metros no pueden ser encantadas mientras estés consciente. A nivel 18, el radio aumenta a 9 metros.' }] : []),
+        ...(nivel >= 15 ? [{ id:'dev-purity-of-spirit', name:'Purity of Spirit',
+          source:'Oath of Devotion · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Siempre tenés el efecto de Protection from Evil and Good activo.',
+          fullDesc:'A nivel 15, estás siempre bajo el efecto del conjuro Protection from Evil and Good.' }] : []),
+        ...(nivel >= 20 ? [{ id:'dev-holy-nimbus', name:'Holy Nimbus',
+          source:'Oath of Devotion · Nv20', type:'active', action:'Acción', range:'Personal', recharge:'Long Rest',
+          desc:'Aura de 9 m: 10 radiante a enemigos por turno. Ventaja en saves contra conjuros de fiends/muertos.',
+          fullDesc:'A nivel 20, como acción puedes emanar un aura de luz solar. Durante 1 minuto, luz brillante en 9 m y tenue 9 m más. Los enemigos que inicien su turno en la luz brillante reciben 10 daño radiante. Además, tienes ventaja en tiradas de salvación contra conjuros lanzados por fiends o muertos vivientes.' }] : []),
+      ],
+    },
+
+    // ── HECHICERO ─────────────────────────────────────────────────────────────
+    'Draconic Bloodline': {
+      clase: 'Hechicero',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'db-dragon-ancestor', name:'Dragon Ancestor',
+          source:'Draconic Bloodline · Nv1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Elegís un tipo de dragón. Obtenés ventaja en checks de Persuasión con dragones de ese tipo.',
+          fullDesc:'A nivel 1 elige un tipo de dragón (fuego, frío, ácido, rayo, veneno, etc.). Hablas Dracónico. Tienes ventaja en checks de Carisma al interactuar con dragones de ese tipo.' },
+        { id:'db-draconic-resilience', name:'Draconic Resilience',
+          source:'Draconic Bloodline · Nv1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'HP máximo +1 por nivel. CA base 13 + DES mod cuando no llevás armadura.',
+          fullDesc:'La magia dracónica fluye por tu cuerpo. Tu HP máximo aumenta en 1 y sigue aumentando en 1 cada vez que subes un nivel. Además cuando no llevas armadura, tu CA es 13 + tu modificador de Destreza.' },
+        ...(nivel >= 6 ? [{ id:'db-elemental-affinity', name:'Elemental Affinity',
+          source:'Draconic Bloodline · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Conjuros del tipo dracónico: +CAR mod al daño. Gasta 1 SP: resistencia a ese tipo 1 hora.',
+          fullDesc:'A nivel 6, cuando lanzas un conjuro que hace daño del tipo asociado a tu dragón ancestral, añades tu modificador de Carisma al daño. Además, puedes gastar 1 Sorcery Point para ganar resistencia a ese tipo de daño durante 1 hora.' }] : []),
+        ...(nivel >= 14 ? [{ id:'db-dragon-wings', name:'Dragon Wings',
+          source:'Draconic Bloodline · Nv14', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
+          desc:'Acción bonus: sacás alas dracónicas. Velocidad de vuelo igual a tu velocidad normal.',
+          fullDesc:'A nivel 14, ganas la capacidad de hacer brotar alas de dragón de tu espalda. Como acción adicional, puedes hacer brotar las alas y ganar velocidad de vuelo igual a tu velocidad actual. Puedes retraerlas con otra acción adicional.' }] : []),
+        ...(nivel >= 18 ? [{ id:'db-draconic-presence', name:'Draconic Presence',
+          source:'Draconic Bloodline · Nv18', type:'active', action:'Acción', range:'18 m', recharge:'Long Rest',
+          desc:'6 SP: aura 18 m durante 1 min — criaturas Asustadas o Encantadas (save SAB negación).',
+          fullDesc:'A nivel 18, puedes canalizar la presencia aterradora de tu dragón ancestral. Como acción, gastas 5 Sorcery Points para envolver un aura de 18 metros. Durante 1 minuto, cada criatura hostil que inicie su turno en el aura debe superar un save de SAB o quedar Asustada (o Encantada, tú eliges) durante el turno.' }] : []),
+      ],
+    },
+
+    'Wild Magic': {
+      clase: 'Hechicero',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'wm-wild-magic-surge', name:'Wild Magic Surge',
+          source:'Wild Magic · Nv1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando lanzás un conjuro de nv1+, el DM puede pedir tirar d20. Con 1: tirás en la tabla de Wild Magic.',
+          fullDesc:'Tus conjuros pueden desencadenar oleadas de magia salvaje. Cuando lanzas un conjuro de nivel 1 o superior, el DM puede pedirte que tires un d20. Con un 1, ocurre un efecto aleatorio de la tabla de Oleada de Magia Salvaje.' },
+        { id:'wm-tides-of-chaos', name:'Tides of Chaos',
+          source:'Wild Magic · Nv1', type:'active', action:'Ninguna', range:'Personal', recharge:'Long Rest',
+          desc:'1/Long Rest: ganás ventaja en 1 tirada de ataque, check o save. El DM puede gatillar una Surge.',
+          fullDesc:'Puedes manipular las fuerzas del azar para ganar ventaja en una tirada de ataque, prueba de característica o tirada de salvación. Una vez que lo hagas, debes terminar un descanso largo para volver a hacerlo. Si lanzas un conjuro de nivel 1 o superior antes de recuperar Tides of Chaos, el DM puede pedirte tirar en la tabla de Oleada de Magia Salvaje.' },
+        ...(nivel >= 6 ? [{ id:'wm-bend-luck', name:'Bend Luck',
+          source:'Wild Magic · Nv6', type:'active', action:'Reacción (2 SP)', range:'18 m', recharge:null,
+          desc:'2 SP: como reacción, sumás o restás 1d4 a la tirada de ataque, check o save de otra criatura.',
+          fullDesc:'A nivel 6, tienes la capacidad de retorcer el destino usando tu magia salvaje. Cuando otra criatura visible hace una tirada de ataque, prueba de característica o tirada de salvación, puedes usar tu reacción y gastar 2 puntos de hechicería para tirar 1d4 y aplicar el número como bonificación o penalización a esa tirada.' }] : []),
+        ...(nivel >= 14 ? [{ id:'wm-controlled-chaos', name:'Controlled Chaos',
+          source:'Wild Magic · Nv14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando tirás en la tabla de Wild Magic Surge, podés tirar dos veces y elegir el resultado.',
+          fullDesc:'A nivel 14, ganas un poco de control sobre las oleadas de magia salvaje. Cuando tiras en la tabla de Oleada de Magia Salvaje, puedes tirar el d100 dos veces y usar cualquiera de los dos resultados.' }] : []),
+        ...(nivel >= 18 ? [{ id:'wm-spell-bombardment', name:'Spell Bombardment',
+          source:'Wild Magic · Nv18', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'1 vez por turno: cuando un dado de daño de conjuro saca el máximo, tirás un dado adicional.',
+          fullDesc:'A nivel 18 la energía de tus conjuros aumenta. Cuando tiras daño de un conjuro y obtienes el resultado más alto posible en un dado, elige uno de esos dados, tíralo de nuevo y suma el resultado al daño total del conjuro. Puedes usar esta habilidad una vez por turno.' }] : []),
+      ],
+    },
+
+    'Storm Sorcery': {
+      clase: 'Hechicero',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'ss-wind-speaker', name:'Wind Speaker',
+          source:'Storm Sorcery · Nv1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Hablás Primordial (y sus dialectos: Aquan, Auran, Ignan, Terran).',
+          fullDesc:'El poder de la tormenta que fluye por ti te permite hablar el lenguaje de los vientos y las olas. Tienes habla del Primordial, incluidos sus dialectos Aquan, Auran, Ignan y Terran.' },
+        { id:'ss-tempestuous-magic', name:'Tempestuous Magic',
+          source:'Storm Sorcery · Nv1', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
+          desc:'Antes/después de lanzar un conjuro de nv1+: podés volar 3 m sin provocar ataques de oportunidad.',
+          fullDesc:'A nivel 1, puedes usar una acción adicional justo antes o después de lanzar un conjuro de nivel 1 o superior para volar hasta 3 metros sin provocar ataques de oportunidad.' },
+        ...(nivel >= 6 ? [{ id:'ss-heart-of-storm', name:'Heart of the Storm',
+          source:'Storm Sorcery · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Resistencia a relámpago y trueno. Al lanzar conjuro de relámpago/trueno: 1d6 daño a criaturas en 3 m.',
+          fullDesc:'A nivel 6 ganas resistencia a daño de relámpago y de trueno. Además, cuando empiezas a lanzar un conjuro de nivel 1 o superior que cause daño de relámpago o trueno, puedes elegir criaturas visibles a 3 metros para que reciban 1d6 de daño de relámpago o trueno (tu elección).' }] : []),
+        ...(nivel >= 14 ? [{ id:'ss-storm-guide', name:'Storm Guide',
+          source:'Storm Sorcery · Nv14', type:'active', action:'Ninguna', range:'Varía', recharge:null,
+          desc:'Controlás el clima: detener lluvia en 6 m radio (bonus action) o cambiar viento en 30 m (acción).',
+          fullDesc:'A nivel 14, ganas la habilidad de controlar sutilmente el clima a tu alrededor. Si llueve, puedes usar una acción adicional para hacer cesar la lluvia en un área de 6 metros centrada en ti. Con una acción, puedes elegir la dirección del viento en un radio de 30 metros centrado en ti. Estos efectos duran hasta el inicio de tu siguiente turno.' }] : []),
+        ...(nivel >= 18 ? [{ id:'ss-wind-soul', name:'Wind Soul',
+          source:'Storm Sorcery · Nv18', type:'active', action:'Acción bonus', range:'Personal', recharge:'Short/Long Rest',
+          desc:'Vuelo permanente 18 m. Gasta 3 SP: 10 min, vos y hasta 3 aliados en 9 m vuelan también.',
+          fullDesc:'A nivel 18 ganas inmunidad a daño de relámpago y trueno, y velocidad de vuelo permanente de 18 metros. Como acción adicional, puedes gastar 3 puntos de hechicería para otorgar vuelo de 9 metros a hasta 3 criaturas consentidoras a 9 metros durante 1 hora. Debes hacer este gasto desde un descanso corto o largo.' }] : []),
+      ],
+    },
+
+    // ── MAGO ──────────────────────────────────────────────────────────────────
+    'School of Evocation': {
+      clase: 'Mago',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'evo-sculpt-spells', name:'Sculpt Spells',
+          source:'School of Evocation · Nv2', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Al lanzar un conjuro de evocación, podés excluir a aliados del área — automáticamente pasan el save.',
+          fullDesc:'A nivel 2, puedes crear bolsas de seguridad dentro de los efectos de tus conjuros de evocación. Cuando lanzas un conjuro de evocación que afecta a otras criaturas que puedes ver, puedes elegir un número de ellas igual a 1 + el nivel del conjuro. Las criaturas elegidas superan automáticamente sus tiradas de salvación contra el conjuro y no reciben daño si normalmente recibirían la mitad.' },
+        ...(nivel >= 6 ? [{ id:'evo-potent-cantrip', name:'Potent Cantrip',
+          source:'School of Evocation · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Tus cantrips dañinos hacen daño parcial incluso si el objetivo pasa el save.',
+          fullDesc:'A nivel 6, tus cantrips dañinos afectan incluso a las criaturas que evitan sus efectos. Cuando una criatura supera una tirada de salvación contra un cantrip tuyo, recibe la mitad del daño del cantrip (si causa daño) pero no sufre ningún efecto adicional del cantrip.' }] : []),
+        ...(nivel >= 10 ? [{ id:'evo-empowered-evocation', name:'Empowered Evocation',
+          source:'School of Evocation · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Sumás tu modificador de INT al daño de cualquier conjuro de evocación de Mago.',
+          fullDesc:'A nivel 10, puedes añadir tu modificador de Inteligencia a las tiradas de daño de los conjuros del mago de la escuela de Evocación que lancas.' }] : []),
+        ...(nivel >= 14 ? [{ id:'evo-overchannel', name:'Overchannel',
+          source:'School of Evocation · Nv14', type:'active', action:'Ninguna', range:'Personal', recharge:null,
+          desc:'Al lanzar un conjuro de nv1-5, podés maximizar el daño. Usarlo de nuevo antes de LR: 2d12 daño necrótico por nivel del conjuro.',
+          fullDesc:'A nivel 14, puedes aumentar el poder de tus conjuros más simples. Cuando lanzas un conjuro de mago de nivel 1-5 que causa daño, puedes tratar todos los dados de daño del conjuro como si hubieran sacado el resultado máximo posible. La primera vez que lo usas no sufres efectos adversos. Si lo usas de nuevo antes de un descanso largo, sufres 2d12 daño necrótico por nivel del conjuro, y no puedes mitigar ese daño.' }] : []),
+      ],
+    },
+
+    'School of Abjuration': {
+      clase: 'Mago',
+      resources: (nivel) => [
+        { id:'arcane-ward', name:'Arcane Ward',
+          current: nivel * 2, max: nivel * 2, recharge:'long',
+          note:`Escudo mágico · ${nivel * 2} HP · absorbe daño antes que tus HP` },
+      ],
+      features: (nivel) => [
+        { id:'abj-abjuration-savant', name:'Abjuration Savant',
+          source:'School of Abjuration · Nv2', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Copiar conjuros de abjuración al libro de hechizos cuesta la mitad de tiempo y oro.',
+          fullDesc:'A nivel 2, el oro y el tiempo que debes invertir para copiar un conjuro de abjuración en tu libro de hechizos se reduce a la mitad.' },
+        { id:'abj-arcane-ward', name:'Arcane Ward',
+          source:'School of Abjuration · Nv2', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:`Ward mágico con ${nivel * 2} HP. Absorbe daño antes que tus HP. Se recarga lanzando conjuros de abjuración.`,
+          fullDesc:'A nivel 2, puedes tejer la magia alrededor de ti como escudo protector. Cuando lanzas un conjuro de abjuración de nivel 1 o superior, puedes simultáneamente usar una parte de la magia para crear un escudo mágico que dura hasta que termines un descanso largo. El escudo tiene PG máximos iguales a dos veces tu nivel de mago + tu modificador de INT.' },
+        ...(nivel >= 6 ? [{ id:'abj-projected-ward', name:'Projected Ward',
+          source:'School of Abjuration · Nv6', type:'active', action:'Reacción', range:'9 m', recharge:null,
+          desc:'Cuando un aliado en 9 m recibe daño, tu Arcane Ward absorbe el daño en su lugar.',
+          fullDesc:'A nivel 6, cuando una criatura que puedes ver a 9 metros de ti recibe daño, puedes usar tu reacción para que tu Arcane Ward absorba ese daño. Si este daño reduce el ward a 0 PG, la criatura recibe el daño restante.' }] : []),
+        ...(nivel >= 10 ? [{ id:'abj-improved-abjuration', name:'Improved Abjuration',
+          source:'School of Abjuration · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando hacés un check de habilidad como parte de un conjuro de abjuración, sumás tu Prof Bonus.',
+          fullDesc:'A nivel 10, cuando haces una prueba de característica como parte de un conjuro de abjuración (como Counterspell o Dispel Magic), añades tu bonificador de competencia a esa prueba si no está ya incluido.' }] : []),
+        ...(nivel >= 14 ? [{ id:'abj-spell-resistance', name:'Spell Resistance',
+          source:'School of Abjuration · Nv14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Ventaja en saves contra conjuros. Resistencia al daño de conjuros.',
+          fullDesc:'A nivel 14, has adquirido una resistencia notable a los efectos mágicos. Tienes ventaja en las tiradas de salvación contra conjuros. Además, tienes resistencia al daño de los conjuros.' }] : []),
+      ],
+    },
+
+    'School of Divination': {
+      clase: 'Mago',
+      resources: (nivel) => [
+        { id:'portent', name:'Portent',
+          current: nivel >= 14 ? 3 : 2, max: nivel >= 14 ? 3 : 2, recharge:'long',
+          note:'Dados de presagio · reemplazá cualquier tirada antes de que ocurra' },
+      ],
+      features: (nivel) => [
+        { id:'div-divination-savant', name:'Divination Savant',
+          source:'School of Divination · Nv2', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Copiar conjuros de adivinación cuesta la mitad de tiempo y oro.',
+          fullDesc:'A nivel 2, el oro y el tiempo para copiar conjuros de adivinación en tu libro de hechizos se reduce a la mitad.' },
+        { id:'div-portent', name:'Portent',
+          source:'School of Divination · Nv2', type:'active', action:'Ninguna (antes de la tirada)', range:'18 m', recharge:'Long Rest',
+          desc:`Al despertar tirás ${nivel >= 14 ? 3 : 2} d20. Podés reemplazar cualquier tirada con uno de esos resultados (antes de que se tire).`,
+          fullDesc:'A nivel 2, los destellos del futuro comienzan a surgir en tu conciencia. Cuando terminas un descanso largo, tiras dos veces d20 y anota los resultados. Puedes reemplazar cualquier tirada de ataque, prueba de característica o tirada de salvación hecha por ti o cualquier criatura visible con uno de estos resultados. A nivel 14 tiras tres dados.' },
+        ...(nivel >= 6 ? [{ id:'div-expert-divination', name:'Expert Divination',
+          source:'School of Divination · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando lanzás un conjuro de adivinación de nv2+, recuperás un slot gastado de nivel inferior.',
+          fullDesc:'A nivel 6, lanzar conjuros de adivinación resulta tan fácil que recuperas algunos de tus recursos mágicos. Cuando lanzas un conjuro de adivinación de nivel 2 o superior usando un espacio de conjuro, recuperas un espacio de conjuro usado. El espacio recuperado debe ser de un nivel inferior al conjuro que acabas de lanzar, y no puede ser de nivel 6 o superior.' }] : []),
+        ...(nivel >= 10 ? [{ id:'div-the-third-eye', name:'The Third Eye',
+          source:'School of Divination · Nv10', type:'active', action:'Acción', range:'Personal', recharge:'Short/Long Rest',
+          desc:'Elegís 1 beneficio: Darkvision 18m, leer cualquier idioma, ver al plano Etéreo 18m, o visión etérea.',
+          fullDesc:'A nivel 10, puedes usar tu acción para aumentar tus poderes de percepción. Hasta el final de tu siguiente descanso largo, obtienes uno de estos beneficios: visión en la oscuridad hasta 18m; leer cualquier idioma; ver criaturas y objetos invisibles hasta 18m; visión etérea hasta 18m.' }] : []),
+      ],
+    },
+
+    // ── BRUJO ─────────────────────────────────────────────────────────────────
+    'The Fiend': {
+      clase: 'Brujo',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'fiend-dark-ones-blessing', name:"Dark One's Blessing",
+          source:'The Fiend · Nv1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando matás a un enemigo, ganás CAR mod + nivel de Brujo HP temporales.',
+          fullDesc:'A nivel 1, cuando reduces a una criatura hostil a 0 puntos de golpe, ganas puntos de golpe temporales iguales a tu modificador de Carisma + tu nivel de brujo (mínimo 1).' },
+        ...(nivel >= 6 ? [{ id:'fiend-dark-ones-own-luck', name:"Dark One's Own Luck",
+          source:'The Fiend · Nv6', type:'active', action:'Ninguna (en tirada)', range:'Personal', recharge:'Short/Long Rest',
+          desc:'1/Short Rest: cuando hacés un check o save, podés sumar 1d10 al resultado.',
+          fullDesc:'A nivel 6, puedes invocar la suerte de tu patrón. Cuando haces una prueba de característica o tirada de salvación, puedes usar esta habilidad para sumar un d10 al resultado. Puedes hacerlo después de tirar pero antes de saber si el resultado es exitoso. Una vez que uses esta habilidad, debes terminar un descanso corto o largo para volver a usarla.' }] : []),
+        ...(nivel >= 10 ? [{ id:'fiend-fiendish-resilience', name:'Fiendish Resilience',
+          source:'The Fiend · Nv10', type:'active', action:'Descanso corto/largo', range:'Personal', recharge:'Short/Long Rest',
+          desc:'Elegís un tipo de daño después de cada descanso → resistencia a ese tipo.',
+          fullDesc:'A nivel 10, puedes elegir un tipo de daño cuando terminas un descanso corto o largo y ganar resistencia a ese tipo de daño hasta que elijas uno diferente. El daño de armas mágicas o de plata supera esta resistencia.' }] : []),
+        ...(nivel >= 14 ? [{ id:'fiend-hurl-through-hell', name:'Hurl Through Hell',
+          source:'The Fiend · Nv14', type:'active', action:'Acción (ataque)', range:'Melee/Ranged', recharge:'Long Rest',
+          desc:'1/Long Rest: al golpear, mandás al objetivo a los Infiernos hasta tu próximo turno — 10d10 psíquico al regresar.',
+          fullDesc:'A nivel 14, cuando golpeas a una criatura con un ataque, puedes usar esta habilidad para transportarla momentáneamente a los Nueve Infiernos. Desaparece y sufre un terrible tormento. Al final de tu próximo turno regresa donde estaba (o el espacio desocupado más cercano) y recibe 10d10 de daño psíquico por el horror vivido. Los fiends son inmunes a este daño.' }] : []),
+      ],
+    },
+
+    'The Great Old One': {
+      clase: 'Brujo',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'goo-awakened-mind', name:'Awakened Mind',
+          source:'The Great Old One · Nv1', type:'passive', action:'Pasiva', range:'9 m', recharge:null,
+          desc:'Podés comunicarte telepáticamente con cualquier criatura en 9 m que entienda un idioma.',
+          fullDesc:'A nivel 1, tu conocimiento extraño te da la capacidad de tocar las mentes de otras criaturas. Puedes comunicarte telepáticamente con cualquier criatura que puedas ver a 9 metros de ti. No necesitas compartir un idioma con la criatura, pero debe ser capaz de entender al menos un idioma.' },
+        ...(nivel >= 6 ? [{ id:'goo-entropic-ward', name:'Entropic Ward',
+          source:'The Great Old One · Nv6', type:'active', action:'Reacción', range:'Personal', recharge:'Short/Long Rest',
+          desc:'Imponés desventaja en un ataque contra vos. Si falla, ganás ventaja en tu próximo ataque contra esa criatura.',
+          fullDesc:'A nivel 6, aprendes a asustar místicamente a tu enemigo y convertir sus fallas en tu ventaja. Cuando una criatura hace una tirada de ataque contra ti, puedes usar tu reacción para imponerle desventaja. Si el ataque falla, tu próxima tirada de ataque contra esa criatura tiene ventaja si la haces antes del final de tu siguiente turno.' }] : []),
+        ...(nivel >= 10 ? [{ id:'goo-thought-shield', name:'Thought Shield',
+          source:'The Great Old One · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Nadie puede leer tu mente sin tu permiso. Resistencia al daño psíquico. Daño psíquico recibido también lo recibe el atacante.',
+          fullDesc:'A nivel 10, tus pensamientos no pueden ser leídos por telepatía u otros medios, a menos que lo permitas. Tienes resistencia al daño psíquico. Siempre que una criatura te cause daño psíquico, esa criatura recibe el mismo daño.' }] : []),
+        ...(nivel >= 14 ? [{ id:'goo-create-thrall', name:'Create Thrall',
+          source:'The Great Old One · Nv14', type:'active', action:'Acción', range:'Toque', recharge:null,
+          desc:'Tocás a un humanoide inconsciente → queda encantado por vos (sin save). Se rompe con Remove Curse.',
+          fullDesc:'A nivel 14, ganas la capacidad de infectar la mente de un humanoide con la magia extraplanar de tu patrón. Puedes usar tu acción para tocar a un humanoide incapacitado. Esa criatura queda encantada por ti hasta que se lance Remove Curse en ella, se cure su condición de incapacitada, o uses esta habilidad de nuevo. Puedes comunicarte telepáticamente con la criatura encantada siempre que estén en el mismo plano.' }] : []),
+      ],
+    },
+
+    'The Archfey': {
+      clase: 'Brujo',
+      resources: () => [],
+      features: (nivel) => [
+        { id:'af-fey-presence', name:'Fey Presence',
+          source:'The Archfey · Nv1', type:'active', action:'Acción', range:'3 m (cubo)', recharge:'Short/Long Rest',
+          desc:'Cubo 3 m: todas las criaturas deben superar un save de SAB o quedan Encantadas o Asustadas (tu elección) hasta fin de tu próximo turno.',
+          fullDesc:'A nivel 1 puedes canalizas la presencia encantadora o aterradora de tu patrón Archfey. Como acción, fuerzas a cada criatura en un cubo de 3 metros originado en ti a hacer un save de SAB contra tu DC de conjuro. Las criaturas que fallen quedan Encantadas o Asustadas por ti (tu elección) hasta el final de tu próximo turno.' },
+        ...(nivel >= 6 ? [{ id:'af-misty-escape', name:'Misty Escape',
+          source:'The Archfey · Nv6', type:'active', action:'Reacción', range:'Personal', recharge:'Short/Long Rest',
+          desc:'Cuando recibís daño: teleportación hasta 18 m y te volvés invisible hasta inicio de tu próximo turno o hasta que ataques/lances.',
+          fullDesc:'A nivel 6, puedes desvanecerte en la niebla cuando estás en peligro. Cuando recibes daño, puedes usar tu reacción para volverte invisible y teleportarte hasta 18 metros a un espacio desocupado que puedas ver. Permaneces invisible hasta el comienzo de tu próximo turno o hasta que ataques o lances un conjuro.' }] : []),
+        ...(nivel >= 10 ? [{ id:'af-beguiling-defenses', name:'Beguiling Defenses',
+          source:'The Archfey · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Sos inmune a ser Encantado. Cuando alguien intenta encantarte, podés usar reacción para reflejar el efecto sobre él (save SAB negación).',
+          fullDesc:'A nivel 10, tu patrón te enseña a redirigir los encantos hacia tus enemigos. Eres inmune a ser encantado. Cuando una criatura intenta encantarte, puedes usar tu reacción para intentar volver el encantamiento contra ella. La criatura debe tener éxito en un save de SAB contra tu DC de conjuro o quedará encantada por ti por 1 minuto o hasta que reciba daño.' }] : []),
+        ...(nivel >= 14 ? [{ id:'af-dark-delirium', name:'Dark Delirium',
+          source:'The Archfey · Nv14', type:'active', action:'Acción', range:'18 m', recharge:'Short/Long Rest',
+          desc:'Save SAB o la criatura está sumida en ilusiones 1 min: Encantada o Asustada, incapaz de ver o escuchar más allá de 3 m.',
+          fullDesc:'A nivel 14, puedes hundir a una criatura en un mundo ilusorio. Como acción, elige una criatura que puedas ver a 18 metros. Debe hacer un save de SAB contra tu DC. Si falla, queda Encantada o Asustada (tu elección) durante 1 minuto o hasta que recibas daño. Este efecto termina si la criatura recibe daño. Mientras dura, la criatura está perdida en una ilusión y no puede ver ni escuchar más allá de 3 metros.' }] : []),
       ],
     },
   };
@@ -2462,6 +2708,24 @@ const Characters = (() => {
     { id:'sub-swashbuckler',  name:'Swashbuckler',    desc:'Carisma en combate, Sneak Attack sin aliados, duelos.' },
   ];
 
+  const HECHICERO_SUBCLASES = [
+    { id:'sub-draconic-bloodline', name:'Draconic Bloodline', desc:'Origen dracónico: AC natural, resistencia elemental, alas nv14.' },
+    { id:'sub-wild-magic',         name:'Wild Magic',         desc:'Magia impredecible: Wild Surge, Tides of Chaos, Bend Luck.' },
+    { id:'sub-storm-sorcery',      name:'Storm Sorcery',      desc:'Viento y trueno: movimiento volador, daño de rayo extra.' },
+  ];
+
+  const MAGO_SUBCLASES = [
+    { id:'sub-school-evocation',  name:'School of Evocation',  desc:'Sculpt Spells, Potent Cantrip, Overchannel. Rey del daño.' },
+    { id:'sub-school-abjuration', name:'School of Abjuration', desc:'Arcane Ward absorbe daño. El mago más resistente.' },
+    { id:'sub-school-divination', name:'School of Divination', desc:'Portent: tira 2d20 al reposar y usa los resultados cuando quieras.' },
+  ];
+
+  const BRUJO_SUBCLASES = [
+    { id:'sub-the-fiend',         name:'The Fiend',         desc:'Temp HP al matar, resistencias del averno, Hurl Through Hell.' },
+    { id:'sub-the-great-old-one', name:'The Great Old One', desc:'Telepatía, Entropic Ward, Thought Shield, Create Thrall.' },
+    { id:'sub-the-archfey',       name:'The Archfey',       desc:'Fey Presence, teletransporte de niebla, Beguiling Defenses.' },
+  ];
+
   const CHOICES_CONFIG = {
     'Guerrero': [
       { id:'fighting-style',  level:1,  type:'pick1',     label:'Fighting Style',
@@ -2539,6 +2803,10 @@ const Characters = (() => {
       { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
     ],
     'Hechicero': [
+      { id:'subclase-1', level:1, type:'pick1', label:'Sorcerous Origin (Subclase)',
+        prompt:'Elegí tu origen arcano:',
+        options: HECHICERO_SUBCLASES,
+        appliesSubclass: true },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
@@ -2546,6 +2814,10 @@ const Characters = (() => {
       { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
     ],
     'Mago': [
+      { id:'subclase-2', level:2, type:'pick1', label:'Arcane Tradition (Subclase)',
+        prompt:'Elegí tu tradición arcana:',
+        options: MAGO_SUBCLASES,
+        appliesSubclass: true },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
@@ -2588,6 +2860,10 @@ const Characters = (() => {
       { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
     ],
     'Brujo': [
+      { id:'subclase-1', level:1, type:'pick1', label:'Otherworldly Patron (Subclase)',
+        prompt:'Elegí tu patrón sobrenatural:',
+        options: BRUJO_SUBCLASES,
+        appliesSubclass: true },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
@@ -2632,7 +2908,7 @@ const Characters = (() => {
     const claseCfg = CHOICES_CONFIG[char.clase] || [];
     const choiceDef = claseCfg.find(c => c.id === choiceId);
     if (choiceDef && choiceDef.appliesSubclass && typeof value === 'string') {
-      const allSubclaseLists = [GUERRERO_SUBCLASES, EXPLORADOR_SUBCLASES, PICARO_SUBCLASES];
+      const allSubclaseLists = [GUERRERO_SUBCLASES, EXPLORADOR_SUBCLASES, PICARO_SUBCLASES, HECHICERO_SUBCLASES, MAGO_SUBCLASES, BRUJO_SUBCLASES];
       let subclaseName = null;
       for (const list of allSubclaseLists) {
         const found = list.find(s => s.id === value || s.name === value);
