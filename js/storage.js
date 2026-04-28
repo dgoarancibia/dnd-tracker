@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 9;   // Incrementar al cambiar el esquema
+  const DATA_VERSION = 10;  // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -117,6 +117,34 @@ const Storage = (() => {
         char.maneuvers = [];
       }
       char._dataVersion = 9;
+    }
+    if (char._dataVersion < 10) {
+      // v9 → v10: regenerar features filtrando por nivel actual del personaje.
+      // Las versiones anteriores guardaban TODAS las features (de todos los niveles)
+      // sin filtrar por el nivel del personaje. Ahora CLASE_FEATURES filtra por nivel.
+      // No tocar Lursey (tiene features manuales).
+      if (char.id !== 'lursey-brumaclara' && typeof Characters !== 'undefined' && Characters.CLASE_FEATURES) {
+        const claseFeat = Characters.CLASE_FEATURES[char.clase];
+        if (claseFeat && typeof claseFeat.features === 'function') {
+          const rawFeats = claseFeat.features(char.nivel || 1);
+          // Conservar features de subclase (no tocarlas)
+          const subFeatures = (char.features || []).filter(f =>
+            f.source && char.subclase && f.source.toLowerCase().includes(char.subclase.toLowerCase())
+          );
+          const claseFeatList = rawFeats.map(f => {
+            if (typeof f === 'object' && f !== null) return { ...f };
+            const name = String(f);
+            return { id: name.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-'), name, source: char.clase, type:'passive', action:null, range:null, recharge:null, desc:'', fullDesc:'' };
+          });
+          // Merge: features de clase filtradas por nivel + features de subclase
+          const subIds = new Set(subFeatures.map(f => f.id));
+          char.features = [
+            ...claseFeatList.filter(f => !subIds.has(f.id)),
+            ...subFeatures,
+          ];
+        }
+      }
+      char._dataVersion = 10;
     }
     return char;
   }
