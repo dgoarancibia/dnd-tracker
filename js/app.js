@@ -9,7 +9,8 @@ const App = (() => {
   let _char = null;         // personaje activo en memoria
 
   // Recalcula features de clase según nivel desde CLASE_FEATURES (fuente de verdad).
-  // Llamar SIEMPRE que _char cambie de fuente externa (cloud, switchChar, import).
+  // Reemplaza COMPLETAMENTE las features de clase y conserva solo las de subclase.
+  // Guarda en storage para que Firestore reciba la versión limpia en el próximo sync.
   function _refreshCharFeatures(c) {
     if (!c || c.id === 'lursey-brumaclara') return;
     const claseFeat = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[c.clase];
@@ -21,6 +22,7 @@ const App = (() => {
       const n = String(f);
       return { id: n.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-'), name:n, source:c.clase, type:'passive', action:null, range:null, recharge:null, desc:'', fullDesc:'' };
     });
+    // Solo conservar features cuyo source menciona explícitamente la subclase
     const subFeatures = (c.features || []).filter(f =>
       f.source && c.subclase && f.source.toLowerCase().includes(c.subclase.toLowerCase())
     );
@@ -4103,7 +4105,15 @@ const App = (() => {
     reloadChar(char) {
       _char = char || Storage.getActiveChar();
       if (_char && _char.id !== 'lursey-brumaclara') {
+        const before = JSON.stringify(_char.features);
         _refreshCharFeatures(_char);
+        const after = JSON.stringify(_char.features);
+        if (before !== after) {
+          // Features cambiaron — guardar localmente y subir a Firestore
+          // para que la próxima sync ya traiga datos limpios
+          Storage.saveCharRaw(_char);
+          if (window.Cloud && Cloud.isLoggedIn()) Cloud.saveNow(_char);
+        }
       }
       if (_char) {
         _renderHeader();
