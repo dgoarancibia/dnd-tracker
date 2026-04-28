@@ -3416,6 +3416,8 @@ const App = (() => {
     const newLevel = parseInt(document.getElementById('luNewLevel').value);
     const hpGained = parseInt(document.getElementById('luHPGained').value) || 0;
     if (newLevel <= _char.nivel) { showToast('El nivel debe ser mayor al actual'); return; }
+
+    const oldLevel = _char.nivel;
     Characters.applyLevelUp(_char, newLevel, hpGained);
     _saveChar();
     closeLevelUp();
@@ -3424,14 +3426,78 @@ const App = (() => {
     _renderHabilidadesTab();
     showToast(`¡Nivel ${newLevel}! ✦`);
 
-    // Disparar elecciones pendientes para el nuevo nivel
+    // Calcular features nuevas (las que corresponden a niveles entre oldLevel+1 y newLevel)
+    const newFeatures = _getNewFeaturesForLevel(oldLevel, newLevel);
+
+    // Disparar elecciones pendientes, y al final mostrar novedades
     const pending = Characters.getPendingChoices(_char, newLevel);
+    const afterChoices = () => {
+      _renderCombateTab();
+      _renderHabilidadesTab();
+      if (newFeatures.length > 0) _showLevelUpNews(newLevel, newFeatures);
+    };
     if (pending.length > 0) {
-      openChoicesQueue(pending, () => {
-        _renderCombateTab();
-        _renderHabilidadesTab();
-      });
+      openChoicesQueue(pending, afterChoices);
+    } else {
+      afterChoices();
     }
+  }
+
+  // Devuelve las features que se ganan al pasar de oldLevel a newLevel
+  function _getNewFeaturesForLevel(oldLevel, newLevel) {
+    const claseCfg = Characters.CLASE_FEATURES[_char.clase];
+    if (!claseCfg) return [];
+    const allNew  = claseCfg.features(newLevel);
+    const allOld  = claseCfg.features(oldLevel);
+    const oldIds  = new Set(allOld.map(f => f.id));
+    const classFeatures = allNew.filter(f => !oldIds.has(f.id));
+
+    // Features de subclase también
+    let subFeatures = [];
+    if (_char.subclase) {
+      const subCfg = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
+      if (subCfg && typeof subCfg.features === 'function') {
+        const subNew = subCfg.features(newLevel);
+        const subOld = subCfg.features(oldLevel);
+        const subOldIds = new Set(subOld.map(f => f.id));
+        subFeatures = subNew.filter(f => !subOldIds.has(f.id));
+      }
+    }
+
+    return [...classFeatures, ...subFeatures];
+  }
+
+  // Modal de novedades al subir de nivel
+  function _showLevelUpNews(newLevel, features) {
+    let overlay = document.getElementById('levelUpNewsOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'levelUpNewsOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:flex-start;overflow-y:auto;z-index:1200;';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:480px;max-height:85vh;overflow-y:auto;">
+          <div class="modal-header">
+            <span id="levelUpNewsTitle"></span>
+          </div>
+          <div class="modal-body" id="levelUpNewsBody"></div>
+          <div class="modal-footer">
+            <button class="btn-primary" onclick="document.getElementById('levelUpNewsOverlay').style.display='none'">¡Entendido!</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+
+    document.getElementById('levelUpNewsTitle').textContent = `✦ Nivel ${newLevel} — Novedades`;
+    document.getElementById('levelUpNewsBody').innerHTML = features.map(f => `
+      <div style="margin-bottom:14px;padding:10px 12px;background:var(--surface2,rgba(255,255,255,0.05));border-radius:8px;border-left:3px solid var(--accent,#c9a84c);">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${f.name}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">${f.source || ''}</div>
+        <div style="font-size:13px;line-height:1.5;">${f.desc || ''}</div>
+      </div>
+    `).join('');
+
+    overlay.style.display = 'flex';
   }
 
   /* ══════════════════════════════════════════════════════
