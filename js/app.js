@@ -1552,6 +1552,9 @@ const App = (() => {
       </div>
     </div>
 
+    <!-- RASGOS RACIALES -->
+    ${_renderRacialTraitsHTML(c)}
+
     <!-- XP TRACKER -->
     <div class="xp-block">
       <div class="rc-header">
@@ -1575,6 +1578,70 @@ const App = (() => {
 
     document.getElementById('col-hab-izq').innerHTML = htmlIzq;
     document.getElementById('col-hab-der').innerHTML = htmlDer;
+  }
+
+  function _renderRacialTraitsHTML(c) {
+    if (!c.raza) return '';
+
+    const razaCfg = Characters.RAZAS_CONFIG[c.raza];
+
+    // Raza Custom o desconocida → textarea editable
+    if (!razaCfg || c.raza === 'Custom') {
+      return `
+      <div class="equip-section" style="margin-top:14px;">
+        <div class="rc-header" style="margin-bottom:6px;">
+          <span class="rc-name">🧬 Rasgos Raciales — ${c.raza || 'Custom'}</span>
+        </div>
+        <textarea class="notes-area" style="min-height:80px;font-size:12px;"
+          placeholder="Describí los rasgos especiales de tu raza…"
+          oninput="App.setSpeciesTraits(this.value)">${c.speciesTraits || ''}</textarea>
+      </div>`;
+    }
+
+    // Construir lista de traits: raza base + subraza
+    const traits = [];
+
+    // Darkvision como rasgo
+    const dv = (c.subraza && razaCfg.subraces)
+      ? (() => { const s = razaCfg.subraces.find(sr => sr.name === c.subraza); return (s && s.darkvision) || razaCfg.darkvision || 0; })()
+      : razaCfg.darkvision || 0;
+    if (dv > 0) {
+      traits.push({ name: 'Visión en Penumbra', source: c.raza, desc: `Podés ver en penumbra hasta ${dv} m como si fuera luz tenue, y en oscuridad total como si fuera penumbra.` });
+    }
+
+    // Traits base de la raza
+    (razaCfg.traits || []).forEach(t => {
+      const [name, ...rest] = t.split(' — ');
+      traits.push({ name: name.trim(), source: c.raza, desc: rest.join(' — ').trim() });
+    });
+
+    // Traits de subraza
+    if (c.subraza && razaCfg.subraces) {
+      const sub = razaCfg.subraces.find(sr => sr.name === c.subraza);
+      if (sub && sub.traits) {
+        sub.traits.forEach(t => {
+          const [name, ...rest] = t.split(' — ');
+          traits.push({ name: name.trim(), source: c.subraza, desc: rest.join(' — ').trim() });
+        });
+      }
+    }
+
+    if (traits.length === 0) return '';
+
+    const razaEmoji = razaCfg.emoji || '🧬';
+    const subLabel = c.subraza ? ` · ${c.subraza}` : '';
+
+    return `
+    <div class="equip-section" style="margin-top:14px;">
+      <div class="rc-name" style="margin-bottom:8px;">${razaEmoji} ${c.raza}${subLabel}</div>
+      ${traits.map(t => `
+        <div style="margin-bottom:10px;padding:8px 10px;background:var(--surface2,rgba(255,255,255,0.04));border-radius:8px;border-left:3px solid var(--accent2,#7eb8c9);">
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px;">${t.name}</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">${t.source}</div>
+          ${t.desc ? `<div style="font-size:12px;line-height:1.5;color:var(--text-muted,var(--text));">${t.desc}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2651,6 +2718,11 @@ const App = (() => {
 
   function setNotes(val) {
     _char.notes = val;
+    _saveChar();
+  }
+
+  function setSpeciesTraits(val) {
+    _char.speciesTraits = val;
     _saveChar();
   }
 
@@ -4122,7 +4194,7 @@ const App = (() => {
     adjustConsumable, deleteConsumable, addConsumable,
     setCurrency, setAttunement,
     addMagicItem, deleteMagicItem,
-    setNotes,
+    setNotes, setSpeciesTraits,
 
     // Habilidades
     editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP,
