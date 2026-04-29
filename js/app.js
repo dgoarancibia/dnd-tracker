@@ -381,8 +381,20 @@ const App = (() => {
     document.getElementById('headerCharName').textContent = _char.name;
 
     document.getElementById('hdrCA').textContent   = ca;
-    document.getElementById('hdrCD').textContent   = cd !== null ? cd : '—';
+    const cdBonus  = (_char.bonuses && _char.bonuses.cd)     || 0;
+    const atqBonus = (_char.bonuses && _char.bonuses.ataque) || 0;
+    document.getElementById('hdrCD').textContent   = cd  !== null ? cd  : '—';
     document.getElementById('hdrATQ').textContent  = atq !== null ? (atq >= 0 ? '+' : '') + atq : '—';
+    // Indicador de bonus activo en header
+    const cdEl  = document.getElementById('hdrCD');
+    const atqEl = document.getElementById('hdrATQ');
+    if (cdEl)  cdEl.title  = cdBonus  ? `CD base + ${cdBonus} (ítem/rasgo) = ${cd}`  : 'CD de Conjuros';
+    if (atqEl) atqEl.title = atqBonus ? `Ataque base + ${atqBonus} (ítem/rasgo) = ${atq >= 0 ? '+' : ''}${atq}` : 'Bonus Ataque Mágico';
+    // Marcar visualmente si hay bonus
+    const cdBox  = cdEl?.closest('.stat-box');
+    const atqBox = atqEl?.closest('.stat-box');
+    if (cdBox)  cdBox.classList.toggle('has-bonus',  !!cdBonus);
+    if (atqBox) atqBox.classList.toggle('has-bonus', !!atqBonus);
     document.getElementById('hdrINIT').textContent = (init >= 0 ? '+' : '') + init;
     const strMod = Characters.calcMod(_char.stats.for);
     const dexMod = Characters.calcMod(_char.stats.des);
@@ -1414,18 +1426,24 @@ const App = (() => {
 
   function consolidateCurrency() {
     const cur = _char.currency;
-    // Sumar todo a CP
-    let totalCP = (cur.pp||0)*1000 + (cur.gp||0)*100 + (cur.ep||0)*50 + (cur.sp||0)*10 + (cur.cp||0);
-    // Redistribuir de mayor a menor
-    const pp = Math.floor(totalCP / 1000); totalCP -= pp * 1000;
-    const gp = Math.floor(totalCP / 100);  totalCP -= gp * 100;
-    const ep = Math.floor(totalCP / 50);   totalCP -= ep * 50;
-    const sp = Math.floor(totalCP / 10);   totalCP -= sp * 10;
+    // Mantener PP intactos — solo consolidar GP/EP/SP/CP hacia GP
+    const pp = cur.pp || 0;
+    let totalCP = (cur.gp||0)*100 + (cur.ep||0)*50 + (cur.sp||0)*10 + (cur.cp||0);
+    // Redistribuir de GP hacia abajo (sin subir a PP)
+    const gp = Math.floor(totalCP / 100); totalCP -= gp * 100;
+    const ep = Math.floor(totalCP / 50);  totalCP -= ep * 50;
+    const sp = Math.floor(totalCP / 10);  totalCP -= sp * 10;
     const cp = totalCP;
     _char.currency = { pp, gp, ep, sp, cp };
     _saveChar();
     _renderEquipoTab();
-    showToast(`Consolidado: ${pp}pp · ${gp}gp · ${ep}ep · ${sp}sp · ${cp}cp`);
+    const parts = [];
+    if (pp) parts.push(`${pp}pp`);
+    parts.push(`${gp}gp`);
+    if (ep) parts.push(`${ep}ep`);
+    if (sp) parts.push(`${sp}sp`);
+    if (cp) parts.push(`${cp}cp`);
+    showToast(`Consolidado: ${parts.join(' · ')}`);
   }
 
   /* ══════════════════════════════════════════════════════

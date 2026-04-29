@@ -653,6 +653,11 @@ input[type=number] { -moz-appearance: textfield; }
 .stat-box.key { border-color: var(--gold-dim); }
 .stat-box.key .sv { color: var(--gold-light); }
 
+/* Bonus activo en stat-box (CD / Spell Atk con ítem) */
+.stat-box.has-bonus { border-color: #a96cff55; }
+.stat-box.has-bonus .sv { color: #c49bff; }
+.stat-box.has-bonus .sl::after { content: '✦'; font-size: 7px; vertical-align: super; margin-left: 2px; color: #a96cff; }
+
 /* ESTADO ACTIVO EN HEADER */
 .hdr-status {
   display: none;
