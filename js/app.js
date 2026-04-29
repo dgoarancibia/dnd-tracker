@@ -1363,13 +1363,12 @@ const App = (() => {
     document.getElementById('col-equipo-der').innerHTML = htmlDer;
   }
 
-  // Denominaciones — GP es la unidad base, sin Electrum
-  const _COIN_ORDER = ['pp','gp','sp','cp'];
+  // Denominaciones visibles — GP como unidad central, sin PP ni EP
+  const _COIN_ORDER = ['gp','sp','cp'];
   const _COIN_META  = {
-    pp: { color:'#c8b8ff', name:'Platino', rate:'1 pp = 10 gp' },
-    gp: { color:'#c9973a', name:'Oro',     rate:'Unidad base'  },
-    sp: { color:'#b0b0b0', name:'Plata',   rate:'10 sp = 1 gp' },
-    cp: { color:'#cd7f32', name:'Cobre',   rate:'100 cp = 1 gp'},
+    gp: { color:'#c9973a', name:'Oro',   rate:'Unidad base'  },
+    sp: { color:'#b0b0b0', name:'Plata', rate:'10 sp = 1 gp' },
+    cp: { color:'#cd7f32', name:'Cobre', rate:'100 cp = 1 gp'},
   };
 
   function _totalInGP(cur) {
@@ -1377,8 +1376,20 @@ const App = (() => {
   }
 
   function _renderCurrencyHTML(c) {
-    const cur = c.currency || {};
-    const totalGP = _totalInGP(cur);
+    // Normalizar: PP y EP se suman al GP para el display
+    const raw = c.currency || {};
+    const cur = {
+      gp: (raw.gp||0) + (raw.pp||0)*10 + Math.floor((raw.ep||0)/2),
+      sp: (raw.sp||0) + ((raw.ep||0) % 2) * 5,
+      cp: raw.cp||0,
+    };
+    // Persistir la normalización si había PP o EP
+    if ((raw.pp||0) > 0 || (raw.ep||0) > 0) {
+      c.currency = { pp:0, gp: cur.gp, ep:0, sp: cur.sp, cp: cur.cp };
+      _saveChar();
+    }
+
+    const totalGP = _totalInGP(c.currency || cur);
     const totalStr = Number.isInteger(totalGP) ? totalGP.toLocaleString() : totalGP.toFixed(2);
 
     const coins = _COIN_ORDER.map(coin => {
@@ -1404,10 +1415,7 @@ const App = (() => {
     <div class="equip-section">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <span class="rc-name">💰 Dinero</span>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:11px;color:var(--text-dim);">Total: <strong style="color:var(--gold);">${totalStr} gp</strong></span>
-          <button class="btn-sm" onclick="App.consolidateCurrency()" title="Convierte todo a Oro">⇅ Todo a GP</button>
-        </div>
+        <span style="font-size:11px;color:var(--text-dim);">Total: <strong style="color:var(--gold);">${totalStr} gp</strong></span>
       </div>
       <div class="currency-cards-grid">${coins}</div>
     </div>`;
@@ -1434,8 +1442,8 @@ const App = (() => {
   }
 
   function consolidateCurrency() {
-    const cur = _char.currency;
-    // Todo a CP → redistribuir sin usar PP (GP como máximo)
+    const cur = _char.currency || {};
+    // Todo a CP → redistribuir en gp/sp/cp (sin PP ni EP)
     let totalCP = (cur.pp||0)*1000 + (cur.gp||0)*100 + (cur.ep||0)*50 + (cur.sp||0)*10 + (cur.cp||0);
     const gp = Math.floor(totalCP / 100); totalCP -= gp * 100;
     const sp = Math.floor(totalCP / 10);  totalCP -= sp * 10;
@@ -1443,10 +1451,6 @@ const App = (() => {
     _char.currency = { pp:0, gp, ep:0, sp, cp };
     _saveChar();
     _renderEquipoTab();
-    const parts = [`${gp}gp`];
-    if (sp) parts.push(`${sp}sp`);
-    if (cp) parts.push(`${cp}cp`);
-    showToast(`Todo a GP: ${parts.join(' · ')}`);
   }
 
   /* ══════════════════════════════════════════════════════
