@@ -580,6 +580,12 @@
         <label>Descripción (opcional)</label>
         <input type="text" id="aimDesc" placeholder="ej: 2d4+2 HP">
       </div>
+      <div class="modal-field" style="grid-column:1/-1;" id="aimContainerRow">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="aimContainer" style="width:16px;height:16px;cursor:pointer;">
+          <span>Es contenedor reutilizable <span style="color:var(--text-dim);font-size:11px;">(cantimplora, frasco, bolsa…)</span></span>
+        </label>
+      </div>
     </div>
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="App.closeAddItem()">Cancelar</button>
@@ -734,7 +740,7 @@
 <script src="js/storage.js?v=39"></script>
 <script src="js/characters.js?v=46"></script>
 <script src="js/export_pdf.js?v=6"></script>
-<script src="js/app.js?v=53"></script>
+<script src="js/app.js?v=54"></script>
 <script src="js/biblioteca.js?v=1"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.

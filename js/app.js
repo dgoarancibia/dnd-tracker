@@ -1333,7 +1333,17 @@ const App = (() => {
       (c.consumables || []).forEach((item, i) => {
         if (item.slot === 'body') return;
         const cat = item.category || 'Other';
-        const emptyClass = item.qty === 0 ? ' item-row--empty' : '';
+        const isEmpty = item.qty === 0;
+        const isContainer = !!item.container;
+        const emptyClass = isEmpty ? ' item-row--empty' : '';
+        const qtyControls = (isEmpty && isContainer)
+          ? `<span class="container-empty-badge">Vacío</span>
+             <button class="qty-btn qty-btn--refill" onclick="App.refillContainer(${i})" title="Rellenar contenedor">↺ Rellenar</button>`
+          : `<div class="qty-mini">
+               <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
+               <span class="qty-val" id="cons-${i}">${item.qty}</span>
+               <button class="qty-btn" onclick="App.adjustConsumable(${i},1)">+</button>
+             </div>`;
         htmlDer += `
         <div class="item-row${emptyClass}" id="item-row-${i}">
           <div class="item-row-left">
@@ -1342,11 +1352,7 @@ const App = (() => {
           </div>
           <div class="item-row-right">
             ${_itemCatBadge(cat)}
-            <div class="qty-mini">
-              <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
-              <span class="qty-val" id="cons-${i}">${item.qty}</span>
-              <button class="qty-btn" onclick="App.adjustConsumable(${i},1)">+</button>
-            </div>
+            ${qtyControls}
             <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
           </div>
@@ -1363,12 +1369,14 @@ const App = (() => {
     document.getElementById('col-equipo-der').innerHTML = htmlDer;
   }
 
-  // Denominaciones visibles — GP como unidad central, sin PP ni EP
-  const _COIN_ORDER = ['gp','sp','cp'];
+  // Todas las denominaciones — GP como unidad de referencia total
+  const _COIN_ORDER = ['pp','gp','ep','sp','cp'];
   const _COIN_META  = {
-    gp: { color:'#c9973a', name:'Oro',   rate:'Unidad base'  },
-    sp: { color:'#b0b0b0', name:'Plata', rate:'10 sp = 1 gp' },
-    cp: { color:'#cd7f32', name:'Cobre', rate:'100 cp = 1 gp'},
+    pp: { color:'#c8b8ff', name:'Platino',  rate:'1 pp = 10 gp' },
+    gp: { color:'#c9973a', name:'Oro',      rate:'Unidad base'   },
+    ep: { color:'#4ab8c4', name:'Electrum', rate:'2 ep = 1 gp'  },
+    sp: { color:'#b0b0b0', name:'Plata',    rate:'10 sp = 1 gp' },
+    cp: { color:'#cd7f32', name:'Cobre',    rate:'100 cp = 1 gp'},
   };
 
   function _totalInGP(cur) {
@@ -1376,20 +1384,8 @@ const App = (() => {
   }
 
   function _renderCurrencyHTML(c) {
-    // Normalizar: PP y EP se suman al GP para el display
-    const raw = c.currency || {};
-    const cur = {
-      gp: (raw.gp||0) + (raw.pp||0)*10 + Math.floor((raw.ep||0)/2),
-      sp: (raw.sp||0) + ((raw.ep||0) % 2) * 5,
-      cp: raw.cp||0,
-    };
-    // Persistir la normalización si había PP o EP
-    if ((raw.pp||0) > 0 || (raw.ep||0) > 0) {
-      c.currency = { pp:0, gp: cur.gp, ep:0, sp: cur.sp, cp: cur.cp };
-      _saveChar();
-    }
-
-    const totalGP = _totalInGP(c.currency || cur);
+    const cur = c.currency || {};
+    const totalGP = _totalInGP(cur);
     const totalStr = Number.isInteger(totalGP) ? totalGP.toLocaleString() : totalGP.toFixed(2);
 
     const coins = _COIN_ORDER.map(coin => {
@@ -1415,7 +1411,10 @@ const App = (() => {
     <div class="equip-section">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <span class="rc-name">💰 Dinero</span>
-        <span style="font-size:11px;color:var(--text-dim);">Total: <strong style="color:var(--gold);">${totalStr} gp</strong></span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--text-dim);">Total: <strong style="color:var(--gold);">${totalStr} gp</strong></span>
+          <button class="btn-sm" onclick="App.consolidateCurrency()" title="Convierte todo a Oro">⇅ Todo a GP</button>
+        </div>
       </div>
       <div class="currency-cards-grid">${coins}</div>
     </div>`;
@@ -2730,12 +2729,16 @@ const App = (() => {
     _addItemSlot = item.slot || 'bag';
     document.getElementById('aimName').value = item.name || '';
     document.getElementById('aimDesc').value = item.desc || '';
-    document.getElementById('aimQty').value  = item.qty || 1;
+    document.getElementById('aimQty').value  = item.qty !== undefined ? item.qty : 1;
     document.getElementById('aimCategory').value = item.category || 'Other';
+    const containerEl = document.getElementById('aimContainer');
+    if (containerEl) containerEl.checked = !!item.container;
     const titleEl = document.getElementById('addItemModalTitle');
     if (titleEl) titleEl.textContent = '✎ Editar ítem';
     const qtyField = document.getElementById('aimQtyRow');
     if (qtyField) qtyField.style.display = item.slot === 'body' ? 'none' : '';
+    const containerRow = document.getElementById('aimContainerRow');
+    if (containerRow) containerRow.style.display = item.slot === 'body' ? 'none' : '';
     document.getElementById('addItemModal').classList.add('show');
   }
 
@@ -2744,14 +2747,16 @@ const App = (() => {
     _addItemSlot = slot || 'bag';
     document.getElementById('aimName').value = '';
     document.getElementById('aimDesc').value = '';
+    const containerEl = document.getElementById('aimContainer');
+    if (containerEl) containerEl.checked = false;
     document.getElementById('addItemModal').classList.add('show');
     const titleEl = document.getElementById('addItemModalTitle');
     if (titleEl) titleEl.textContent = slot === 'body' ? '+ Equipo del cuerpo' : '+ Agregar a mochila';
-    // Body items default to Apparel category, bag items to Other
     document.getElementById('aimCategory').value = slot === 'body' ? 'Apparel' : 'Other';
-    // Show/hide qty row — body items don't need qty
     const qtyField = document.getElementById('aimQtyField');
     if (qtyField) qtyField.style.display = slot === 'body' ? 'none' : '';
+    const containerRow = document.getElementById('aimContainerRow');
+    if (containerRow) containerRow.style.display = slot === 'body' ? 'none' : '';
     document.getElementById('aimQty').value = '1';
   }
 
@@ -2767,17 +2772,21 @@ const App = (() => {
     const desc = document.getElementById('aimDesc').value.trim();
     if (!_char.consumables) _char.consumables = [];
 
+    const isContainer = !!(document.getElementById('aimContainer')?.checked);
+
     if (_editItemIdx !== null) {
-      // Editar existente
       const item = _char.consumables[_editItemIdx];
       if (item) {
         item.name = name;
         item.desc = desc;
         item.qty  = qty;
-        item.category = category;
+        item.category  = category;
+        item.container = isContainer || undefined;
+        if (isContainer) item.maxQty = qty > 0 ? qty : (item.maxQty || 1);
       }
     } else {
-      _char.consumables.push({ id:'i-'+Date.now(), name, qty, category, desc, slot: _addItemSlot });
+      _char.consumables.push({ id:'i-'+Date.now(), name, qty, category, desc, slot: _addItemSlot,
+        container: isContainer || undefined, maxQty: isContainer ? qty : undefined });
     }
 
     _saveChar();
@@ -2793,6 +2802,15 @@ const App = (() => {
     if (el) el.textContent = newQty;
     const row = document.getElementById(`item-row-${idx}`);
     if (row) row.classList.toggle('item-row--empty', newQty === 0);
+  }
+
+  function refillContainer(idx) {
+    const item = _char.consumables[idx];
+    if (!item) return;
+    item.qty = item.maxQty || 1;
+    _saveChar();
+    _renderEquipoTab();
+    showToast(`${item.name} rellenado`);
   }
 
   function deleteConsumable(idx) {
@@ -4324,7 +4342,7 @@ const App = (() => {
     // Equipo
     addWeapon, openAddWeapon, openEditWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
     openAddItem, openEditItem, closeAddItem, saveAddItem,
-    adjustConsumable, deleteConsumable, addConsumable,
+    adjustConsumable, deleteConsumable, addConsumable, refillContainer,
     setCurrency, setAttunement,
     addMagicItem, deleteMagicItem,
     setNotes, setSpeciesTraits,
