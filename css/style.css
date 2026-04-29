@@ -1439,6 +1439,7 @@ input[type=number] { -moz-appearance: textfield; }
 /* SAVES CON BONUS */
 .save-val.prof { color: var(--gold-light); }
 .skill-val.prof { color: var(--gold-light); }
+.skill-val.expertise { color: #c49bff; }
 
 /* DADOS DE GOLPE */
 .hit-dice-card {
@@ -2348,6 +2349,9 @@ input[type=number] { -moz-appearance: textfield; }
 
 .skill-prof-btn.active { background: var(--gold-dim); border-color: var(--gold); }
 .skill-prof-btn.active::after { content: '★'; font-size: 8px; color: var(--gold-light); }
+
+.skill-prof-btn.expertise { background: #7b3ff233; border-color: #a96cff; border-width: 2px; }
+.skill-prof-btn.expertise::after { content: '✦'; font-size: 8px; color: #c49bff; }
 
 .skill-name { flex: 1; font-size: 15px; color: var(--text); }
 .skill-stat { font-size: 11px; color: var(--text-dim); font-style: italic; }

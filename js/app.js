@@ -1503,12 +1503,15 @@ const App = (() => {
       const hasProf = c.skillProfs && c.skillProfs.includes(skill.id);
       const hasExp  = c.skillExpertise && c.skillExpertise.includes(skill.id);
       const bonusSkill = (c.bonuses && c.bonuses.skills && c.bonuses.skills[skill.id]) || 0;
+      const btnClass = hasExp ? 'expertise' : hasProf ? 'active' : '';
+      const valClass = hasExp ? 'expertise' : hasProf ? 'prof' : '';
+      const title    = hasExp ? 'Expertise (doble prof) — click para quitar' : hasProf ? 'Proficiente — click para Expertise' : 'Sin prof — click para agregar';
       htmlDer += `
       <div class="skill-row">
-        <div class="skill-prof-btn ${hasProf || hasExp ? 'active' : ''}" onclick="App.toggleSkillProf('${skill.id}')" title="${hasExp ? 'Expertise' : hasProf ? 'Proficiente' : 'No proficiente'}"></div>
+        <div class="skill-prof-btn ${btnClass}" onclick="App.toggleSkillProf('${skill.id}')" title="${title}"></div>
         <span class="skill-name">${skill.name}</span>
         <span class="skill-stat">(${STAT_LABELS[skill.stat]})</span>
-        <span class="skill-val ${hasProf || hasExp ? 'prof' : ''}">${val >= 0 ? '+' : ''}${val}</span>
+        <span class="skill-val ${valClass}">${val >= 0 ? '+' : ''}${val}</span>
         <input type="number" class="bonus-input-sm" value="${bonusSkill}"
                onchange="App.setBonus('skills.${skill.id}', this.value)" onclick="this.select()"
                title="Bonus extra a ${skill.name}">
@@ -2886,10 +2889,23 @@ const App = (() => {
   }
 
   function toggleSkillProf(skillId) {
-    if (!_char.skillProfs) _char.skillProfs = [];
-    const idx = _char.skillProfs.indexOf(skillId);
-    if (idx >= 0) _char.skillProfs.splice(idx, 1);
-    else _char.skillProfs.push(skillId);
+    if (!_char.skillProfs)      _char.skillProfs      = [];
+    if (!_char.skillExpertise)  _char.skillExpertise  = [];
+
+    const hasProf = _char.skillProfs.includes(skillId);
+    const hasExp  = _char.skillExpertise.includes(skillId);
+
+    if (hasExp) {
+      // expertise → ninguno
+      _char.skillExpertise = _char.skillExpertise.filter(id => id !== skillId);
+      _char.skillProfs     = _char.skillProfs.filter(id => id !== skillId);
+    } else if (hasProf) {
+      // prof → expertise
+      _char.skillExpertise.push(skillId);
+    } else {
+      // ninguno → prof
+      _char.skillProfs.push(skillId);
+    }
     _saveChar();
     _renderHabilidadesTab();
   }
