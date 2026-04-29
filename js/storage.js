@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 11;  // Incrementar al cambiar el esquema
+  const DATA_VERSION = 12;  // Incrementar al cambiar el esquema
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -172,6 +172,13 @@ const Storage = (() => {
         }
       }
       char._dataVersion = 11;
+    }
+    if (char._dataVersion < 12) {
+      // v11 → v12: agregar campo ep (Electrum) a currency si no existe
+      if (char.currency && char.currency.ep === undefined) {
+        char.currency.ep = 0;
+      }
+      char._dataVersion = 12;
     }
     return char;
   }

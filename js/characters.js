@@ -841,7 +841,7 @@ const Characters = (() => {
       consumables: [
         { id:'pocion-cur', name:'Poción de Curación', qty: 2, category:'Potion', desc:'2d4+2 HP' }
       ],
-      currency: { pp: 0, gp: 0, sp: 0, cp: 0 },
+      currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
       notes: '',
 
       bonuses: {
@@ -1021,7 +1021,7 @@ const Characters = (() => {
       attunement: ['', '', ''],
       magicItems: [],
       consumables: [],
-      currency: { pp: 0, gp: 0, sp: 0, cp: 0 },
+      currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
       notes: '',
 
       bonuses: {
@@ -3240,7 +3240,7 @@ const Characters = (() => {
       ifttt:            [],
       choices:          {},
 
-      _dataVersion: 11,
+      _dataVersion: 12,
       createdAt:    new Date().toISOString(),
       updatedAt:    new Date().toISOString(),
     };

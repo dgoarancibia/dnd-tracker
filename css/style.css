@@ -1964,6 +1964,98 @@ input[type=number] { -moz-appearance: textfield; }
 
 .currency-input:focus { border-color: var(--gold-dim); }
 
+/* ── Currency cards (nuevo sistema) ── */
+.currency-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.currency-card {
+  border: 1px solid;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg2);
+}
+
+.currency-card-top {
+  padding: 8px 10px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.currency-card-amount {
+  font-family: 'Cinzel', serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.currency-card-name {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+
+.currency-card-rate {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.currency-card-btns {
+  padding: 6px 8px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  background: rgba(0,0,0,.15);
+}
+
+.currency-card-input {
+  width: 56px;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 3px 5px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg1);
+  color: var(--text);
+  outline: none;
+  text-align: center;
+  -webkit-appearance: none;
+}
+
+.currency-card-input:focus { border-color: var(--gold-dim); }
+
+.currency-btn-add,
+.currency-btn-sub {
+  flex: 1;
+  font-size: 11px;
+  padding: 3px 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.currency-btn-add {
+  background: rgba(74,164,100,.15);
+  border-color: rgba(74,164,100,.4);
+  color: #6ec98a;
+}
+
+.currency-btn-sub {
+  background: rgba(220,80,80,.12);
+  border-color: rgba(220,80,80,.35);
+  color: #e07070;
+}
+
+.currency-btn-add:active { background: rgba(74,164,100,.3); }
+.currency-btn-sub:active { background: rgba(220,80,80,.25); }
+
 .consumable-item {
   display: flex;
   align-items: center;
