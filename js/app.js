@@ -1426,10 +1426,9 @@ const App = (() => {
 
   function consolidateCurrency() {
     const cur = _char.currency;
-    // Mantener PP intactos — solo consolidar GP/EP/SP/CP hacia GP
-    const pp = cur.pp || 0;
-    let totalCP = (cur.gp||0)*100 + (cur.ep||0)*50 + (cur.sp||0)*10 + (cur.cp||0);
-    // Redistribuir de GP hacia abajo (sin subir a PP)
+    // Convertir todo a CP y redistribuir usando GP como máximo (sin subir a PP)
+    let totalCP = (cur.pp||0)*1000 + (cur.gp||0)*100 + (cur.ep||0)*50 + (cur.sp||0)*10 + (cur.cp||0);
+    const pp = 0;
     const gp = Math.floor(totalCP / 100); totalCP -= gp * 100;
     const ep = Math.floor(totalCP / 50);  totalCP -= ep * 50;
     const sp = Math.floor(totalCP / 10);  totalCP -= sp * 10;
@@ -1437,9 +1436,7 @@ const App = (() => {
     _char.currency = { pp, gp, ep, sp, cp };
     _saveChar();
     _renderEquipoTab();
-    const parts = [];
-    if (pp) parts.push(`${pp}pp`);
-    parts.push(`${gp}gp`);
+    const parts = [`${gp}gp`];
     if (ep) parts.push(`${ep}ep`);
     if (sp) parts.push(`${sp}sp`);
     if (cp) parts.push(`${cp}cp`);
@@ -1627,7 +1624,7 @@ const App = (() => {
             const cdBase  = cdTotal !== null ? cdTotal - cdBonus : null;
             if (cdTotal === null) return `<span class="passive-val">—</span>`;
             return cdBonus
-              ? `<span class="passive-val" style="color:var(--text-dim);font-size:14px;">${cdBase}</span><span style="color:var(--text-dim);font-size:12px;margin:0 2px;">+</span><span class="passive-val" style="color:#c49bff;font-size:14px;">${cdBonus}</span><span style="color:var(--text-dim);font-size:12px;margin:0 2px;">=</span><span class="passive-val" style="color:#c49bff;">${cdTotal}</span>`
+              ? `<span style="color:var(--text-dim);font-size:12px;">${cdBase} + ${cdBonus} =</span> <span class="passive-val" style="color:#c49bff;">${cdTotal}</span>`
               : `<span class="passive-val">${cdTotal}</span>`;
           })()}
           <input type="number" class="bonus-input-sm" value="${(c.bonuses&&c.bonuses.cd)||0}"
@@ -1643,7 +1640,7 @@ const App = (() => {
             const atkBase  = atkTotal !== null ? atkTotal - atkBonus : null;
             if (atkTotal === null) return `<span class="passive-val">—</span>`;
             return atkBonus
-              ? `<span class="passive-val" style="color:var(--text-dim);font-size:14px;">${atkBase >= 0 ? '+' : ''}${atkBase}</span><span style="color:var(--text-dim);font-size:12px;margin:0 2px;">+</span><span class="passive-val" style="color:#c49bff;font-size:14px;">${atkBonus}</span><span style="color:var(--text-dim);font-size:12px;margin:0 2px;">=</span><span class="passive-val" style="color:#c49bff;">${atkTotal >= 0 ? '+' : ''}${atkTotal}</span>`
+              ? `<span style="color:var(--text-dim);font-size:12px;">${atkBase >= 0 ? '+' : ''}${atkBase} + ${atkBonus} =</span> <span class="passive-val" style="color:#c49bff;">${atkTotal >= 0 ? '+' : ''}${atkTotal}</span>`
               : `<span class="passive-val">${atkTotal >= 0 ? '+' : ''}${atkTotal}</span>`;
           })()}
           <input type="number" class="bonus-input-sm" value="${(c.bonuses&&c.bonuses.ataque)||0}"
