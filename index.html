@@ -1026,7 +1026,7 @@
     <div class="form-group" style="max-width:120px;">
       <label class="form-label" for="cmNivel">Nivel</label>
       <input class="form-input" id="cmNivel" type="number" min="1" max="20" value="1" style="text-align:center;"
-             inputmode="numeric">
+             inputmode="numeric" oninput="_updateLevelSum()">
     </div>
 
     <!-- Estadísticas base -->
@@ -1047,6 +1047,7 @@
         <button class="btn-add-multiclase" type="button" onclick="addMulticlaseRow()">+ Agregar clase</button>
       </div>
       <div id="cmMulticlaseRows"></div>
+      <div id="cmLevelSum" style="display:none;font-size:12px;margin-top:6px;padding:4px 8px;border-radius:6px;"></div>
     </div>
 
     <div class="modal-btns">
@@ -1476,14 +1477,33 @@ function addMulticlaseRow() {
       </select>
     </div>
     <input type="number" class="form-input mc-nivel-input" id="mc_nivel_${_multiclaseCount}"
-           value="1" min="1" max="19" inputmode="numeric" title="Nivel en esta clase">
+           value="1" min="1" max="19" inputmode="numeric" title="Nivel en esta clase" oninput="_updateLevelSum()">
     <button type="button" class="mc-remove-btn" onclick="removeMulticlaseRow('${id}')">✕</button>`;
   container.appendChild(div);
+  _updateLevelSum();
 }
 
 function removeMulticlaseRow(id) {
   const el = document.getElementById(id);
   if (el) el.remove();
+  _updateLevelSum();
+}
+
+function _updateLevelSum() {
+  const mainLvl  = parseInt(document.getElementById('cmNivel')?.value) || 1;
+  const secTotal = Array.from(document.querySelectorAll('#cmMulticlaseRows .mc-nivel-input'))
+    .reduce((s, inp) => s + (parseInt(inp.value) || 1), 0);
+  const total    = mainLvl + secTotal;
+  const el       = document.getElementById('cmLevelSum');
+  if (!el) return;
+  const hasMulti = document.querySelectorAll('#cmMulticlaseRows .mc-row').length > 0;
+  if (!hasMulti) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const over = total > 20;
+  el.style.background = over ? 'rgba(220,80,80,.15)' : 'rgba(74,164,100,.1)';
+  el.style.color      = over ? '#e07070' : '#6ec98a';
+  el.style.border     = over ? '1px solid rgba(220,80,80,.35)' : '1px solid rgba(74,164,100,.25)';
+  el.textContent      = over ? `⚠ Nivel total: ${total} — máximo 20` : `✓ Nivel total: ${total} / 20`;
 }
 
 function _collectMulticlaseRows() {
@@ -1512,6 +1532,8 @@ function openCreateModal() {
   document.getElementById('cmName').value  = '';
   document.getElementById('cmNivel').value = '1';
   document.getElementById('cmMulticlaseRows').innerHTML = '';
+  const _lvlSum = document.getElementById('cmLevelSum');
+  if (_lvlSum) _lvlSum.style.display = 'none';
   document.getElementById('cmMulticlaseSection').style.display = '';
   document.getElementById('cmRazaBonusSection').style.display = 'none';
   const subSec = document.getElementById('cmSubrazaSection');
