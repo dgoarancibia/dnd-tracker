@@ -1513,7 +1513,17 @@ const App = (() => {
       ${c.raza ? `
       <div class="passive-row">
         <span class="passive-label">Raza</span>
-        <span class="passive-val" style="font-size:12px;">${c.raza}</span>
+        <span class="passive-val" style="font-size:12px;">${c.raza}${c.subraza ? ' · ' + c.subraza : ''}</span>
+      </div>` : ''}
+      ${c.trasfondo ? `
+      <div class="passive-row">
+        <span class="passive-label">Trasfondo</span>
+        <span class="passive-val" style="font-size:12px;">${c.trasfondo}</span>
+      </div>` : ''}
+      ${c.deity ? `
+      <div class="passive-row">
+        <span class="passive-label">Deidad</span>
+        <span class="passive-val" style="font-size:12px;">${c.deity}</span>
       </div>` : ''}
       <div class="passive-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
         <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
@@ -2769,17 +2779,16 @@ const App = (() => {
   function openEditStats() {
     const c = _char;
     const STATS = ['for','des','con','int','sab','car'];
-    const LABELS = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
-    const FULL   = { for:'Fuerza', des:'Destreza', con:'Constitución', int:'Inteligencia', sab:'Sabiduría', car:'Carisma' };
 
-    // Fill stat inputs
     STATS.forEach(s => {
       const el = document.getElementById(`es-stat-${s}`);
       if (el) el.value = c.stats[s];
     });
-    document.getElementById('es-nivel').value  = c.nivel;
-    document.getElementById('es-hp-max').value = c.hp.max;
-    document.getElementById('es-name').value   = c.name || '';
+    document.getElementById('es-nivel').value     = c.nivel;
+    document.getElementById('es-hp-max').value    = c.hp.max;
+    document.getElementById('es-name').value      = c.name      || '';
+    document.getElementById('es-trasfondo').value = c.trasfondo || '';
+    document.getElementById('es-deity').value     = c.deity     || '';
 
     document.getElementById('editStatsModal').classList.add('show');
   }
@@ -2795,17 +2804,19 @@ const App = (() => {
       if (_char.stats[s] !== n) { _char.stats[s] = n; changed = true; }
     });
 
-    const nivel = Math.max(1, Math.min(20, parseInt(document.getElementById('es-nivel').value) || _char.nivel));
-    const hpMax = Math.max(1, parseInt(document.getElementById('es-hp-max').value) || _char.hp.max);
-    const name  = document.getElementById('es-name').value.trim() || _char.name;
+    const nivel     = Math.max(1, Math.min(20, parseInt(document.getElementById('es-nivel').value) || _char.nivel));
+    const hpMax     = Math.max(1, parseInt(document.getElementById('es-hp-max').value) || _char.hp.max);
+    const name      = document.getElementById('es-name').value.trim()      || _char.name;
+    const trasfondo = document.getElementById('es-trasfondo').value.trim();
+    const deity     = document.getElementById('es-deity').value.trim();
 
-    if (_char.nivel !== nivel) { _char.nivel = nivel; changed = true; }
-    if (_char.hp.max !== hpMax) {
-      _char.hp.max = hpMax;
-      if (_char.hp.current > hpMax) _char.hp.current = hpMax;
-      changed = true;
-    }
-    if (_char.name !== name) { _char.name = name; changed = true; }
+    if (_char.nivel !== nivel)        { _char.nivel      = nivel;      changed = true; }
+    if (_char.hp.max !== hpMax)       { _char.hp.max     = hpMax;
+                                        if (_char.hp.current > hpMax) _char.hp.current = hpMax;
+                                        changed = true; }
+    if (_char.name      !== name)      { _char.name      = name;      changed = true; }
+    if (_char.trasfondo !== trasfondo) { _char.trasfondo = trasfondo; changed = true; }
+    if (_char.deity     !== deity)     { _char.deity     = deity;     changed = true; }
 
     document.getElementById('editStatsModal').classList.remove('show');
 
@@ -2813,7 +2824,7 @@ const App = (() => {
       _saveChar();
       _renderHeader();
       _renderHabilidadesTab();
-      showToast('✓ Estadísticas actualizadas');
+      showToast('✓ Personaje actualizado');
     }
   }
 

@@ -106,6 +106,113 @@ const Characters = (() => {
     for: 'FUE', des: 'DES', con: 'CON', int: 'INT', sab: 'SAB', car: 'CAR'
   };
 
+  // ── TRASFONDOS_CONFIG (D&D 2024 PHB) ─────────────────────────────────────
+  // skillProfs: skills que otorga el trasfondo
+  // toolProfs: herramientas / vehículos / kits
+  // feat: feat de origen que otorga
+  // feature: nombre del rasgo narrativo del trasfondo
+  // featureDesc: descripción breve del rasgo
+  const TRASFONDOS_CONFIG = {
+    'Acólito': {
+      emoji: '⛪', skillProfs: ['perspicacia', 'religion'],
+      toolProfs: [],
+      feat: 'Magic Initiate (Clérigo)',
+      feature: 'Shelter of the Faithful',
+      featureDesc: 'Podés recibir curación y cuidado en templos de tu fe. Vos y tus compañeros pueden descansar allí gratuitamente.',
+    },
+    'Artesano': {
+      emoji: '🔨', skillProfs: ['perspicacia', 'persuasion'],
+      toolProfs: ['Herramientas de artesano (a elección)'],
+      feat: 'Crafter',
+      feature: 'Maker\'s Eye',
+      featureDesc: 'Podés identificar el valor, calidad y procedencia de objetos manufacturados con solo examinarlos.',
+    },
+    'Charlatán': {
+      emoji: '🃏', skillProfs: ['engano', 'juegomanos'],
+      toolProfs: ['Kit de disfraz', 'Kit de falsificación'],
+      feat: 'Skilled',
+      feature: 'False Identity',
+      featureDesc: 'Tenés una identidad falsa documentada. También podés falsificar documentos con el kit correspondiente.',
+    },
+    'Criminal': {
+      emoji: '🗡️', skillProfs: ['engano', 'sigilo'],
+      toolProfs: ['Herramientas de ladrón', 'Un juego de azar'],
+      feat: 'Alert',
+      feature: 'Criminal Contact',
+      featureDesc: 'Tenés un contacto en el mundo criminal que actúa como enlace con la red de ladrones locales.',
+    },
+    'Erudito': {
+      emoji: '📚', skillProfs: ['arcanos', 'historia'],
+      toolProfs: [],
+      feat: 'Magic Initiate (Mago)',
+      feature: 'Researcher',
+      featureDesc: 'Cuando no sabés algo, sabés dónde ir a buscarlo: bibliotecas, guildas académicas, otros eruditos.',
+    },
+    'Héroe del Pueblo': {
+      emoji: '🌾', skillProfs: ['manejoanim', 'supervivencia'],
+      toolProfs: ['Herramientas de artesano (a elección)', 'Vehículos terrestres'],
+      feat: 'Tough',
+      feature: 'Rustic Hospitality',
+      featureDesc: 'Las personas comunes te dan refugio y comida. Pueden ocultarte de quienes te busquen.',
+    },
+    'Noble': {
+      emoji: '👑', skillProfs: ['historia', 'persuasion'],
+      toolProfs: ['Un juego de azar'],
+      feat: 'Skilled',
+      feature: 'Position of Privilege',
+      featureDesc: 'La gente de alta alcurnia te respeta. Tenés acceso a la alta sociedad y la nobleza.',
+    },
+    'Forajido': {
+      emoji: '🏕️', skillProfs: ['atletismo', 'supervivencia'],
+      toolProfs: ['Instrumento musical (a elección)', 'Herramientas de cartógrafo'],
+      feat: 'Lucky',
+      feature: 'Wanderer',
+      featureDesc: 'Tenés una memoria excelente para mapas y geografía. Siempre podés recordar el camino de vuelta.',
+    },
+    'Soldado': {
+      emoji: '⚔️', skillProfs: ['atletismo', 'intimidacion'],
+      toolProfs: ['Vehículos terrestres', 'Un juego de azar'],
+      feat: 'Savage Attacker',
+      feature: 'Military Rank',
+      featureDesc: 'Tenés rango militar reconocido. Soldados inferiores obedecen tus órdenes; accedés a equipamiento y campamentos.',
+    },
+    'Entretenido': {
+      emoji: '🎭', skillProfs: ['acrobacias', 'interpretacion'],
+      toolProfs: ['Kit de disfraz', 'Instrumento musical (a elección)'],
+      feat: 'Musician',
+      feature: 'By Popular Demand',
+      featureDesc: 'Siempre podés encontrar alojamiento y comida en tabernas o teatros a cambio de actuar.',
+    },
+    'Marinero': {
+      emoji: '⚓', skillProfs: ['atletismo', 'percepcion'],
+      toolProfs: ['Herramientas de navegante', 'Vehículos acuáticos'],
+      feat: 'Tavern Brawler',
+      feature: 'Ship\'s Passage',
+      featureDesc: 'Podés asegurar pasaje gratuito en barco para vos y compañeros a cambio de trabajo durante el viaje.',
+    },
+    'Sabio Callejero': {
+      emoji: '🏚️', skillProfs: ['engano', 'perspicacia'],
+      toolProfs: ['Herramientas de ladrón', 'Un juego de azar'],
+      feat: 'Lucky',
+      feature: 'City Secrets',
+      featureDesc: 'Conocés los pasajes secretos y callejones de la ciudad. Podés moverte entre dos puntos el doble de rápido.',
+    },
+    'Ermitaño': {
+      emoji: '🌿', skillProfs: ['medicina', 'religion'],
+      toolProfs: ['Kit de herbolario'],
+      feat: 'Healer',
+      feature: 'Discovery',
+      featureDesc: 'Tu soledad te reveló un secreto único sobre el cosmos, los dioses o las fuerzas del mundo.',
+    },
+    'Custom': {
+      emoji: '✏️', skillProfs: [],
+      toolProfs: [],
+      feat: '',
+      feature: '',
+      featureDesc: '',
+    },
+  };
+
   // ── RAZAS_CONFIG (D&D 2024) ────────────────────────────────────────────────
   // bonus: [+2, +1] a stats libres elegidos por el jugador (2024)
   // traits: rasgos clave de la raza
@@ -2945,6 +3052,22 @@ const Characters = (() => {
     return char;
   }
 
+  // ── applyTrasfondo: aplica skills y datos de trasfondo al personaje ─────────
+  function applyTrasfondo(char, trasfondoNombre) {
+    if (!trasfondoNombre) return char;
+    const cfg = TRASFONDOS_CONFIG[trasfondoNombre];
+    if (!cfg) return char;
+
+    char.trasfondo = trasfondoNombre;
+
+    // Aplicar proficiencias de habilidad (sin duplicar)
+    if (cfg.skillProfs && cfg.skillProfs.length) {
+      char.skillProfs = [...new Set([...(char.skillProfs || []), ...cfg.skillProfs])];
+    }
+
+    return char;
+  }
+
   // ── applySubclase: aplica recursos y features de subclase al personaje ─────
   function applySubclase(char, subclaseName) {
     if (!subclaseName) return char;
@@ -3117,7 +3240,7 @@ const Characters = (() => {
       ifttt:            [],
       choices:          {},
 
-      _dataVersion: 10,
+      _dataVersion: 11,
       createdAt:    new Date().toISOString(),
       updatedAt:    new Date().toISOString(),
     };
@@ -3561,6 +3684,7 @@ const Characters = (() => {
     SUBCLASES_CONFIG,
     CHOICES_CONFIG,
     RAZAS_CONFIG,
+    TRASFONDOS_CONFIG,
     SKILLS_DEF,
     STAT_NAMES,
     LURSEY_IFTTT,
@@ -3588,6 +3712,7 @@ const Characters = (() => {
     getPendingChoices,
     applyChoice,
     applyRaza,
+    applyTrasfondo,
     applySubraza,
     applySubclase,
     buildLursey,

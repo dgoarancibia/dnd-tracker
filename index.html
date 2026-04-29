@@ -825,6 +825,43 @@
     letter-spacing: 0.05em;
   }
   .subraza-chip.selected .subraza-chip-name { color: var(--gold); }
+
+  /* ── Trasfondo chips ── */
+  .trasfondo-chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .trasfondo-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 10px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+    min-width: 64px;
+  }
+  .trasfondo-chip:hover { background: var(--bg3); border-color: var(--gold-dim); }
+  .trasfondo-chip.selected {
+    background: rgba(201,151,58,0.12);
+    border-color: var(--gold);
+  }
+  .trasfondo-chip-emoji { font-size: 18px; margin-bottom: 2px; }
+  .trasfondo-chip-name {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+  .trasfondo-chip.selected .trasfondo-chip-name { color: var(--gold); }
 </style>
 </head>
 <body>
@@ -963,6 +1000,20 @@
       </div>
     </div>
 
+    <!-- Trasfondo -->
+    <div class="form-group">
+      <label class="form-label">Trasfondo</label>
+      <div class="trasfondo-chip-grid" id="trasfondoChipGrid">
+        <!-- generado por JS -->
+      </div>
+      <!-- Info dinámica del trasfondo elegido -->
+      <div id="trasfondoInfo" style="display:none;margin-top:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--gold-dim);font-size:12px;">
+        <div id="trasfondoSkills" style="color:var(--text-dim);margin-bottom:2px;"></div>
+        <div id="trasfondoFeat" style="color:var(--gold-dim);"></div>
+        <div id="trasfondoFeatureDesc" style="margin-top:4px;color:var(--text-muted,var(--text));font-size:11px;"></div>
+      </div>
+    </div>
+
     <!-- Clase principal: chips táctiles -->
     <div class="form-group">
       <label class="form-label">Clase principal</label>
@@ -1020,7 +1071,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=39"></script>
-<script src="js/characters.js?v=45"></script>
+<script src="js/characters.js?v=46"></script>
 <script type="module" src="js/firebase.js?v=35"></script>
 <script>
 // ═══════════════════════════════════════════════════
@@ -1228,8 +1279,9 @@ const _RAZAS_LISTA = [
   'Gnomo','Orco','Tiefling','Aasimar','Goliath','Custom'
 ];
 
-let _selectedClase = 'Clérigo';
-let _selectedRaza  = '';   // '' = sin raza elegida
+let _selectedClase     = 'Clérigo';
+let _selectedRaza      = '';   // '' = sin raza elegida
+let _selectedTrasfondo = '';   // '' = sin trasfondo elegido
 
 // ── Stats wizard ──────────────────────────────────────
 const _STAT_KEYS  = ['for','des','con','int','sab','car'];
@@ -1278,6 +1330,49 @@ function applyStandardArray() {
     const el = document.getElementById(`cmStat_${k}`);
     if (el) { el.value = values[i]; _updateStatMod(k, values[i]); }
   });
+}
+
+function _buildTrasfondoChips(selected) {
+  const grid = document.getElementById('trasfondoChipGrid');
+  if (!grid) return;
+  const cfg = (typeof Characters !== 'undefined' && Characters.TRASFONDOS_CONFIG) || {};
+  const lista = Object.keys(cfg);
+  grid.innerHTML = lista.map(t => {
+    const emoji = cfg[t].emoji || '📜';
+    return `<button type="button"
+      class="trasfondo-chip ${t === selected ? 'selected' : ''}"
+      onclick="selectTrasfondoChip(this,'${t.replace(/'/g,"\\'")}')">
+      <span class="trasfondo-chip-emoji">${emoji}</span>
+      <span class="trasfondo-chip-name">${t}</span>
+    </button>`;
+  }).join('');
+}
+
+function selectTrasfondoChip(el, name) {
+  document.querySelectorAll('.trasfondo-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedTrasfondo = name;
+  // Mostrar info del trasfondo
+  const cfg = (typeof Characters !== 'undefined' && Characters.TRASFONDOS_CONFIG) || {};
+  const t = cfg[name];
+  const infoEl = document.getElementById('trasfondoInfo');
+  if (!t || !infoEl) return;
+  const skillNames = { acrobacias:'Acrobacias', arcanos:'Arcanos', atletismo:'Atletismo',
+    engano:'Engaño', historia:'Historia', intimidacion:'Intimidación', interpretacion:'Interpretación',
+    investigacion:'Investigación', juegomanos:'Juego de Manos', manejoanim:'Manejo Animales',
+    medicina:'Medicina', naturaleza:'Naturaleza', percepcion:'Percepción', perspicacia:'Perspicacia',
+    persuasion:'Persuasión', religion:'Religión', sigilo:'Sigilo', supervivencia:'Supervivencia' };
+  if (name === 'Custom') {
+    infoEl.style.display = 'none';
+    return;
+  }
+  infoEl.style.display = '';
+  const skillsList = t.skillProfs.map(s => skillNames[s] || s).join(', ');
+  document.getElementById('trasfondoSkills').textContent =
+    `Skills: ${skillsList || '—'}${t.toolProfs && t.toolProfs.length ? '  ·  Herramientas: ' + t.toolProfs.join(', ') : ''}`;
+  document.getElementById('trasfondoFeat').textContent = t.feat ? `Feat: ${t.feat}` : '';
+  document.getElementById('trasfondoFeatureDesc').textContent =
+    t.feature ? `${t.feature} — ${t.featureDesc}` : '';
 }
 
 function _buildClaseChips(selected) {
@@ -1407,10 +1502,11 @@ function _collectMulticlaseRows() {
 
 function openCreateModal() {
   _editId = null;
-  _selectedClase   = 'Clérigo';
-  _selectedRaza    = '';
-  _selectedSubraza = '';
-  _multiclaseCount = 0;
+  _selectedClase     = 'Clérigo';
+  _selectedRaza      = '';
+  _selectedSubraza   = '';
+  _selectedTrasfondo = '';
+  _multiclaseCount   = 0;
   document.getElementById('createModalTitle').textContent = '✦ Nuevo personaje';
   document.getElementById('saveBtn').textContent = 'Crear personaje';
   document.getElementById('cmName').value  = '';
@@ -1428,8 +1524,11 @@ function openCreateModal() {
   if (customT) customT.value = '';
   const extraT = document.getElementById('cmExtraTraits');
   if (extraT) extraT.value = '';
+  const tInfo = document.getElementById('trasfondoInfo');
+  if (tInfo) tInfo.style.display = 'none';
   _buildClaseChips('Clérigo');
   _buildRazaChips('');
+  _buildTrasfondoChips('');
   _buildStatsGrid(null);
   document.getElementById('createModal').classList.add('show');
   setTimeout(() => document.getElementById('cmName').focus(), 80);
@@ -1439,10 +1538,11 @@ function openEditModal(id) {
   const c = Storage.getChar(id);
   if (!c) return;
   _editId = id;
-  _selectedClase   = c.clase   || 'Clérigo';
-  _selectedRaza    = c.raza    || '';
-  _selectedSubraza = c.subraza || '';
-  _multiclaseCount = 0;
+  _selectedClase     = c.clase      || 'Clérigo';
+  _selectedRaza      = c.raza       || '';
+  _selectedSubraza   = c.subraza    || '';
+  _selectedTrasfondo = c.trasfondo  || '';
+  _multiclaseCount   = 0;
   document.getElementById('createModalTitle').textContent = '✎ Editar personaje';
   document.getElementById('saveBtn').textContent = 'Guardar';
   document.getElementById('cmName').value  = c.name;
@@ -1467,6 +1567,11 @@ function openEditModal(id) {
   });
   _buildClaseChips(_selectedClase);
   _buildRazaChips(_selectedRaza);
+  _buildTrasfondoChips(_selectedTrasfondo);
+  if (_selectedTrasfondo) selectTrasfondoChip(
+    document.querySelector(`.trasfondo-chip.selected`) || { classList: { add:()=>{}, remove:()=>{} } },
+    _selectedTrasfondo
+  );
   _buildStatsGrid(c.stats || null);
   document.getElementById('createModal').classList.add('show');
   setTimeout(() => document.getElementById('cmName').focus(), 80);
@@ -1496,12 +1601,14 @@ function saveCreateModal() {
   if (_editId) {
     const c = Storage.getChar(_editId);
     if (c) {
-      c.name    = name;
-      c.raza    = _selectedRaza;
-      c.clase   = _selectedClase;
-      c.nivel   = nivel;
-      c.classes = allClasses;
-      c.stats   = _collectStats();
+      c.name       = name;
+      c.raza       = _selectedRaza;
+      c.subraza    = _selectedSubraza;
+      c.trasfondo  = _selectedTrasfondo;
+      c.clase      = _selectedClase;
+      c.nivel      = nivel;
+      c.classes    = allClasses;
+      c.stats      = _collectStats();
       c.spellSlots = Characters.calcMulticlassSlots(allClasses);
       Characters.applyLevelUp(c, nivel, 0);
       Storage.saveChar(c);
@@ -1539,6 +1646,11 @@ function saveCreateModal() {
       const customTraits = document.getElementById('cmCustomRazaTraits')?.value.trim();
       if (customNombre) newChar.raza = customNombre;
       if (customTraits) newChar.speciesTraits = customTraits;
+    }
+
+    // Aplicar trasfondo (skills automáticas)
+    if (_selectedTrasfondo) {
+      Characters.applyTrasfondo(newChar, _selectedTrasfondo);
     }
 
     // Agregar rasgos adicionales manuales (feats, variantes, notas del DM…)
