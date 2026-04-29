@@ -2735,7 +2735,9 @@ const App = (() => {
     if (containerEl) containerEl.checked = !!item.container;
     const titleEl = document.getElementById('addItemModalTitle');
     if (titleEl) titleEl.textContent = '✎ Editar ítem';
-    const qtyField = document.getElementById('aimQtyRow');
+    const saveBtn = document.getElementById('aimSaveBtn');
+    if (saveBtn) saveBtn.textContent = 'Guardar';
+    const qtyField = document.getElementById('aimQtyField');
     if (qtyField) qtyField.style.display = item.slot === 'body' ? 'none' : '';
     const containerRow = document.getElementById('aimContainerRow');
     if (containerRow) containerRow.style.display = item.slot === 'body' ? 'none' : '';
@@ -2752,6 +2754,8 @@ const App = (() => {
     document.getElementById('addItemModal').classList.add('show');
     const titleEl = document.getElementById('addItemModalTitle');
     if (titleEl) titleEl.textContent = slot === 'body' ? '+ Equipo del cuerpo' : '+ Agregar a mochila';
+    const saveBtn = document.getElementById('aimSaveBtn');
+    if (saveBtn) saveBtn.textContent = 'Agregar';
     document.getElementById('aimCategory').value = slot === 'body' ? 'Apparel' : 'Other';
     const qtyField = document.getElementById('aimQtyField');
     if (qtyField) qtyField.style.display = slot === 'body' ? 'none' : '';
