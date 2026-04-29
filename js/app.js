@@ -1615,42 +1615,54 @@ const App = (() => {
       </div>
       <div class="passive-row">
         <span class="passive-label">Iniciativa</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span class="passive-val">${Characters.calcInit(c) >= 0 ? '+' : ''}${Characters.calcInit(c)}</span>
-          <input type="number" class="bonus-input-sm" value="${(c.bonuses&&c.bonuses.init)||0}"
-                 onchange="App.setBonus('init', this.value)" onclick="this.select()" title="Bonus extra a iniciativa">
+        <div style="display:flex;align-items:center;gap:4px;">
+          ${(() => {
+            const initBonus = (c.bonuses && c.bonuses.init) || 0;
+            const initBase  = Characters.calcMod(c.stats.des);
+            const initTotal = Characters.calcInit(c);
+            const fmt = v => (v >= 0 ? '+' : '') + v;
+            return `
+              <span class="passive-val">${fmt(initBase)}</span>
+              <span style="color:var(--text-dim);font-size:13px;">+</span>
+              <input type="number" class="bonus-input-sm" value="${initBonus}"
+                     onchange="App.setBonus('init', this.value)" onclick="this.select()" title="Bonus extra a iniciativa">
+              ${initBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:#c49bff;">${fmt(initTotal)}</span>` : ''}`;
+          })()}
         </div>
       </div>
       <div class="passive-row">
         <span class="passive-label">CD de Conjuros</span>
-        <div style="display:flex;align-items:center;gap:6px;">
+        <div style="display:flex;align-items:center;gap:4px;">
           ${(() => {
             const cdBonus = (c.bonuses && c.bonuses.cd) || 0;
             const cdTotal = Characters.calcCD(c);
             const cdBase  = cdTotal !== null ? cdTotal - cdBonus : null;
-            if (cdTotal === null) return `<span class="passive-val">—</span>`;
-            return cdBonus
-              ? `<span style="color:var(--text-dim);font-size:12px;">${cdBase} + ${cdBonus} =</span> <span class="passive-val" style="color:#c49bff;">${cdTotal}</span>`
-              : `<span class="passive-val">${cdTotal}</span>`;
+            if (cdBase === null) return `<span class="passive-val">—</span><input type="number" class="bonus-input-sm" value="${cdBonus}" onchange="App.setBonus('cd', this.value)" onclick="this.select()">`;
+            return `
+              <span class="passive-val">${cdBase}</span>
+              <span style="color:var(--text-dim);font-size:13px;">+</span>
+              <input type="number" class="bonus-input-sm" value="${cdBonus}"
+                     onchange="App.setBonus('cd', this.value)" onclick="this.select()" title="Bonus extra al CD (ítems, rasgos…)">
+              ${cdBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:#c49bff;">${cdTotal}</span>` : ''}`;
           })()}
-          <input type="number" class="bonus-input-sm" value="${(c.bonuses&&c.bonuses.cd)||0}"
-                 onchange="App.setBonus('cd', this.value)" onclick="this.select()" title="Bonus extra al CD (ítems, rasgos…)" placeholder="+0">
         </div>
       </div>
       <div class="passive-row">
         <span class="passive-label">Bonus Ataque Mágico</span>
-        <div style="display:flex;align-items:center;gap:6px;">
+        <div style="display:flex;align-items:center;gap:4px;">
           ${(() => {
             const atkBonus = (c.bonuses && c.bonuses.ataque) || 0;
             const atkTotal = Characters.calcAtaqueBonus(c);
             const atkBase  = atkTotal !== null ? atkTotal - atkBonus : null;
-            if (atkTotal === null) return `<span class="passive-val">—</span>`;
-            return atkBonus
-              ? `<span style="color:var(--text-dim);font-size:12px;">${atkBase >= 0 ? '+' : ''}${atkBase} + ${atkBonus} =</span> <span class="passive-val" style="color:#c49bff;">${atkTotal >= 0 ? '+' : ''}${atkTotal}</span>`
-              : `<span class="passive-val">${atkTotal >= 0 ? '+' : ''}${atkTotal}</span>`;
+            const fmt = v => (v >= 0 ? '+' : '') + v;
+            if (atkBase === null) return `<span class="passive-val">—</span><input type="number" class="bonus-input-sm" value="${atkBonus}" onchange="App.setBonus('ataque', this.value)" onclick="this.select()">`;
+            return `
+              <span class="passive-val">${fmt(atkBase)}</span>
+              <span style="color:var(--text-dim);font-size:13px;">+</span>
+              <input type="number" class="bonus-input-sm" value="${atkBonus}"
+                     onchange="App.setBonus('ataque', this.value)" onclick="this.select()" title="Bonus arma mágica">
+              ${atkBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:#c49bff;">${fmt(atkTotal)}</span>` : ''}`;
           })()}
-          <input type="number" class="bonus-input-sm" value="${(c.bonuses&&c.bonuses.ataque)||0}"
-                 onchange="App.setBonus('ataque', this.value)" onclick="this.select()" title="Bonus arma mágica" placeholder="+0">
         </div>
       </div>
     </div>
