@@ -1363,15 +1363,13 @@ const App = (() => {
     document.getElementById('col-equipo-der').innerHTML = htmlDer;
   }
 
-  // Tasas de conversión a CP (cobre)
-  const _COIN_TO_CP = { pp: 1000, gp: 100, ep: 50, sp: 10, cp: 1 };
-  const _COIN_ORDER = ['pp','gp','ep','sp','cp'];
+  // Denominaciones — GP es la unidad base, sin Electrum
+  const _COIN_ORDER = ['pp','gp','sp','cp'];
   const _COIN_META  = {
-    pp: { label:'PP', color:'#c8b8ff', name:'Platino',  rate:'1 pp = 10 gp' },
-    gp: { label:'GP', color:'#c9973a', name:'Oro',      rate:'1 gp = 2 ep'  },
-    ep: { label:'EP', color:'#4ab8c4', name:'Electrum', rate:'2 ep = 1 gp'  },
-    sp: { label:'SP', color:'#b0b0b0', name:'Plata',    rate:'10 sp = 1 gp' },
-    cp: { label:'CP', color:'#cd7f32', name:'Cobre',    rate:'100 cp = 1 gp'},
+    pp: { color:'#c8b8ff', name:'Platino', rate:'1 pp = 10 gp' },
+    gp: { color:'#c9973a', name:'Oro',     rate:'Unidad base'  },
+    sp: { color:'#b0b0b0', name:'Plata',   rate:'10 sp = 1 gp' },
+    cp: { color:'#cd7f32', name:'Cobre',   rate:'100 cp = 1 gp'},
   };
 
   function _totalInGP(cur) {
@@ -1379,7 +1377,7 @@ const App = (() => {
   }
 
   function _renderCurrencyHTML(c) {
-    const cur = c.currency || { pp:0, gp:0, ep:0, sp:0, cp:0 };
+    const cur = c.currency || {};
     const totalGP = _totalInGP(cur);
     const totalStr = Number.isInteger(totalGP) ? totalGP.toLocaleString() : totalGP.toFixed(2);
 
@@ -1394,10 +1392,10 @@ const App = (() => {
           <span class="currency-card-rate">${m.rate}</span>
         </div>
         <div class="currency-card-btns">
-          <input type="number" class="currency-card-input" placeholder="cantidad" min="0" id="coinInput_${coin}"
-                 onkeydown="if(event.key==='Enter'){App.addCoin('${coin}',1,this);}" onclick="this.select()">
-          <button class="currency-btn-add" onclick="App.addCoin('${coin}',1,document.getElementById('coinInput_${coin}'))">+ Ganar</button>
-          <button class="currency-btn-sub" onclick="App.addCoin('${coin}',-1,document.getElementById('coinInput_${coin}'))">− Gastar</button>
+          <input type="number" class="currency-card-input" placeholder="+/−" id="coinInput_${coin}"
+                 onkeydown="if(event.key==='Enter'){App.addCoin('${coin}',0,this);}" onclick="this.select()">
+          <button class="currency-btn-add" onclick="App.addCoin('${coin}',1,document.getElementById('coinInput_${coin}'))">+</button>
+          <button class="currency-btn-sub" onclick="App.addCoin('${coin}',-1,document.getElementById('coinInput_${coin}'))">−</button>
         </div>
       </div>`;
     }).join('');
@@ -1408,17 +1406,28 @@ const App = (() => {
         <span class="rc-name">💰 Dinero</span>
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:11px;color:var(--text-dim);">Total: <strong style="color:var(--gold);">${totalStr} gp</strong></span>
-          <button class="btn-sm" onclick="App.consolidateCurrency()" title="Convierte todo a las monedas más altas posibles">⇅ Consolidar</button>
+          <button class="btn-sm" onclick="App.consolidateCurrency()" title="Convierte todo a Oro">⇅ Todo a GP</button>
         </div>
       </div>
       <div class="currency-cards-grid">${coins}</div>
     </div>`;
   }
 
+  // sign=0 → leer el signo del valor del input (+5 suma, -5 resta, 5 usa sign externo)
+  // sign=1 → forzar suma  (botón +)
+  // sign=-1 → forzar resta (botón −)
   function addCoin(coin, sign, inputEl) {
-    const qty = Math.abs(parseInt(inputEl?.value) || 0);
-    if (qty === 0) return;
-    _char.currency[coin] = Math.max(0, (_char.currency[coin] || 0) + sign * qty);
+    const raw = parseInt(inputEl?.value);
+    if (isNaN(raw) || raw === 0) return;
+    let delta;
+    if (sign === 0) {
+      // Enter: el signo lo da el valor mismo (+5 → +5, -5 → -5, 5 → +5)
+      delta = raw;
+    } else {
+      // Botón + o −: usa el valor absoluto y aplica el signo del botón
+      delta = sign * Math.abs(raw);
+    }
+    _char.currency[coin] = Math.max(0, (_char.currency[coin] || 0) + delta);
     if (inputEl) inputEl.value = '';
     _saveChar();
     _renderEquipoTab();
@@ -1426,21 +1435,18 @@ const App = (() => {
 
   function consolidateCurrency() {
     const cur = _char.currency;
-    // Convertir todo a CP y redistribuir usando GP como máximo (sin subir a PP)
+    // Todo a CP → redistribuir sin usar PP (GP como máximo)
     let totalCP = (cur.pp||0)*1000 + (cur.gp||0)*100 + (cur.ep||0)*50 + (cur.sp||0)*10 + (cur.cp||0);
-    const pp = 0;
     const gp = Math.floor(totalCP / 100); totalCP -= gp * 100;
-    const ep = Math.floor(totalCP / 50);  totalCP -= ep * 50;
     const sp = Math.floor(totalCP / 10);  totalCP -= sp * 10;
     const cp = totalCP;
-    _char.currency = { pp, gp, ep, sp, cp };
+    _char.currency = { pp:0, gp, ep:0, sp, cp };
     _saveChar();
     _renderEquipoTab();
     const parts = [`${gp}gp`];
-    if (ep) parts.push(`${ep}ep`);
     if (sp) parts.push(`${sp}sp`);
     if (cp) parts.push(`${cp}cp`);
-    showToast(`Consolidado: ${parts.join(' · ')}`);
+    showToast(`Todo a GP: ${parts.join(' · ')}`);
   }
 
   /* ══════════════════════════════════════════════════════
