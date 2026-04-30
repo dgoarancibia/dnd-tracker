@@ -1344,9 +1344,15 @@ const App = (() => {
         const cat = item.category || 'Other';
         const isEmpty = item.qty === 0;
         const isContainer = !!item.container;
+        const maxQty = item.maxQty || item.qty || 1;
         const emptyClass = isEmpty ? ' item-row--empty' : '';
-        const qtyControls = (isEmpty && isContainer)
-          ? `<button class="qty-btn qty-btn--refill" onclick="App.refillContainer(${i})" title="Rellenar contenedor">↺ Rellenar</button>`
+        const qtyControls = isContainer
+          ? `<div class="qty-mini">
+               <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
+               <span class="qty-val" id="cons-${i}">${item.qty}<span class="qty-max">/${maxQty}</span></span>
+               <button class="qty-btn" onclick="App.adjustConsumable(${i},1)" ${item.qty >= maxQty ? 'disabled' : ''}>+</button>
+               <button class="qty-btn qty-btn--refill" onclick="App.refillContainer(${i})" title="Rellenar">↺</button>
+             </div>`
           : `<div class="qty-mini">
                <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
                <span class="qty-val" id="cons-${i}">${item.qty}</span>
@@ -1355,11 +1361,11 @@ const App = (() => {
         htmlDer += `
         <div class="item-row${emptyClass}" id="item-row-${i}">
           <div class="item-row-left">
-            <span class="item-name">${item.name}${isEmpty && isContainer ? ' <span class="container-empty-badge">Vacío</span>' : ''}</span>
+            <span class="item-name">${item.name}</span>
             ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
           </div>
           <div class="item-row-right">
-            ${isEmpty && isContainer ? '' : _itemCatBadge(cat)}
+            ${_itemCatBadge(cat)}
             ${qtyControls}
             <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>

@@ -2096,6 +2096,7 @@ input[type=number] { -moz-appearance: textfield; }
 .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg2); color: var(--text-mid); font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; padding: 0; }
 .qty-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
 .qty-val { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; color: var(--text); min-width: 24px; text-align: center; }
+.qty-max { font-size: 11px; font-weight: 400; color: var(--text-dim); }
 
 .magic-item {
   padding: 6px 0;
@@ -2140,20 +2141,21 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .qty-btn--refill {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   border: 1px solid rgba(74,164,100,.4);
   background: rgba(74,164,100,.1);
   color: #6ec98a;
   cursor: pointer;
-  white-space: nowrap;
-  width: auto;
-  height: auto;
-  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
-.qty-btn--refill:active { background: rgba(74,164,100,.25); }
+.qty-btn--refill:hover { border-color: #6ec98a; background: rgba(74,164,100,.2); }
+.qty-btn--refill:active { background: rgba(74,164,100,.3); }
 
 .item-row-left {
   display: flex;
