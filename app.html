@@ -740,6 +740,37 @@
   </div>
 </div>
 
+<!-- FAB NOTA RÁPIDA -->
+<button class="fab-note" id="fabNote" onclick="App.openQuickNote()" title="Nota rápida">📝</button>
+
+<!-- MINI-MODAL NOTA RÁPIDA -->
+<div class="quick-note-modal" id="quickNoteModal">
+  <div class="qn-header">
+    <span class="qn-title">Nota rápida</span>
+    <button class="qn-close" onclick="App.closeQuickNote()">✕</button>
+  </div>
+  <div class="qn-cats">
+    <button class="qn-cat active" data-cat="" onclick="App.setQNCat(this,'')">📝</button>
+    <button class="qn-cat" data-cat="npc"      onclick="App.setQNCat(this,'npc')"      title="/npc">🧑</button>
+    <button class="qn-cat" data-cat="lugar"    onclick="App.setQNCat(this,'lugar')"    title="/mapa">📍</button>
+    <button class="qn-cat" data-cat="combate"  onclick="App.setQNCat(this,'combate')"  title="/combate">🗡️</button>
+    <button class="qn-cat" data-cat="historia" onclick="App.setQNCat(this,'historia')" title="/lore">📖</button>
+    <button class="qn-cat" data-cat="item"     onclick="App.setQNCat(this,'item')"     title="/item">🎒</button>
+    <button class="qn-cat" data-cat="quest"    onclick="App.setQNCat(this,'quest')"    title="/quest">⚔️</button>
+    <button class="qn-cat" data-cat="nota"     onclick="App.setQNCat(this,'nota')"     title="/nota">💡</button>
+  </div>
+  <textarea class="qn-textarea" id="qnInput"
+            placeholder="Escribe tu nota… o usa /npc /mapa /lore /item /quest"
+            oninput="App.onQNInput(this)"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){App.saveQuickNote();event.preventDefault();}"></textarea>
+  <div class="qn-hint" id="qnHint" style="display:none"></div>
+  <div class="qn-footer">
+    <span class="qn-shortcut-tip">Enter para guardar · Shift+Enter = nueva línea</span>
+    <button class="qn-save" onclick="App.saveQuickNote()">Guardar ↑</button>
+  </div>
+</div>
+<div class="quick-note-backdrop" id="qnBackdrop" onclick="App.closeQuickNote()"></div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -747,7 +778,7 @@
 <script src="js/storage.js?v=40"></script>
 <script src="js/characters.js?v=48"></script>
 <script src="js/export_pdf.js?v=6"></script>
-<script src="js/app.js?v=60"></script>
+<script src="js/app.js?v=61"></script>
 <script src="js/biblioteca.js?v=1"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.

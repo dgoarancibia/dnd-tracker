@@ -3995,6 +3995,82 @@ const App = (() => {
 
   function filterDiary() { /* no-op, kept for compat */ }
 
+  /* ══════════════════════════════════════════════════════
+     NOTA RÁPIDA (FAB)
+  ══════════════════════════════════════════════════════ */
+  let _qnCat = '';
+
+  function openQuickNote() {
+    _qnCat = '';
+    const modal = document.getElementById('quickNoteModal');
+    const backdrop = document.getElementById('qnBackdrop');
+    const input = document.getElementById('qnInput');
+    const hint = document.getElementById('qnHint');
+    if (!modal) return;
+    // Reset estado
+    input.value = '';
+    input.style.height = 'auto';
+    if (hint) hint.style.display = 'none';
+    document.querySelectorAll('.qn-cat').forEach(b => b.classList.toggle('active', b.dataset.cat === ''));
+    modal.classList.add('show');
+    if (backdrop) backdrop.classList.add('show');
+    setTimeout(() => input.focus(), 80);
+  }
+
+  function closeQuickNote() {
+    const modal = document.getElementById('quickNoteModal');
+    const backdrop = document.getElementById('qnBackdrop');
+    if (modal) modal.classList.remove('show');
+    if (backdrop) backdrop.classList.remove('show');
+  }
+
+  function setQNCat(el, cat) {
+    _qnCat = cat;
+    document.querySelectorAll('.qn-cat').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  }
+
+  function onQNInput(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    // Reusar la misma lógica de shortcuts del diario
+    const val = el.value;
+    const hint = document.getElementById('qnHint');
+    const matched = Object.keys(_DIARY_SHORTCUTS).find(k => val.toLowerCase().startsWith(k + ' ') || val.toLowerCase() === k);
+    if (matched) {
+      const cat = _DIARY_SHORTCUTS[matched];
+      const emoji = _DIARY_CAT_EMOJI[cat] || '📝';
+      document.querySelectorAll('.qn-cat').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+      _qnCat = cat;
+      if (hint) { hint.textContent = `${emoji} ${cat}`; hint.style.display = 'block'; }
+    } else {
+      if (hint) hint.style.display = 'none';
+    }
+  }
+
+  function saveQuickNote() {
+    const input = document.getElementById('qnInput');
+    if (!input) return;
+    let text = input.value.trim();
+    if (!text) return;
+    // Remover shortcut del inicio
+    const matched = Object.keys(_DIARY_SHORTCUTS).find(k => text.toLowerCase().startsWith(k + ' ') || text.toLowerCase() === k);
+    if (matched) {
+      text = text.slice(matched.length).trimStart();
+      if (!text) { showToast('Escribe algo después del shortcut'); return; }
+    }
+    if (!_char.diary) _char.diary = [];
+    _char.diary.push({
+      id: 'e-' + Date.now(),
+      timestamp: new Date().toISOString(),
+      text,
+      cat: _qnCat || '',
+    });
+    _saveChar();
+    closeQuickNote();
+    const emoji = _DIARY_CAT_EMOJI[_qnCat] || '📝';
+    showToast(`${emoji} Nota guardada`);
+  }
+
   /* ── Stats de Campaña ── */
   function _renderCampaignStats() {
     const panel = document.getElementById('statsPanel');
@@ -4510,6 +4586,7 @@ const App = (() => {
     // Notebook (diario + log + stats)
     toggleNotebook, switchNotebookTab,
     toggleDiary, addDiaryEntry, onDiaryInput, deleteDiaryEntry, filterDiary, exportDiary,
+    openQuickNote, closeQuickNote, setQNCat, onQNInput, saveQuickNote,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
     toggleCombatLog, clearCombatLog, exportCombatLog,
 
