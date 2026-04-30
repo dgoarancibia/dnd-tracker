@@ -1346,8 +1346,7 @@ const App = (() => {
         const isContainer = !!item.container;
         const emptyClass = isEmpty ? ' item-row--empty' : '';
         const qtyControls = (isEmpty && isContainer)
-          ? `<span class="container-empty-badge">Vacío</span>
-             <button class="qty-btn qty-btn--refill" onclick="App.refillContainer(${i})" title="Rellenar contenedor">↺ Rellenar</button>`
+          ? `<button class="qty-btn qty-btn--refill" onclick="App.refillContainer(${i})" title="Rellenar contenedor">↺ Rellenar</button>`
           : `<div class="qty-mini">
                <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
                <span class="qty-val" id="cons-${i}">${item.qty}</span>
@@ -1356,11 +1355,11 @@ const App = (() => {
         htmlDer += `
         <div class="item-row${emptyClass}" id="item-row-${i}">
           <div class="item-row-left">
-            <span class="item-name">${item.name}</span>
+            <span class="item-name">${item.name}${isEmpty && isContainer ? ' <span class="container-empty-badge">Vacío</span>' : ''}</span>
             ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
           </div>
           <div class="item-row-right">
-            ${_itemCatBadge(cat)}
+            ${isEmpty && isContainer ? '' : _itemCatBadge(cat)}
             ${qtyControls}
             <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
