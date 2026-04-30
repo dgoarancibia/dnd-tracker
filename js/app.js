@@ -1817,6 +1817,7 @@ const App = (() => {
     _char.hp.current = Math.max(0, Math.min(_char.hp.max, _char.hp.current + delta));
     _saveChar(true);
     _updateHPDisplay();
+    _updateTempHPDisplay();
     _updateCombatHUD();
     _flashHP(delta < 0 ? 'dmg' : 'heal');
 
