@@ -5403,6 +5403,33 @@ input[type=number] { -moz-appearance: textfield; }
   border-color: var(--gold);
 }
 
+/* Botón de ayuda de shortcuts */
+.diary-shortcut-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: help;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+/* Hint de shortcut detectado */
+.diary-shortcut-hint {
+  font-size: 11px;
+  color: var(--gold-light);
+  background: rgba(201,151,58,0.08);
+  border: 1px solid rgba(201,151,58,0.25);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  margin: 4px 0 2px;
+}
+
 /* Tag de categoría dentro de la burbuja */
 .diary-cat-tag {
   display: inline-block;

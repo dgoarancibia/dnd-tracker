@@ -3757,14 +3757,35 @@ const App = (() => {
     toggleNotebook();
   }
 
-  const _DIARY_CAT_EMOJI = { combate:'🗡️', lugar:'📍', historia:'📖', npc:'🧑', nota:'💡', '':'📝' };
+  const _DIARY_CAT_EMOJI = { combate:'🗡️', lugar:'📍', historia:'📖', npc:'🧑', nota:'💡', item:'🎒', quest:'⚔️', '':'📝' };
   const _DIARY_CAT_COLOR = {
     combate:  'rgba(200,80,80,0.18)',
     lugar:    'rgba(80,160,200,0.18)',
     historia: 'rgba(180,120,60,0.18)',
     npc:      'rgba(140,100,200,0.18)',
     nota:     'rgba(80,180,120,0.18)',
+    item:     'rgba(201,151,58,0.18)',
+    quest:    'rgba(220,140,40,0.18)',
     '':       'transparent',
+  };
+
+  // Shortcuts /xxx → categoría
+  const _DIARY_SHORTCUTS = {
+    '/npc':      'npc',
+    '/mapa':     'lugar',
+    '/map':      'lugar',
+    '/lugar':    'lugar',
+    '/combate':  'combate',
+    '/batalla':  'combate',
+    '/historia': 'historia',
+    '/lore':     'historia',
+    '/nota':     'nota',
+    '/note':     'nota',
+    '/item':     'item',
+    '/objeto':   'item',
+    '/quest':    'quest',
+    '/misión':   'quest',
+    '/mision':   'quest',
   };
 
   function _renderDiaryEntries() {
@@ -3830,10 +3851,44 @@ const App = (() => {
     if (!_diaryCatFilter && !_diarySearch) container.scrollTop = container.scrollHeight;
   }
 
+  function onDiaryInput(el) {
+    // Auto-resize
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+
+    // Detectar shortcut al inicio del texto
+    const val = el.value;
+    const hint = document.getElementById('diaryShortcutHint');
+    const matched = Object.keys(_DIARY_SHORTCUTS).find(k => val.toLowerCase().startsWith(k + ' ') || val.toLowerCase() === k);
+    if (matched) {
+      const cat = _DIARY_SHORTCUTS[matched];
+      const emoji = _DIARY_CAT_EMOJI[cat] || '📝';
+      // Activar categoría visualmente
+      document.querySelectorAll('.diary-new-cat-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.cat === cat);
+      });
+      _newDiaryCat = cat;
+      if (hint) {
+        hint.textContent = `${emoji} Categoría: ${cat}  —  borra "${matched}" o escribe el resto`;
+        hint.style.display = 'block';
+      }
+    } else {
+      if (hint) hint.style.display = 'none';
+    }
+  }
+
   function addDiaryEntry() {
     const textarea = document.getElementById('diaryInput');
-    const text = textarea.value.trim();
+    let text = textarea.value.trim();
     if (!text) return;
+
+    // Remover shortcut del inicio si lo hay
+    const matched = Object.keys(_DIARY_SHORTCUTS).find(k => text.toLowerCase().startsWith(k + ' ') || text.toLowerCase() === k);
+    if (matched) {
+      text = text.slice(matched.length).trimStart();
+      // Si solo pusieron el shortcut sin texto, no guardar
+      if (!text) { showToast('Escribe algo después del shortcut'); return; }
+    }
 
     const entry = {
       id: 'e-' + Date.now(),
@@ -3847,6 +3902,11 @@ const App = (() => {
     _saveChar();
     textarea.value = '';
     textarea.style.height = 'auto';
+    // Resetear categoría y hint
+    const hint = document.getElementById('diaryShortcutHint');
+    if (hint) hint.style.display = 'none';
+    _newDiaryCat = '';
+    document.querySelectorAll('.diary-new-cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === ''));
     _renderDiaryEntries();
   }
 
@@ -4393,7 +4453,7 @@ const App = (() => {
 
     // Notebook (diario + log + stats)
     toggleNotebook, switchNotebookTab,
-    toggleDiary, addDiaryEntry, deleteDiaryEntry, filterDiary, exportDiary,
+    toggleDiary, addDiaryEntry, onDiaryInput, deleteDiaryEntry, filterDiary, exportDiary,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
     toggleCombatLog, clearCombatLog, exportCombatLog,
 

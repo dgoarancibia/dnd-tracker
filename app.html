@@ -306,21 +306,27 @@
       <button class="diary-cat-chip" data-cat="historia" onclick="App.selectDiaryCat(this,'historia')">📖 Historia</button>
       <button class="diary-cat-chip" data-cat="npc"      onclick="App.selectDiaryCat(this,'npc')">🧑 NPC</button>
       <button class="diary-cat-chip" data-cat="nota"     onclick="App.selectDiaryCat(this,'nota')">💡 Nota</button>
+      <button class="diary-cat-chip" data-cat="item"     onclick="App.selectDiaryCat(this,'item')">🎒 Ítem</button>
+      <button class="diary-cat-chip" data-cat="quest"    onclick="App.selectDiaryCat(this,'quest')">⚔️ Quest</button>
     </div>
     <div class="diary-entries" id="diaryEntries"></div>
     <div class="diary-compose">
       <!-- Selector de categoría de la entrada nueva -->
       <div class="diary-new-cat-row">
         <button class="diary-new-cat-btn active" data-cat="" onclick="App.setNewDiaryCat(this,'')">📝</button>
-        <button class="diary-new-cat-btn" data-cat="combate"  onclick="App.setNewDiaryCat(this,'combate')">🗡️</button>
-        <button class="diary-new-cat-btn" data-cat="lugar"    onclick="App.setNewDiaryCat(this,'lugar')">📍</button>
-        <button class="diary-new-cat-btn" data-cat="historia" onclick="App.setNewDiaryCat(this,'historia')">📖</button>
-        <button class="diary-new-cat-btn" data-cat="npc"      onclick="App.setNewDiaryCat(this,'npc')">🧑</button>
-        <button class="diary-new-cat-btn" data-cat="nota"     onclick="App.setNewDiaryCat(this,'nota')">💡</button>
+        <button class="diary-new-cat-btn" data-cat="combate"  onclick="App.setNewDiaryCat(this,'combate')" title="/combate">🗡️</button>
+        <button class="diary-new-cat-btn" data-cat="lugar"    onclick="App.setNewDiaryCat(this,'lugar')"   title="/mapa">📍</button>
+        <button class="diary-new-cat-btn" data-cat="historia" onclick="App.setNewDiaryCat(this,'historia')" title="/lore">📖</button>
+        <button class="diary-new-cat-btn" data-cat="npc"      onclick="App.setNewDiaryCat(this,'npc')"     title="/npc">🧑</button>
+        <button class="diary-new-cat-btn" data-cat="nota"     onclick="App.setNewDiaryCat(this,'nota')"    title="/nota">💡</button>
+        <button class="diary-new-cat-btn" data-cat="item"     onclick="App.setNewDiaryCat(this,'item')"    title="/item">🎒</button>
+        <button class="diary-new-cat-btn" data-cat="quest"    onclick="App.setNewDiaryCat(this,'quest')"   title="/quest">⚔️</button>
+        <span class="diary-shortcut-help" title="/npc · /mapa · /lore · /combate · /nota · /item · /quest">?</span>
       </div>
+      <div class="diary-shortcut-hint" id="diaryShortcutHint" style="display:none"></div>
       <textarea class="diary-textarea" id="diaryInput" rows="1"
-                placeholder="Escribe una nota…"
-                oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"
+                placeholder="Escribe una nota… o usa /npc /mapa /lore /item /quest"
+                oninput="App.onDiaryInput(this)"
                 onkeydown="if(event.key==='Enter'&&!event.shiftKey){App.addDiaryEntry();event.preventDefault();}"></textarea>
       <div class="diary-compose-row">
         <button class="btn-sm" onclick="App.exportDiary()" title="Exportar diario">↓</button>
@@ -741,7 +747,7 @@
 <script src="js/storage.js?v=40"></script>
 <script src="js/characters.js?v=48"></script>
 <script src="js/export_pdf.js?v=6"></script>
-<script src="js/app.js?v=58"></script>
+<script src="js/app.js?v=59"></script>
 <script src="js/biblioteca.js?v=1"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.
