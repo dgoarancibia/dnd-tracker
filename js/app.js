@@ -2792,6 +2792,22 @@ const App = (() => {
   let _addItemSlot = 'bag';
   let _editItemIdx = null;  // null = crear nuevo, number = editar existente
 
+  function _setContainerBtn(val) {
+    const input = document.getElementById('aimContainer');
+    const btn   = document.getElementById('aimContainerBtn');
+    const icon  = document.getElementById('aimContainerIcon');
+    if (input) input.value = val ? '1' : '0';
+    if (btn)  btn.style.borderColor  = val ? 'var(--gold)' : 'var(--border)';
+    if (btn)  btn.style.background   = val ? 'rgba(201,151,58,0.12)' : 'var(--bg2)';
+    if (btn)  btn.style.color        = val ? 'var(--gold-light)' : 'var(--text-dim)';
+    if (icon) icon.textContent       = val ? '☑' : '☐';
+  }
+
+  function toggleContainerBtn() {
+    const input = document.getElementById('aimContainer');
+    _setContainerBtn(input?.value !== '1');
+  }
+
   function openEditItem(idx) {
     const item = (_char.consumables || [])[idx];
     if (!item) return;
@@ -2801,8 +2817,7 @@ const App = (() => {
     document.getElementById('aimDesc').value = item.desc || '';
     document.getElementById('aimQty').value  = item.qty !== undefined ? item.qty : 1;
     document.getElementById('aimCategory').value = item.category || 'Other';
-    const containerEl = document.getElementById('aimContainer');
-    if (containerEl) containerEl.checked = !!item.container;
+    _setContainerBtn(!!item.container);
     const titleEl = document.getElementById('addItemModalTitle');
     if (titleEl) titleEl.textContent = '✎ Editar ítem';
     const saveBtn = document.getElementById('aimSaveBtn');
@@ -2819,8 +2834,7 @@ const App = (() => {
     _addItemSlot = slot || 'bag';
     document.getElementById('aimName').value = '';
     document.getElementById('aimDesc').value = '';
-    const containerEl = document.getElementById('aimContainer');
-    if (containerEl) containerEl.checked = false;
+    _setContainerBtn(false);
     document.getElementById('addItemModal').classList.add('show');
     const titleEl = document.getElementById('addItemModalTitle');
     if (titleEl) titleEl.textContent = slot === 'body' ? '+ Equipo del cuerpo' : '+ Agregar a mochila';
@@ -2847,7 +2861,7 @@ const App = (() => {
     const desc = document.getElementById('aimDesc').value.trim();
     if (!_char.consumables) _char.consumables = [];
 
-    const isContainer = !!(document.getElementById('aimContainer')?.checked);
+    const isContainer = document.getElementById('aimContainer')?.value === '1';
 
     if (_editItemIdx !== null) {
       const item = _char.consumables[_editItemIdx];
@@ -4560,7 +4574,7 @@ const App = (() => {
 
     // Equipo
     addWeapon, openAddWeapon, openEditWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
-    openAddItem, openEditItem, closeAddItem, saveAddItem,
+    openAddItem, openEditItem, closeAddItem, saveAddItem, toggleContainerBtn,
     adjustConsumable, deleteConsumable, addConsumable, refillContainer,
     setCurrency, setAttunement,
     addMagicItem, deleteMagicItem,

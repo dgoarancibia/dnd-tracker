@@ -587,14 +587,18 @@
         <input type="text" id="aimDesc" placeholder="ej: 2d4+2 HP">
       </div>
       <div class="modal-field" style="grid-column:1/-1;" id="aimContainerRow">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="checkbox" id="aimContainer"
-                 style="width:22px;height:22px;cursor:pointer;flex-shrink:0;accent-color:var(--gold);">
-          <label for="aimContainer" style="cursor:pointer;font-size:14px;color:var(--text);">
+        <input type="hidden" id="aimContainer" value="0">
+        <button type="button" id="aimContainerBtn"
+                onclick="App.toggleContainerBtn()"
+                style="width:100%;padding:10px 14px;border-radius:8px;border:1.5px solid var(--border);
+                       background:var(--bg2);color:var(--text-dim);font-size:13px;cursor:pointer;
+                       display:flex;align-items:center;gap:10px;text-align:left;">
+          <span id="aimContainerIcon" style="font-size:18px;">☐</span>
+          <span>
             Es contenedor reutilizable
             <span style="color:var(--text-dim);font-size:11px;display:block;">cantimplora, frasco, bolsa…</span>
-          </label>
-        </div>
+          </span>
+        </button>
       </div>
     </div>
     <div class="modal-btns">
@@ -781,7 +785,7 @@
 <script src="js/storage.js?v=40"></script>
 <script src="js/characters.js?v=48"></script>
 <script src="js/export_pdf.js?v=6"></script>
-<script src="js/app.js?v=64"></script>
+<script src="js/app.js?v=65"></script>
 <script src="js/biblioteca.js?v=1"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.
