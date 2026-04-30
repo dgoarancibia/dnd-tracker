@@ -69,26 +69,29 @@ input[type=number] { -moz-appearance: textfield; }
 .portrait-warning {
   display: none;
   position: fixed;
-  inset: 0;
-  background: var(--bg);
-  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(201,151,58,0.12);
+  border-bottom: 1px solid var(--gold-dim);
+  z-index: 500;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   text-align: center;
-  padding: 40px;
+  padding: 6px 12px;
+  pointer-events: none;
 }
 
-.portrait-warning .pw-icon { font-size: 64px; }
+.portrait-warning .pw-icon { font-size: 14px; }
 .portrait-warning .pw-title {
   font-family: 'Cinzel', serif;
-  font-size: 18px;
-  letter-spacing: 3px;
+  font-size: 10px;
+  letter-spacing: 1px;
   color: var(--gold);
   text-transform: uppercase;
 }
-.portrait-warning .pw-text { font-size: 15px; color: var(--text-dim); }
+.portrait-warning .pw-text { display: none; }
 
 @media (orientation: portrait) {
   .portrait-warning { display: flex; }
