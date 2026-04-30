@@ -1362,10 +1362,9 @@ const App = (() => {
         <div class="item-row${emptyClass}" id="item-row-${i}">
           <div class="item-row-left">
             <span class="item-name">${item.name}</span>
-            ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
+            <div class="item-row-meta">${_itemCatBadge(cat)}${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}</div>
           </div>
           <div class="item-row-right">
-            ${_itemCatBadge(cat)}
             ${qtyControls}
             <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>

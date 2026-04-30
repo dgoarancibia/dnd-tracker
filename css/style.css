@@ -2170,7 +2170,15 @@ input[type=number] { -moz-appearance: textfield; }
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  width: 180px;
   justify-content: flex-start;
+}
+
+.item-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 .item-qty-name {
@@ -2223,12 +2231,10 @@ input[type=number] { -moz-appearance: textfield; }
   font-size: 9px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 3px 0;
+  padding: 2px 8px;
   border-radius: 20px;
   border: 1px solid;
   white-space: nowrap;
-  width: 86px;
-  text-align: center;
   flex-shrink: 0;
 }
 
