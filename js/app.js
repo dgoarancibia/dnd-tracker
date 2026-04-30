@@ -424,7 +424,9 @@ const App = (() => {
     if (_char.concentration) {
       const sp = (_char.spells || []).find(s => s.id === _char.concentration);
       const name = sp ? sp.name : _char.concentration;
-      html += `<span class="hdr-status-chip conc" onclick="App.switchTab('combate')" title="Romper concentración · toca Combate">◆ ${name}</span>`;
+      const rounds = _concRoundsActive();
+      const roundsStr = rounds ? ` · R${rounds}` : '';
+      html += `<span class="hdr-status-chip conc" onclick="App.switchTab('combate')" title="Romper concentración · toca Combate">◆ ${name}${roundsStr}</span>`;
     }
     // Agotamiento activo
     if (_char.exhaustion > 0) {
@@ -1944,8 +1946,12 @@ const App = (() => {
       <div class="hud-divider"></div>
       <div class="hud-conc ${concName ? 'active' : ''}">
         ${concName
-          ? `<span class="hud-conc-dot"></span><span class="hud-conc-name">${concName}</span>
-             <button class="hud-conc-break" onclick="App.setConc(null)" title="Romper concentración">✕</button>`
+          ? (() => {
+              const rounds = _concRoundsActive();
+              const roundsTag = rounds ? `<span class="hud-conc-rounds">R${rounds}</span>` : '';
+              return `<span class="hud-conc-dot"></span><span class="hud-conc-name">${concName}</span>${roundsTag}
+                      <button class="hud-conc-break" onclick="App.setConc(null)" title="Romper concentración">✕</button>`;
+            })()
           : `<span class="hud-conc-none">Sin conc</span>`
         }
       </div>
@@ -2047,8 +2053,24 @@ const App = (() => {
     _combatTurn = 1;
     _updateRoundDisplay();
     _updateCombatHUD();
+    _updateConcBlock();
     endTurn();
-    showToast(`Ronda ${_combatRound}`);
+    // Avisar si la concentración está por vencer
+    if (_char && _char.concentration) {
+      const sp = (_char.spells || []).find(s => s.id === _char.concentration);
+      const maxRounds = _spellDurationToRounds(sp);
+      const rounds = _concRoundsActive();
+      if (maxRounds && rounds) {
+        const left = maxRounds - rounds + 1;
+        if (left === 0) showToast(`◇ ${sp ? sp.name : 'Concentración'} terminó (${maxRounds} rondas)`, 'warn');
+        else if (left <= 2) showToast(`⚠ ${sp ? sp.name : 'Conc'} — quedan ${left} ronda${left > 1 ? 's' : ''}`, 'warn');
+        else showToast(`Ronda ${_combatRound} · ◆ R${rounds}`);
+      } else {
+        showToast(`Ronda ${_combatRound} · ◆ R${rounds || '?'}`);
+      }
+    } else {
+      showToast(`Ronda ${_combatRound}`);
+    }
   }
 
   function resetCombat() {
@@ -2233,13 +2255,20 @@ const App = (() => {
      CONCENTRACIÓN
   ══════════════════════════════════════════════════════ */
 
+  function _concRoundsActive() {
+    if (!_char.concentration || !_char.concentrationRound || !_combatActive) return null;
+    return Math.max(0, _combatRound - _char.concentrationRound) + 1;
+  }
+
   function setConc(spellId) {
     if (!_char) return;
     if (spellId) {
       const sp = (_char.spells || []).find(s => s.id === spellId);
       _logCombat(`◆ Concentración: ${sp ? sp.name : spellId}`, 'spell');
+      _char.concentrationRound = _combatActive ? _combatRound : 0;
     } else if (_char.concentration) {
       _logCombat('◇ Concentración rota', 'cond');
+      _char.concentrationRound = 0;
     }
     _char.concentration = spellId;
     _saveChar();
@@ -2259,9 +2288,36 @@ const App = (() => {
     block.classList.toggle('conc-active', !!_char.concentration);
 
     const label = block.querySelector('.conc-label');
-    if (label) label.textContent = _char.concentration ? '◆ Concentración activa' : 'Concentración';
+    if (label) {
+      if (_char.concentration) {
+        const rounds = _concRoundsActive();
+        const sp = (_char.spells || []).find(s => s.id === _char.concentration);
+        // Intentar parsear duración máxima del hechizo (ej: "1 minuto" = 10 rondas)
+        const maxRounds = _spellDurationToRounds(sp);
+        const roundsLeft = maxRounds ? maxRounds - (rounds || 0) + 1 : null;
+        let labelText = '◆ Concentración activa';
+        if (rounds) {
+          labelText += `  ·  R${rounds}`;
+          if (maxRounds) {
+            labelText += `/${maxRounds}`;
+            if (roundsLeft <= 2) labelText += ' ⚠';
+          }
+        }
+        label.textContent = labelText;
+      } else {
+        label.textContent = 'Concentración';
+      }
+    }
+  }
 
-    // El botón Romper está integrado como primer chip en conc-btns
+  function _spellDurationToRounds(sp) {
+    if (!sp || !sp.duration) return null;
+    const d = sp.duration.toLowerCase();
+    if (d.includes('1 minuto') || d.includes('1 minute')) return 10;
+    if (d.includes('10 minutos') || d.includes('10 minutes')) return 100;
+    if (d.includes('1 hora') || d.includes('1 hour')) return 600;
+    if (d.includes('1 round') || d.includes('1 ronda')) return 1;
+    return null;
   }
 
   /* ══════════════════════════════════════════════════════
