@@ -2842,7 +2842,8 @@ const App = (() => {
   function saveAddItem() {
     const name = document.getElementById('aimName').value.trim();
     if (!name) return;
-    const qty  = _addItemSlot === 'body' ? 1 : (parseInt(document.getElementById('aimQty').value) || 1);
+    const qtyRaw = parseInt(document.getElementById('aimQty').value);
+    const qty  = _addItemSlot === 'body' ? 1 : (isNaN(qtyRaw) ? 1 : qtyRaw);
     const category = document.getElementById('aimCategory').value;
     const desc = document.getElementById('aimDesc').value.trim();
     if (!_char.consumables) _char.consumables = [];

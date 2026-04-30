@@ -3767,16 +3767,16 @@ input[type=number] { -moz-appearance: textfield; }
 .fab-note {
   position: fixed;
   bottom: 80px;
-  right: 18px;
-  width: 48px;
-  height: 48px;
+  left: 18px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--bg4);
   border: 1.5px solid var(--gold-dim);
   color: var(--gold);
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
-  z-index: 800;
+  z-index: 200;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
   transition: transform 0.15s, border-color 0.15s;
   display: flex;
