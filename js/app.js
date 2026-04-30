@@ -2891,13 +2891,12 @@ const App = (() => {
   }
 
   function adjustConsumable(idx, delta) {
-    _char.consumables[idx].qty = Math.max(0, _char.consumables[idx].qty + delta);
+    const item = _char.consumables[idx];
+    if (!item) return;
+    const maxQty = item.container ? (item.maxQty || item.qty || 1) : Infinity;
+    item.qty = Math.min(maxQty, Math.max(0, item.qty + delta));
     _saveChar();
-    const newQty = _char.consumables[idx].qty;
-    const el = document.getElementById(`cons-${idx}`);
-    if (el) el.textContent = newQty;
-    const row = document.getElementById(`item-row-${idx}`);
-    if (row) row.classList.toggle('item-row--empty', newQty === 0);
+    _renderEquipoTab();
   }
 
   function refillContainer(idx) {
