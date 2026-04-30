@@ -8,6 +8,7 @@ const Storage = (() => {
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
   const DATA_VERSION = 12;  // Incrementar al cambiar el esquema
+  const LURSEY_ID    = LURSEY_ID; // personaje de demo — sus features vienen de buildLursey()
 
   /* ── Migrations ── */
   function _migrate(char) {
@@ -58,7 +59,7 @@ const Storage = (() => {
     if (char._dataVersion < 7) {
       // v6 → v7: rellenar features vacías para personajes creados antes del fix
       // Lursey tiene sus features desde buildLursey(); solo aplica a non-Lursey
-      if (char.id !== 'lursey-brumaclara' && (!Array.isArray(char.features) || char.features.length === 0)) {
+      if (char.id !== LURSEY_ID && (!Array.isArray(char.features) || char.features.length === 0)) {
         const claseFeat = (typeof Characters !== 'undefined' && Characters.CLASE_FEATURES)
           ? Characters.CLASE_FEATURES[char.clase]
           : null;
@@ -84,7 +85,7 @@ const Storage = (() => {
     if (char._dataVersion < 8) {
       // v7 → v8: corregir savingThrows desde CLASES_CONFIG
       // Solo aplica si el array tiene menos throws de los esperados (datos incompletos)
-      if (char.id !== 'lursey-brumaclara') {
+      if (char.id !== LURSEY_ID) {
         const cfg = (typeof Characters !== 'undefined' && Characters.CLASES_CONFIG)
           ? Characters.CLASES_CONFIG[char.clase]
           : null;
@@ -123,7 +124,7 @@ const Storage = (() => {
       // Las versiones anteriores guardaban TODAS las features (de todos los niveles)
       // sin filtrar por el nivel del personaje. Ahora CLASE_FEATURES filtra por nivel.
       // No tocar Lursey (tiene features manuales).
-      if (char.id !== 'lursey-brumaclara' && typeof Characters !== 'undefined' && Characters.CLASE_FEATURES) {
+      if (char.id !== LURSEY_ID && typeof Characters !== 'undefined' && Characters.CLASE_FEATURES) {
         const claseFeat = Characters.CLASE_FEATURES[char.clase];
         if (claseFeat && typeof claseFeat.features === 'function') {
           const rawFeats = claseFeat.features(char.nivel || 1);
@@ -152,7 +153,7 @@ const Storage = (() => {
       // de niveles superiores al actual. Volvemos a correr la misma lógica que v10
       // para asegurar que queden correctas con el catálogo actualizado.
       // No tocar Lursey.
-      if (char.id !== 'lursey-brumaclara' && typeof Characters !== 'undefined' && Characters.CLASE_FEATURES) {
+      if (char.id !== LURSEY_ID && typeof Characters !== 'undefined' && Characters.CLASE_FEATURES) {
         const claseFeat = Characters.CLASE_FEATURES[char.clase];
         if (claseFeat && typeof claseFeat.features === 'function') {
           const rawFeats = claseFeat.features(char.nivel || 1);
