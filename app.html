@@ -587,10 +587,14 @@
         <input type="text" id="aimDesc" placeholder="ej: 2d4+2 HP">
       </div>
       <div class="modal-field" style="grid-column:1/-1;" id="aimContainerRow">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="checkbox" id="aimContainer" style="width:16px;height:16px;cursor:pointer;">
-          <span>Es contenedor reutilizable <span style="color:var(--text-dim);font-size:11px;">(cantimplora, frasco, bolsa…)</span></span>
-        </label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="aimContainer"
+                 style="width:22px;height:22px;cursor:pointer;flex-shrink:0;accent-color:var(--gold);">
+          <label for="aimContainer" style="cursor:pointer;font-size:14px;color:var(--text);">
+            Es contenedor reutilizable
+            <span style="color:var(--text-dim);font-size:11px;display:block;">cantimplora, frasco, bolsa…</span>
+          </label>
+        </div>
       </div>
     </div>
     <div class="modal-btns">
