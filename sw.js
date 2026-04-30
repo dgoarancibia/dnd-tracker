@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v122';
+const CACHE = 'dnd-tracker-v123';
 
 self.addEventListener('install', e => {
   e.waitUntil(

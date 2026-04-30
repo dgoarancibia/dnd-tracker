@@ -1366,8 +1366,10 @@ const App = (() => {
           </div>
           <div class="item-row-right">
             ${qtyControls}
-            <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
-            <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
+            <div class="item-actions">
+              <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
+              <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
+            </div>
           </div>
         </div>`;
       });

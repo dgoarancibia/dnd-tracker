@@ -2170,8 +2170,13 @@ input[type=number] { -moz-appearance: textfield; }
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  width: 180px;
-  justify-content: flex-start;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-left: 4px;
 }
 
 .item-row-meta {
@@ -2266,6 +2271,7 @@ input[type=number] { -moz-appearance: textfield; }
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  width: 148px;
   justify-content: flex-start;
 }
 
