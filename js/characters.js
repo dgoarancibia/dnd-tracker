@@ -756,10 +756,10 @@ const Characters = (() => {
   /* ── OBJETO LURSEY COMPLETO ── */
 
   function buildLursey() {
-    const slotsFull5 = FULL_CASTER_SLOTS[5]; // [4,3,2,0,...]
+    const slotsFull6 = FULL_CASTER_SLOTS[6]; // [4,3,3,0,...]
     const spellSlots = {};
     for (let i = 1; i <= 9; i++) {
-      const max = slotsFull5[i-1] || 0;
+      const max = slotsFull6[i-1] || 0;
       spellSlots[i] = { current: max, max };
     }
 
@@ -768,16 +768,19 @@ const Characters = (() => {
       name: 'Lursey Brumaclara',
       clase: 'Clérigo',
       subclase: 'Dominio de la Paz',
-      raza: 'Enano de las Montañas',
+      raza: 'Enano',
+      subraza: 'Enano de las Montañas',
       trasfondo: 'Acólito',
       deity: 'Clangeddin Barbablanca',
       alignment: 'LB',
-      nivel: 5,
-      xp: 6500,
+      nivel: 6,
+      xp: 14000,
+      classes: [{ name: 'Clérigo', level: 6, subclass: 'Dominio de la Paz' }],
 
       stats: { for:10, des:14, con:14, int:9, sab:19, car:14 },
 
-      hp: { current: 44, max: 44, temp: 0 },
+      // nv6 Clérigo: 8 + 5×(4+2) + 6×CON = 8+30+12 = 50 (tomando promedio 5 por nv2-6)
+      hp: { current: 50, max: 50, temp: 0 },
       velocidad: 30,
 
       savingThrows: ['sab', 'car'],
@@ -788,7 +791,17 @@ const Characters = (() => {
       hitDie: 8,
       spellSlots,
 
-      hitDice: { current: 5, max: 5 },
+      hitDice: { current: 6, max: 6 },
+
+      // Rasgos raciales PHB 2024 — Enano de las Montañas
+      speciesTraits: [
+        '⛏️ Dwarven Resilience — ventaja en saves contra veneno, resistencia a daño de veneno',
+        '🔭 Darkvision 18 m — ves en penumbra como si fuera luz brillante, en oscuridad como penumbra',
+        '🪨 Stonecunning — Tremorsense 18 m en piedra sin pulir (Sabiduría, acción bonus, 10 min)',
+        '⚔️ Dwarven Armor Training — proficiencia con armaduras ligeras y medias (Montañas)',
+        '💪 Dwarven Strength — proficiencia en Atletismo (Enano de las Montañas)',
+        '🔨 Weapon Proficiency — Hacha de batalla, Hacha de mano, Martillo ligero, Martillo de guerra',
+      ].join('\n'),
 
       resources: [
         {
@@ -803,7 +816,7 @@ const Characters = (() => {
           name: 'Emboldening Bond',
           current: 3, max: 3,
           recharge: 'long',
-          note: '1d4 en ataque/save/check · 9 m · 10 min · max = prof bonus'
+          note: '1d4 en ataque/save/check · 9 m · 10 min · hasta 3 criaturas'
         },
         {
           id: 'guiding-bolt-mi',
@@ -811,7 +824,14 @@ const Characters = (() => {
           current: 1, max: 1,
           recharge: 'long',
           note: '4d6 rad + ventaja al siguiente ataque'
-        }
+        },
+        {
+          id: 'servirse-poder-divino',
+          name: 'Servirse del Poder Divino',
+          current: 2, max: 2,
+          recharge: 'long',
+          note: 'Recupera 1 slot gastado (máx nv2) · acción bonus'
+        },
       ],
 
       turn: { action: false, bonus: false, reaction: false, movement: false },
@@ -826,7 +846,7 @@ const Characters = (() => {
       ],
 
       weapons: [
-        { id:'maza', name:'Maza de Guerra', die:'1d6', bonus:'+3', type:'melee', notes:'Afinidad con armas enanas' },
+        { id:'maza', name:'Maza de Guerra +1', die:'1d8', bonus:'+5', type:'melee', notes:'Arma mágica · +1 ataque y daño' },
         { id:'simbolo', name:'Símbolo Sagrado', die:'—', bonus:'—', type:'focus', notes:'Foco arcano para conjuros' }
       ],
       armor: {
@@ -841,7 +861,7 @@ const Characters = (() => {
       consumables: [
         { id:'pocion-cur', name:'Poción de Curación', qty: 2, category:'Potion', desc:'2d4+2 HP' }
       ],
-      currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
+      currency: { pp: 0, gp: 218, ep: 0, sp: 0, cp: 0 },
       notes: '',
 
       bonuses: {
@@ -851,8 +871,8 @@ const Characters = (() => {
         skills: {},      // bonus por skill { perspicacia: 1, ... }
         init: 0,         // Alert feat, ítems
         hpMax: 0,        // Tough feat, ítems permanentes (≠ temp HP)
-        ataque: 0,       // arma mágica +1/+2/+3
-        cd: 0,           // bonus extra al CD de conjuros (Bloodwell Vial, Arcane Grimoire, etc.)
+        ataque: 1,       // arma mágica +1 (Maza de Guerra +1)
+        cd: 1,           // Arcane Grimoire +1 (ítem mágico)
       },
 
       diary: [],
@@ -963,6 +983,7 @@ const Characters = (() => {
         { text: '<strong>Posición ideal:</strong> 4,5-6 m detrás del Paladín · alcanza con Balm of Peace y Spirit Guardians' }
       ],
 
+      _dataVersion: 12,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
