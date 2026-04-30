@@ -8,7 +8,7 @@ const Storage = (() => {
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
   const DATA_VERSION = 12;  // Incrementar al cambiar el esquema
-  const LURSEY_ID    = LURSEY_ID; // personaje de demo — sus features vienen de buildLursey()
+  const LURSEY_ID    = 'lursey-brumaclara'; // personaje de demo — sus features vienen de buildLursey()
 
   /* ── Migrations ── */
   function _migrate(char) {
