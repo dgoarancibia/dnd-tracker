@@ -2170,6 +2170,8 @@ input[type=number] { -moz-appearance: textfield; }
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  min-width: 180px;
+  justify-content: flex-end;
 }
 
 .item-qty-name {
@@ -2255,6 +2257,8 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 100px;
+  justify-content: flex-end;
 }
 
 .notes-area {
