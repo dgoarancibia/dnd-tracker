@@ -1679,8 +1679,15 @@ const App = (() => {
         <span class="rc-name">Experiencia (XP)</span>
       </div>
       <div class="xp-row">
-        <input type="number" class="xp-current-input" id="xpInput" value="${c.xp}" min="0"
-               onchange="App.setXP(parseInt(this.value)||0)">
+        <div class="xp-add-row">
+          <span class="xp-total-val">${c.xp.toLocaleString()}</span>
+          <span class="xp-plus-sep">+</span>
+          <input type="number" class="bonus-input-sm xp-add-input" id="xpAddInput"
+                 placeholder="XP ganada" min="0"
+                 onkeydown="if(event.key==='Enter'){App.addXP(this);}"
+                 onclick="this.select()">
+          <button class="xp-add-btn" onclick="App.addXP(document.getElementById('xpAddInput'))">Sumar</button>
+        </div>
         <div class="xp-info">
           ${nextLevelXP
             ? `<strong style="color:var(--text);">Nivel ${c.nivel}</strong> → Nivel ${c.nivel+1}<br>Faltan <strong style="color:var(--gold-light);">${Math.max(0, nextLevelXP - c.xp).toLocaleString()}</strong> XP`
@@ -3402,6 +3409,14 @@ const App = (() => {
     _renderHabilidadesTab();
   }
 
+  function addXP(inputEl) {
+    const gain = parseInt(inputEl.value) || 0;
+    if (gain <= 0) return;
+    inputEl.value = '';
+    setXP((_char.xp || 0) + gain);
+    showToast(`+${gain.toLocaleString()} XP`);
+  }
+
   /* ══════════════════════════════════════════════════════
      DESCANSOS
   ══════════════════════════════════════════════════════ */
@@ -4353,7 +4368,7 @@ const App = (() => {
     setNotes, setSpeciesTraits,
 
     // Habilidades
-    editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP,
+    editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP, addXP,
 
     // Subclase
     openSubclaseModal, _selectSubclaseChip, _toggleManeuver, saveSubclase, closeSubclaseModal,
