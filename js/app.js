@@ -380,6 +380,13 @@ const App = (() => {
 
     document.getElementById('headerCharName').textContent = _char.name;
 
+    // Subtítulo: "Clérigo 6" o "Clérigo 4 / Guerrero 2" si hay multiclase
+    const subtitleEl = document.getElementById('headerCharSubtitle');
+    if (subtitleEl) {
+      const classes = _char.classes && _char.classes.length > 0 ? _char.classes : [{ name: _char.clase, level: _char.nivel }];
+      subtitleEl.textContent = classes.map(c => `${c.name} ${c.level}`).join(' / ');
+    }
+
     document.getElementById('hdrCA').textContent   = ca;
     const cdBonus  = (_char.bonuses && _char.bonuses.cd)     || 0;
     const atqBonus = (_char.bonuses && _char.bonuses.ataque) || 0;

@@ -370,6 +370,16 @@ input[type=number] { -moz-appearance: textfield; }
   text-overflow: ellipsis;
 }
 
+.app-char-subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .app-char-sub {
   font-size: 12px;
   color: var(--text-dim);
