@@ -49,8 +49,13 @@ const App = (() => {
   let _combatTurn  = 0;   // turn counter within the current round
   let _combatActive = false;
 
-  // Enemy tracker — session only
-  let _enemies = [];   // { id, name, ac, status } status: 'ok'|'bleeding'|'dead'
+  // Initiative tracker — session only
+  // combatants: [{ id, name, init, ac, hp, isPlayer, status:'ok'|'bloodied'|'dead', conditions:[] }]
+  let _combatants   = [];
+  let _activeTurnId = null;   // id del combatant con el turno activo
+  let _combatantSeq = 0;
+  // Legacy alias para compatibilidad con código existente
+  let _enemies = [];
   let _enemyIdSeq = 0;
 
   // HP history for smart chips (last 5 non-zero deltas)
@@ -781,14 +786,10 @@ const App = (() => {
     const keySells = (c.spells || []).filter(s =>
       (s.level === 0 && s.combat !== false) || s.mi || s.domain || (c.preparedToday||[]).includes(s.id));
 
-    // Enemy tracker — solo visible en combate activo
-    let html = '';
-    if (_combatActive) {
-      html += `
-      <div class="section-hd" style="margin-bottom:6px;">⚔ Enemigos</div>
-      <div id="enemyTracker"></div>
-      <div style="margin-bottom:10px;"></div>`;
-    }
+    // Initiative tracker — siempre visible (vacío cuando no hay combate)
+    let html = `<div class="section-hd" style="margin-bottom:6px;">⚔ Iniciativa</div>
+    <div id="initTracker"></div>
+    <div style="margin-bottom:10px;"></div>`;
 
     html += `
     <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>
@@ -914,7 +915,7 @@ const App = (() => {
     }
 
     colDer.innerHTML = html;
-    if (_combatActive) _renderEnemyTracker();
+    _renderInitTracker();
   }
 
   function _buildTagsHTML(sp) {
@@ -2037,6 +2038,18 @@ const App = (() => {
     _combatRound = 1;
     _combatTurn  = 1;
     _combatActive = true;
+    // Agregar PJ al tracker si no está ya
+    if (!_combatants.find(x => x.isPlayer)) {
+      const playerInit = Characters.calcInit(_char);
+      _combatants.unshift({
+        id: 'player', name: _char.name || 'PJ',
+        init: playerInit, ac: Characters.calcCA(_char),
+        hp: _char.hp?.current ?? '?',
+        isPlayer: true, status: 'ok', conditions: [],
+      });
+      _sortCombatants();
+      _activeTurnId = _combatants[0]?.id ?? null;
+    }
     _updateRoundDisplay();
     _updateCombatHUD();
     _renderCombateDer();
@@ -2047,9 +2060,9 @@ const App = (() => {
   function nextCombatTurn() {
     if (!_combatActive) { startCombat(); return; }
     _combatTurn++;
+    _advanceInitTurn();
     _updateRoundDisplay();
     _updateCombatHUD();
-    // End current turn actions
     endTurn();
   }
 
@@ -2084,6 +2097,8 @@ const App = (() => {
     _combatTurn  = 0;
     _combatActive = false;
     _enemies = [];
+    _combatants = [];
+    _activeTurnId = null;
     _updateRoundDisplay();
     _updateCombatHUD();
     _renderCombateDer();
@@ -2142,38 +2157,86 @@ const App = (() => {
     _renderEnemyTracker();
   }
 
-  let _etDragId = null;
+  // ── Initiative Tracker ───────────────────────────────────────────────────
 
-  function _renderEnemyTracker() {
-    const container = document.getElementById('enemyTracker');
+  function _sortCombatants() {
+    _combatants.sort((a, b) => (b.init || 0) - (a.init || 0));
+  }
+
+  function _advanceInitTurn() {
+    if (!_combatants.length) return;
+    const alive = _combatants.filter(x => x.status !== 'dead');
+    if (!alive.length) return;
+    const idx = alive.findIndex(x => x.id === _activeTurnId);
+    const next = alive[(idx + 1) % alive.length];
+    _activeTurnId = next.id;
+    _renderInitTracker();
+    // Si volvemos al primero → nueva ronda
+    if (idx >= alive.length - 1) {
+      // La nueva ronda ya la maneja nextCombatRound o el propio ciclo
+    }
+  }
+
+  function _renderInitTracker() {
+    const container = document.getElementById('initTracker');
     if (!container) return;
 
-    let html = `<div class="et-add-row">
-      <input type="text" id="enemyNameInput" class="et-input" placeholder="Nombre" maxlength="20"
-             onkeydown="if(event.key==='Enter') document.getElementById('enemyACInput').focus()">
-      <input type="number" id="enemyACInput" class="et-input et-ac" placeholder="CA" min="0" max="40"
-             onkeydown="if(event.key==='Enter') App.addEnemy()">
-      <button class="et-add-btn" onclick="App.addEnemy()">+</button>
+    // Fila para agregar combatiente
+    let html = `<div class="it-add-row">
+      <input type="text"   id="itNameInput"  class="it-input"         placeholder="Nombre"  maxlength="24"
+             onkeydown="if(event.key==='Enter')document.getElementById('itInitInput').focus()">
+      <input type="number" id="itInitInput"  class="it-input it-num"  placeholder="Init"   min="-5" max="30"
+             onkeydown="if(event.key==='Enter')document.getElementById('itACInput').focus()">
+      <input type="number" id="itACInput"    class="it-input it-num"  placeholder="CA"     min="0"  max="40"
+             onkeydown="if(event.key==='Enter')document.getElementById('itHPInput').focus()">
+      <input type="number" id="itHPInput"    class="it-input it-num"  placeholder="HP"     min="0"  max="999"
+             onkeydown="if(event.key==='Enter')App.addCombatant()">
+      <button class="it-add-btn" onclick="App.addCombatant()" title="Agregar">+</button>
     </div>`;
 
-    if (_enemies.length === 0) {
-      html += `<div class="et-empty">Sin enemigos registrados</div>`;
+    if (_combatants.length === 0) {
+      html += `<div class="it-empty">Inicia combate para agregar combatientes</div>`;
     } else {
-      _enemies.forEach(e => {
-        const isBleeding = e.status === 'bleeding';
+      _combatants.forEach((c, idx) => {
+        const isActive  = c.id === _activeTurnId && _combatActive;
+        const isDead    = c.status === 'dead';
+        const isBlood   = c.status === 'bloodied';
+        const hpPct     = (c.maxHp && c.hp !== '?') ? Math.round((c.hp / c.maxHp) * 100) : null;
+
+        const statusClass = isDead ? ' it-dead' : isBlood ? ' it-bloodied' : '';
+        const activeClass = isActive ? ' it-active' : '';
+
+        const condIcons = (c.conditions || []).map(cond => `<span class="it-cond" title="${cond}">${_COND_ICON[cond] || '⚠'}</span>`).join('');
+
+        const hpBar = (hpPct !== null)
+          ? `<div class="it-hp-bar"><div class="it-hp-fill ${hpPct <= 25 ? 'it-hp-crit' : hpPct <= 50 ? 'it-hp-low' : ''}" style="width:${Math.max(2,hpPct)}%"></div></div>`
+          : '';
+
         html += `
-        <div class="et-row${isBleeding ? ' bleeding' : ''}"
-             draggable="true" data-eid="${e.id}"
-             ondragstart="App._etDragStart(event,${e.id})"
-             ondragover="App._etDragOver(event)"
-             ondrop="App._etDrop(event,${e.id})"
-             ondragend="App._etDragEnd()">
-          <span class="et-drag-handle" title="Arrastrar">⠿</span>
-          <button class="et-bleed-btn${isBleeding ? ' active' : ''}" onclick="App.toggleEnemyBleeding(${e.id})" title="${isBleeding ? 'Quitar sangrando' : 'Marcar sangrando'}">⚔</button>
-          <span class="et-name">${e.name}</span>
-          ${isBleeding ? `<span class="et-bleeding-badge">Sangrando</span>` : ''}
-          ${e.ac > 0 ? `<span class="et-ac-badge" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Toca para editar">CA ${e.ac}</span>` : `<span class="et-ac-badge et-ac-empty" id="et-ac-${e.id}" onclick="App.editEnemyAC(${e.id})" title="Agregar CA">CA —</span>`}
-          <button class="et-del-btn" onclick="App.removeEnemy(${e.id})">✕</button>
+        <div class="it-row${statusClass}${activeClass}" id="it-row-${c.id}"
+             draggable="true"
+             ondragstart="App._itDragStart(event,'${c.id}')"
+             ondragover="App._itDragOver(event)"
+             ondrop="App._itDrop(event,'${c.id}')"
+             ondragend="App._itDragEnd()">
+          <div class="it-row-main">
+            ${isActive ? '<span class="it-turn-arrow">▶</span>' : '<span class="it-turn-spacer"></span>'}
+            <span class="it-drag-handle">⠿</span>
+            <span class="it-init-badge" onclick="App.editCombatantInit('${c.id}')" title="Editar iniciativa">${c.init ?? '?'}</span>
+            <div class="it-info">
+              <span class="it-name ${c.isPlayer ? 'it-player' : ''}">${c.name}</span>
+              ${condIcons}
+              ${hpBar}
+            </div>
+            <div class="it-stats">
+              ${c.ac ? `<span class="it-stat-badge it-ac">CA&nbsp;${c.ac}</span>` : ''}
+              ${c.hp !== undefined && c.hp !== '' ? `<span class="it-stat-badge it-hp ${isDead ? 'it-hp-dead' : ''}" onclick="App.editCombatantHP('${c.id}')">${isDead ? '☠' : c.hp}</span>` : ''}
+            </div>
+            <div class="it-actions">
+              <button class="it-status-btn" onclick="App.cycleCombatantStatus('${c.id}')" title="Cambiar estado">${isDead ? '☠' : isBlood ? '🩸' : '●'}</button>
+              <button class="it-del-btn" onclick="App.removeCombatant('${c.id}')">✕</button>
+            </div>
+          </div>
         </div>`;
       });
     }
@@ -2181,32 +2244,111 @@ const App = (() => {
     container.innerHTML = html;
   }
 
-  function _etDragStart(e, id) {
-    _etDragId = id;
-    e.currentTarget.classList.add('et-dragging');
+  const _COND_ICON = {
+    'Poisoned':'🤢','Blinded':'🙈','Frightened':'😨','Paralyzed':'⚡',
+    'Restrained':'🕸','Stunned':'💫','Prone':'⬇','Invisible':'👻',
+    'Charmed':'💜','Exhaustion':'😴',
+  };
+
+  function addCombatant() {
+    const name  = document.getElementById('itNameInput')?.value.trim() || `Enemigo ${_combatants.length}`;
+    const init  = parseInt(document.getElementById('itInitInput')?.value) || 0;
+    const ac    = parseInt(document.getElementById('itACInput')?.value)   || 0;
+    const hp    = parseInt(document.getElementById('itHPInput')?.value);
+    const id    = 'c' + (++_combatantSeq);
+    _combatants.push({ id, name, init, ac, hp: isNaN(hp) ? '' : hp, maxHp: isNaN(hp) ? null : hp, isPlayer: false, status: 'ok', conditions: [] });
+    _sortCombatants();
+    if (!_activeTurnId && _combatants.length) _activeTurnId = _combatants[0].id;
+    // Limpiar inputs
+    ['itNameInput','itInitInput','itACInput','itHPInput'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('itNameInput')?.focus();
+    _renderInitTracker();
+  }
+
+  function removeCombatant(id) {
+    _combatants = _combatants.filter(x => x.id !== id);
+    if (_activeTurnId === id) _activeTurnId = _combatants[0]?.id ?? null;
+    _renderInitTracker();
+  }
+
+  function cycleCombatantStatus(id) {
+    const c = _combatants.find(x => x.id === id);
+    if (!c) return;
+    const cycle = { ok: 'bloodied', bloodied: 'dead', dead: 'ok' };
+    c.status = cycle[c.status] || 'ok';
+    _renderInitTracker();
+  }
+
+  function editCombatantInit(id) {
+    const c = _combatants.find(x => x.id === id);
+    if (!c) return;
+    const val = prompt(`Iniciativa de ${c.name}:`, c.init ?? '');
+    if (val === null) return;
+    const n = parseInt(val);
+    if (!isNaN(n)) { c.init = n; _sortCombatants(); _renderInitTracker(); }
+  }
+
+  function editCombatantHP(id) {
+    const c = _combatants.find(x => x.id === id);
+    if (!c) return;
+    const val = prompt(`HP de ${c.name}:`, c.hp ?? '');
+    if (val === null) return;
+    const n = parseInt(val);
+    if (!isNaN(n)) {
+      c.hp = Math.max(0, n);
+      if (!c.maxHp) c.maxHp = n;
+      if (c.hp === 0) c.status = 'dead';
+      else if (c.maxHp && c.hp <= c.maxHp / 2) c.status = 'bloodied';
+      else c.status = 'ok';
+      _renderInitTracker();
+    }
+  }
+
+  // Avanzar turno al combatiente del tracker (click en flecha)
+  function setActiveTurn(id) {
+    _activeTurnId = id;
+    _renderInitTracker();
+  }
+
+  // Drag & drop del tracker
+  let _itDragId = null;
+  function _itDragStart(e, id) {
+    _itDragId = id;
+    e.currentTarget.classList.add('it-dragging');
     e.dataTransfer.effectAllowed = 'move';
   }
-  function _etDragOver(e) {
+  function _itDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    const row = e.currentTarget;
-    row.classList.add('et-drag-over');
+    e.currentTarget.classList.add('it-drag-over');
   }
-  function _etDrop(e, targetId) {
+  function _itDrop(e, targetId) {
     e.preventDefault();
-    if (_etDragId === null || _etDragId === targetId) return;
-    const fromIdx = _enemies.findIndex(x => x.id === _etDragId);
-    const toIdx   = _enemies.findIndex(x => x.id === targetId);
-    if (fromIdx < 0 || toIdx < 0) return;
-    const [moved] = _enemies.splice(fromIdx, 1);
-    _enemies.splice(toIdx, 0, moved);
-    _etDragId = null;
-    _renderEnemyTracker();
+    if (!_itDragId || _itDragId === targetId) return;
+    const from = _combatants.findIndex(x => x.id === _itDragId);
+    const to   = _combatants.findIndex(x => x.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [moved] = _combatants.splice(from, 1);
+    _combatants.splice(to, 0, moved);
+    _itDragId = null;
+    _renderInitTracker();
   }
-  function _etDragEnd() {
-    _etDragId = null;
-    document.querySelectorAll('.et-row').forEach(r => r.classList.remove('et-dragging','et-drag-over'));
+  function _itDragEnd() {
+    _itDragId = null;
+    document.querySelectorAll('.it-row').forEach(r => r.classList.remove('it-dragging','it-drag-over'));
   }
+
+  // Legacy — mantener compatibilidad con funciones antiguas que pueden llamarse
+  function addEnemy() { addCombatant(); }
+  function removeEnemy(id) { removeCombatant(id); }
+  function toggleEnemyBleeding(id) { cycleCombatantStatus(id); }
+  function editEnemyAC(id) { editCombatantInit(id); }
+  function _saveEnemyAC(id) {}
+  function moveEnemy() {}
+  let _etDragId = null;
+  function _etDragStart() {} function _etDragOver() {} function _etDrop() {} function _etDragEnd() {}
 
   function _updateRoundDisplay() {
     const el = document.getElementById('roundDisplay');
@@ -4558,6 +4700,9 @@ const App = (() => {
     startCombat, nextCombatTurn, nextCombatRound, resetCombat,
     addEnemy, moveEnemy, toggleEnemyBleeding, removeEnemy, editEnemyAC, _saveEnemyAC,
     _etDragStart, _etDragOver, _etDrop, _etDragEnd,
+    addCombatant, removeCombatant, cycleCombatantStatus,
+    editCombatantInit, editCombatantHP, setActiveTurn,
+    _itDragStart, _itDragOver, _itDrop, _itDragEnd,
 
     // Concentración
     setConc, closeConcAlert,
