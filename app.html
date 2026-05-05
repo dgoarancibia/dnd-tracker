@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=47">
+<link rel="stylesheet" href="css/style.css?v=48">
 </head>
 <body>
 
@@ -815,12 +815,51 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- MAP CANVAS OVERLAY -->
+<div class="map-overlay" id="mapCanvasOverlay">
+  <div class="map-overlay-header">
+    <span class="map-overlay-title" id="mapCanvasTitle">Mapa</span>
+    <div class="map-toolbar">
+      <!-- Colores -->
+      <button class="map-color-btn active" data-color="#e05c2a" style="background:#e05c2a;"
+              onclick="Maps.setColor('#e05c2a')" title="Rojo"></button>
+      <button class="map-color-btn" data-color="#4a9eff" style="background:#4a9eff;"
+              onclick="Maps.setColor('#4a9eff')" title="Azul"></button>
+      <button class="map-color-btn" data-color="#4caf50" style="background:#4caf50;"
+              onclick="Maps.setColor('#4caf50')" title="Verde"></button>
+      <button class="map-color-btn" data-color="#f0c040" style="background:#f0c040;"
+              onclick="Maps.setColor('#f0c040')" title="Amarillo"></button>
+      <button class="map-color-btn" data-color="#ffffff" style="background:#ffffff;border-color:#555;"
+              onclick="Maps.setColor('#ffffff')" title="Blanco"></button>
+      <!-- Separador -->
+      <div class="map-tool-sep"></div>
+      <!-- Herramientas -->
+      <button class="map-tool-btn active" id="mapBtnPen"    onclick="Maps.setTool('pen')"    title="Lápiz">✏️</button>
+      <button class="map-tool-btn"        id="mapBtnEraser" onclick="Maps.setTool('eraser')" title="Borrador">◻</button>
+      <!-- Tamaño -->
+      <input type="range" id="mapSizeSlider" min="1" max="24" value="4" class="map-size-slider"
+             oninput="Maps.setSize(this.value)" title="Grosor">
+      <!-- Acciones -->
+      <div class="map-tool-sep"></div>
+      <button class="map-action-btn" onclick="Maps.undo()"     title="Deshacer">↩</button>
+      <button class="map-action-btn" onclick="Maps.clearAll()" title="Borrar todo">🗑</button>
+      <button class="map-action-btn map-save-btn" id="mapBtnSave" onclick="Maps.saveAnnotations()">Guardar</button>
+      <button class="map-action-btn map-close-btn" onclick="Maps.closeMap()">✕ Cerrar</button>
+    </div>
+  </div>
+  <div class="map-canvas-wrap">
+    <canvas id="mapCanvas"></canvas>
+  </div>
+</div>
+<div class="map-overlay-backdrop" id="mapOverlayBackdrop" onclick="Maps.closeMap()"></div>
+
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=40"></script>
 <script src="js/characters.js?v=48"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=75"></script>
+<script src="js/app.js?v=76"></script>
 <script src="js/biblioteca.js?v=4"></script>
+<script src="js/maps.js?v=1"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.
      Guard de auth: si no hay sesión activa, redirige al home. -->
