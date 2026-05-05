@@ -25,6 +25,13 @@ const Biblioteca = (() => {
   let _searchTimer  = null;
   let _rendering    = false;
 
+  // Referencia rápida
+  let _sideTab      = 'manuales';   // 'manuales' | 'referencia'
+  let _refFilter    = 'all';        // 'all' | 'char' | 'spell' | 'feat'
+  let _refQuery     = '';
+  let _refTimer     = null;
+  let _refItems     = [];           // índice construido de hechizos + features
+
   // ── Inicialización ────────────────────────────────────
 
   async function init() {
@@ -497,11 +504,273 @@ const Biblioteca = (() => {
     if (!_db) {
       init();
     } else {
-      // Refresh libro activo si hay que ajustar ancho
       if (_currentBook && _pdfDoc) {
         setTimeout(() => fitWidth(), 100);
       }
     }
+    // Reconstruir índice de referencia (puede haber cambiado el PJ activo)
+    _buildRefIndex();
+    if (_sideTab === 'referencia') _renderRef();
+  }
+
+  // ── REFERENCIA RÁPIDA ─────────────────────────────────
+
+  function switchSideTab(tab) {
+    _sideTab = tab;
+    const btnM = document.getElementById('bibStabManuales');
+    const btnR = document.getElementById('bibStabRef');
+    const pM   = document.getElementById('bibSideManual');
+    const pR   = document.getElementById('bibSideRef');
+    const barP = document.getElementById('bibSearchBarPdf');
+    const barR = document.getElementById('bibSearchBarRef');
+    const refP = document.getElementById('bibRefPanel');
+
+    if (tab === 'manuales') {
+      btnM.classList.add('active');    btnR.classList.remove('active');
+      pM.style.display   = '';         pR.style.display   = 'none';
+      barP.style.display = '';         barR.style.display = 'none';
+      refP.style.display = 'none';
+      // Restaurar vista normal
+      if (_currentBook && _pdfDoc) _showViewer();
+      else _showWelcome();
+    } else {
+      btnR.classList.add('active');    btnM.classList.remove('active');
+      pR.style.display   = '';         pM.style.display   = 'none';
+      barR.style.display = '';         barP.style.display = 'none';
+      _hideViewer(); _hideWelcome();
+      _clearResults();
+      refP.style.display = 'flex';
+      _buildRefIndex();
+      _renderRef();
+    }
+  }
+
+  function setRefFilter(filter) {
+    _refFilter = filter;
+    document.querySelectorAll('.bib-ref-filter').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === filter);
+    });
+    _renderRef();
+  }
+
+  function onRefInput(value) {
+    clearTimeout(_refTimer);
+    _refQuery = value.trim();
+    const clearBtn = document.getElementById('bibRefClear');
+    if (clearBtn) clearBtn.style.display = value ? 'flex' : 'none';
+    _refTimer = setTimeout(_renderRef, 200);
+  }
+
+  function clearRef() {
+    const inp = document.getElementById('bibRefInput');
+    if (inp) inp.value = '';
+    _refQuery = '';
+    const clearBtn = document.getElementById('bibRefClear');
+    if (clearBtn) clearBtn.style.display = 'none';
+    _renderRef();
+  }
+
+  // Construye el índice combinando hechizos del PJ, CLASE_SPELLS y CLASE_FEATURES
+  function _buildRefIndex() {
+    _refItems = [];
+
+    // ── Hechizos del personaje activo ─────────────────────
+    if (typeof Storage !== 'undefined' && typeof Characters !== 'undefined') {
+      const activeId = Storage.getActiveId ? Storage.getActiveId() : null;
+      const char     = activeId ? Storage.getChar(activeId) : null;
+      if (char) {
+        const prepared = new Set(char.preparedToday || []);
+        (char.spells || []).forEach(sp => {
+          _refItems.push({
+            id:       'char-' + sp.id,
+            name:     sp.name || '',
+            type:     'spell',
+            section:  'char',
+            sectionLabel: `${char.name} — ${sp.level === 0 ? 'Cantrip' : 'Nv ' + sp.level}`,
+            level:    sp.level || 0,
+            castTime: sp.castTime || sp.castingTime || '',
+            range:    sp.range || '',
+            duration: sp.duration || '',
+            desc:     sp.desc || '',
+            fullDesc: sp.fullDesc || '',
+            isPrepared: prepared.has(sp.id) || sp.prepared,
+            concentration: sp.concentration,
+            ritual:   sp.ritual,
+            clase:    char.clase,
+          });
+        });
+
+        // Features/resources del personaje
+        (char.features || []).forEach(f => {
+          if (!f || !f.name) return;
+          _refItems.push({
+            id:       'charfeat-' + (f.id || f.name),
+            name:     f.name,
+            type:     'feat',
+            section:  'char',
+            sectionLabel: `${char.name} — Features`,
+            source:   f.source || char.clase,
+            desc:     f.desc || '',
+            fullDesc: f.fullDesc || '',
+            action:   f.action || '',
+            range:    f.range || '',
+            recharge: f.recharge || null,
+          });
+        });
+      }
+    }
+
+    // ── Hechizos de todas las clases (CLASE_SPELLS) ──────
+    if (typeof Characters !== 'undefined' && Characters.CLASE_SPELLS) {
+      Object.entries(Characters.CLASE_SPELLS).forEach(([clase, spells]) => {
+        (spells || []).forEach(sp => {
+          // No duplicar si ya está en el personaje activo
+          if (_refItems.find(x => x.id === 'char-' + sp.id)) return;
+          _refItems.push({
+            id:       clase + '-' + sp.id,
+            name:     sp.name || '',
+            type:     'spell',
+            section:  'spell',
+            sectionLabel: `${clase} — ${sp.level === 0 ? 'Cantrip' : 'Nv ' + sp.level}`,
+            level:    sp.level || 0,
+            castTime: sp.castTime || sp.castingTime || '',
+            range:    sp.range || '',
+            duration: sp.duration || '',
+            desc:     sp.desc || '',
+            fullDesc: sp.fullDesc || '',
+            concentration: sp.concentration,
+            ritual:   sp.ritual,
+            clase,
+          });
+        });
+      });
+    }
+
+    // ── Features de todas las clases (CLASE_FEATURES) ────
+    if (typeof Characters !== 'undefined' && Characters.CLASE_FEATURES) {
+      Object.entries(Characters.CLASE_FEATURES).forEach(([clase, cfg]) => {
+        if (!cfg) return;
+        const featFn = typeof cfg.features === 'function' ? cfg.features : null;
+        const feats  = featFn ? featFn(1) : (cfg.features || []);
+        feats.forEach(f => {
+          if (!f || !f.name) return;
+          if (_refItems.find(x => x.name === f.name && x.type === 'feat' && x.clase === clase)) return;
+          _refItems.push({
+            id:       'feat-' + clase + '-' + (f.id || f.name),
+            name:     f.name,
+            type:     'feat',
+            section:  'feat',
+            sectionLabel: `${clase} — Features`,
+            source:   f.source || clase,
+            desc:     f.desc || '',
+            fullDesc: f.fullDesc || '',
+            action:   f.action || '',
+            range:    f.range || '',
+            recharge: f.recharge || null,
+            clase,
+          });
+        });
+      });
+    }
+  }
+
+  function _renderRef() {
+    const list = document.getElementById('bibRefList');
+    if (!list) return;
+
+    const q = _refQuery.toLowerCase();
+
+    // Filtrar por tipo y query
+    let items = _refItems.filter(item => {
+      if (_refFilter === 'char'  && item.section !== 'char')  return false;
+      if (_refFilter === 'spell' && item.type !== 'spell')    return false;
+      if (_refFilter === 'feat'  && item.type !== 'feat')     return false;
+      if (!q) return true;
+      return (item.name + ' ' + item.desc + ' ' + (item.sectionLabel||'')).toLowerCase().includes(q);
+    });
+
+    // Sin búsqueda y sin filtro: mostrar solo personaje activo para no saturar
+    if (!q && _refFilter === 'all') {
+      items = items.filter(x => x.section === 'char');
+    }
+
+    if (items.length === 0) {
+      list.innerHTML = `
+        <div class="bib-ref-empty">
+          ${q ? `Sin resultados para "<strong>${_esc(q)}</strong>"` : 'Buscá una habilidad o hechizo arriba'}
+        </div>`;
+      return;
+    }
+
+    // Agrupar por sección
+    const groups = {};
+    items.forEach(item => {
+      const k = item.sectionLabel || 'Otros';
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(item);
+    });
+
+    // Ordenar: char primero, luego alfabético
+    const sortedGroups = Object.entries(groups).sort(([a], [b]) => {
+      const aChar = items.find(x => x.sectionLabel === a)?.section === 'char';
+      const bChar = items.find(x => x.sectionLabel === b)?.section === 'char';
+      if (aChar && !bChar) return -1;
+      if (!aChar && bChar) return 1;
+      return a.localeCompare(b);
+    });
+
+    list.innerHTML = sortedGroups.map(([label, groupItems]) => `
+      <div class="bib-ref-group">
+        <div class="bib-ref-group-title">${_esc(label)}</div>
+        ${groupItems.map(item => _renderRefCard(item, q)).join('')}
+      </div>
+    `).join('');
+  }
+
+  function _renderRefCard(item, q) {
+    const isSpell = item.type === 'spell';
+
+    // Tags del hechizo
+    const tags = [];
+    if (isSpell) {
+      if (item.castTime) tags.push(`<span class="ref-tag">${_esc(item.castTime)}</span>`);
+      if (item.range)    tags.push(`<span class="ref-tag">${_esc(item.range)}</span>`);
+      if (item.duration) tags.push(`<span class="ref-tag">${_esc(item.duration)}</span>`);
+      if (item.concentration) tags.push(`<span class="ref-tag ref-tag--conc">Conc.</span>`);
+      if (item.ritual)        tags.push(`<span class="ref-tag ref-tag--ritual">Ritual</span>`);
+    } else {
+      if (item.action)   tags.push(`<span class="ref-tag">${_esc(item.action)}</span>`);
+      if (item.range)    tags.push(`<span class="ref-tag">${_esc(item.range)}</span>`);
+      if (item.recharge) tags.push(`<span class="ref-tag ref-tag--recharge">${item.recharge === 'short' ? '↺ Corto' : '☀ Largo'}</span>`);
+    }
+
+    // Resaltar query en nombre y desc
+    const name = q ? _highlight(item.name, q) : _esc(item.name);
+    const desc = q ? _highlight(item.desc || '', q) : _esc(item.desc || '');
+
+    const badge = isSpell
+      ? `<span class="ref-badge ref-badge--spell">${item.level === 0 ? 'Truco' : 'Nv ' + item.level}</span>`
+      : `<span class="ref-badge ref-badge--feat">Feature</span>`;
+
+    const prepDot = item.isPrepared ? '<span class="ref-prepared-dot" title="Preparado">◆</span>' : '';
+
+    return `
+      <div class="bib-ref-card" onclick="this.classList.toggle('expanded')">
+        <div class="bib-ref-card-header">
+          <div class="bib-ref-card-name">${prepDot}${name}</div>
+          <div class="bib-ref-card-badges">${badge}</div>
+        </div>
+        ${tags.length ? `<div class="bib-ref-card-tags">${tags.join('')}</div>` : ''}
+        ${desc ? `<div class="bib-ref-card-desc">${desc}</div>` : ''}
+        ${item.fullDesc ? `<div class="bib-ref-card-full">${_esc(item.fullDesc)}</div>` : ''}
+      </div>`;
+  }
+
+  function _highlight(text, q) {
+    const escaped = _esc(text);
+    if (!q) return escaped;
+    const re = new RegExp(`(${_escRe(q)})`, 'gi');
+    return escaped.replace(re, '<mark>$1</mark>');
   }
 
   // ── Utilidades ────────────────────────────────────────
@@ -547,6 +816,10 @@ const Biblioteca = (() => {
     jumpToResult,
     deleteCurrentBook,
     onTabActivated,
+    switchSideTab,
+    setRefFilter,
+    onRefInput,
+    clearRef,
   };
 
 })();
