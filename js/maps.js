@@ -146,6 +146,10 @@ const Maps = (() => {
     document.getElementById('mapFileInput')?.click();
   }
 
+  function triggerCamera() {
+    document.getElementById('mapCameraInput')?.click();
+  }
+
   async function handleFileSelect(input) {
     const file = input.files[0];
     if (!file) return;
@@ -425,7 +429,7 @@ const Maps = (() => {
 
   return {
     init, renderList, onSearch,
-    triggerAddMap, handleFileSelect, deleteMap,
+    triggerAddMap, triggerCamera, handleFileSelect, deleteMap,
     openMap, closeMap,
     setTool, setColor, setSize,
     undo, clearAll, saveAnnotations,

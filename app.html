@@ -392,9 +392,10 @@
     <div class="maps-header">
       <input class="maps-search-input" type="search" placeholder="🔍 Buscar mapa…"
              oninput="Maps.onSearch(this.value)">
-      <button class="btn-sm" onclick="Maps.triggerAddMap()">+ Subir</button>
-      <input type="file" id="mapFileInput" accept="image/*" style="display:none"
-             onchange="Maps.handleFileSelect(this)">
+      <button class="btn-sm" onclick="Maps.triggerAddMap()" title="Subir imagen">📁</button>
+      <button class="btn-sm" onclick="Maps.triggerCamera()" title="Tomar foto">📷</button>
+      <input type="file" id="mapFileInput"   accept="image/*"            style="display:none" onchange="Maps.handleFileSelect(this)">
+      <input type="file" id="mapCameraInput" accept="image/*" capture="environment" style="display:none" onchange="Maps.handleFileSelect(this)">
     </div>
     <div class="maps-list" id="mapsListContainer"></div>
   </div>
@@ -873,7 +874,7 @@
 <script src="js/export_pdf.js?v=7"></script>
 <script src="js/app.js?v=77"></script>
 <script src="js/biblioteca.js?v=4"></script>
-<script src="js/maps.js?v=2"></script>
+<script src="js/maps.js?v=3"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.
      Guard de auth: si no hay sesión activa, redirige al home. -->
