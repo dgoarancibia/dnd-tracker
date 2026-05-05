@@ -287,7 +287,7 @@ const App = (() => {
 
   // Notebook state
   let _notebookOpen = false;
-  let _notebookTab  = 'diary'; // 'diary' | 'log' | 'stats'
+  let _notebookTab  = 'diary'; // 'diary' | 'log' | 'stats' | 'maps'
   let _diaryCatFilter = '';    // '' = todas las categorías
   let _diarySearch    = '';    // texto de búsqueda
   let _newDiaryCat    = '';    // categoría de la próxima entrada
@@ -305,14 +305,17 @@ const App = (() => {
 
   function switchNotebookTab(tab) {
     _notebookTab = tab;
-    document.getElementById('nbTabDiary').classList.toggle('active',  tab === 'diary');
-    document.getElementById('nbTabLog').classList.toggle('active',    tab === 'log');
-    document.getElementById('nbTabStats').classList.toggle('active',  tab === 'stats');
+    document.getElementById('nbTabDiary')?.classList.toggle('active', tab === 'diary');
+    document.getElementById('nbTabLog')?.classList.toggle('active',   tab === 'log');
+    document.getElementById('nbTabStats')?.classList.toggle('active', tab === 'stats');
+    document.getElementById('nbTabMaps')?.classList.toggle('active',  tab === 'maps');
     document.getElementById('nbPaneDiary').style.display  = tab === 'diary'  ? 'flex' : 'none';
     document.getElementById('nbPaneLog').style.display    = tab === 'log'    ? 'flex' : 'none';
     document.getElementById('nbPaneStats').style.display  = tab === 'stats'  ? 'flex' : 'none';
-    if (tab === 'log')   _renderCombatLog();
+    document.getElementById('nbPaneMaps').style.display   = tab === 'maps'   ? 'flex' : 'none';
+    if (tab === 'log')        _renderCombatLog();
     else if (tab === 'stats') _renderCampaignStats();
+    else if (tab === 'maps')  { if (typeof Maps !== 'undefined' && _char) Maps.init(_char.id); }
     else _renderDiaryEntries();
   }
 
@@ -1330,16 +1333,7 @@ const App = (() => {
                 oninput="App.setNotes(this.value)">${c.notes || ''}</textarea>
     </div>
 
-    <!-- MAPAS -->
-    <div class="equip-section">
-      <div class="rc-header">
-        <span class="rc-name">🗺 Mapas</span>
-        <button class="btn-sm" onclick="Maps.triggerAddMap()">+ Subir</button>
-      </div>
-      <input type="file" id="mapFileInput" accept="image/*" style="display:none"
-             onchange="Maps.handleFileSelect(this)">
-      <div id="mapsListContainer"></div>
-    </div>`;
+    `;
 
     // ── COLUMNA DERECHA: Mochila + Dinero ──
     let htmlDer = `
@@ -1397,11 +1391,6 @@ const App = (() => {
 
     document.getElementById('col-equipo-izq').innerHTML = htmlIzq;
     document.getElementById('col-equipo-der').innerHTML = htmlDer;
-
-    // Inicializar módulo de mapas
-    if (typeof Maps !== 'undefined' && _char) {
-      Maps.init(_char.id);
-    }
   }
 
   // Todas las denominaciones — GP como unidad de referencia total

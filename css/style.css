@@ -6430,6 +6430,31 @@ mark.diary-highlight {
 
 /* ═══ MAPAS ═══ */
 
+.nb-pane-maps {
+  flex-direction: column;
+  padding: 0;
+}
+.maps-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.maps-header-title {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--text-mid);
+  flex: 1;
+  letter-spacing: 0.05em;
+}
+.maps-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+}
+
 /* Lista de mapas */
 .maps-empty {
   font-size: 12px;
