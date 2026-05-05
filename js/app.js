@@ -2046,8 +2046,6 @@ const App = (() => {
       _combatants.push({
         id: 'player', name: _char.name || 'PJ',
         init: null, ac: Characters.calcCA(_char),
-        hp: _char.hp?.current ?? '?',
-        maxHp: _char.hp?.max ?? null,
         isPlayer: true, status: 'ok', conditions: [],
       });
       _sortCombatants();
@@ -2190,36 +2188,27 @@ const App = (() => {
     const container = document.getElementById('initTracker');
     if (!container) return;
 
-    // Fila para agregar combatiente
+    // Fila para agregar combatiente — sin HP
     let html = `<div class="it-add-row">
       <input type="text"   id="itNameInput"  class="it-input"         placeholder="Nombre"  maxlength="24"
              onkeydown="if(event.key==='Enter')document.getElementById('itInitInput').focus()">
       <input type="number" id="itInitInput"  class="it-input it-num"  placeholder="Orden"  min="1" max="99"
              onkeydown="if(event.key==='Enter')document.getElementById('itACInput').focus()">
       <input type="number" id="itACInput"    class="it-input it-num"  placeholder="CA"     min="0"  max="40"
-             onkeydown="if(event.key==='Enter')document.getElementById('itHPInput').focus()">
-      <input type="number" id="itHPInput"    class="it-input it-num"  placeholder="HP"     min="0"  max="999"
              onkeydown="if(event.key==='Enter')App.addCombatant()">
       <button class="it-add-btn" onclick="App.addCombatant()" title="Agregar">+</button>
     </div>`;
 
     if (_combatants.length === 0) {
-      html += `<div class="it-empty">Inicia combate para agregar combatientes</div>`;
+      html += `<div class="it-empty">Agrega combatientes con el + →</div>`;
     } else {
-      _combatants.forEach((c, idx) => {
-        const isActive  = c.id === _activeTurnId && _combatActive;
-        const isDead    = c.status === 'dead';
-        const isBlood   = c.status === 'bloodied';
-        const hpPct     = (c.maxHp && c.hp !== '?') ? Math.round((c.hp / c.maxHp) * 100) : null;
-
+      _combatants.forEach((c) => {
+        const isActive    = c.id === _activeTurnId && _combatActive;
+        const isDead      = c.status === 'dead';
+        const isBlood     = c.status === 'bloodied';
         const statusClass = isDead ? ' it-dead' : isBlood ? ' it-bloodied' : '';
         const activeClass = isActive ? ' it-active' : '';
-
-        const condIcons = (c.conditions || []).map(cond => `<span class="it-cond" title="${cond}">${_COND_ICON[cond] || '⚠'}</span>`).join('');
-
-        const hpBar = (hpPct !== null)
-          ? `<div class="it-hp-bar"><div class="it-hp-fill ${hpPct <= 25 ? 'it-hp-crit' : hpPct <= 50 ? 'it-hp-low' : ''}" style="width:${Math.max(2,hpPct)}%"></div></div>`
-          : '';
+        const statusIcon  = isDead ? '☠' : isBlood ? '🩸' : '●';
 
         html += `
         <div class="it-row${statusClass}${activeClass}" id="it-row-${c.id}"
@@ -2231,18 +2220,11 @@ const App = (() => {
           <div class="it-row-main">
             ${isActive ? '<span class="it-turn-arrow">▶</span>' : '<span class="it-turn-spacer"></span>'}
             <span class="it-drag-handle">⠿</span>
-            <span class="it-init-badge" onclick="App.editCombatantInit('${c.id}')" title="Editar orden de turno">${c.init != null ? c.init + '°' : '?'}</span>
-            <div class="it-info">
-              <span class="it-name ${c.isPlayer ? 'it-player' : ''}">${c.name}</span>
-              ${condIcons}
-              ${hpBar}
-            </div>
-            <div class="it-stats">
-              ${c.ac ? `<span class="it-stat-badge it-ac">CA&nbsp;${c.ac}</span>` : ''}
-              ${c.hp !== undefined && c.hp !== '' ? `<span class="it-stat-badge it-hp ${isDead ? 'it-hp-dead' : ''}" onclick="App.editCombatantHP('${c.id}')">${isDead ? '☠' : c.hp}</span>` : ''}
-            </div>
+            <span class="it-init-badge" onclick="App.editCombatantInit('${c.id}')" title="Editar orden">${c.init != null ? c.init + '°' : '?'}</span>
+            <span class="it-name ${c.isPlayer ? 'it-player' : ''}">${c.name}</span>
+            ${c.ac ? `<span class="it-stat-badge it-ac">CA&nbsp;${c.ac}</span>` : ''}
             <div class="it-actions">
-              <button class="it-status-btn" onclick="App.cycleCombatantStatus('${c.id}')" title="Cambiar estado">${isDead ? '☠' : isBlood ? '🩸' : '●'}</button>
+              <button class="it-status-btn" onclick="App.cycleCombatantStatus('${c.id}')" title="Estado">${statusIcon}</button>
               <button class="it-del-btn" onclick="App.removeCombatant('${c.id}')">✕</button>
             </div>
           </div>
@@ -2260,17 +2242,16 @@ const App = (() => {
   };
 
   function addCombatant() {
-    const name  = document.getElementById('itNameInput')?.value.trim() || `Enemigo ${_combatants.length}`;
+    const name    = document.getElementById('itNameInput')?.value.trim() || `Enemigo ${_combatants.length + 1}`;
     const initRaw = parseInt(document.getElementById('itInitInput')?.value);
-    const init  = isNaN(initRaw) ? null : Math.max(1, initRaw);  // orden de turno (1=primero)
-    const ac    = parseInt(document.getElementById('itACInput')?.value)   || 0;
-    const hp    = parseInt(document.getElementById('itHPInput')?.value);
-    const id    = 'c' + (++_combatantSeq);
-    _combatants.push({ id, name, init, ac, hp: isNaN(hp) ? '' : hp, maxHp: isNaN(hp) ? null : hp, isPlayer: false, status: 'ok', conditions: [] });
+    const init    = isNaN(initRaw) ? null : Math.max(1, initRaw);
+    const ac      = parseInt(document.getElementById('itACInput')?.value) || 0;
+    const id      = 'c' + (++_combatantSeq);
+    _combatants.push({ id, name, init, ac, isPlayer: false, status: 'ok', conditions: [] });
     _sortCombatants();
     if (!_activeTurnId && _combatants.length) _activeTurnId = _combatants[0].id;
     // Limpiar inputs
-    ['itNameInput','itInitInput','itACInput','itHPInput'].forEach(id => {
+    ['itNameInput','itInitInput','itACInput'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     document.getElementById('itNameInput')?.focus();
