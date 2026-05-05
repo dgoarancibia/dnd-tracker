@@ -350,72 +350,120 @@ const Biblioteca = (() => {
     onSearchInput('');
   }
 
-  function _doSearch(query) {
-    const terms  = query.toLowerCase().split(/\s+/).filter(Boolean);
-    const scope  = _currentBook
-      ? [_currentBook]
-      : _books;
+  // Palabras clave que indican una página con descripción real de hechizo/regla
+  const _ENTRY_SIGNALS = [
+    'tiempo de lanzamiento', 'casting time', 'tiempo de conjuro',
+    'alcance:', 'range:', 'duración:', 'duration:',
+    'componentes:', 'components:',
+    'acción de bonus', 'bonus action',
+  ];
 
-    const results = [];
+  function _isEntryPage(text) {
+    const t = text.toLowerCase();
+    let hits = 0;
+    for (const sig of _ENTRY_SIGNALS) {
+      if (t.includes(sig)) hits++;
+      if (hits >= 2) return true;  // 2+ señales = ficha real
+    }
+    return false;
+  }
+
+  function _doSearch(query) {
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const scope = _currentBook ? [_currentBook] : _books;
+
+    const main  = [];  // páginas con ficha real
+    const refs  = [];  // menciones secundarias
 
     for (const book of scope) {
       for (const pg of (book.pages || [])) {
         const textLow = pg.text.toLowerCase();
-        const allMatch = terms.every(t => textLow.includes(t));
-        if (!allMatch) continue;
+        if (!terms.every(t => textLow.includes(t))) continue;
 
-        // Extraer snippet con contexto alrededor del primer término
-        const idx     = textLow.indexOf(terms[0]);
-        const start   = Math.max(0, idx - 80);
-        const end     = Math.min(pg.text.length, idx + 180);
-        let snippet   = pg.text.slice(start, end).trim();
-        if (start > 0)     snippet = '…' + snippet;
+        // Snippet: para fichas reales tomamos más contexto desde donde aparece el término
+        const idx   = textLow.indexOf(terms[0]);
+        const isEntry = _isEntryPage(pg.text);
+
+        // Para fichas reales: mostrar desde el título hasta la descripción (más contexto)
+        const start = isEntry ? Math.max(0, idx - 20) : Math.max(0, idx - 80);
+        const end   = isEntry
+          ? Math.min(pg.text.length, idx + 400)
+          : Math.min(pg.text.length, idx + 160);
+
+        let snippet = pg.text.slice(start, end).trim();
+        if (start > 0) snippet = '…' + snippet;
         if (end < pg.text.length) snippet += '…';
 
-        // Resaltar términos en el snippet
         let highlighted = _esc(snippet);
         for (const t of terms) {
-          const re = new RegExp(`(${_escRe(t)})`, 'gi');
-          highlighted = highlighted.replace(re, '<mark>$1</mark>');
+          highlighted = highlighted.replace(new RegExp(`(${_escRe(t)})`, 'gi'), '<mark>$1</mark>');
         }
 
-        results.push({
-          bookId   : book.id,
-          bookTitle: book.title,
-          page     : pg.page,
-          snippet  : highlighted,
-        });
+        const r = { bookId: book.id, bookTitle: book.title, page: pg.page, snippet: highlighted, isEntry };
+        if (isEntry) main.push(r); else refs.push(r);
 
-        if (results.length >= 200) break;
+        if (main.length + refs.length >= 200) break;
       }
-      if (results.length >= 200) break;
+      if (main.length + refs.length >= 200) break;
     }
 
-    _renderResults(query, results, scope.length > 1);
+    _renderResults(query, main, refs, scope.length > 1);
   }
 
-  function _renderResults(query, results, multiBook) {
+  function _renderResults(query, main, refs, multiBook) {
     const header = document.getElementById('bibResultsHeader');
     const list   = document.getElementById('bibResultsList');
     if (!header || !list) return;
 
+    const total = main.length + refs.length;
     const scopeLabel = multiBook
-      ? `todos los manuales`
+      ? 'todos los manuales'
       : `"${_currentBook ? _currentBook.title : ''}"`;
 
-    header.innerHTML = results.length > 0
-      ? `<span class="bib-res-count">${results.length}${results.length >= 200 ? '+' : ''} resultado${results.length !== 1 ? 's' : ''}</span>
+    header.innerHTML = total > 0
+      ? `<span class="bib-res-count">${total}${total >= 200 ? '+' : ''} resultado${total !== 1 ? 's' : ''}</span>
          <span class="bib-res-scope">en ${scopeLabel}</span>`
       : `<span class="bib-res-none">Sin resultados para "<em>${_esc(query)}</em>" en ${scopeLabel}</span>`;
 
-    list.innerHTML = results.map(r => `
-      <div class="bib-result-item" onclick="Biblioteca.jumpToResult('${r.bookId}', ${r.page})">
-        <div class="bib-res-header">
-          <span class="bib-res-book">${multiBook ? _esc(r.bookTitle) + ' · ' : ''}pág. ${r.page}</span>
-        </div>
-        <div class="bib-res-snippet">${r.snippet}</div>
-      </div>`).join('');
+    let html = '';
 
+    // Fichas reales primero
+    if (main.length) {
+      html += main.map(r => `
+        <div class="bib-result-item bib-result-entry" onclick="Biblioteca.jumpToResult('${r.bookId}', ${r.page})">
+          <div class="bib-res-header">
+            <span class="bib-res-entry-badge">📖 Descripción</span>
+            <span class="bib-res-book">${multiBook ? _esc(r.bookTitle) + ' · ' : ''}pág. ${r.page}</span>
+          </div>
+          <div class="bib-res-snippet">${r.snippet}</div>
+        </div>`).join('');
+    }
+
+    // Menciones secundarias colapsadas
+    if (refs.length) {
+      const refId = 'bibRefs_' + Date.now();
+      html += `
+        <div class="bib-refs-toggle" onclick="
+          var el=document.getElementById('${refId}');
+          var btn=this.querySelector('.bib-refs-toggle-btn');
+          var open=el.style.display!=='none';
+          el.style.display=open?'none':'block';
+          btn.textContent=open?'Ver ${refs.length} menciones ▾':'Ocultar menciones ▴';
+        ">
+          <span class="bib-refs-toggle-btn">Ver ${refs.length} mencion${refs.length !== 1 ? 'es' : ''} ▾</span>
+        </div>
+        <div id="${refId}" style="display:none">
+          ${refs.map(r => `
+            <div class="bib-result-item bib-result-ref" onclick="Biblioteca.jumpToResult('${r.bookId}', ${r.page})">
+              <div class="bib-res-header">
+                <span class="bib-res-book">${multiBook ? _esc(r.bookTitle) + ' · ' : ''}pág. ${r.page}</span>
+              </div>
+              <div class="bib-res-snippet">${r.snippet}</div>
+            </div>`).join('')}
+        </div>`;
+    }
+
+    list.innerHTML = html;
     _hideViewer();
     _hideWelcome();
     document.getElementById('bibResults').style.display = 'flex';

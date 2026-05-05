@@ -5120,6 +5120,46 @@ input[type=number] { -moz-appearance: textfield; }
   padding: 0 1px;
 }
 
+/* Resultado principal — ficha real */
+.bib-result-entry {
+  border-color: rgba(201,151,58,0.35) !important;
+  background: rgba(201,151,58,0.05) !important;
+}
+.bib-res-entry-badge {
+  font-family: var(--font-title);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+  background: rgba(201,151,58,0.15);
+  border: 1px solid rgba(201,151,58,0.3);
+  border-radius: 10px;
+  padding: 2px 8px;
+  margin-right: 6px;
+}
+
+/* Toggle de menciones secundarias */
+.bib-refs-toggle {
+  padding: 6px 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.bib-refs-toggle-btn {
+  font-family: var(--font-title);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  transition: color 0.15s;
+}
+.bib-refs-toggle:hover .bib-refs-toggle-btn { color: var(--text-mid); }
+
+/* Menciones secundarias: más compactas */
+.bib-result-ref .bib-res-snippet {
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Visor PDF */
 .bib-viewer {
   flex: 1;
