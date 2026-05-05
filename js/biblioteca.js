@@ -350,29 +350,61 @@ const Biblioteca = (() => {
     onSearchInput('');
   }
 
-  // Palabras clave que indican una página con descripción real de hechizo/regla
-  const _ENTRY_SIGNALS = [
-    'tiempo de lanzamiento', 'casting time', 'tiempo de conjuro',
-    'alcance:', 'range:', 'duración:', 'duration:',
-    'componentes:', 'components:',
-    'acción de bonus', 'bonus action',
-  ];
+  // ── Señales para detectar tipo de página ─────────────────────────────────
+  const _SIGNALS = {
+    conjuro: ['tiempo de lanzamiento', 'casting time', 'alcance:', 'range:', 'duración:', 'duration:', 'componentes:', 'components:'],
+    feat:    ['rasgo de clase', 'class feature', 'rasgos de clase', 'habilidad de clase', 'dotes', 'feat:', 'dote:', 'trasfondo', 'background'],
+    raza:    ['rasgos de', 'traits', 'velocidad:', 'speed:', 'visión en la penumbra', 'darkvision', 'subraza', 'subrace', 'linaje'],
+    misc:    [],  // sin señales fijas — todo lo que no sea conjuro/feat/raza
+  };
 
-  function _isEntryPage(text) {
-    const t = text.toLowerCase();
-    let hits = 0;
-    for (const sig of _ENTRY_SIGNALS) {
-      if (t.includes(sig)) hits++;
-      if (hits >= 2) return true;  // 2+ señales = ficha real
+  // Prefixes reconocidos → categoría
+  const _PREFIXES = {
+    '/conjuro': 'conjuro', '/hechizo': 'conjuro', '/spell': 'conjuro',
+    '/feat':    'feat',    '/rasgo':   'feat',    '/feature': 'feat',
+    '/raza':    'raza',    '/race':    'raza',
+    '/misc':    'misc',    '/regla':   'misc',    '/rule': 'misc',
+  };
+
+  function _parseQuery(raw) {
+    const lower = raw.toLowerCase().trim();
+    for (const [prefix, cat] of Object.entries(_PREFIXES)) {
+      if (lower.startsWith(prefix + ' ') || lower === prefix) {
+        return { category: cat, query: raw.slice(prefix.length).trim() };
+      }
     }
-    return false;
+    return { category: null, query: raw.trim() };
   }
 
-  function _doSearch(query) {
+  function _pageCategory(text) {
+    const t = text.toLowerCase();
+    let conjHits = 0;
+    for (const sig of _SIGNALS.conjuro) { if (t.includes(sig)) conjHits++; }
+    if (conjHits >= 2) return 'conjuro';
+
+    let featHits = 0;
+    for (const sig of _SIGNALS.feat)    { if (t.includes(sig)) featHits++; }
+    if (featHits >= 2) return 'feat';
+
+    let razaHits = 0;
+    for (const sig of _SIGNALS.raza)    { if (t.includes(sig)) razaHits++; }
+    if (razaHits >= 2) return 'raza';
+
+    return 'misc';
+  }
+
+  function _isEntryPage(text) {
+    return _pageCategory(text) === 'conjuro';
+  }
+
+  function _doSearch(rawQuery) {
+    const { category, query } = _parseQuery(rawQuery);
+    if (!query) return;
+
     const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
     const scope = _currentBook ? [_currentBook] : _books;
 
-    const main  = [];  // páginas con ficha real
+    const main  = [];  // páginas con ficha real (o del tipo buscado)
     const refs  = [];  // menciones secundarias
 
     for (const book of scope) {
@@ -380,11 +412,17 @@ const Biblioteca = (() => {
         const textLow = pg.text.toLowerCase();
         if (!terms.every(t => textLow.includes(t))) continue;
 
-        // Snippet: para fichas reales tomamos más contexto desde donde aparece el término
-        const idx   = textLow.indexOf(terms[0]);
-        const isEntry = _isEntryPage(pg.text);
+        const pageCat = _pageCategory(pg.text);
+        const isEntry = category
+          ? pageCat === category          // con prefix: solo el tipo pedido es "principal"
+          : pageCat === 'conjuro';        // sin prefix: solo fichas de conjuro destacadas
 
-        // Para fichas reales: mostrar desde el título hasta la descripción (más contexto)
+        // Si hay filtro de categoría y la página no es del tipo ni menciona el término de forma relevante → skip si no es entrada
+        if (category && category !== 'misc' && pageCat !== category && pageCat !== 'misc') {
+          // Incluir igual pero como referencia secundaria
+        }
+
+        const idx   = textLow.indexOf(terms[0]);
         const start = isEntry ? Math.max(0, idx - 20) : Math.max(0, idx - 80);
         const end   = isEntry
           ? Math.min(pg.text.length, idx + 400)
@@ -399,60 +437,81 @@ const Biblioteca = (() => {
           highlighted = highlighted.replace(new RegExp(`(${_escRe(t)})`, 'gi'), '<mark>$1</mark>');
         }
 
-        const r = { bookId: book.id, bookTitle: book.title, page: pg.page, snippet: highlighted, isEntry };
-        if (isEntry) main.push(r); else refs.push(r);
+        const r = { bookId: book.id, bookTitle: book.title, page: pg.page, snippet: highlighted, isEntry, pageCat };
+
+        // Con categoría: páginas que coinciden van primero, resto como refs
+        if (category) {
+          if (pageCat === category || (category === 'misc' && pageCat === 'misc')) main.push(r);
+          else refs.push(r);
+        } else {
+          if (isEntry) main.push(r); else refs.push(r);
+        }
 
         if (main.length + refs.length >= 200) break;
       }
       if (main.length + refs.length >= 200) break;
     }
 
-    _renderResults(query, main, refs, scope.length > 1);
+    _renderResults(rawQuery, query, category, main, refs, scope.length > 1);
   }
 
-  function _renderResults(query, main, refs, multiBook) {
+  const _CAT_META = {
+    conjuro: { icon: '✨', label: 'Conjuro',  badge: 'bib-badge--conjuro' },
+    feat:    { icon: '⚔️', label: 'Feature',  badge: 'bib-badge--feat'   },
+    raza:    { icon: '🧬', label: 'Raza',     badge: 'bib-badge--raza'   },
+    misc:    { icon: '📜', label: 'Regla',    badge: 'bib-badge--misc'   },
+  };
+
+  function _renderResults(rawQuery, cleanQuery, category, main, refs, multiBook) {
     const header = document.getElementById('bibResultsHeader');
     const list   = document.getElementById('bibResultsList');
     if (!header || !list) return;
 
     const total = main.length + refs.length;
-    const scopeLabel = multiBook
-      ? 'todos los manuales'
-      : `"${_currentBook ? _currentBook.title : ''}"`;
+    const scopeLabel = multiBook ? 'todos los manuales' : `"${_currentBook ? _currentBook.title : ''}"`;
+    const catMeta = category ? _CAT_META[category] : null;
 
     header.innerHTML = total > 0
       ? `<span class="bib-res-count">${total}${total >= 200 ? '+' : ''} resultado${total !== 1 ? 's' : ''}</span>
-         <span class="bib-res-scope">en ${scopeLabel}</span>`
-      : `<span class="bib-res-none">Sin resultados para "<em>${_esc(query)}</em>" en ${scopeLabel}</span>`;
+         <span class="bib-res-scope">en ${scopeLabel}</span>
+         ${catMeta ? `<span class="bib-res-cat-badge bib-badge--${category}">${catMeta.icon} ${catMeta.label}</span>` : ''}`
+      : `<div class="bib-res-none">
+           Sin resultados para "<em>${_esc(cleanQuery)}</em>" en ${scopeLabel}
+           ${!category ? `<div class="bib-res-hint">Tip: usá <code>/conjuro</code>, <code>/feat</code>, <code>/raza</code> o <code>/misc</code> para filtrar por tipo</div>` : ''}
+         </div>`;
 
     let html = '';
 
-    // Fichas reales primero
     if (main.length) {
-      html += main.map(r => `
+      html += main.map(r => {
+        const meta = _CAT_META[r.pageCat] || _CAT_META.misc;
+        return `
         <div class="bib-result-item bib-result-entry" onclick="Biblioteca.jumpToResult('${r.bookId}', ${r.page})">
           <div class="bib-res-header">
-            <span class="bib-res-entry-badge">📖 Descripción</span>
+            <span class="bib-res-entry-badge bib-badge--${r.pageCat}">${meta.icon} ${meta.label}</span>
             <span class="bib-res-book">${multiBook ? _esc(r.bookTitle) + ' · ' : ''}pág. ${r.page}</span>
           </div>
           <div class="bib-res-snippet">${r.snippet}</div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
 
-    // Menciones secundarias colapsadas
-    if (refs.length) {
+    if (!main.length && !refs.length) {
+      // ya manejado arriba
+    } else if (refs.length) {
       const refId = 'bibRefs_' + Date.now();
+      const label = main.length ? `Ver ${refs.length} mención${refs.length !== 1 ? 'es' : ''} más ▾` : `${refs.length} resultado${refs.length !== 1 ? 's' : ''} ▾`;
       html += `
         <div class="bib-refs-toggle" onclick="
           var el=document.getElementById('${refId}');
           var btn=this.querySelector('.bib-refs-toggle-btn');
           var open=el.style.display!=='none';
           el.style.display=open?'none':'block';
-          btn.textContent=open?'Ver ${refs.length} menciones ▾':'Ocultar menciones ▴';
+          btn.textContent=open?'${label.replace('▾','▴')}':'${label}';
         ">
-          <span class="bib-refs-toggle-btn">Ver ${refs.length} mencion${refs.length !== 1 ? 'es' : ''} ▾</span>
+          <span class="bib-refs-toggle-btn">${label}</span>
         </div>
-        <div id="${refId}" style="display:none">
+        <div id="${refId}" style="display:${main.length ? 'none' : 'block'}">
           ${refs.map(r => `
             <div class="bib-result-item bib-result-ref" onclick="Biblioteca.jumpToResult('${r.bookId}', ${r.page})">
               <div class="bib-res-header">
@@ -461,6 +520,11 @@ const Biblioteca = (() => {
               <div class="bib-res-snippet">${r.snippet}</div>
             </div>`).join('')}
         </div>`;
+    }
+
+    // Hint de prefixes si no se usó ninguno
+    if (!category && (main.length + refs.length) > 0) {
+      html += `<div class="bib-search-hint">Tip: <code>/conjuro</code> · <code>/feat</code> · <code>/raza</code> · <code>/misc</code></div>`;
     }
 
     list.innerHTML = html;

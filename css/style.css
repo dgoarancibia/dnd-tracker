@@ -5122,19 +5122,39 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* Resultado principal — ficha real */
 .bib-result-entry {
-  border-color: rgba(201,151,58,0.35) !important;
-  background: rgba(201,151,58,0.05) !important;
+  border-color: rgba(201,151,58,0.25) !important;
+  background: rgba(201,151,58,0.04) !important;
 }
-.bib-res-entry-badge {
+.bib-res-entry-badge, .bib-res-cat-badge {
   font-family: var(--font-title);
   font-size: 10px;
   letter-spacing: 0.05em;
-  color: var(--gold);
-  background: rgba(201,151,58,0.15);
-  border: 1px solid rgba(201,151,58,0.3);
   border-radius: 10px;
   padding: 2px 8px;
   margin-right: 6px;
+  border: 1px solid;
+}
+/* Colores por categoría */
+.bib-badge--conjuro { color: #8899dd; background: rgba(100,120,200,0.12); border-color: rgba(100,120,200,0.3); }
+.bib-badge--feat    { color: var(--gold); background: rgba(201,151,58,0.12); border-color: rgba(201,151,58,0.3); }
+.bib-badge--raza    { color: #88cc88; background: rgba(80,160,80,0.12); border-color: rgba(80,160,80,0.3); }
+.bib-badge--misc    { color: var(--text-mid); background: var(--bg3); border-color: var(--border); }
+
+/* Hint de prefixes */
+.bib-search-hint, .bib-res-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 8px 4px 2px;
+  font-family: 'Jost', sans-serif;
+}
+.bib-search-hint code, .bib-res-hint code {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  color: var(--gold-light);
+  font-family: monospace;
 }
 
 /* Toggle de menciones secundarias */
