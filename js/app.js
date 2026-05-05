@@ -2190,13 +2190,13 @@ const App = (() => {
 
     // Fila para agregar combatiente — sin HP
     let html = `<div class="it-add-row">
-      <input type="text"   id="itNameInput"  class="it-input"         placeholder="Nombre"  maxlength="24"
+      <input type="text"   id="itNameInput"  class="it-input"        placeholder="Nombre"  maxlength="24"
              onkeydown="if(event.key==='Enter')document.getElementById('itInitInput').focus()">
-      <input type="number" id="itInitInput"  class="it-input it-num"  placeholder="Orden"  min="1" max="99"
+      <input type="number" id="itInitInput"  class="it-input it-num" placeholder="Orden"  min="1" max="99"
              onkeydown="if(event.key==='Enter')document.getElementById('itACInput').focus()">
-      <input type="number" id="itACInput"    class="it-input it-num"  placeholder="CA"     min="0"  max="40"
+      <input type="number" id="itACInput"    class="it-input it-num" placeholder="CA"     min="0" max="40"
              onkeydown="if(event.key==='Enter')App.addCombatant()">
-      <button class="it-add-btn" onclick="App.addCombatant()" title="Agregar">+</button>
+      <button class="it-add-btn" onclick="App.addCombatant()" title="Agregar combatiente">+</button>
     </div>`;
 
     if (_combatants.length === 0) {
