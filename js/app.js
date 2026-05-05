@@ -2188,49 +2188,51 @@ const App = (() => {
     const container = document.getElementById('initTracker');
     if (!container) return;
 
-    // Fila para agregar combatiente — sin HP
-    let html = `<div class="it-add-row">
-      <input type="text"   id="itNameInput"  class="it-input"        placeholder="Nombre"  maxlength="24"
-             onkeydown="if(event.key==='Enter')document.getElementById('itInitInput').focus()">
-      <input type="number" id="itInitInput"  class="it-input it-num" placeholder="Orden"  min="1" max="99"
-             onkeydown="if(event.key==='Enter')document.getElementById('itACInput').focus()">
-      <input type="number" id="itACInput"    class="it-input it-num" placeholder="CA"     min="0" max="40"
-             onkeydown="if(event.key==='Enter')App.addCombatant()">
-      <button class="it-add-btn" onclick="App.addCombatant()" title="Agregar combatiente">+</button>
-    </div>`;
+    let html = '';
 
-    if (_combatants.length === 0) {
-      html += `<div class="it-empty">Agrega combatientes con el + →</div>`;
-    } else {
-      _combatants.forEach((c) => {
-        const isActive    = c.id === _activeTurnId && _combatActive;
-        const isDead      = c.status === 'dead';
-        const isBlood     = c.status === 'bloodied';
-        const statusClass = isDead ? ' it-dead' : isBlood ? ' it-bloodied' : '';
-        const activeClass = isActive ? ' it-active' : '';
-        const statusIcon  = isDead ? '☠' : isBlood ? '🩸' : '●';
+    // Lista de combatientes
+    _combatants.forEach((c) => {
+      const isActive    = c.id === _activeTurnId && _combatActive;
+      const isDead      = c.status === 'dead';
+      const isBlood     = c.status === 'bloodied';
+      const statusClass = isDead ? ' it-dead' : isBlood ? ' it-bloodied' : '';
+      const activeClass = isActive ? ' it-active' : '';
+      const statusIcon  = isDead ? '☠' : isBlood ? '🩸' : '⚪';
 
-        html += `
-        <div class="it-row${statusClass}${activeClass}" id="it-row-${c.id}"
-             draggable="true"
-             ondragstart="App._itDragStart(event,'${c.id}')"
-             ondragover="App._itDragOver(event)"
-             ondrop="App._itDrop(event,'${c.id}')"
-             ondragend="App._itDragEnd()">
-          <div class="it-row-main">
-            ${isActive ? '<span class="it-turn-arrow">▶</span>' : '<span class="it-turn-spacer"></span>'}
-            <span class="it-drag-handle">⠿</span>
-            <span class="it-init-badge" onclick="App.editCombatantInit('${c.id}')" title="Editar orden">${c.init != null ? c.init + '°' : '?'}</span>
-            <span class="it-name ${c.isPlayer ? 'it-player' : ''}">${c.name}</span>
-            ${c.ac ? `<span class="it-stat-badge it-ac">CA&nbsp;${c.ac}</span>` : ''}
-            <div class="it-actions">
-              <button class="it-status-btn" onclick="App.cycleCombatantStatus('${c.id}')" title="Estado">${statusIcon}</button>
-              <button class="it-del-btn" onclick="App.removeCombatant('${c.id}')">✕</button>
-            </div>
+      html += `
+      <div class="it-row${statusClass}${activeClass}" id="it-row-${c.id}"
+           draggable="true"
+           ondragstart="App._itDragStart(event,'${c.id}')"
+           ondragover="App._itDragOver(event)"
+           ondrop="App._itDrop(event,'${c.id}')"
+           ondragend="App._itDragEnd()">
+        <div class="it-row-main">
+          ${isActive ? '<span class="it-turn-arrow">▶</span>' : '<span class="it-turn-spacer"></span>'}
+          <span class="it-drag-handle">⠿</span>
+          <input type="number" class="it-inline-num" value="${c.init ?? ''}" min="1" max="99"
+                 placeholder="?" title="Orden de turno"
+                 onchange="App.setCombatantInit('${c.id}',this.value)"
+                 onclick="this.select()">
+          <span class="it-name ${c.isPlayer ? 'it-player' : ''}">${c.name}</span>
+          <input type="number" class="it-inline-num it-inline-ca" value="${c.ac || ''}" min="0" max="40"
+                 placeholder="CA" title="Clase de Armadura"
+                 onchange="App.setCombatantAC('${c.id}',this.value)"
+                 onclick="this.select()">
+          <div class="it-actions">
+            <button class="it-status-btn" onclick="App.cycleCombatantStatus('${c.id}')" title="Estado">${statusIcon}</button>
+            <button class="it-del-btn" onclick="App.removeCombatant('${c.id}')">✕</button>
           </div>
-        </div>`;
-      });
-    }
+        </div>
+      </div>`;
+    });
+
+    // Fila para agregar — al final
+    html += `
+    <div class="it-add-row">
+      <input type="text"   id="itNameInput"  class="it-input"        placeholder="Nombre enemigo"  maxlength="24"
+             onkeydown="if(event.key==='Enter')App.addCombatant()">
+      <button class="it-add-btn" onclick="App.addCombatant()" title="Agregar">+</button>
+    </div>`;
 
     container.innerHTML = html;
   }
@@ -2242,16 +2244,13 @@ const App = (() => {
   };
 
   function addCombatant() {
-    const name    = document.getElementById('itNameInput')?.value.trim() || `Enemigo ${_combatants.length + 1}`;
-    const initRaw = parseInt(document.getElementById('itInitInput')?.value);
-    const init    = isNaN(initRaw) ? null : Math.max(1, initRaw);
-    const ac      = parseInt(document.getElementById('itACInput')?.value) || 0;
-    const id      = 'c' + (++_combatantSeq);
-    _combatants.push({ id, name, init, ac, isPlayer: false, status: 'ok', conditions: [] });
+    const name = document.getElementById('itNameInput')?.value.trim() || `Enemigo ${_combatants.length + 1}`;
+    const id   = 'c' + (++_combatantSeq);
+    _combatants.push({ id, name, init: null, ac: 0, isPlayer: false, status: 'ok', conditions: [] });
     _sortCombatants();
     if (!_activeTurnId && _combatants.length) _activeTurnId = _combatants[0].id;
     // Limpiar inputs
-    ['itNameInput','itInitInput','itACInput'].forEach(id => {
+    ['itNameInput'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     document.getElementById('itNameInput')?.focus();
@@ -2272,13 +2271,23 @@ const App = (() => {
     _renderInitTracker();
   }
 
-  function editCombatantInit(id) {
+  function editCombatantInit(id) { /* legacy — ahora se edita inline */ }
+
+  function setCombatantInit(id, val) {
     const c = _combatants.find(x => x.id === id);
     if (!c) return;
-    const val = prompt(`Orden de turno de ${c.name} (1 = primero):`, c.init ?? '');
-    if (val === null) return;
     const n = parseInt(val);
-    if (!isNaN(n)) { c.init = n; _sortCombatants(); _renderInitTracker(); }
+    c.init = isNaN(n) ? null : Math.max(1, n);
+    _sortCombatants();
+    _renderInitTracker();
+  }
+
+  function setCombatantAC(id, val) {
+    const c = _combatants.find(x => x.id === id);
+    if (!c) return;
+    const n = parseInt(val);
+    c.ac = isNaN(n) ? 0 : Math.max(0, n);
+    _renderInitTracker();
   }
 
   function editCombatantHP(id) {
@@ -4692,7 +4701,7 @@ const App = (() => {
     addEnemy, moveEnemy, toggleEnemyBleeding, removeEnemy, editEnemyAC, _saveEnemyAC,
     _etDragStart, _etDragOver, _etDrop, _etDragEnd,
     addCombatant, removeCombatant, cycleCombatantStatus,
-    editCombatantInit, editCombatantHP, setActiveTurn,
+    editCombatantInit, setCombatantInit, setCombatantAC, editCombatantHP, setActiveTurn,
     _itDragStart, _itDragOver, _itDrop, _itDragEnd,
 
     // Concentración
