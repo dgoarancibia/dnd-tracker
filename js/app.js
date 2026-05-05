@@ -786,10 +786,13 @@ const App = (() => {
     const keySells = (c.spells || []).filter(s =>
       (s.level === 0 && s.combat !== false) || s.mi || s.domain || (c.preparedToday||[]).includes(s.id));
 
-    // Initiative tracker — siempre visible (vacío cuando no hay combate)
-    let html = `<div class="section-hd" style="margin-bottom:6px;">⚔ Iniciativa</div>
+    // Initiative tracker — solo visible en combate activo
+    let html = '';
+    if (_combatActive) {
+      html = `<div class="section-hd" style="margin-bottom:6px;">⚔ Iniciativa</div>
     <div id="initTracker"></div>
     <div style="margin-bottom:10px;"></div>`;
+    }
 
     html += `
     <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>
@@ -2040,11 +2043,11 @@ const App = (() => {
     _combatActive = true;
     // Agregar PJ al tracker si no está ya
     if (!_combatants.find(x => x.isPlayer)) {
-      const playerInit = Characters.calcInit(_char);
-      _combatants.unshift({
+      _combatants.push({
         id: 'player', name: _char.name || 'PJ',
-        init: playerInit, ac: Characters.calcCA(_char),
+        init: null, ac: Characters.calcCA(_char),
         hp: _char.hp?.current ?? '?',
+        maxHp: _char.hp?.max ?? null,
         isPlayer: true, status: 'ok', conditions: [],
       });
       _sortCombatants();
@@ -2160,7 +2163,13 @@ const App = (() => {
   // ── Initiative Tracker ───────────────────────────────────────────────────
 
   function _sortCombatants() {
-    _combatants.sort((a, b) => (b.init || 0) - (a.init || 0));
+    // Orden ascendente: 1 = primero, 2 = segundo, etc.
+    // Combatientes sin orden (init=0 o null) van al final
+    _combatants.sort((a, b) => {
+      const oa = a.init || 99;
+      const ob = b.init || 99;
+      return oa - ob;
+    });
   }
 
   function _advanceInitTurn() {
@@ -2185,7 +2194,7 @@ const App = (() => {
     let html = `<div class="it-add-row">
       <input type="text"   id="itNameInput"  class="it-input"         placeholder="Nombre"  maxlength="24"
              onkeydown="if(event.key==='Enter')document.getElementById('itInitInput').focus()">
-      <input type="number" id="itInitInput"  class="it-input it-num"  placeholder="Init"   min="-5" max="30"
+      <input type="number" id="itInitInput"  class="it-input it-num"  placeholder="Orden"  min="1" max="99"
              onkeydown="if(event.key==='Enter')document.getElementById('itACInput').focus()">
       <input type="number" id="itACInput"    class="it-input it-num"  placeholder="CA"     min="0"  max="40"
              onkeydown="if(event.key==='Enter')document.getElementById('itHPInput').focus()">
@@ -2222,7 +2231,7 @@ const App = (() => {
           <div class="it-row-main">
             ${isActive ? '<span class="it-turn-arrow">▶</span>' : '<span class="it-turn-spacer"></span>'}
             <span class="it-drag-handle">⠿</span>
-            <span class="it-init-badge" onclick="App.editCombatantInit('${c.id}')" title="Editar iniciativa">${c.init ?? '?'}</span>
+            <span class="it-init-badge" onclick="App.editCombatantInit('${c.id}')" title="Editar orden de turno">${c.init != null ? c.init + '°' : '?'}</span>
             <div class="it-info">
               <span class="it-name ${c.isPlayer ? 'it-player' : ''}">${c.name}</span>
               ${condIcons}
@@ -2252,7 +2261,8 @@ const App = (() => {
 
   function addCombatant() {
     const name  = document.getElementById('itNameInput')?.value.trim() || `Enemigo ${_combatants.length}`;
-    const init  = parseInt(document.getElementById('itInitInput')?.value) || 0;
+    const initRaw = parseInt(document.getElementById('itInitInput')?.value);
+    const init  = isNaN(initRaw) ? null : Math.max(1, initRaw);  // orden de turno (1=primero)
     const ac    = parseInt(document.getElementById('itACInput')?.value)   || 0;
     const hp    = parseInt(document.getElementById('itHPInput')?.value);
     const id    = 'c' + (++_combatantSeq);
@@ -2284,7 +2294,7 @@ const App = (() => {
   function editCombatantInit(id) {
     const c = _combatants.find(x => x.id === id);
     if (!c) return;
-    const val = prompt(`Iniciativa de ${c.name}:`, c.init ?? '');
+    const val = prompt(`Orden de turno de ${c.name} (1 = primero):`, c.init ?? '');
     if (val === null) return;
     const n = parseInt(val);
     if (!isNaN(n)) { c.init = n; _sortCombatants(); _renderInitTracker(); }
