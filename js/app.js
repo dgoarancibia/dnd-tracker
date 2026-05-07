@@ -802,9 +802,14 @@ const App = (() => {
     }
 
     html += `
-    <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>
+    <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>`;
 
-    <div class="section-hd">✨ Conjuros de Referencia</div>`;
+    // Primal Companion (Beast Master) — arriba del todo, debajo de Guía de Combate
+    if (c.subclase === 'Beast Master') {
+      html += _renderCompanionHTML(c);
+    }
+
+    html += `<div class="section-hd" style="margin-top:14px;">✨ Conjuros de Referencia</div>`;
 
     const byLevel = {};
     keySells.forEach(s => {
@@ -903,11 +908,6 @@ const App = (() => {
           <div>Elige tus maniobras en Habilidades → Subclase</div>
           <button class="btn btn-gold" style="margin-top:8px;font-size:12px;padding:6px 14px;" onclick="App.openSubclaseModal()">Elegir maniobras</button>
         </div>`;
-    }
-
-    // Primal Companion (Beast Master) — en combate
-    if (c.subclase === 'Beast Master') {
-      html += _renderCompanionHTML(c);
     }
 
     // Prioridad de slots
