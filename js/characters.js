@@ -1281,12 +1281,12 @@ const Characters = (() => {
           desc: 'Hunter\'s Mark no requiere concentración y podés lanzarlo sin slot (usos por Long Rest).',
           fullDesc: 'D&D 2024: Favored Enemy ya no es una lista de tipos para elegir. En su lugar, el Explorador tiene Hunter\'s Mark integrado:\n\n• Lanzás Hunter\'s Mark sin gastar slot de conjuro.\n• Usos gratuitos por Long Rest: 1 (nv1), 2 (nv9), 3 (nv17).\n• A nivel 1: Hunter\'s Mark no requiere concentración.\n• El daño extra (+1d6) se aplica a cualquier criatura que marques, sin restricción de tipo.',
         },
-        {
+        ...(nivel >= 2 ? [{
           id: 'expertise-ranger', name: 'Expertise',
-          source: 'Explorador · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          source: 'Explorador · Nivel 2', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
           desc: 'Elegís 2 habilidades con proficiencia: tu Prof Bonus se duplica para ellas.',
-          fullDesc: 'D&D 2024: El Explorador obtiene Expertise a nivel 1 (igual que el Pícaro y el Bardo).\n\nElegís 2 habilidades en las que tenés proficiencia. Tu Bono de Competencia se duplica para esas habilidades.\n\nIdeal para: Sigilo, Supervivencia, Percepción, Naturaleza o Atletismo según tu estilo de juego.',
-        },
+          fullDesc: 'D&D 2024: El Explorador obtiene Expertise a nivel 2.\n\nElegís 2 habilidades en las que tenés proficiencia. Tu Bono de Competencia se duplica para esas habilidades.\n\nIdeal para: Sigilo, Supervivencia, Percepción, Naturaleza o Atletismo según tu estilo de juego.',
+        }] : []),
         {
           id: 'ranger-fighting-style', name: 'Fighting Style',
           source: 'Explorador · Nivel 2', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
@@ -3751,8 +3751,8 @@ const Characters = (() => {
     ],
     'Explorador': [
       // D&D 2024: sin Favored Enemy ni Natural Explorer como elecciones.
-      // El Explorador tiene Expertise en nivel 1 y Fighting Style en nivel 2.
-      { id:'expertise-1',     level:1,  type:'pickSkills', count:2, label:'Expertise (×2)',
+      // El Explorador tiene Expertise en nivel 2 y Fighting Style en nivel 2.
+      { id:'expertise-1',     level:2,  type:'pickSkills', count:2, label:'Expertise (×2)',
         prompt:'Elegí 2 habilidades para tener Expertise (doble Prof Bonus):' },
       { id:'fighting-style-r', level:2, type:'pick1',     label:'Fighting Style',
         prompt:'Elegí tu estilo de combate:',
