@@ -70,7 +70,11 @@ const App = (() => {
      INICIALIZACIÓN
   ══════════════════════════════════════════════════════ */
 
-  function init() {
+  async function init() {
+    // Intentar restaurar desde IDB shadow backup si el localStorage quedó vacío
+    // (pasa después de "Clear site data" para actualizar el SW)
+    await Storage.restoreFromIDB();
+
     // Primer run: cargar Lursey
     if (Storage.isFirstRun()) {
       const lursey = Characters.buildLursey();

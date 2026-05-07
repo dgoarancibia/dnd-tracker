@@ -148,34 +148,60 @@ const Cloud = (() => {
         FirebaseApp.loadAllCharsCloud(uid),
         timeout
       ]);
+
+      const local = Storage.getAllChars();
+
       if (Object.keys(cloudChars).length === 0) {
-        // Primera vez en nube — subir todos los locales
-        const local = Storage.getAllChars();
+        // Nube vacía — subir todos los locales (primera vez o después de clear)
         for (const char of Object.values(local)) {
           await FirebaseApp.saveCharCloud(uid, char);
         }
         return; // finally limpia _syncing
       }
 
-      // Nube siempre gana al login — es la fuente de verdad
-      const local = Storage.getAllChars();
-      let changed = false;
+      // Merge bidireccional: para cada personaje, gana el más reciente (updatedAt)
+      // Si solo existe en uno de los lados, siempre se conserva.
+      const merged = { ...local };
+      const toUpload = []; // personajes locales más nuevos que la nube
+
       for (const [id, cloudChar] of Object.entries(cloudChars)) {
-        // Aplicar migraciones locales antes de guardar (ej: features por nivel)
-        local[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
-        changed = true;
+        const localChar = local[id];
+        if (!localChar) {
+          // Solo en nube → restaurar a local
+          merged[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
+        } else {
+          // Existe en ambos → gana el más reciente por updatedAt
+          const cloudTs = new Date(cloudChar.updatedAt  || 0).getTime();
+          const localTs = new Date(localChar.updatedAt  || 0).getTime();
+          if (cloudTs >= localTs) {
+            merged[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
+          } else {
+            // local más nuevo → subir a nube
+            toUpload.push(localChar);
+          }
+        }
       }
 
-      if (changed) {
-        // Guardar merge en localStorage
-        for (const char of Object.values(local)) {
-          Storage.saveCharRaw(char);
-        }
-        // Notificar a app para re-render si está inicializada
-        if (window.App && typeof App.init === 'function') {
-          App.init();
-        }
+      // Personajes solo en local (no están en nube) → subir
+      for (const [id, localChar] of Object.entries(local)) {
+        if (!cloudChars[id]) toUpload.push(localChar);
       }
+
+      // Guardar merge en localStorage
+      for (const char of Object.values(merged)) {
+        Storage.saveCharRaw(char);
+      }
+
+      // Subir a nube los que hacen falta
+      for (const char of toUpload) {
+        await FirebaseApp.saveCharCloud(uid, char);
+      }
+
+      // Notificar a app para re-render
+      if (window.App && typeof App.init === 'function') {
+        App.init();
+      }
+
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
       console.error('Sync on login error:', e);

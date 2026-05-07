@@ -10,6 +10,72 @@ const Storage = (() => {
   const DATA_VERSION = 12;  // Incrementar al cambiar el esquema
   const LURSEY_ID    = 'lursey-brumaclara'; // personaje de demo — sus features vienen de buildLursey()
 
+  // ── IndexedDB shadow backup ──────────────────────────────────────────────
+  // Se escribe en cada saveChar/saveCharRaw. Sobrevive al Clear site data del SW.
+  // Se usa para recuperar personajes si el localStorage queda vacío.
+  const IDB_NAME  = 'dnd_shadow_v1';
+  const IDB_STORE = 'chars';
+  let   _idb      = null;
+
+  function _openIDB() {
+    if (_idb) return Promise.resolve(_idb);
+    return new Promise((resolve) => {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = e => {
+        e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' });
+      };
+      req.onsuccess  = e => { _idb = e.target.result; resolve(_idb); };
+      req.onerror    = ()  => resolve(null); // fallo silencioso
+    });
+  }
+
+  function _idbPut(char) {
+    _openIDB().then(db => {
+      if (!db) return;
+      try {
+        const tx = db.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).put(char);
+      } catch (_) {}
+    });
+  }
+
+  function _idbGetAll() {
+    return _openIDB().then(db => {
+      if (!db) return [];
+      return new Promise(resolve => {
+        try {
+          const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).getAll();
+          req.onsuccess = e => resolve(e.target.result || []);
+          req.onerror   = ()  => resolve([]);
+        } catch (_) { resolve([]); }
+      });
+    });
+  }
+
+  // Restaura desde IDB al localStorage si localStorage está vacío (ej: después de clear site data)
+  async function _maybeRestoreFromIDB() {
+    const existing = _get(CHARS_KEY);
+    // Solo restaurar si localStorage quedó vacío o solo tiene Lursey
+    const ids = Object.keys(existing || {});
+    const missingNonLursey = ids.filter(id => id !== LURSEY_ID).length === 0;
+    if (!missingNonLursey) return 0; // ya hay personajes, no tocar
+
+    const shadow = await _idbGetAll();
+    const nonLursey = shadow.filter(c => c.id !== LURSEY_ID);
+    if (nonLursey.length === 0) return 0;
+
+    // Restaurar al localStorage
+    const all = existing || {};
+    let restored = 0;
+    for (const char of nonLursey) {
+      all[char.id] = char;
+      restored++;
+    }
+    _set(CHARS_KEY, all);
+    console.info(`[Storage] Restaurados ${restored} personaje(s) desde IDB shadow backup`);
+    return restored;
+  }
+
   /* ── Migrations ── */
   function _migrate(char) {
     const v = char._dataVersion || 1;
@@ -212,6 +278,7 @@ const Storage = (() => {
     char._dataVersion = DATA_VERSION;
     all[char.id] = char;
     _set(CHARS_KEY, all);
+    _idbPut(char); // shadow backup en IDB
   }
 
   /* Guardar sin modificar updatedAt (usado por cloud sync) */
@@ -219,6 +286,7 @@ const Storage = (() => {
     const all = getAllChars();
     all[char.id] = char;
     _set(CHARS_KEY, all);
+    _idbPut(char); // shadow backup en IDB
   }
 
   function deleteChar(id) {
@@ -430,6 +498,7 @@ const Storage = (() => {
     importJSON,
     autoBackup,
     isFirstRun,
-    migrateChar: _migrate,   // expuesto para cloud.js
+    migrateChar: _migrate,        // expuesto para cloud.js
+    restoreFromIDB: _maybeRestoreFromIDB, // recuperación post-clear
   };
 })();
