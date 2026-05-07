@@ -6948,3 +6948,44 @@ mark.diary-highlight {
   padding-top: 6px;
 }
 .map-text-input::placeholder { color: var(--text-dim); font-size: 12px; }
+
+
+/* ── ARMOR PICKER ── */
+.armor-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.armor-picker-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  text-align: left;
+}
+.armor-picker-chip:hover,
+.armor-picker-chip.selected {
+  border-color: var(--gold);
+  background: rgba(201,151,58,.12);
+}
+.armor-picker-chip .apc-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+.armor-picker-chip .apc-ca {
+  font-size: 11px;
+  color: var(--gold-light);
+  margin-top: 2px;
+}
+.armor-picker-chip .apc-note {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}

@@ -1236,7 +1236,11 @@ const App = (() => {
       <!-- CA block compacto -->
       <div class="armor-row">
         <div class="armor-info">
-          <div style="font-size:15px;color:var(--text);font-weight:600;">${c.armor.name || 'Sin armadura'}</div>
+          <div style="font-size:15px;color:var(--text);font-weight:600;display:flex;align-items:center;gap:8px;">
+            ${c.armor.name || 'Sin armadura'}
+            <button class="btn-edit-stats" style="font-size:10px;padding:2px 7px;"
+              onclick="App.openArmorPicker()" title="Cambiar armadura">✎ Cambiar</button>
+          </div>
           <div class="armor-formula">
             CA ${c.armor.base_ca}
             ${c.armor.add_dex ? ` + DES (${Characters.calcMod(c.stats.des) >= 0 ? '+' : ''}${Characters.calcMod(c.stats.des)})` : ''}
@@ -3309,6 +3313,76 @@ const App = (() => {
     showToast(_char.armor.shield ? 'Escudo equipado' : 'Escudo quitado');
   }
 
+  /* ── ARMOR PICKER ── */
+
+  function openArmorPicker() {
+    const catalog = Characters.ARMOR_CATALOG;
+    const current = (_char && _char.armor) ? _char.armor : {};
+    const groups  = { light: 'aprLight', medium: 'aprMedium', heavy: 'aprHeavy', none: 'aprOther', custom: 'aprOther' };
+
+    Object.values(groups).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    });
+
+    catalog.forEach(a => {
+      const containerId = groups[a.type] || 'aprOther';
+      const container   = document.getElementById(containerId);
+      if (!container) return;
+
+      const isSelected = current.name === a.name;
+      const caLabel    = a.add_dex
+        ? `CA ${a.base_ca} + DES${a.max_dex != null ? ` (máx +${a.max_dex})` : ''}`
+        : `CA ${a.base_ca} fijo`;
+      const noteLabel  = a.stealth_dis ? '⚠ Desventaja sigilo' : '';
+
+      const chip = document.createElement('button');
+      chip.className = `armor-picker-chip${isSelected ? ' selected' : ''}`;
+      chip.type = 'button';
+      chip.innerHTML = `
+        <span class="apc-name">${a.emoji} ${a.name}</span>
+        <span class="apc-ca">${caLabel}</span>
+        ${noteLabel ? `<span class="apc-note">${noteLabel}</span>` : ''}`;
+      chip.onclick = () => selectArmorType(a.id);
+      container.appendChild(chip);
+    });
+
+    document.getElementById('armorPickerModal').classList.add('show');
+  }
+
+  function closeArmorPicker() {
+    document.getElementById('armorPickerModal').classList.remove('show');
+  }
+
+  function selectArmorType(armorId) {
+    if (!_char) return;
+    const a = Characters.ARMOR_CATALOG.find(x => x.id === armorId);
+    if (!a) return;
+
+    if (armorId === 'custom') {
+      // Para custom, solo cerrar y dejar que el usuario edite el Bonus CA manual
+      closeArmorPicker();
+      showToast('Usa "Bonus CA" para ajustar tu CA personalizada');
+      return;
+    }
+
+    if (armorId === 'none') {
+      _char.armor.name    = '';
+      _char.armor.base_ca = 10;
+      _char.armor.add_dex = true;
+    } else {
+      _char.armor.name    = a.name;
+      _char.armor.base_ca = a.base_ca;
+      _char.armor.add_dex = a.add_dex;
+    }
+
+    _saveChar();
+    closeArmorPicker();
+    _renderHeader();
+    _renderEquipoTab();
+    showToast(`✓ ${a.name} equipada · CA ${Characters.calcCA(_char)}`);
+  }
+
   /* ══════════════════════════════════════════════════════
      HABILIDADES
   ══════════════════════════════════════════════════════ */
@@ -4868,7 +4942,7 @@ const App = (() => {
     // HP
     setHP, adjustHP, applyFreeHP, applyFreeHPAs, healFull, setHPMax,
     setTempHP, adjustTempHP, promptTempHP,
-    setBonus, toggleShield,
+    setBonus, toggleShield, openArmorPicker, closeArmorPicker, selectArmorType,
 
     // Turn & Rounds
     toggleTurn, endTurn,

@@ -3940,6 +3940,29 @@ const Characters = (() => {
     return char;
   }
 
+  /* ── CATÁLOGO DE ARMADURAS D&D 5e / 2024 ── */
+
+  const ARMOR_CATALOG = [
+    // Ligera
+    { id:'padded',     name:'Acolchada',       type:'light',  base_ca:11, add_dex:true,  max_dex:null, stealth_dis:true,  emoji:'🧥' },
+    { id:'leather',    name:'Cuero',            type:'light',  base_ca:11, add_dex:true,  max_dex:null, stealth_dis:false, emoji:'🧥' },
+    { id:'studded',    name:'Cuero Tachonado',  type:'light',  base_ca:12, add_dex:true,  max_dex:null, stealth_dis:false, emoji:'🧥' },
+    // Media
+    { id:'hide',       name:'Pieles',           type:'medium', base_ca:12, add_dex:true,  max_dex:2,    stealth_dis:false, emoji:'🛡' },
+    { id:'chainshirt', name:'Cota de Malla',    type:'medium', base_ca:13, add_dex:true,  max_dex:2,    stealth_dis:false, emoji:'🛡' },
+    { id:'scalemail',  name:'Armadura de Escamas', type:'medium', base_ca:14, add_dex:true, max_dex:2,  stealth_dis:true,  emoji:'🛡' },
+    { id:'breastplate',name:'Coraza',           type:'medium', base_ca:14, add_dex:true,  max_dex:2,    stealth_dis:false, emoji:'🛡' },
+    { id:'halfplate',  name:'Media Armadura de Placas', type:'medium', base_ca:15, add_dex:true, max_dex:2, stealth_dis:true, emoji:'🛡' },
+    // Pesada
+    { id:'ringmail',   name:'Cota de Anillas',  type:'heavy',  base_ca:14, add_dex:false, max_dex:0,    stealth_dis:true,  emoji:'⚔️' },
+    { id:'chainmail',  name:'Cota de Cota',     type:'heavy',  base_ca:16, add_dex:false, max_dex:0,    stealth_dis:true,  emoji:'⚔️' },
+    { id:'splint',     name:'Armadura de Láminas', type:'heavy', base_ca:17, add_dex:false, max_dex:0,  stealth_dis:true,  emoji:'⚔️' },
+    { id:'platemail',  name:'Armadura de Placas', type:'heavy', base_ca:18, add_dex:false, max_dex:0,   stealth_dis:true,  emoji:'⚔️' },
+    // Sin armadura / especial
+    { id:'none',       name:'Sin Armadura',     type:'none',   base_ca:10, add_dex:true,  max_dex:null, stealth_dis:false, emoji:'👕' },
+    { id:'custom',     name:'Personalizada',    type:'custom', base_ca:10, add_dex:true,  max_dex:null, stealth_dis:false, emoji:'✏️' },
+  ];
+
   /* ── EXPORTS PÚBLICOS ── */
 
   return {
@@ -3956,6 +3979,7 @@ const Characters = (() => {
     STAT_NAMES,
     LURSEY_IFTTT,
     PRIMAL_COMPANION_BEASTS,
+    ARMOR_CATALOG,
     WARLOCK_SLOTS,
     WARLOCK_SLOT_LEVEL,
     calcMod,

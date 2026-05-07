@@ -587,6 +587,30 @@
   </div>
 </div>
 
+<!-- MODAL SELECTOR DE ARMADURA -->
+<div class="modal-overlay" id="armorPickerModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="modal-close-x" onclick="App.closeArmorPicker()">✕</button>
+    <div class="modal-title">🛡 Seleccionar Armadura</div>
+
+    <!-- Ligera -->
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:8px 0 4px;">Armadura Ligera</div>
+    <div class="armor-picker-grid" id="aprLight"></div>
+
+    <!-- Media -->
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:10px 0 4px;">Armadura Media</div>
+    <div class="armor-picker-grid" id="aprMedium"></div>
+
+    <!-- Pesada -->
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:10px 0 4px;">Armadura Pesada</div>
+    <div class="armor-picker-grid" id="aprHeavy"></div>
+
+    <!-- Sin armadura / custom -->
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:10px 0 4px;">Otro</div>
+    <div class="armor-picker-grid" id="aprOther"></div>
+  </div>
+</div>
+
 <!-- MODAL AGREGAR ÍTEM -->
 <div class="modal-overlay" id="addItemModal">
   <div class="modal">
@@ -870,9 +894,9 @@
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=41"></script>
-<script src="js/characters.js?v=52"></script>
+<script src="js/characters.js?v=53"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=82"></script>
+<script src="js/app.js?v=83"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
