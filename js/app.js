@@ -905,6 +905,11 @@ const App = (() => {
         </div>`;
     }
 
+    // Primal Companion (Beast Master) — en combate
+    if (c.subclase === 'Beast Master') {
+      html += _renderCompanionHTML(c);
+    }
+
     // Prioridad de slots
     const prio = c.slotPriority || [];
     if (prio.length > 0) {
@@ -1729,11 +1734,6 @@ const App = (() => {
       ${c.nivel < 20 ? `<button class="levelup-btn" onclick="App.openLevelUp()">✦ Subir de Nivel</button>` : ''}
     </div>`;
 
-    // ── PRIMAL COMPANION (Beast Master) ──
-    if (c.subclase === 'Beast Master') {
-      htmlDer += _renderCompanionHTML(c);
-    }
-
     document.getElementById('col-hab-izq').innerHTML = htmlIzq;
     document.getElementById('col-hab-der').innerHTML = htmlDer;
   }
@@ -1870,14 +1870,14 @@ const App = (() => {
     const maxHp   = beast.calcMaxHP(_char.nivel);
     _char.companion = { beast: beastId, hp: maxHp };
     _saveChar();
-    _renderHabilidadesTab();
+    _renderCombateDer();
   }
 
   function clearCompanionBeast() {
     if (!_char) return;
     _char.companion = { beast: null, hp: 0 };
     _saveChar();
-    _renderHabilidadesTab();
+    _renderCombateDer();
   }
 
   function setCompanionHP(val) {
@@ -1886,7 +1886,7 @@ const App = (() => {
     const maxHp  = beast ? beast.calcMaxHP(_char.nivel) : 0;
     _char.companion.hp = Math.max(0, Math.min(maxHp, val));
     _saveChar();
-    _renderHabilidadesTab();
+    _renderCombateDer();
   }
 
   function _renderRacialTraitsHTML(c) {
