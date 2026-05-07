@@ -1276,16 +1276,16 @@ const Characters = (() => {
       ],
       features: (nivel) => [
         {
-          id: 'favored-enemy', name: "Favored Enemy",
+          id: 'favored-enemy', name: 'Favored Enemy',
           source: 'Explorador · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Elegís un tipo de enemigo favorito. Ventaja en checks de SAB (Supervivencia) para rastrearlo y en checks de INT para recordar información sobre él.',
-          fullDesc: 'A nivel 1 elegís un tipo de criatura favorita: Aberraciones, Bestias, Celestiales, Constructos, Dragones, Elementales, Feéricos, Fiends, Gigantes, Humanoides (elige 2 razas), Muertos Vivientes, Monstruosidades, Limos u Plantas.\n\nBeneficios:\n• Ventaja en tiradas de SAB (Supervivencia) para rastrear a tus enemigos favoritos.\n• Ventaja en tiradas de INT para recordar información sobre ellos.\n• Aprendés un idioma adicional hablado por uno de tus tipos de enemigo favoritos.\n\nA nivel 6 elegís un enemigo favorito adicional y aprendés otro idioma.\n\n2024 PHB: Esta habilidad fue rediseñada. El Ranger ahora tiene Favored Enemy como parte de su subclase (Hunter) o como habilidad base más general. Consultá con tu DM qué versión usan.',
+          desc: 'Hunter\'s Mark no requiere concentración y podés lanzarlo sin slot (usos por Long Rest).',
+          fullDesc: 'D&D 2024: Favored Enemy ya no es una lista de tipos para elegir. En su lugar, el Explorador tiene Hunter\'s Mark integrado:\n\n• Lanzás Hunter\'s Mark sin gastar slot de conjuro.\n• Usos gratuitos por Long Rest: 1 (nv1), 2 (nv9), 3 (nv17).\n• A nivel 1: Hunter\'s Mark no requiere concentración.\n• El daño extra (+1d6) se aplica a cualquier criatura que marques, sin restricción de tipo.',
         },
         {
-          id: 'natural-explorer', name: 'Natural Explorer',
+          id: 'expertise-ranger', name: 'Expertise',
           source: 'Explorador · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Sos experto en un tipo de terreno. Beneficios de movimiento, rastreo y forrajeo en ese terreno.',
-          fullDesc: 'Elegís un tipo de terreno favorito: Ártico, Costa, Desierto, Bosque, Pradera, Montaña, Pantano o el Underdark.\n\nCuando hacés un check de INT o SAB relacionado con tu terreno favorito, tu Prof Bonus se duplica.\n\nAdicional en tu terreno favorito (de viaje con grupo):\n• Terreno difícil no ralentiza el viaje del grupo.\n• El grupo no puede perderse salvo por medios mágicos.\n• Incluso cuando te distraés, sos igual de alerta.\n• Si viajás solo, podés moverse sigilosamente a paso normal.\n• Cuando buscás comida, encontrás el doble de lo normal.\n• Al rastrear criaturas, sabés su número exacto, tamaño y tiempo que llevan ahí.\n\nA niveles 6 y 10 elegís terrenos favoritos adicionales.',
+          desc: 'Elegís 2 habilidades con proficiencia: tu Prof Bonus se duplica para ellas.',
+          fullDesc: 'D&D 2024: El Explorador obtiene Expertise a nivel 1 (igual que el Pícaro y el Bardo).\n\nElegís 2 habilidades en las que tenés proficiencia. Tu Bono de Competencia se duplica para esas habilidades.\n\nIdeal para: Sigilo, Supervivencia, Percepción, Naturaleza o Atletismo según tu estilo de juego.',
         },
         {
           id: 'ranger-fighting-style', name: 'Fighting Style',
@@ -3750,12 +3750,10 @@ const Characters = (() => {
         options: FIGHTING_STYLES_FIGHTER },
     ],
     'Explorador': [
-      { id:'favored-enemy-1', level:1,  type:'pick1',     label:'Favored Enemy',
-        prompt:'Elegí tu tipo de enemigo favorito:',
-        options: FAVORED_ENEMIES.map(e => ({ id:'fe-'+e.toLowerCase().replace(/[^a-z]/g,'-'), name:e, desc:'' })) },
-      { id:'natural-explorer-1', level:1, type:'pick1',   label:'Natural Explorer (terreno)',
-        prompt:'Elegí tu terreno favorito:',
-        options: TERRENOS.map(t => ({ id:'te-'+t.toLowerCase().replace(/[^a-z]/g,'-'), name:t, desc:'' })) },
+      // D&D 2024: sin Favored Enemy ni Natural Explorer como elecciones.
+      // El Explorador tiene Expertise en nivel 1 y Fighting Style en nivel 2.
+      { id:'expertise-1',     level:1,  type:'pickSkills', count:2, label:'Expertise (×2)',
+        prompt:'Elegí 2 habilidades para tener Expertise (doble Prof Bonus):' },
       { id:'fighting-style-r', level:2, type:'pick1',     label:'Fighting Style',
         prompt:'Elegí tu estilo de combate:',
         options: FIGHTING_STYLES_RANGER },
@@ -3763,12 +3761,6 @@ const Characters = (() => {
         prompt:'Elegí tu conclave de Explorador:',
         options: EXPLORADOR_SUBCLASES,
         appliesSubclass: true },
-      { id:'favored-enemy-2', level:6,  type:'pick1',     label:'Favored Enemy adicional',
-        prompt:'Elegí un segundo tipo de enemigo favorito:',
-        options: FAVORED_ENEMIES.map(e => ({ id:'fe2-'+e.toLowerCase().replace(/[^a-z]/g,'-'), name:e, desc:'' })) },
-      { id:'natural-explorer-2', level:6, type:'pick1',   label:'Natural Explorer adicional',
-        prompt:'Elegí un segundo terreno favorito:',
-        options: TERRENOS.map(t => ({ id:'te2-'+t.toLowerCase().replace(/[^a-z]/g,'-'), name:t, desc:'' })) },
       { id:'asi-4',           level:4,  type:'asi',       label:'Ability Score Improvement' },
       { id:'asi-8',           level:8,  type:'asi',       label:'Ability Score Improvement' },
       { id:'asi-12',          level:12, type:'asi',       label:'Ability Score Improvement' },
