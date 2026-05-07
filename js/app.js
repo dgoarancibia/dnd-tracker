@@ -1747,23 +1747,24 @@ const App = (() => {
 
     const companion = c.companion || {};
     const beastId   = companion.beast || null;
+    const summoned  = companion.summoned !== false && beastId !== null; // true por defecto si hay bestia
     const beasts    = Characters.PRIMAL_COMPANION_BEASTS;
 
-    // Selector de bestia (3 chips)
+    // Selector de bestia (3 chips) — siempre visible
     let beastChips = Object.values(beasts).map(b => `
-      <button class="companion-beast-chip ${beastId === b.id ? 'active' : ''}"
+      <button class="companion-beast-chip ${beastId === b.id && summoned ? 'active' : ''}"
         onclick="App.setCompanionBeast('${b.id}')" title="${b.description}">
         ${b.emoji} ${b.name.replace('Beast of the ', '')}
       </button>`).join('');
 
-    if (!beastId) {
+    // Sin bestia elegida o desconjurada → solo chips
+    if (!beastId || !summoned) {
       return `
-      <div class="equip-section companion-section" style="margin-top:14px;">
+      <div class="equip-section companion-section" style="margin-top:10px;">
         <div class="rc-header" style="margin-bottom:8px;">
           <span class="rc-name">🐾 Primal Companion</span>
-          <span style="font-size:10px;color:var(--text-dim);">Beast Master</span>
+          <span style="font-size:10px;color:var(--text-dim);">${!beastId ? 'Elige tu bestia' : 'Desconjurada'}</span>
         </div>
-        <div class="companion-empty">Elegí tu bestia compañera:</div>
         <div class="companion-beast-chips">${beastChips}</div>
       </div>`;
     }
@@ -1809,11 +1810,9 @@ const App = (() => {
     <div class="equip-section companion-section" style="margin-top:14px;">
       <div class="rc-header" style="margin-bottom:6px;">
         <span class="rc-name">🐾 Primal Companion</span>
-        <button class="btn-edit-stats" style="font-size:10px;padding:2px 6px;"
-          onclick="App.clearCompanionBeast()" title="Cambiar bestia">⟳ Cambiar</button>
       </div>
 
-      <!-- Beast selector chips (compacto, sigue mostrando) -->
+      <!-- Beast selector chips — toca la activa para desconjurar, otra para cambiar -->
       <div class="companion-beast-chips" style="margin-bottom:8px;">${beastChips}</div>
 
       <!-- Header de la bestia -->
@@ -1867,8 +1866,19 @@ const App = (() => {
     if (!_char) return;
     const beast   = Characters.PRIMAL_COMPANION_BEASTS[beastId];
     if (!beast) return;
-    const maxHp   = beast.calcMaxHP(_char.nivel);
-    _char.companion = { beast: beastId, hp: maxHp };
+    const companion = _char.companion || {};
+    const currently = companion.beast;
+    const summoned  = companion.summoned !== false && currently !== null;
+
+    if (currently === beastId && summoned) {
+      // Tap on active beast → desconjurar (collapse to chips only)
+      _char.companion = { beast: beastId, hp: companion.hp, summoned: false };
+    } else {
+      // Tap on inactive or different beast → conjurar
+      const maxHp = beast.calcMaxHP(_char.nivel);
+      const hp = (currently === beastId && companion.hp != null) ? companion.hp : maxHp;
+      _char.companion = { beast: beastId, hp, summoned: true };
+    }
     _saveChar();
     _renderCombateDer();
   }
