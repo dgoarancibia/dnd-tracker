@@ -204,6 +204,27 @@ const Characters = (() => {
       feature: 'Discovery',
       featureDesc: 'Tu soledad te reveló un secreto único sobre el cosmos, los dioses o las fuerzas del mundo.',
     },
+    'Guía': {
+      emoji: '🧭', skillProfs: ['atletismo', 'supervivencia'],
+      toolProfs: ['Herramientas de cartógrafo', 'Instrumento musical (a elección)'],
+      feat: 'Magic Initiate (Druida)',
+      feature: 'Wanderer',
+      featureDesc: 'Tenés una memoria excelente para mapas y geografía. Siempre podés recordar el camino de vuelta y encontrás doble comida al buscar en tu terreno natural.',
+    },
+    'Mercader': {
+      emoji: '⚖️', skillProfs: ['perspicacia', 'persuasion'],
+      toolProfs: ['Herramientas de navegante', 'Un idioma adicional'],
+      feat: 'Lucky',
+      feature: 'Merchant\'s Eye',
+      featureDesc: 'Conocés los precios y mercados. Podés fijar el valor de objetos y encontrás vendedores en cualquier ciudad.',
+    },
+    'Granjero': {
+      emoji: '🌾', skillProfs: ['manejoanim', 'naturaleza'],
+      toolProfs: ['Herramientas de artesano (a elección)', 'Vehículos terrestres'],
+      feat: 'Tough',
+      feature: 'Homesteader',
+      featureDesc: 'Gente rural te da techo y comida de buena voluntad. Conocés las rutas y costumbres del campo.',
+    },
     'Custom': {
       emoji: '✏️', skillProfs: [],
       toolProfs: [],
