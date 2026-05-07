@@ -6670,4 +6670,281 @@ mark.diary-highlight {
   box-shadow: 0 2px 12px rgba(0,0,0,0.5);
   transform: translateX(-50%);
 }
+
+/* ═══════════════════════════════════════════════════════
+   PRIMAL COMPANION — Beast Master Ranger
+   ═══════════════════════════════════════════════════════ */
+
+.companion-section {
+  border: 1px solid rgba(201,151,58,0.2);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(201,151,58,0.04);
+}
+
+.companion-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.companion-beast-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.companion-beast-chip {
+  flex: 1;
+  min-width: 80px;
+  padding: 6px 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.companion-beast-chip:hover {
+  border-color: var(--gold-dim);
+  color: var(--text);
+}
+.companion-beast-chip.active {
+  background: rgba(201,151,58,0.15);
+  border-color: var(--gold);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.companion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.companion-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.companion-emoji {
+  font-size: 24px;
+  line-height: 1;
+}
+.companion-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--gold-light);
+  font-weight: 700;
+}
+.companion-meta {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 1px;
+}
+.companion-ac-badge {
+  text-align: center;
+  background: rgba(201,151,58,0.12);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+.companion-ac-val {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1;
+}
+.companion-ac-lbl {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* HP tracker */
+.companion-hp-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+.companion-hp-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'Cinzel', serif;
+  min-width: 20px;
+}
+.companion-hp-input {
+  width: 48px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  padding: 2px 4px;
+  outline: none;
+}
+.companion-hp-input:focus { border-color: var(--gold-dim); }
+.companion-hp-sep {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.companion-hp-max {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  min-width: 20px;
+}
+.companion-hp-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all 0.12s;
+  margin-left: 2px;
+}
+.companion-hp-btn:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold-light);
+}
+.companion-hp-bar {
+  height: 5px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.companion-hp-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.2s, background 0.2s;
+}
+
+/* Stats grid */
+.companion-stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+  margin-bottom: 10px;
+}
+.companion-stat {
+  text-align: center;
+  background: var(--bg3);
+  border-radius: 5px;
+  padding: 4px 2px;
+}
+.companion-stat-name {
+  font-size: 8px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Cinzel', serif;
+}
+.companion-stat-val {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.companion-stat-mod {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* Attacks */
+.companion-attacks-header {
+  font-size: 10px;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 5px;
+  font-family: 'Cinzel', serif;
+}
+.companion-attacks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.companion-attack {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg3);
+  border-radius: 5px;
+  padding: 5px 8px;
+  border-left: 2px solid var(--gold-dim);
+}
+.companion-atk-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-light);
+  flex: 0 0 auto;
+}
+.companion-atk-bonus {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 700;
+  background: rgba(201,151,58,0.1);
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex: 0 0 auto;
+}
+.companion-atk-dmg {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  flex: 1;
+}
+
+/* Traits */
+.companion-traits {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.companion-trait {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+  padding: 4px 6px;
+  background: var(--bg3);
+  border-radius: 4px;
+}
+.companion-trait-name {
+  font-weight: 700;
+  color: var(--text);
+  font-style: italic;
+  margin-right: 3px;
+}
+.companion-trait-desc {
+  color: var(--text-dim);
+}
+
+/* Level note */
+.companion-level-note {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
 .map-text-input::placeholder { color: var(--text-dim); font-size: 12px; }

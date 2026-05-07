@@ -3590,6 +3590,124 @@ const Characters = (() => {
     { id:'sub-the-archfey',       name:'The Archfey',       desc:'Fey Presence, teletransporte de niebla, Beguiling Defenses.' },
   ];
 
+  // ── PRIMAL COMPANION BEASTS (Beast Master Ranger · D&D 2024) ─────────────────
+  // Estadísticas base; AC y HP escalan con nivel del Explorador (nivel = nivel de clase Ranger)
+  // AC = 13 + PB(nivel)
+  // HP Land/Sea = 5 + 5*nivel
+  // HP Sky = 4 + 4*nivel
+  // Ataque: modificador(stat)+PB como bonus, daño incluye PB
+  const PRIMAL_COMPANION_BEASTS = {
+    land: {
+      id: 'land',
+      name: 'Beast of the Land',
+      emoji: '🐾',
+      description: 'Feroz depredador terrestre (lobo, oso, jaguar…) diseñado para combate cuerpo a cuerpo.',
+      size: 'Mediana',
+      type: 'Bestia',
+      speed: '40 ft · Trepa 40 ft',
+      stats: { for:14, des:14, con:15, int:8, sab:14, car:11 },
+      calcAC: (nivel) => 13 + calcProfBonus(nivel),
+      calcHP: (nivel) => 5 + 5 * nivel,
+      calcMaxHP: (nivel) => 5 + 5 * nivel,
+      senses: 'Percepción pasiva 14',
+      languages: 'Entiende los idiomas de su Ranger pero no habla',
+      attacks: [
+        {
+          name: 'Maul',
+          type: 'melee',
+          // bonus to hit = WIS mod + PB (se calcula dinámicamente)
+          damageDie: '1d8',
+          damageBonus: 2,  // +2 fijo, más PB se suma dinámicamente
+          damageType: 'perforante o cortante',
+          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = SABmod + PB. Daño: 1d8 + 2 + PB.',
+        }
+      ],
+      traits: [
+        {
+          name: 'Charge',
+          desc: 'Si se mueve al menos 6 m en línea recta hacia un objetivo y lo golpea, el objetivo debe superar un save de FUE (CD = 8+PB+SAB mod) o quedar tumbado. Si cae, la bestia puede hacer un ataque adicional de bonificación.',
+        },
+        {
+          name: 'Primal Bond',
+          desc: 'Agrega el Bono de Competencia del Ranger a tiradas de ataque, daño, checks de habilidad y tiradas de salvación. Actúa en la iniciativa del Ranger.',
+        },
+      ],
+      cr: '—',
+    },
+    sea: {
+      id: 'sea',
+      name: 'Beast of the Sea',
+      emoji: '🦑',
+      description: 'Criatura acuática (tiburón, calamar, serpiente marina…) ideal en ríos, mares y pantanos.',
+      size: 'Mediana',
+      type: 'Bestia',
+      speed: '5 ft · Nada 60 ft',
+      stats: { for:14, des:14, con:15, int:8, sab:14, car:11 },
+      calcAC: (nivel) => 13 + calcProfBonus(nivel),
+      calcHP: (nivel) => 5 + 5 * nivel,
+      calcMaxHP: (nivel) => 5 + 5 * nivel,
+      senses: 'Percepción pasiva 14',
+      languages: 'Entiende los idiomas de su Ranger pero no habla',
+      attacks: [
+        {
+          name: 'Binding Strike',
+          type: 'melee',
+          damageDie: '1d6',
+          damageBonus: 2,
+          damageType: 'contundente o perforante',
+          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = SABmod + PB. Daño: 1d6 + 2 + PB. El objetivo queda agarrado (Escape CD = 8+PB+SABmod). Mientras esté agarrado puede repetir el ataque automáticamente.',
+        }
+      ],
+      traits: [
+        {
+          name: 'Amphibious',
+          desc: 'Puede respirar tanto aire como agua.',
+        },
+        {
+          name: 'Primal Bond',
+          desc: 'Agrega el Bono de Competencia del Ranger a tiradas de ataque, daño, checks de habilidad y tiradas de salvación. Actúa en la iniciativa del Ranger.',
+        },
+      ],
+      cr: '—',
+    },
+    sky: {
+      id: 'sky',
+      name: 'Beast of the Sky',
+      emoji: '🦅',
+      description: 'Criatura aérea (águila, búho, halcón gigante…) de reconocimiento y ataques en picado.',
+      size: 'Pequeña',
+      type: 'Bestia',
+      speed: '10 ft · Vuela 60 ft',
+      stats: { for:6, des:16, con:13, int:8, sab:14, car:11 },
+      calcAC: (nivel) => 13 + calcProfBonus(nivel),
+      calcHP: (nivel) => 4 + 4 * nivel,
+      calcMaxHP: (nivel) => 4 + 4 * nivel,
+      senses: 'Percepción pasiva 14',
+      languages: 'Entiende los idiomas de su Ranger pero no habla',
+      attacks: [
+        {
+          name: 'Shred',
+          type: 'melee',
+          damageDie: '1d4',
+          damageBonus: 3,  // DEX mod base (+3 DES=16)
+          damageType: 'cortante',
+          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = SABmod + PB. Daño: 1d4 + 3 + PB.',
+        }
+      ],
+      traits: [
+        {
+          name: 'Flyby',
+          desc: 'No provoca ataques de oportunidad cuando vuela fuera del alcance de cuerpo a cuerpo de un enemigo.',
+        },
+        {
+          name: 'Primal Bond',
+          desc: 'Agrega el Bono de Competencia del Ranger a tiradas de ataque, daño, checks de habilidad y tiradas de salvación. Actúa en la iniciativa del Ranger.',
+        },
+      ],
+      cr: '—',
+    },
+  };
+
   const CHOICES_CONFIG = {
     'Guerrero': [
       { id:'fighting-style',  level:1,  type:'pick1',     label:'Fighting Style',
@@ -3824,6 +3942,7 @@ const Characters = (() => {
     SKILLS_DEF,
     STAT_NAMES,
     LURSEY_IFTTT,
+    PRIMAL_COMPANION_BEASTS,
     WARLOCK_SLOTS,
     WARLOCK_SLOT_LEVEL,
     calcMod,

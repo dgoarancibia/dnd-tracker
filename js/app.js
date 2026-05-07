@@ -1725,8 +1725,164 @@ const App = (() => {
       ${c.nivel < 20 ? `<button class="levelup-btn" onclick="App.openLevelUp()">✦ Subir de Nivel</button>` : ''}
     </div>`;
 
+    // ── PRIMAL COMPANION (Beast Master) ──
+    if (c.subclase === 'Beast Master') {
+      htmlDer += _renderCompanionHTML(c);
+    }
+
     document.getElementById('col-hab-izq').innerHTML = htmlIzq;
     document.getElementById('col-hab-der').innerHTML = htmlDer;
+  }
+
+  // ── Primal Companion rendering ──────────────────────────────────────────────
+
+  function _renderCompanionHTML(c) {
+    const nivel = c.nivel;
+    const pb    = Characters.calcProfBonus(nivel);
+    const wisMod = Characters.calcMod(c.stats.sab);
+
+    const companion = c.companion || {};
+    const beastId   = companion.beast || null;
+    const beasts    = Characters.PRIMAL_COMPANION_BEASTS;
+
+    // Selector de bestia (3 chips)
+    let beastChips = Object.values(beasts).map(b => `
+      <button class="companion-beast-chip ${beastId === b.id ? 'active' : ''}"
+        onclick="App.setCompanionBeast('${b.id}')" title="${b.description}">
+        ${b.emoji} ${b.name.replace('Beast of the ', '')}
+      </button>`).join('');
+
+    if (!beastId) {
+      return `
+      <div class="equip-section companion-section" style="margin-top:14px;">
+        <div class="rc-header" style="margin-bottom:8px;">
+          <span class="rc-name">🐾 Primal Companion</span>
+          <span style="font-size:10px;color:var(--text-dim);">Beast Master</span>
+        </div>
+        <div class="companion-empty">Elegí tu bestia compañera:</div>
+        <div class="companion-beast-chips">${beastChips}</div>
+      </div>`;
+    }
+
+    const beast = beasts[beastId];
+    const ac    = beast.calcAC(nivel);
+    const maxHp = beast.calcMaxHP(nivel);
+    const curHp = companion.hp != null ? companion.hp : maxHp;
+    const hitBonus = wisMod + pb;
+    const hitStr   = (hitBonus >= 0 ? '+' : '') + hitBonus;
+
+    // Stats bar
+    const STAT_LABELS = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
+    const statsHTML = Object.entries(beast.stats).map(([k, v]) => {
+      const mod = Characters.calcMod(v);
+      return `<div class="companion-stat">
+        <div class="companion-stat-name">${STAT_LABELS[k]}</div>
+        <div class="companion-stat-val">${v}</div>
+        <div class="companion-stat-mod">${mod>=0?'+':''}${mod}</div>
+      </div>`;
+    }).join('');
+
+    // Attacks
+    const attacksHTML = beast.attacks.map(a => `
+      <div class="companion-attack">
+        <span class="companion-atk-name">${a.name}</span>
+        <span class="companion-atk-bonus">${hitStr}</span>
+        <span class="companion-atk-dmg">${a.damageDie}+${a.damageBonus + pb} ${a.damageType}</span>
+      </div>`).join('');
+
+    // Traits
+    const traitsHTML = beast.traits.map(t => `
+      <div class="companion-trait">
+        <span class="companion-trait-name">${t.name}.</span>
+        <span class="companion-trait-desc">${t.desc}</span>
+      </div>`).join('');
+
+    // HP bar percentage
+    const hpPct  = Math.max(0, Math.min(100, (curHp / maxHp) * 100));
+    const hpColor = hpPct > 60 ? '#4caf50' : hpPct > 25 ? '#f0c040' : '#e05c2a';
+
+    return `
+    <div class="equip-section companion-section" style="margin-top:14px;">
+      <div class="rc-header" style="margin-bottom:6px;">
+        <span class="rc-name">🐾 Primal Companion</span>
+        <button class="btn-edit-stats" style="font-size:10px;padding:2px 6px;"
+          onclick="App.clearCompanionBeast()" title="Cambiar bestia">⟳ Cambiar</button>
+      </div>
+
+      <!-- Beast selector chips (compacto, sigue mostrando) -->
+      <div class="companion-beast-chips" style="margin-bottom:8px;">${beastChips}</div>
+
+      <!-- Header de la bestia -->
+      <div class="companion-header">
+        <div class="companion-title">
+          <span class="companion-emoji">${beast.emoji}</span>
+          <div>
+            <div class="companion-name">${beast.name}</div>
+            <div class="companion-meta">${beast.size} ${beast.type} · ${beast.speed}</div>
+          </div>
+        </div>
+        <div class="companion-ac-badge">
+          <div class="companion-ac-val">${ac}</div>
+          <div class="companion-ac-lbl">CA</div>
+        </div>
+      </div>
+
+      <!-- HP tracker -->
+      <div class="companion-hp-row">
+        <span class="companion-hp-label">HP</span>
+        <input type="number" class="companion-hp-input" value="${curHp}" min="0" max="${maxHp}"
+               onchange="App.setCompanionHP(parseInt(this.value)||0)"
+               onclick="this.select()">
+        <span class="companion-hp-sep">/</span>
+        <span class="companion-hp-max">${maxHp}</span>
+        <button class="companion-hp-btn" onclick="App.setCompanionHP(${maxHp})" title="Curar al máximo">♥</button>
+        <button class="companion-hp-btn" onclick="App.setCompanionHP(0)" title="Derribar">☠</button>
+      </div>
+      <div class="companion-hp-bar">
+        <div class="companion-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="companion-stats">${statsHTML}</div>
+
+      <!-- Ataques -->
+      <div class="companion-attacks-header">Ataques · Bono de golpe ${hitStr} (SAB+PB)</div>
+      <div class="companion-attacks">${attacksHTML}</div>
+
+      <!-- Rasgos -->
+      <div class="companion-traits">${traitsHTML}</div>
+
+      <!-- Notas del nivel -->
+      <div class="companion-level-note">
+        Nivel ${nivel} Explorador · PB +${pb}${nivel >= 7 ? ' · Ataques mágicos' : ''}${nivel >= 11 ? ' · Doble ataque' : ''}
+      </div>
+    </div>`;
+  }
+
+  function setCompanionBeast(beastId) {
+    if (!_char) return;
+    const beast   = Characters.PRIMAL_COMPANION_BEASTS[beastId];
+    if (!beast) return;
+    const maxHp   = beast.calcMaxHP(_char.nivel);
+    _char.companion = { beast: beastId, hp: maxHp };
+    _saveChar();
+    _renderHabilidadesTab();
+  }
+
+  function clearCompanionBeast() {
+    if (!_char) return;
+    _char.companion = { beast: null, hp: 0 };
+    _saveChar();
+    _renderHabilidadesTab();
+  }
+
+  function setCompanionHP(val) {
+    if (!_char || !_char.companion) return;
+    const beast  = Characters.PRIMAL_COMPANION_BEASTS[_char.companion.beast];
+    const maxHp  = beast ? beast.calcMaxHP(_char.nivel) : 0;
+    _char.companion.hp = Math.max(0, Math.min(maxHp, val));
+    _saveChar();
+    _renderHabilidadesTab();
   }
 
   function _renderRacialTraitsHTML(c) {
@@ -4738,6 +4894,9 @@ const App = (() => {
 
     // Habilidades
     editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP, addXP,
+
+    // Companion (Beast Master)
+    setCompanionBeast, clearCompanionBeast, setCompanionHP,
 
     // Subclase
     openSubclaseModal, _selectSubclaseChip, _toggleManeuver, saveSubclase, closeSubclaseModal,
