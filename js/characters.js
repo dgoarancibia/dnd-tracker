@@ -3206,7 +3206,23 @@ const Characters = (() => {
     return char;
   }
 
-  // ── applyTrasfondo: aplica skills y datos de trasfondo al personaje ─────────
+  // ── Descripciones de feats de trasfondo (2024 PHB) ──────────────────────────
+  const BACKGROUND_FEATS_DESC = {
+    'Lucky':                     { desc:'Tenés 3 puntos de suerte. Gastás uno para tirar un d20 adicional en cualquier ataque, check o save (antes de saber el resultado) y elegís cuál resultado usar. Los puntos se recuperan en Long Rest.', fullDesc:'' },
+    'Magic Initiate (Clérigo)':  { desc:'Aprendés 2 cantrips y 1 hechizo de nivel 1 de la lista de Clérigo. Podés lanzar el hechizo de nivel 1 una vez por Long Rest sin gastar un slot (o con un slot si tenés).', fullDesc:'' },
+    'Magic Initiate (Mago)':     { desc:'Aprendés 2 cantrips y 1 hechizo de nivel 1 de la lista de Mago. Podés lanzar el hechizo de nivel 1 una vez por Long Rest sin gastar un slot (o con un slot si tenés).', fullDesc:'' },
+    'Magic Initiate (Druida)':   { desc:'Aprendés 2 cantrips y 1 hechizo de nivel 1 de la lista de Druida. Podés lanzar el hechizo de nivel 1 una vez por Long Rest sin gastar un slot (o con un slot si tenés).', fullDesc:'' },
+    'Crafter':                   { desc:'Proficiencia con 3 herramientas de artesano a elección. Al comprar equipo no mágico reducís el costo en 20%. También podés crear objetos durante los descansos.', fullDesc:'' },
+    'Skilled':                   { desc:'Ganás proficiencia en 3 habilidades o herramientas a elección.', fullDesc:'' },
+    'Alert':                     { desc:'+5 a iniciativa. No podés ser sorprendido mientras estés consciente. Otros personajes no ganan ventaja en ataques contra vos por estar ocultos.', fullDesc:'' },
+    'Tough':                     { desc:'HP máximo aumenta en 2 por nivel (actual y futuros). Retroactivo: ya incluye todos los niveles pasados.', fullDesc:'' },
+    'Savage Attacker':           { desc:'Una vez por turno, cuando hacés un ataque con arma, podés tirar los dados de daño dos veces y quedarte con el resultado más alto.', fullDesc:'' },
+    'Musician':                  { desc:'Proficiencia con 3 instrumentos musicales. Tras un Short o Long Rest, podés tocar para tus aliados: cada uno que te escuche gana Inspiración.', fullDesc:'' },
+    'Tavern Brawler':            { desc:'Ataques sin armas usan d4. Proficiencia con armas improvisadas. Podés usar tu Bonus Action para agarrar a alguien tras golpearlo. Bonus: +1 FUE o CON.', fullDesc:'' },
+    'Healer':                    { desc:'Usás un Healer\'s Kit para estabilizar a un personaje caído y además restaurarle 1d6+4+nivel HP. Podés usarlo una vez por criatura entre descansos cortos/largos.', fullDesc:'' },
+  };
+
+  // ── applyTrasfondo: aplica skills, feat y rasgos de trasfondo al personaje ───
   function applyTrasfondo(char, trasfondoNombre) {
     if (!trasfondoNombre) return char;
     const cfg = TRASFONDOS_CONFIG[trasfondoNombre];
@@ -3217,6 +3233,47 @@ const Characters = (() => {
     // Aplicar proficiencias de habilidad (sin duplicar)
     if (cfg.skillProfs && cfg.skillProfs.length) {
       char.skillProfs = [...new Set([...(char.skillProfs || []), ...cfg.skillProfs])];
+    }
+
+    // Aplicar feat de trasfondo como feature visible
+    if (cfg.feat && cfg.feat !== '') {
+      const featDef = BACKGROUND_FEATS_DESC[cfg.feat] || { desc: cfg.feat, fullDesc: '' };
+      const featFeature = {
+        id:       'bg-feat-' + trasfondoNombre.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        name:     cfg.feat,
+        source:   `Trasfondo · ${trasfondoNombre}`,
+        type:     'passive',
+        action:   'Pasiva',
+        range:    'Personal',
+        recharge: null,
+        desc:     featDef.desc,
+        fullDesc: featDef.fullDesc || '',
+      };
+      if (!char.features) char.features = [];
+      // Solo agregar si no existe ya (evitar duplicados al editar)
+      if (!char.features.find(f => f.id === featFeature.id)) {
+        char.features.push(featFeature);
+      }
+    }
+
+    // Aplicar feature de trasfondo (el rasgo narrativo, siempre)
+    if (cfg.feature && cfg.feature !== '') {
+      const featId = 'bg-trait-' + trasfondoNombre.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      const traitFeature = {
+        id:       featId,
+        name:     cfg.feature,
+        source:   `Trasfondo · ${trasfondoNombre}`,
+        type:     'passive',
+        action:   'Pasiva',
+        range:    'Personal',
+        recharge: null,
+        desc:     cfg.featureDesc || '',
+        fullDesc: '',
+      };
+      if (!char.features) char.features = [];
+      if (!char.features.find(f => f.id === traitFeature.id)) {
+        char.features.push(traitFeature);
+      }
     }
 
     return char;
