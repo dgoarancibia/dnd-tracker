@@ -3528,87 +3528,194 @@ const Characters = (() => {
   const ASI_STATS = ['for','des','con','int','sab','car'];
 
   const GUERRERO_SUBCLASES = [
-    { id:'sub-battle-master', name:'Battle Master',   desc:'Maniobras de combate con Superiority Dice. Máximo control táctico.' },
-    { id:'sub-champion',      name:'Champion',        desc:'Críticos con 19-20, atletismo superior. Simple y poderoso.' },
-    { id:'sub-eldritch-knight', name:'Eldritch Knight', desc:'Conjuros de Mago (INT) + combate. Slots de tercio-caster.' },
-    { id:'sub-samurai',       name:'Samurai',         desc:'Fighting Spirit 3/día + ventaja en ataques. Elegante y ofensivo.' },
-    { id:'sub-rune-knight',   name:'Rune Knight',     desc:'Runas mágicas + crecer a tamaño Large. Fuerza bruta mágica.' },
+    // PHB
+    { id:'sub-battle-master',    name:'Battle Master',         desc:'Maniobras de combate con Superiority Dice. Máximo control táctico.' },
+    { id:'sub-champion',         name:'Champion',              desc:'Críticos con 19-20, atletismo superior. Simple y poderoso.' },
+    { id:'sub-eldritch-knight',  name:'Eldritch Knight',       desc:'Conjuros de Mago (INT) + combate. Slots de tercio-caster.' },
+    // Xanathar's
+    { id:'sub-arcane-archer',    name:'Arcane Archer',         desc:'Flechas mágicas (Banishing, Grasping, Seeking, Shadow). 2 usos/Short Rest.' },
+    { id:'sub-cavalier',         name:'Cavalier',              desc:'Montura y protección de aliados. Unwavering Mark, Born to the Saddle.' },
+    { id:'sub-samurai',          name:'Samurai',               desc:'Fighting Spirit 3/día + ventaja en ataques. Elegante y ofensivo.' },
+    // Tasha's
+    { id:'sub-psi-warrior',      name:'Psi Warrior',           desc:'Psionic Energy Dice (d6→d12), telekinesis, escudo psiónico.' },
+    { id:'sub-rune-knight',      name:'Rune Knight',           desc:'Runas mágicas + crecer a tamaño Large. Fuerza bruta mágica.' },
+    // 2024 PHB
+    { id:'sub-brawler',          name:'Brawler',               desc:'Combate sin armas potenciado: Unarmed Strike d6+, Grapple-and-strike, improvisación.' },
   ];
 
   const EXPLORADOR_SUBCLASES = [
-    { id:'sub-hunter',        name:'Hunter',          desc:'Especialista en matar: presa elegida, multiataques en área.' },
-    { id:'sub-beast-master',  name:'Beast Master',    desc:'Compañero bestial que combate junto a vos.' },
-    { id:'sub-gloom-stalker', name:'Gloom Stalker',   desc:'Oscuridad y emboscadas. Extraslot de ataque en la primera ronda.' },
+    // PHB
+    { id:'sub-hunter',           name:'Hunter',                desc:'Especialista en matar: presa elegida, multiataques en área.' },
+    { id:'sub-beast-master',     name:'Beast Master',          desc:'Compañero bestial (Primal Companion) que combate junto a vos.' },
+    // Xanathar's
+    { id:'sub-gloom-stalker',    name:'Gloom Stalker',         desc:'Oscuridad y emboscadas. Extra ataque en primera ronda, invisibilidad en oscuridad.' },
+    { id:'sub-horizon-walker',   name:'Horizon Walker',        desc:'Detección de portales, daño de fuerza extra, Ethereal Step, teletransporte.' },
+    { id:'sub-monster-slayer',   name:'Monster Slayer',        desc:'Hunter\'s Sense, Slayer\'s Prey, Supernatural Defense. Anti-monstruos.' },
+    // Tasha's
+    { id:'sub-fey-wanderer',     name:'Fey Wanderer',          desc:'Dreadful Strikes (psíquico), Beguiling Twist, Misty Wanderer nv14.' },
+    { id:'sub-swarmkeeper',      name:'Swarmkeeper',           desc:'Enjambre de criaturas: daño + empujar + mover. Scattered Form nv11.' },
+    // 2024 PHB
+    { id:'sub-ranger-2024',      name:'Ranger (2024 genérico)', desc:'Sin subclase específica aún; usa Hunter o Beast Master.' },
   ];
 
   const PICARO_SUBCLASES = [
-    { id:'sub-arcane-trickster', name:'Arcane Trickster', desc:'Conjuros de Mago (INT). Ilusiones y trucos mágicos.' },
-    { id:'sub-thief',         name:'Thief',           desc:'Escalada, Fast Hands, Use Magic Device. Ladrón clásico.' },
-    { id:'sub-phantom',       name:'Phantom',         desc:'Tokens de almas muertas, daño necrótico, forma incorpórea.' },
-    { id:'sub-swashbuckler',  name:'Swashbuckler',    desc:'Carisma en combate, Sneak Attack sin aliados, duelos.' },
+    // PHB
+    { id:'sub-arcane-trickster', name:'Arcane Trickster',      desc:'Conjuros de Mago (INT). Ilusiones y trucos mágicos.' },
+    { id:'sub-thief',            name:'Thief',                 desc:'Escalada, Fast Hands, Use Magic Device. Ladrón clásico.' },
+    // Xanathar's
+    { id:'sub-inquisitive',      name:'Inquisitive',           desc:'Insightful Fighting (Sneak sin aliados), Steady Eye, Unerring Eye.' },
+    { id:'sub-mastermind',       name:'Mastermind',            desc:'Master of Tactics (Help como Bonus Action desde 30 ft), Misdirection.' },
+    { id:'sub-scout',            name:'Scout',                 desc:'Skirmisher (mover al ser atacado gratis), Survivalist (Naturaleza+Sigilo).' },
+    { id:'sub-swashbuckler',     name:'Swashbuckler',          desc:'Carisma en combate, Sneak Attack sin aliados, Panache, Elegant Maneuver.' },
+    // Tasha's
+    { id:'sub-phantom',          name:'Phantom',               desc:'Tokens de almas muertas, daño necrótico, forma incorpórea nv17.' },
+    { id:'sub-soulknife',        name:'Soulknife',             desc:'Psychic Blades (d6 psíquico sin costo), Psychic Whispers, Soul Blades.' },
   ];
 
   const BARDO_SUBCLASES = [
-    { id:'sub-college-lore',       name:'College of Lore',       desc:'Cutting Words, 2 conjuros extra de cualquier clase, Peerless Skill.' },
-    { id:'sub-college-valor',      name:'College of Valor',       desc:'Armadura mediana, Combat Inspiration, Extra Attack nv6, Battle Magic nv14.' },
-    { id:'sub-college-eloquence',  name:'College of Eloquence',   desc:'Silver Tongue, Unsettling Words, Infectious Inspiration nv14.' },
+    // PHB
+    { id:'sub-college-lore',       name:'College of Lore',         desc:'Cutting Words, 2 conjuros extra de cualquier clase, Peerless Skill.' },
+    { id:'sub-college-valor',      name:'College of Valor',         desc:'Armadura mediana, Combat Inspiration, Extra Attack nv6, Battle Magic nv14.' },
+    // Xanathar's
+    { id:'sub-college-glamour',    name:'College of Glamour',       desc:'Mantle of Inspiration, Enthralling Performance, Unbreakable Majesty.' },
+    { id:'sub-college-swords',     name:'College of Swords',        desc:'Blade Flourish (Defensive/Slashing/Mobile), Extra Attack, Master\'s Flourish.' },
+    { id:'sub-college-whispers',   name:'College of Whispers',      desc:'Psychic Blades, Words of Terror, Mantle of Whispers, Shadow Lore.' },
+    // Tasha's
+    { id:'sub-college-creation',   name:'College of Creation',      desc:'Mote of Potential, Performance of Creation, Animating Performance.' },
+    { id:'sub-college-eloquence',  name:'College of Eloquence',     desc:'Silver Tongue, Unsettling Words, Infectious Inspiration nv14.' },
+    // 2024 PHB
+    { id:'sub-college-dance',      name:'College of Dance',         desc:'Dazzling Footwork (AC + Bardic Die unarmed), Enthralling Performance mejorado.' },
   ];
 
   const CLERIGO_SUBCLASES = [
-    { id:'sub-life-domain',      name:'Life Domain',      desc:'Curación potenciada, Preserve Life, Divine Strike +1d8, Supreme Healing.' },
-    { id:'sub-light-domain',     name:'Light Domain',     desc:'Warding Flare, Radiance of the Dawn, Potent Cantrip nv8, Corona of Light.' },
-    { id:'sub-war-domain',       name:'War Domain',       desc:'Armadura pesada, War Priest (ataques bonus), Guided Strike +10, Avatar of Battle.' },
-    { id:'sub-trickery-domain',  name:'Trickery Domain',  desc:'Invoke Duplicity (ilusión), Cloak of Shadows nv6, Divine Strike veneno.' },
-    { id:'sub-paz-domain',       name:'Dominio de la Paz',desc:'Emboldening Bond, Balm of Peace, Protective Bond. El dominio de Lursey.' },
-    { id:'sub-knowledge-domain', name:'Knowledge Domain', desc:'Blessings of Knowledge, Knowledge of the Ages, Read Thoughts, Visions of the Past.' },
-    { id:'sub-nature-domain',    name:'Nature Domain',    desc:'Acolyte of Nature, Charm Animals & Plants, Dampen Elements, armadura pesada.' },
-    { id:'sub-tempest-domain',   name:'Tempest Domain',   desc:'Wrath of the Storm, Destructive Wrath, Thunderbolt Strike, Stormborn nv17.' },
+    // PHB
+    { id:'sub-life-domain',       name:'Life Domain',          desc:'Curación potenciada, Preserve Life, Divine Strike +1d8, Supreme Healing.' },
+    { id:'sub-light-domain',      name:'Light Domain',         desc:'Warding Flare, Radiance of the Dawn, Potent Cantrip nv8, Corona of Light.' },
+    { id:'sub-trickery-domain',   name:'Trickery Domain',      desc:'Invoke Duplicity (ilusión), Cloak of Shadows nv6, Divine Strike veneno.' },
+    { id:'sub-knowledge-domain',  name:'Knowledge Domain',     desc:'Blessings of Knowledge, Knowledge of the Ages, Read Thoughts, Visions of the Past.' },
+    { id:'sub-nature-domain',     name:'Nature Domain',        desc:'Acolyte of Nature, Charm Animals & Plants, Dampen Elements, armadura pesada.' },
+    { id:'sub-tempest-domain',    name:'Tempest Domain',       desc:'Wrath of the Storm, Destructive Wrath, Thunderbolt Strike, Stormborn nv17.' },
+    { id:'sub-war-domain',        name:'War Domain',           desc:'Armadura pesada, War Priest (ataques bonus), Guided Strike +10, Avatar of Battle.' },
+    // Xanathar's
+    { id:'sub-arcana-domain',     name:'Arcana Domain',        desc:'Arcane Mastery, Arcane Abjuration, Spell Breaker (desmagia gratis).' },
+    { id:'sub-forge-domain',      name:'Forge Domain',         desc:'Artífico de equipo, Blessing of the Forge, Soul of the Forge, Divine Strike fuego.' },
+    { id:'sub-grave-domain',      name:'Grave Domain',         desc:'Sentinel at Death\'s Door, Keeper of Souls. Protege a los moribundos.' },
+    // Tasha's
+    { id:'sub-order-domain',      name:'Order Domain',         desc:'Voice of Authority (aliado ataca gratis), Order\'s Demand, Divine Strike psíquico.' },
+    { id:'sub-paz-domain',        name:'Dominio de la Paz',    desc:'Emboldening Bond, Balm of Peace, Protective Bond. El dominio de Lursey.' },
+    { id:'sub-twilight-domain',   name:'Twilight Domain',      desc:'Twilight Sanctuary (Temp HP en aura nv2), Steps of Night, vuelo oscuro.' },
+    // 2024 PHB
+    { id:'sub-death-domain',      name:'Death Domain',         desc:'Reaper cantrip a dos criaturas, Touch of Death, Divine Strike necrótico.' },
   ];
 
   const DRUIDA_SUBCLASES = [
-    { id:'sub-circle-moon',   name:'Círculo de la Luna',  desc:'Wild Shape en combate, cura con slots, elementales nv10.' },
-    { id:'sub-circle-land',   name:'Circle of the Land',  desc:'Natural Recovery, Circle Spells por terreno, Land\'s Stride.' },
-    { id:'sub-circle-spores', name:'Circle of Spores',    desc:'Halo of Spores necrótico, Symbiotic Entity, animar muertos nv6.' },
-    { id:'sub-circle-stars',  name:'Circle of Stars',     desc:'Starry Form (Archer/Chalice/Dragon), Cosmic Omen, vuelo nv10.' },
+    // PHB
+    { id:'sub-circle-land',      name:'Circle of the Land',    desc:'Natural Recovery, Circle Spells por terreno, Land\'s Stride.' },
+    { id:'sub-circle-moon',      name:'Circle of the Moon',    desc:'Wild Shape en combate, cura con slots, elementales nv10.' },
+    // Xanathar's
+    { id:'sub-circle-dreams',    name:'Circle of Dreams',      desc:'Balm of the Summer Court (curación), Hearth of Moonlight, Hidden Paths.' },
+    { id:'sub-circle-shepherd',  name:'Circle of the Shepherd',desc:'Spirit Totem (bonus acción), Mighty Summoner, Guardian Soul.' },
+    // Tasha's
+    { id:'sub-circle-spores',    name:'Circle of Spores',      desc:'Halo of Spores necrótico, Symbiotic Entity, animar muertos nv6.' },
+    { id:'sub-circle-stars',     name:'Circle of Stars',       desc:'Starry Form (Archer/Chalice/Dragon), Cosmic Omen, vuelo nv10.' },
+    { id:'sub-circle-wildfire',  name:'Circle of Wildfire',    desc:'Wildfire Spirit convocado, Enhanced Bond, Blazing Revival nv10.' },
+    // 2024 PHB
+    { id:'sub-circle-sea',       name:'Circle of the Sea',     desc:'Wrath of the Sea (aura de olas), Aquatic Affinity, Stormborn.' },
   ];
 
   const PALADIN_SUBCLASES = [
-    { id:'sub-oath-devotion',   name:'Oath of Devotion',      desc:'Sacred Weapon, Aura of Devotion, Holy Nimbus. El paladín clásico.' },
-    { id:'sub-oath-ancients',   name:'Oath of the Ancients',  desc:'Naturaleza y luz: Aura de resistencia a conjuros, Undying Sentinel.' },
-    { id:'sub-oath-vengeance',  name:'Oath of Vengeance',     desc:'Caza implacable: Vow of Enmity, ventaja en ataques, Avenging Angel.' },
-    { id:'sub-oath-glory',      name:'Oath of Glory',         desc:'Heroísmo épico: Inspiring Smite, Aura of Alacrity, Living Legend.' },
+    // PHB
+    { id:'sub-oath-devotion',    name:'Oath of Devotion',       desc:'Sacred Weapon, Aura of Devotion, Holy Nimbus. El paladín clásico.' },
+    { id:'sub-oath-ancients',    name:'Oath of the Ancients',   desc:'Naturaleza y luz: Aura de resistencia a conjuros, Undying Sentinel.' },
+    { id:'sub-oath-vengeance',   name:'Oath of Vengeance',      desc:'Caza implacable: Vow of Enmity, ventaja en ataques, Avenging Angel.' },
+    // Xanathar's
+    { id:'sub-oath-conquest',    name:'Oath of Conquest',       desc:'Conquering Presence (miedo en área), Aura of Conquest, Invincible Conqueror.' },
+    { id:'sub-oath-redemption',  name:'Oath of Redemption',     desc:'Emissary of Peace (+5 Persuasión), Soul of Decency, Emissary of Redemption.' },
+    // Tasha's
+    { id:'sub-oath-glory',       name:'Oath of Glory',          desc:'Heroísmo épico: Inspiring Smite, Aura of Alacrity, Living Legend.' },
+    { id:'sub-oath-watchers',    name:'Oath of the Watchers',   desc:'Watcher\'s Will (+CHA a saves), Aura of the Sentinel, Mortal Bulwark.' },
+    // 2024 PHB
+    { id:'sub-oath-oathbreaker', name:'Oathbreaker',            desc:'Paladín caído: Channel Undead, Aura of Hate, Supernatural Resistance.' },
   ];
 
   const MONJE_SUBCLASES = [
+    // PHB
     { id:'sub-way-open-hand',      name:'Way of the Open Hand',      desc:'Open Hand Technique, Wholeness of Body, Quivering Palm. El Monje clásico.' },
     { id:'sub-way-shadow',         name:'Way of Shadow',             desc:'Teletransporte entre sombras, invisibilidad, ki para hechizos oscuros.' },
     { id:'sub-way-four-elements',  name:'Way of the Four Elements',  desc:'Lanzar hechizos elementales (fuego, agua, tierra, aire) gastando Ki.' },
+    // Xanathar's
+    { id:'sub-way-drunken-master', name:'Way of the Drunken Master', desc:'Flurry of Blows mejora, Drunkard\'s Luck, Tipsy Sway (evita ataques).' },
+    { id:'sub-way-kensei',         name:'Way of the Kensei',         desc:'Armas de Kensei (a distancia o CaC), Sharpen the Blade, Unerring Accuracy.' },
+    { id:'sub-way-sun-soul',       name:'Way of the Sun Soul',       desc:'Radiant Sun Bolt (distancia), Searing Arc Strike, Searing Sunburst.' },
+    // Tasha's
     { id:'sub-way-astral-self',    name:'Way of the Astral Self',    desc:'Brazos astrales a 3m, rostro astral, forma astral completa nv17.' },
+    { id:'sub-way-mercy',          name:'Way of Mercy',              desc:'Máscara, Implements of Mercy (curar/envenenar gratis), Hand of Harm/Healing.' },
+    // 2024 PHB
+    { id:'sub-way-elements-2024',  name:'Way of the Elements (2024)', desc:'Elemental Attunement: descarga elementos en ataques sin gastar Ki.' },
   ];
 
   const BARBARO_SUBCLASES = [
-    { id:'sub-path-berserker',     name:'Path of the Berserker',     desc:'Frenzy en Rage, Mindless Rage, Intimidating Presence. Destrucción pura.' },
-    { id:'sub-path-totem-warrior', name:'Path of the Totem Warrior', desc:'Espíritu animal (Oso/Águila/Lobo): resistencia, vuelo o tumbar enemigos.' },
-    { id:'sub-path-zealot',        name:'Path of the Zealot',        desc:'Daño divino extra, no morís en Rage, Zealous Presence para aliados.' },
-    { id:'sub-path-wild-magic',    name:'Path of Wild Magic',        desc:'Wild Surge al ragear, efectos mágicos aleatorios, Bolstering Magic.' },
+    // PHB
+    { id:'sub-path-berserker',       name:'Path of the Berserker',       desc:'Frenzy en Rage, Mindless Rage, Intimidating Presence. Destrucción pura.' },
+    { id:'sub-path-totem-warrior',   name:'Path of the Totem Warrior',   desc:'Espíritu animal (Oso/Águila/Lobo): resistencia, vuelo o tumbar enemigos.' },
+    // Xanathar's
+    { id:'sub-path-ancestral',       name:'Path of the Ancestral Guardian', desc:'Ancestral Protectors (desventaja en aliados), Spirit Shield, Vengeful Ancestors.' },
+    { id:'sub-path-storm-herald',    name:'Path of the Storm Herald',    desc:'Aura elemental (Desierto/Mar/Tundra), tormenta de energía en Rage.' },
+    { id:'sub-path-zealot',          name:'Path of the Zealot',          desc:'Daño divino extra, no morís en Rage, Zealous Presence para aliados.' },
+    // Tasha's
+    { id:'sub-path-beast',           name:'Path of the Beast',           desc:'Transformación: garras/mordisco/cola. Bestial Soul, Call the Hunt.' },
+    { id:'sub-path-wild-magic',      name:'Path of Wild Magic',          desc:'Wild Surge al ragear, efectos mágicos aleatorios, Bolstering Magic.' },
+    // 2024 PHB
+    { id:'sub-path-world-tree',      name:'Path of the World Tree',      desc:'Vitality of the Tree (Temp HP), Branches of the Tree, Travel Along the Tree.' },
   ];
 
   const HECHICERO_SUBCLASES = [
-    { id:'sub-draconic-bloodline', name:'Draconic Bloodline', desc:'Origen dracónico: AC natural, resistencia elemental, alas nv14.' },
-    { id:'sub-wild-magic',         name:'Wild Magic',         desc:'Magia impredecible: Wild Surge, Tides of Chaos, Bend Luck.' },
-    { id:'sub-storm-sorcery',      name:'Storm Sorcery',      desc:'Viento y trueno: movimiento volador, daño de rayo extra.' },
+    // PHB
+    { id:'sub-draconic-bloodline',   name:'Draconic Bloodline',          desc:'Origen dracónico: AC natural, resistencia elemental, alas nv14.' },
+    { id:'sub-wild-magic',           name:'Wild Magic',                  desc:'Magia impredecible: Wild Surge, Tides of Chaos, Bend Luck.' },
+    // Xanathar's
+    { id:'sub-divine-soul',          name:'Divine Soul',                 desc:'Conjuros de Clérigo, Favored by the Gods (+2d4 a tiradas), Otherworldly Wings.' },
+    { id:'sub-shadow-magic',         name:'Shadow Magic',                desc:'Eyes of the Dark (Darkness gratis), Strength of the Grave, Hound of Ill Omen.' },
+    { id:'sub-storm-sorcery',        name:'Storm Sorcery',               desc:'Viento y trueno: movimiento volador, daño de rayo extra, Heart of the Storm.' },
+    // Tasha's
+    { id:'sub-aberrant-mind',        name:'Aberrant Mind',               desc:'Psionic Spells (telepathic), Telepathic Speech, Warping Implosion. Mente aberrante.' },
+    { id:'sub-clockwork-soul',       name:'Clockwork Soul',              desc:'Clockwork Spells, Restore Balance, Bulwark of Law, Trance of Order.' },
+    // 2024 PHB
+    { id:'sub-lunar-sorcery',        name:'Lunar Sorcery',               desc:'Lunar Embodiment (conjuros lunares), Moon Fire, Waxing and Waning.' },
   ];
 
   const MAGO_SUBCLASES = [
-    { id:'sub-school-evocation',  name:'School of Evocation',  desc:'Sculpt Spells, Potent Cantrip, Overchannel. Rey del daño.' },
-    { id:'sub-school-abjuration', name:'School of Abjuration', desc:'Arcane Ward absorbe daño. El mago más resistente.' },
-    { id:'sub-school-divination', name:'School of Divination', desc:'Portent: tira 2d20 al reposar y usa los resultados cuando quieras.' },
+    // PHB
+    { id:'sub-school-abjuration',    name:'School of Abjuration',        desc:'Arcane Ward absorbe daño. El mago más resistente.' },
+    { id:'sub-school-conjuration',   name:'School of Conjuration',       desc:'Minor Conjuration (objeto), Benign Transposition, Focused Conjuration.' },
+    { id:'sub-school-divination',    name:'School of Divination',        desc:'Portent: tira 2d20 al reposar y usa los resultados cuando quieras.' },
+    { id:'sub-school-enchantment',   name:'School of Enchantment',       desc:'Hypnotic Gaze, Instinctive Charm, Split Enchantment, Alter Memories.' },
+    { id:'sub-school-evocation',     name:'School of Evocation',         desc:'Sculpt Spells, Potent Cantrip, Overchannel. Rey del daño.' },
+    { id:'sub-school-illusion',      name:'School of Illusion',          desc:'Improved Minor Illusion, Malleable Illusions, Illusory Self, Illusory Reality.' },
+    { id:'sub-school-necromancy',    name:'School of Necromancy',        desc:'Undead Thralls, Inured to Undeath, Command Undead nv14.' },
+    { id:'sub-school-transmutation', name:'School of Transmutation',     desc:'Minor Alchemy, Transmuter\'s Stone, Shapechanger, Master Transmuter.' },
+    // Xanathar's
+    { id:'sub-bladesinging',         name:'Bladesinging',                desc:'Bladesong (INT a AC+concentración, vel+10), Extra Attack nv6, Song of Defense.' },
+    { id:'sub-war-magic',            name:'War Magic',                   desc:'Arcane Deflection, Tactical Wit (+INT a iniciativa), Durable Magic nv14.' },
+    // Tasha's
+    { id:'sub-order-of-scribes',     name:'Order of Scribes',            desc:'Wizardly Quill, Awakened Spellbook (swap damage type), Manifest Mind, Master Scrivener.' },
+    // 2024 PHB
+    { id:'sub-school-evoker-2024',   name:'Evoker (2024)',               desc:'Potent Cantrip mejorado, Sculpt Spells en área, Overchannel sin coste nv14.' },
   ];
 
   const BRUJO_SUBCLASES = [
-    { id:'sub-the-fiend',         name:'The Fiend',         desc:'Temp HP al matar, resistencias del averno, Hurl Through Hell.' },
-    { id:'sub-the-great-old-one', name:'The Great Old One', desc:'Telepatía, Entropic Ward, Thought Shield, Create Thrall.' },
-    { id:'sub-the-archfey',       name:'The Archfey',       desc:'Fey Presence, teletransporte de niebla, Beguiling Defenses.' },
+    // PHB
+    { id:'sub-the-fiend',            name:'The Fiend',                   desc:'Temp HP al matar, resistencias del averno, Hurl Through Hell.' },
+    { id:'sub-the-great-old-one',    name:'The Great Old One',           desc:'Telepatía, Entropic Ward, Thought Shield, Create Thrall.' },
+    { id:'sub-the-archfey',          name:'The Archfey',                 desc:'Fey Presence, teletransporte de niebla, Beguiling Defenses.' },
+    // Xanathar's
+    { id:'sub-the-hexblade',         name:'The Hexblade',                desc:'Hexblade\'s Curse (+PB a golpes), Hex Warrior (CAR en armas), Accursed Specter.' },
+    { id:'sub-the-celestial',        name:'The Celestial',               desc:'Healing Light (pool de d6), Radiant Soul, Celestial Resilience, Searing Vengeance.' },
+    // Tasha's
+    { id:'sub-the-fathomless',       name:'The Fathomless',              desc:'Tentacle of the Deeps (3m, 1d8 frío), Gift of the Sea, Fathomless Plunge.' },
+    { id:'sub-the-genie',            name:'The Genie',                   desc:'Genie\'s Vessel (Bottle Respite), Elemental Gift, Sanctuary Vessel, Limited Wish.' },
+    // 2024 PHB
+    { id:'sub-the-undead',           name:'The Undead',                  desc:'Form of Dread (Temp HP + miedo), Grave Touched, Necrotic Husk, Spirit Projection.' },
   ];
 
   // ── PRIMAL COMPANION BEASTS (Beast Master Ranger · D&D 2024) ─────────────────
