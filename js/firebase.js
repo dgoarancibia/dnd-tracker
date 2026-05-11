@@ -43,17 +43,8 @@ const _provider = new GoogleAuthProvider();
 /* ── Auth ── */
 
 async function signIn() {
-  // Intentar popup primero; si falla por COOP, caer a redirect
-  try {
-    return await signInWithPopup(_auth, _provider);
-  } catch (e) {
-    if (e.code === 'auth/popup-blocked' ||
-        e.code === 'auth/popup-closed-by-user' ||
-        (e.message && e.message.includes('Cross-Origin-Opener-Policy'))) {
-      return signInWithRedirect(_auth, _provider);
-    }
-    throw e;
-  }
+  // GitHub Pages bloquea popups por COOP — usar redirect siempre
+  return signInWithRedirect(_auth, _provider);
 }
 
 // Procesar redirect result con top-level await — garantiza que el usuario

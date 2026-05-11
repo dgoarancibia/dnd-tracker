@@ -1439,9 +1439,9 @@ const Characters = (() => {
         ...(nivel >= 4 ? [{ id:'sorc-asi-4', name:'Ability Score Improvement', source:'Hechicero · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
         ...(nivel >= 5 ? [{ id:'sorc-innate-magic', name:'Sorcerous Restoration', source:'Hechicero · Nivel 5', type:'active', action:'Ninguna', range:'Personal', recharge:'short', desc:'Recuperás 4 Sorcery Points en Short Rest (1/día).', fullDesc:'' }] : []),
         ...(nivel >= 7 ? [{ id:'sorc-asi-7', name:'Ability Score Improvement', source:'Hechicero · Nivel 7', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 10 ? [{ id:'metamagic-3', name:'Metamagic (opción extra)', source:'Hechicero · Nivel 10', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Aprendés una tercera opción de Metamagic.', fullDesc:'' }] : []),
+        ...(nivel >= 10 ? [{ id:'sorc-metamagic-extra-10', name:'Metamagic (opción extra)', source:'Hechicero · Nivel 10', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Aprendés una tercera opción de Metamagic.', fullDesc:'' }] : []),
         ...(nivel >= 11 ? [{ id:'sorc-asi-11', name:'Ability Score Improvement', source:'Hechicero · Nivel 11', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 17 ? [{ id:'metamagic-4', name:'Metamagic (opción extra)', source:'Hechicero · Nivel 17', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Aprendés una cuarta opción de Metamagic.', fullDesc:'' }] : []),
+        ...(nivel >= 17 ? [{ id:'sorc-metamagic-extra-17', name:'Metamagic (opción extra)', source:'Hechicero · Nivel 17', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Aprendés una cuarta opción de Metamagic.', fullDesc:'' }] : []),
         ...(nivel >= 19 ? [{ id:'sorc-asi-19', name:'Epic Boon', source:'Hechicero · Nivel 19', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganás un Epic Boon feat.', fullDesc:'' }] : []),
         ...(nivel >= 20 ? [{ id:'arcane-apotheosis', name:'Arcane Apotheosis', source:'Hechicero · Nivel 20', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Una vez por turno podés usar Metamagic sin gastar Sorcery Points.', fullDesc:'' }] : []),
       ],
@@ -2992,12 +2992,28 @@ const Characters = (() => {
   // Catálogo representativo para empezar. El usuario puede agregar más después.
   const CLASE_SPELLS = {
 
-    'Clérigo': [], // Lursey ya define sus propios; nuevo clérigo empieza sin lista fija
+    'Clérigo': [
+      // Cantrips
+      { id:'sacred-flame',   name:'Sacred Flame',    level:0, castTime:'Acción',       range:'18 m',  duration:'Inst.', concentration:false, combat:true,  desc:'Save DES (no cubre ventaja por cobertura) · 1d8 radiante. Escala nv5/11/17.' },
+      { id:'toll-the-dead',  name:'Toll the Dead',   level:0, castTime:'Acción',       range:'18 m',  duration:'Inst.', concentration:false, combat:true,  desc:'Save SAB · 1d8 necrótico (1d12 si herido). Escala nv5/11/17.' },
+      { id:'guidance-c',     name:'Guidance',        level:0, castTime:'Acción',       range:'Toque', duration:'1 min', concentration:true,  combat:false, desc:'Concentración · +1d4 a una tirada de habilidad.' },
+      { id:'word-of-radiance', name:'Word of Radiance', level:0, castTime:'Acción',   range:'1,5 m', duration:'Inst.', concentration:false, combat:true,  desc:'Cada criatura en 5ft · save CON · 1d6 radiante. Escala nv5/11/17.' },
+      { id:'thaumaturgy',    name:'Thaumaturgy',     level:0, castTime:'Acción',       range:'9 m',   duration:'1 min', concentration:false, combat:false, desc:'Efecto menor: voz potente, ojos brillantes, temblor de suelo, etc. (3 opciones).' },
+      { id:'mending-c',      name:'Mending',         level:0, castTime:'1 min',        range:'Toque', duration:'Inst.', concentration:false, combat:false, desc:'Repara un objeto partido o roto en dos (hasta 30 cm).' },
+      { id:'light-c',        name:'Light',           level:0, castTime:'Acción',       range:'Toque', duration:'1 h',   concentration:false, combat:false, desc:'Objeto toca: emite luz brillante 6 m y tenue 6 m más. Save DES si está en manos de alguien.' },
+      { id:'resistance-c',   name:'Resistance',      level:0, castTime:'Acción',       range:'Toque', duration:'1 min', concentration:true,  combat:false, desc:'Concentración · +1d4 a una tirada de salvación.' },
+    ],
 
     'Druida': [
-      { id:'shillelagh',  name:'Shillelagh',      level:0, castTime:'Acción bonus', range:'Toque', duration:'1 min',    concentration:false, combat:true,  desc:'Arma de madera usa SAB en vez de FUE, daño 1d8.' },
-      { id:'guidance',    name:'Guidance',         level:0, castTime:'Acción',       range:'Toque', duration:'1 min',    concentration:true,  combat:false, desc:'Otorga 1d4 a una tirada de habilidad.' },
-      { id:'produce-flame', name:'Produce Flame',  level:0, castTime:'Acción',       range:'Uno mismo', duration:'10 min', concentration:false, combat:true, desc:'Llama en la mano: ilumina 10ft o 1d8 fuego al lanzar.' },
+      // Cantrips
+      { id:'shillelagh',    name:'Shillelagh',      level:0, castTime:'Acción bonus', range:'Toque',     duration:'1 min',  concentration:false, combat:true,  desc:'Arma de madera usa SAB en vez de FUE, daño 1d8.' },
+      { id:'guidance',      name:'Guidance',         level:0, castTime:'Acción',       range:'Toque',     duration:'1 min',  concentration:true,  combat:false, desc:'Concentración · +1d4 a una tirada de habilidad.' },
+      { id:'produce-flame', name:'Produce Flame',    level:0, castTime:'Acción',       range:'Uno mismo', duration:'10 min', concentration:false, combat:true,  desc:'Llama en la mano: ilumina 10ft o 1d8 fuego al lanzar.' },
+      { id:'druidcraft',    name:'Druidcraft',       level:0, castTime:'Acción',       range:'4,5 m',     duration:'Inst.', concentration:false, combat:false, desc:'Predicción del clima, hacer florecer plantas, crear efecto sensorial menor.' },
+      { id:'thorn-whip',    name:'Thorn Whip',       level:0, castTime:'Acción',       range:'9 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Ataque de toque a distancia · 1d6 perforante · jala 3m si es Grande o menos. Escala nv5/11/17.' },
+      { id:'poison-spray-d',name:'Poison Spray',     level:0, castTime:'Acción',       range:'3 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Save CON · 1d12 veneno. Escala nv5/11/17.' },
+      { id:'mending-d',     name:'Mending',          level:0, castTime:'1 min',        range:'Toque',     duration:'Inst.', concentration:false, combat:false, desc:'Repara una rotura u orificio en un objeto (hasta 30 cm).' },
+      { id:'resistance-d',  name:'Resistance',       level:0, castTime:'Acción',       range:'Toque',     duration:'1 min', concentration:true,  combat:false, desc:'Concentración · +1d4 a una tirada de salvación.' },
       { id:'entangle',    name:'Entangle',          level:1, castTime:'Acción',       range:'27 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Save FUE o restringido en área de plantas (18ft²).' },
       { id:'healing-word-d', name:'Healing Word',  level:1, castTime:'Acción bonus', range:'18 m', duration:'Inst.',    concentration:false, combat:false, desc:'1d4+SAB HP. Escala +1d4 por nivel superior.' },
       { id:'faerie-fire', name:'Faerie Fire',       level:1, castTime:'Acción',       range:'18 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Save DES o brillan → ventaja en ataques contra ellos.' },
@@ -3005,18 +3021,76 @@ const Characters = (() => {
       { id:'spike-growth',name:'Spike Growth',     level:2, castTime:'Acción',       range:'45 m', duration:'10 min',   concentration:true,  combat:true,  desc:'Área difícil 20ft radio · 2d4 perforante por 5ft caminados.' },
       { id:'moonbeam',    name:'Moonbeam',          level:2, castTime:'Acción',       range:'36 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Cilindro 5ft · save CON · 2d10 radiante por turno.' },
       { id:'flaming-sphere', name:'Flaming Sphere', level:2, castTime:'Acción',      range:'18 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Esfera 5ft · 2d6 fuego save DES · movible bonus action.' },
+      { id:'heat-metal-d',  name:'Heat Metal',      level:2, castTime:'Acción',       range:'18 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Metal se calienta: 2d8 fuego c/turno · soltar objeto o desventaja en attacks/ability checks.' },
+      { id:'lesser-restoration-d', name:'Lesser Restoration', level:2, castTime:'Acción', range:'Toque', duration:'Inst.', concentration:false, combat:false, desc:'Elimina una enfermedad o condición: cegado, sordo, paralizado o envenenado.' },
+      // ── Nivel 3 ──
+      { id:'call-lightning-d', name:'Call Lightning', level:3, castTime:'Acción',    range:'27 m', duration:'10 min',   concentration:true,  combat:true,  desc:'Nube de tormenta: acción bonus para 3d10 rayos a cualquier punto debajo.' },
+      { id:'conjure-animals-d', name:'Conjure Animals', level:3, castTime:'Acción',  range:'18 m', duration:'1 h',      concentration:true,  combat:true,  desc:'Invoca bestias de CR ≤ 2 que obedecen órdenes.' },
+      { id:'daylight-d',    name:'Daylight',          level:3, castTime:'Acción',       range:'18 m', duration:'1 h',      concentration:false, combat:false, desc:'Esfera de luz brillante 18m de radio.' },
+      { id:'dispel-magic-d', name:'Dispel Magic',     level:3, castTime:'Acción',       range:'36 m', duration:'Inst.',    concentration:false, combat:true,  desc:'Termina conjuros en objetivo. +alto: check SAB.' },
+      { id:'wind-wall-d',   name:'Wind Wall',          level:3, castTime:'Acción',       range:'36 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Muro de viento: impide proyectiles, 3d8 trueno a criaturas en zona.' },
+      { id:'sleet-storm-d', name:'Sleet Storm',        level:3, castTime:'Acción',       range:'45 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Cilindro de aguanieve: terreno difícil, visibilidad nula, save DES o caído.' },
+      // ── Nivel 4 ──
+      { id:'blight-d',      name:'Blight',             level:4, castTime:'Acción',       range:'9 m',  duration:'Inst.',    concentration:false, combat:true,  desc:'Save CON · 8d8 necrótico. Doble vs plantas.' },
+      { id:'confusion-d',   name:'Confusion',          level:4, castTime:'Acción',       range:'27 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Esfera 3m · save SAB o acción aleatoria c/turno.' },
+      { id:'freedom-movement-d', name:'Freedom of Movement', level:4, castTime:'Acción', range:'Toque', duration:'1 h',    concentration:false, combat:true,  desc:'Ignora terreno difícil y efectos de inmovilización.' },
+      { id:'stone-shape-d', name:'Stone Shape',        level:4, castTime:'Acción',       range:'Toque',duration:'Inst.',    concentration:false, combat:false, desc:'Da forma a hasta 1,5ft³ de piedra como quieras.' },
+      { id:'stoneskin-d',   name:'Stoneskin',          level:4, castTime:'Acción',       range:'Toque',duration:'1 h',      concentration:true,  combat:true,  desc:'Resistencia a daño no mágico de arma (B/P/S).' },
+      // ── Nivel 5 ──
+      { id:'commune-nature-d', name:'Commune with Nature', level:5, castTime:'1 min',   range:'Uno mismo', duration:'Inst.', concentration:false, combat:false, ritual:true, desc:'Info del terreno en radio 5km. Ritual.' },
+      { id:'conjure-elem-d', name:'Conjure Elemental', level:5, castTime:'1 min',        range:'27 m', duration:'1 h',      concentration:true,  combat:true,  desc:'Invoca un elemental CR ≤ tu nivel de conjurador.' },
+      { id:'mass-cure-d',   name:'Mass Cure Wounds',   level:5, castTime:'Acción',       range:'18 m', duration:'Inst.',    concentration:false, combat:false, desc:'Hasta 6 criaturas: 3d8+SAB HP c/u. +1d8 por nivel.' },
+      { id:'reincarnate-d', name:'Reincarnate',        level:5, castTime:'1 h',           range:'Toque',duration:'Inst.',    concentration:false, combat:false, desc:'Revive criatura muerta hace ≤10 días en un cuerpo nuevo (raza aleatoria).' },
+      { id:'wall-of-stone-d', name:'Wall of Stone',    level:5, castTime:'Acción',        range:'36 m', duration:'10 min',   concentration:true,  combat:true,  desc:'Muro de piedra sólida de hasta 10 paneles (3×1m c/u).' },
+      // ── Nivel 6 ──
+      { id:'conjure-fey-d', name:'Conjure Fey',        level:6, castTime:'1 min',         range:'27 m', duration:'1 h',     concentration:true,  combat:true,  desc:'Invoca criatura feérica CR ≤ 6 o hasta 3 CR ≤ 3.' },
+      { id:'heal-d',        name:'Heal',                level:6, castTime:'Acción',        range:'18 m', duration:'Inst.',   concentration:false, combat:false, desc:'Una criatura recupera 70 HP y se eliminan condiciones. +10 HP por nivel.' },
+      { id:'sunbeam-d',     name:'Sunbeam',             level:6, castTime:'Acción',        range:'Línea 18m', duration:'1 min', concentration:true, combat:true, desc:'Rayo de luz · save CON · 6d8 radiante + cegado. Acción bonus para repetir.' },
+      { id:'transport-tree-d', name:'Transport via Plants', level:6, castTime:'Acción',   range:'3 m',  duration:'1 ronda', concentration:false, combat:false, desc:'Portal entre dos plantas de la misma especie.' },
+      { id:'wall-thorns-d', name:'Wall of Thorns',      level:6, castTime:'Acción',        range:'36 m', duration:'10 min',  concentration:true,  combat:true,  desc:'Muro de espinas 18m: terreno difícil, 7d8 perforante al cruzar.' },
     ],
 
     'Bardo': [
-      { id:'vicious-mockery', name:'Vicious Mockery', level:0, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true,  desc:'Save SAB o 1d4 psíquico + desventaja en próximo ataque.' },
-      { id:'minor-illusion',  name:'Minor Illusion',  level:0, castTime:'Acción', range:'9 m',  duration:'1 min', concentration:false, combat:false, desc:'Sonido o imagen inanimada de cubo 5ft.' },
-      { id:'prestidigitation-b', name:'Prestidigitation', level:0, castTime:'Acción', range:'3 m', duration:'Hasta 1h', concentration:false, combat:false, desc:'Truco menor: limpiar, encender, sabor, etc.' },
+      // Cantrips
+      { id:'vicious-mockery',  name:'Vicious Mockery',  level:0, castTime:'Acción', range:'18 m', duration:'Inst.',     concentration:false, combat:true,  desc:'Save SAB o 1d4 psíquico + desventaja en próximo ataque. Escala nv5/11/17.' },
+      { id:'minor-illusion',   name:'Minor Illusion',   level:0, castTime:'Acción', range:'9 m',  duration:'1 min',     concentration:false, combat:false, desc:'Sonido o imagen inanimada de cubo 5ft.' },
+      { id:'prestidigitation-b',name:'Prestidigitation',level:0, castTime:'Acción', range:'3 m',  duration:'Hasta 1h',  concentration:false, combat:false, desc:'Truco menor: limpiar, encender, sabor, etc.' },
+      { id:'mage-hand-b',      name:'Mage Hand',        level:0, castTime:'Acción', range:'9 m',  duration:'1 min',     concentration:false, combat:false, desc:'Mano espectral manipula objetos hasta 5 kg.' },
+      { id:'friends-b',        name:'Friends',          level:0, castTime:'Acción', range:'Uno mismo', duration:'1 min', concentration:true, combat:false, desc:'Concentración · ventaja en checks de CAR vs criatura no hostil. Puede notar el hechizo al terminar.' },
+      { id:'thunderclap-b',    name:'Thunderclap',      level:0, castTime:'Acción', range:'Uno mismo (5ft)', duration:'Inst.', concentration:false, combat:true, desc:'Todas las criaturas en 1,5m · save CON · 1d6 trueno. Escala nv5/11/17.' },
+      { id:'light-b',          name:'Light',            level:0, castTime:'Acción', range:'Toque', duration:'1 h',      concentration:false, combat:false, desc:'Objeto emite luz brillante 6m y tenue 6m más.' },
       { id:'healing-word-b',  name:'Healing Word',    level:1, castTime:'Acción bonus', range:'18 m', duration:'Inst.', concentration:false, combat:false, desc:'1d4+CAR HP · como bonus action.' },
       { id:'thunderwave-b',   name:'Thunderwave',     level:1, castTime:'Acción', range:'Uno mismo (15ft)', duration:'Inst.', concentration:false, combat:true, desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 10ft.' },
       { id:'dissonant-whispers', name:'Dissonant Whispers', level:1, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true, desc:'Save SAB o 3d6 psíquico y huye. Escala +1d6 por nivel.' },
       { id:'hold-person-b',   name:'Hold Person',     level:2, castTime:'Acción', range:'18 m', duration:'1 min', concentration:true,  combat:true,  desc:'Save SAB o paralizado. Repite save c/turno.' },
       { id:'suggestion',      name:'Suggestion',      level:2, castTime:'Acción', range:'9 m',  duration:'8 h',   concentration:true,  combat:false, desc:'Save SAB o sigue sugerencia razonable.' },
       { id:'shatter',         name:'Shatter',         level:2, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true,  desc:'Esfera 10ft · save CON · 3d8 trueno. +1d8 por nivel.' },
+      { id:'enhance-ability-b',name:'Enhance Ability',level:2, castTime:'Acción', range:'Toque',duration:'1 h',   concentration:true,  combat:false, desc:'Ventaja en checks de una stat a un aliado. +1 criatura/nivel.' },
+      { id:'invisibility-b',  name:'Invisibility',    level:2, castTime:'Acción', range:'Toque',duration:'1 h',   concentration:true,  combat:true,  desc:'Invisible hasta que ataque o lance un conjuro.' },
+      { id:'silence-b',       name:'Silence',         level:2, castTime:'Acción', range:'27 m', duration:'10 min',concentration:true,  combat:true,  desc:'Esfera 6m: sin sonido · sin conjuros verbales. Ritual.' },
+      // ── Nivel 3 ──
+      { id:'fear-b',          name:'Fear',            level:3, castTime:'Acción', range:'Uno mismo (cono 9m)', duration:'1 min', concentration:true, combat:true, desc:'Save SAB o asustado y huye; descarta objetos.' },
+      { id:'hypnotic-pattern-b', name:'Hypnotic Pattern', level:3, castTime:'Acción', range:'36 m', duration:'1 min', concentration:true, combat:true, desc:'Cubo 9m · save SAB o encantado e incapacitado.' },
+      { id:'speak-dead-b',    name:'Speak with Dead', level:3, castTime:'Acción', range:'3 m',  duration:'10 min',concentration:false, combat:false, desc:'Hasta 5 preguntas a un cadáver.' },
+      { id:'tongues-b',       name:'Tongues',         level:3, castTime:'Acción', range:'Toque',duration:'1 h',   concentration:false, combat:false, desc:'Entiende y habla cualquier idioma.' },
+      { id:'dispel-magic-b',  name:'Dispel Magic',    level:3, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true, desc:'Termina conjuros en objetivo. +alto: check CAR.' },
+      { id:'sending',         name:'Sending',         level:3, castTime:'Acción', range:'Ilimitado', duration:'1 ronda', concentration:false, combat:false, desc:'Mensaje de 25 palabras a cualquier criatura conocida.' },
+      // ── Nivel 4 ──
+      { id:'compulsion-b',    name:'Compulsion',      level:4, castTime:'Acción', range:'9 m',  duration:'1 min', concentration:true,  combat:true,  desc:'Save SAB o se mueve cada turno en una dirección sin atacar.' },
+      { id:'confusion-b',     name:'Confusion',       level:4, castTime:'Acción', range:'27 m', duration:'1 min', concentration:true,  combat:true,  desc:'Esfera 3m · save SAB o acción aleatoria c/turno.' },
+      { id:'dimension-door-b',name:'Dimension Door',  level:4, castTime:'Acción', range:'150 m',duration:'Inst.', concentration:false, combat:true,  desc:'Teleportación vos +1 aliado a 150m.' },
+      { id:'freedom-movement-b',name:"Freedom of Movement", level:4, castTime:'Acción', range:'Toque', duration:'1 h', concentration:false, combat:true, desc:'Ignora terreno difícil y efectos de reducción de velocidad.' },
+      { id:'greater-invis-b', name:'Greater Invisibility', level:4, castTime:'Acción', range:'Toque', duration:'1 min', concentration:true, combat:true, desc:'Invisible incluso atacando o lanzando conjuros.' },
+      // ── Nivel 5 ──
+      { id:'animate-objects-b',name:'Animate Objects', level:5, castTime:'Acción', range:'36 m',duration:'1 min', concentration:true,  combat:true,  desc:'Hasta 10 objetos pequeños animados atacan.' },
+      { id:'dominate-person-b',name:'Dominate Person', level:5, castTime:'Acción', range:'18 m',duration:'1 min', concentration:true,  combat:true,  desc:'Save SAB o humanoide bajo tu control.' },
+      { id:'mass-cure-wounds-b',name:'Mass Cure Wounds', level:5, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:false, desc:'Hasta 6 criaturas: 3d8+CAR HP c/u. +1d8 por nivel.' },
+      { id:'hold-monster-b',  name:'Hold Monster',    level:5, castTime:'Acción', range:'18 m', duration:'1 min', concentration:true,  combat:true,  desc:'Save SAB o paralizado (cualquier criatura).' },
+      { id:'mass-suggestion-b',name:'Mass Suggestion', level:5, castTime:'Acción', range:'18 m', duration:'24 h', concentration:false, combat:false, desc:'Hasta 12 criaturas siguen sugerencia razonable. (Escala a nivel 6.)' },
+      // ── Nivel 6 ──
+      { id:'eyebite-b',       name:'Eyebite',         level:6, castTime:'Acción', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Mirada mágica c/turno: dormido, asustado o mareado (save SAB).' },
+      { id:'otto-dance-b',    name:"Otto's Irresistible Dance", level:6, castTime:'Acción', range:'9 m', duration:'1 min', concentration:true, combat:true, desc:'Save SAB o baila: vel 0, -2CA, desventaja DES, no concentración.' },
+      { id:'guards-wards-b',  name:'Guards and Wards', level:6, castTime:'10 min', range:'Toque', duration:'24 h', concentration:false, combat:false, desc:'Protege un edificio de hasta 2500ft²: niebla, laberintos, alarmas y guardianes.' },
     ],
 
     'Hechicero': [
@@ -3051,42 +3125,163 @@ const Characters = (() => {
       { id:'fly-s',             name:'Fly',               level:3, castTime:'Acción',       range:'Toque',      duration:'10 min', concentration:true, combat:false, desc:'Velocidad vuelo 18 m · conc 10 min. +1 criatura por nivel.' },
       { id:'haste-s',           name:'Haste',             level:3, castTime:'Acción',       range:'9 m',        duration:'1 min', concentration:true,  combat:true,  desc:'+2 CA, ventaja en saves DES, vel ×2, Acción extra (ataque/Dash/Disengage/Hide/Use Object).' },
       // ── Nivel 4 ──
-      { id:'dimension-door-s',  name:'Dimension Door',    level:4, castTime:'Acción',       range:'150 m',      duration:'Inst.', concentration:false, combat:true,  desc:'Teleportación tú + 1 aliado a cualquier punto a 150 m.' },
-      { id:'greater-invis-s',   name:'Greater Invisibility', level:4, castTime:'Acción',   range:'Toque',      duration:'1 min', concentration:true,  combat:true,  desc:'Invisible incluso al atacar o lanzar conjuros. Ventaja en ataques, desventaja en ataques recibidos.' },
+      // ── Nivel 4 ──
+      { id:'dimension-door-s',    name:'Dimension Door',       level:4, castTime:'Acción',    range:'150 m',     duration:'Inst.',   concentration:false, combat:true,  desc:'Teleportación tú + 1 aliado a cualquier punto a 150 m.' },
+      { id:'greater-invis-s',     name:'Greater Invisibility', level:4, castTime:'Acción',    range:'Toque',     duration:'1 min',   concentration:true,  combat:true,  desc:'Invisible incluso al atacar o lanzar conjuros. Ventaja en ataques, desventaja recibidos.' },
+      { id:'confusion-s',         name:'Confusion',            level:4, castTime:'Acción',    range:'27 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB en área 3m radio o acción aleatoria cada turno.' },
+      { id:'banishment-s',        name:'Banishment',           level:4, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save CAR o desterrado al plano de origen. Permanente si conc dura 1 min.' },
+      { id:'dominate-beast-s',    name:'Dominate Beast',       level:4, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o bajo tu control. Repite save al recibir daño.' },
+      { id:'fire-shield-s',       name:'Fire Shield',          level:4, castTime:'Acción',    range:'Uno mismo', duration:'10 min',  concentration:false, combat:true,  desc:'Escudo cálido o frío: 2d8 daño al atacante en melee. Resistencia fuego/frío.' },
+      { id:'vitriolic-sphere-s',  name:'Vitriolic Sphere',     level:4, castTime:'Acción',    range:'45 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Esfera 4,5m · save DES · 10d4 ácido + 5d4 al inicio del turno siguiente.' },
+      { id:'charm-monster-s',     name:'Charm Monster',        level:4, castTime:'Acción',    range:'9 m',       duration:'1 h',     concentration:false, combat:false, desc:'Save SAB o encantado. No requiere ser humanoide.' },
+      { id:'stone-skin-s',        name:'Stoneskin',            level:4, castTime:'Acción',    range:'Toque',     duration:'1 h',     concentration:true,  combat:true,  desc:'Resistencia a daño no mágico de arma (B/P/S).' },
+      { id:'polymorph-s',         name:'Polymorph',            level:4, castTime:'Acción',    range:'18 m',      duration:'1 h',     concentration:true,  combat:true,  desc:'Save SAB o transformado en bestia. HP propio de la bestia.' },
+      { id:'sickening-radiance-s',name:'Sickening Radiance',   level:4, castTime:'Acción',    range:'27 m',      duration:'10 min',  concentration:true,  combat:true,  desc:'Esfera 9m · save CON o 4d10 radiante + agotamiento.' },
+      { id:'wall-of-fire-s',      name:'Wall of Fire',         level:4, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Muro 18m largo · 5d8 fuego a criaturas al otro lado o al cruzar.' },
       // ── Nivel 5 ──
-      { id:'cone-of-cold-s',    name:'Cone of Cold',      level:5, castTime:'Acción',       range:'Cono 60ft',  duration:'Inst.', concentration:false, combat:true,  desc:'Cono 18m · save CON · 8d8 frío. +1d8 por nivel.' },
-      { id:'telekinesis-s',     name:'Telekinesis',        level:5, castTime:'Acción',       range:'18 m',       duration:'10 min', concentration:true, combat:true,  desc:'Mueve objetos/criaturas con la mente. Criatura: save FUE o la movés 9m.' },
+      { id:'cone-of-cold-s',      name:'Cone of Cold',         level:5, castTime:'Acción',    range:'Cono 18m',  duration:'Inst.',   concentration:false, combat:true,  desc:'Cono 18m · save CON · 8d8 frío. +1d8 por nivel.' },
+      { id:'telekinesis-s',       name:'Telekinesis',          level:5, castTime:'Acción',     range:'18 m',      duration:'10 min',  concentration:true,  combat:true,  desc:'Mueve objetos/criaturas con la mente · criatura: save FUE o movida 9m.' },
+      { id:'animate-objects-s',   name:'Animate Objects',      level:5, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Hasta 10 objetos pequeños animados atacan. Escala con nivel.' },
+      { id:'creation-s',          name:'Creation',             level:5, castTime:'1 min',      range:'9 m',       duration:'Varía',   concentration:false, combat:false, desc:'Crea objeto de materia inerte de hasta 5ft cúbicos. Duración según material.' },
+      { id:'dominate-person-s',   name:'Dominate Person',      level:5, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o humanoide bajo tu control. Repite save al recibir daño.' },
+      { id:'hold-monster-s',      name:'Hold Monster',         level:5, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o paralizado (cualquier criatura). Repite save c/turno.' },
+      { id:'mind-whip-s',         name:'Synaptic Static',      level:5, castTime:'Acción',    range:'36 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Esfera 6m · save INT · 8d6 psíquico + desventaja en ataques y concentración.' },
+      { id:'mislead-s',           name:'Mislead',              level:5, castTime:'Acción',    range:'Uno mismo', duration:'1 h',     concentration:true,  combat:false, desc:'Invisible + creas doble ilusorio controlable desde tu perspectiva.' },
+      { id:'wall-of-stone-s',     name:'Wall of Stone',        level:5, castTime:'Acción',    range:'36 m',      duration:'10 min',  concentration:true,  combat:true,  desc:'Muro de piedra sólida de hasta 10 paneles (3x1m c/u).' },
+      { id:'bigbys-hand-s',       name:"Bigby's Hand",         level:5, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Mano gigante de fuerza: golpe, empuje, agarre, bloqueo. 4d8 fuerza.' },
       // ── Nivel 6 ──
-      { id:'disintegrate-s',    name:'Disintegrate',      level:6, castTime:'Acción',       range:'18 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · save DES · 10d6+40 fuerza. +3d6 por nivel. Reduce a polvo si mata.' },
-      { id:'chain-lightning-s', name:'Chain Lightning',   level:6, castTime:'Acción',       range:'30 m',       duration:'Inst.', concentration:false, combat:true,  desc:'10d8 relámpago al objetivo principal + 3 objetivos secundarios (save DES mitad).' },
+      { id:'disintegrate-s',      name:'Disintegrate',         level:6, castTime:'Acción',    range:'18 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Ataque a distancia · save DES · 10d6+40 fuerza. +3d6 por nivel. Reduce a polvo si mata.' },
+      { id:'chain-lightning-s',   name:'Chain Lightning',      level:6, castTime:'Acción',    range:'30 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'10d8 relámpago al objetivo principal + 3 secundarios (save DES mitad).' },
+      { id:'globe-invuln-s',      name:'Globe of Invulnerability', level:6, castTime:'Acción',range:'Uno mismo', duration:'1 min',   concentration:true,  combat:true,  desc:'Esfera 3m bloquea conjuros de nivel 5 o inferior.' },
+      { id:'mass-suggestion-s',   name:'Mass Suggestion',      level:6, castTime:'Acción',    range:'18 m',      duration:'24 h',    concentration:false, combat:false, desc:'Save SAB o hasta 12 criaturas siguen sugerencia razonable.' },
+      { id:'eyebite-s',           name:'Eyebite',              level:6, castTime:'Acción',    range:'Uno mismo', duration:'1 min',   concentration:true,  combat:true,  desc:'Mirada mágica: dormido, asustado o mareado c/turno (save SAB).' },
+      { id:'flesh-stone-s',       name:'Flesh to Stone',       level:6, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save CON ×3 o petrificado permanente.' },
+      { id:'scatter-s',           name:'Scatter',              level:6, castTime:'Acción',    range:'27 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Hasta 5 criaturas · save SAB o teleportadas hasta 7,5m en dirección elegida.' },
+      { id:'true-seeing-s',       name:'True Seeing',          level:6, castTime:'Acción',    range:'Toque',     duration:'1 h',     concentration:false, combat:false, desc:'Ve invisibles, ilusiones reales, en oscuridad, planos etéreos. Visión 36m.' },
     ],
 
     'Mago': [
-      { id:'fire-bolt',     name:'Fire Bolt',      level:0, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d10 fuego. Escala con nivel.' },
-      { id:'mage-hand',     name:'Mage Hand',      level:0, castTime:'Acción', range:'9 m',  duration:'1 min', concentration:false, combat:false, desc:'Mano espectral manipula objetos hasta 5 kg.' },
-      { id:'prestidigitation', name:'Prestidigitation', level:0, castTime:'Acción', range:'3 m', duration:'Hasta 1h', concentration:false, combat:false, desc:'Trucos menores: limpiar, encender, sabor...' },
-      { id:'minor-illusion-m', name:'Minor Illusion', level:0, castTime:'Acción', range:'9 m', duration:'1 min', concentration:false, combat:false, desc:'Imagen o sonido pequeño.' },
-      { id:'magic-missile', name:'Magic Missile',  level:1, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'3 dardos infalibles · 1d4+1 fuerza c/u. +1 dardo por nivel.' },
-      { id:'shield',        name:'Shield',          level:1, castTime:'Reacción', range:'Uno mismo', duration:'1 ronda', concentration:false, combat:true, desc:'Reacción · +5 CA hasta inicio de tu próximo turno.' },
-      { id:'thunderwave-m', name:'Thunderwave',    level:1, castTime:'Acción', range:'Uno mismo (15ft)', duration:'Inst.', concentration:false, combat:true, desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 10ft.' },
-      { id:'detect-magic',  name:'Detect Magic',   level:1, castTime:'Acción', range:'Uno mismo', duration:'10 min', concentration:true, combat:false, ritual:true, desc:'Detecta magia en 9 m · ritual.' },
-      { id:'misty-step',    name:'Misty Step',     level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m a lugar visible.' },
-      { id:'mirror-image-m', name:'Mirror Image',  level:2, castTime:'Acción', range:'Uno mismo', duration:'1 min', concentration:false, combat:true, desc:'3 duplicados ilusorios desvían ataques.' },
-      { id:'web',           name:'Web',             level:2, castTime:'Acción', range:'18 m', duration:'1 h',   concentration:true,  combat:true,  desc:'Tela 4.5m cubo · restringido · save DES o atrapado.' },
-      { id:'fireball',      name:'Fireball',        level:3, castTime:'Acción', range:'45 m', duration:'Inst.', concentration:false, combat:true,  desc:'Esfera 20ft · save DES · 8d6 fuego. +1d6 por nivel.' },
-      { id:'counterspell',  name:'Counterspell',   level:3, castTime:'Reacción', range:'18 m', duration:'Inst.', concentration:false, combat:true, desc:'Cancela un hechizo de nv3 o menos. Superior: check INT.' },
-      { id:'fly',           name:'Fly',             level:3, castTime:'Acción', range:'Toque', duration:'10 min', concentration:true, combat:false, desc:'Velocidad vuelo 18 m a criatura voluntaria.' },
+      // Cantrips
+      { id:'fire-bolt',        name:'Fire Bolt',        level:0, castTime:'Acción',       range:'36 m',  duration:'Inst.',     concentration:false, combat:true,  desc:'Ataque a distancia · 1d10 fuego. Escala nv5/11/17.' },
+      { id:'mage-hand',        name:'Mage Hand',        level:0, castTime:'Acción',       range:'9 m',   duration:'1 min',     concentration:false, combat:false, desc:'Mano espectral manipula objetos hasta 5 kg.' },
+      { id:'prestidigitation', name:'Prestidigitation', level:0, castTime:'Acción',       range:'3 m',   duration:'Hasta 1h',  concentration:false, combat:false, desc:'Trucos menores: limpiar, encender, sabor...' },
+      { id:'minor-illusion-m', name:'Minor Illusion',   level:0, castTime:'Acción',       range:'9 m',   duration:'1 min',     concentration:false, combat:false, desc:'Imagen o sonido pequeño (cubo 5ft).' },
+      { id:'ray-of-frost-m',   name:'Ray of Frost',     level:0, castTime:'Acción',       range:'18 m',  duration:'Inst.',     concentration:false, combat:true,  desc:'Ataque a distancia · 1d8 frío · vel -3m hasta tu turno. Escala nv5/11/17.' },
+      { id:'shocking-grasp-m', name:'Shocking Grasp',   level:0, castTime:'Acción',       range:'Toque', duration:'Inst.',     concentration:false, combat:true,  desc:'Ataque de toque · 1d8 relámpago · no puede reaccionar hasta su turno. Ventaja con metal.' },
+      { id:'chill-touch-m',    name:'Chill Touch',      level:0, castTime:'Acción',       range:'18 m',  duration:'1 ronda',   concentration:false, combat:true,  desc:'Ataque a distancia · 1d8 necrótico · muertos vivientes con desventaja.' },
+      { id:'acid-splash',      name:'Acid Splash',      level:0, castTime:'Acción',       range:'18 m',  duration:'Inst.',     concentration:false, combat:true,  desc:'Save DES · 1d6 ácido. Puede afectar 2 criaturas adyacentes. Escala nv5/11/17.' },
+      { id:'poison-spray-m',   name:'Poison Spray',     level:0, castTime:'Acción',       range:'3 m',   duration:'Inst.',     concentration:false, combat:true,  desc:'Save CON · 1d12 veneno. Escala nv5/11/17.' },
+      { id:'true-strike-m',    name:'True Strike',      level:0, castTime:'Acción bonus', range:'9 m',   duration:'Conc 1r',   concentration:true,  combat:true,  desc:'Conc · ventaja en tu primer ataque vs el objetivo el próximo turno.' },
+      { id:'message-m',        name:'Message',          level:0, castTime:'Acción',       range:'36 m',  duration:'1 ronda',   concentration:false, combat:false, desc:'Susurro mágico a una criatura. Solo ella oye y puede responder.' },
+      { id:'light-m',          name:'Light',            level:0, castTime:'Acción',       range:'Toque', duration:'1 h',       concentration:false, combat:false, desc:'Objeto emite luz brillante 6m y tenue 6m más. Save DES si alguien lo lleva.' },
+      // Nivel 1
+      { id:'magic-missile',      name:'Magic Missile',       level:1, castTime:'Acción',    range:'36 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'3 dardos infalibles · 1d4+1 fuerza c/u. +1 dardo por nivel.' },
+      { id:'shield',             name:'Shield',              level:1, castTime:'Reacción',  range:'Uno mismo', duration:'1 ronda', concentration:false, combat:true,  desc:'Reacción · +5 CA hasta inicio de tu próximo turno · bloquea Magic Missile.' },
+      { id:'thunderwave-m',      name:'Thunderwave',         level:1, castTime:'Acción',    range:'Uno mismo', duration:'Inst.',   concentration:false, combat:true,  desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 3m. +1d8 por nivel.' },
+      { id:'detect-magic',       name:'Detect Magic',        level:1, castTime:'Acción',    range:'Uno mismo', duration:'10 min',  concentration:true,  combat:false, ritual:true, desc:'Detecta magia en 9m · ritual.' },
+      { id:'burning-hands-m',    name:'Burning Hands',       level:1, castTime:'Acción',    range:'Cono 15ft', duration:'Inst.',   concentration:false, combat:true,  desc:'Save DES · 3d6 fuego. +1d6 por nivel.' },
+      { id:'charm-person-m',     name:'Charm Person',        level:1, castTime:'Acción',    range:'9 m',       duration:'1 h',     concentration:false, combat:false, desc:'Save SAB o encantado. Considera amigo. +1 objetivo por nivel.' },
+      { id:'color-spray-m',      name:'Color Spray',         level:1, castTime:'Acción',    range:'Uno mismo', duration:'1 ronda', concentration:false, combat:true,  desc:'6d10 HP de criaturas cercanas cegadas (las de menos HP primero).' },
+      { id:'disguise-self-m',    name:'Disguise Self',       level:1, castTime:'Acción',    range:'Uno mismo', duration:'1 h',     concentration:false, combat:false, desc:'Cambia apariencia visual (no táctil). Ilusión.' },
+      { id:'fog-cloud-m',        name:'Fog Cloud',           level:1, castTime:'Acción',    range:'27 m',      duration:'1 h',     concentration:true,  combat:true,  desc:'Esfera de niebla 6m radio · visibilidad nula.' },
+      { id:'grease-m',           name:'Grease',              level:1, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:false, combat:true,  desc:'Área 3m · save DES o caído. Terreno difícil.' },
+      { id:'mage-armor-m',       name:'Mage Armor',          level:1, castTime:'Acción',    range:'Toque',     duration:'8 h',     concentration:false, combat:false, desc:'CA = 13 + mod DES si no lleva armadura.' },
+      { id:'sleep-m',            name:'Sleep',               level:1, castTime:'Acción',    range:'27 m',      duration:'1 min',   concentration:false, combat:true,  desc:'5d8 HP de criaturas se duermen (menos HP primero). Despierta al dañarse.' },
+      { id:'witch-bolt-m',       name:'Witch Bolt',          level:1, castTime:'Acción',    range:'9 m',       duration:'1 min',   concentration:true,  combat:true,  desc:'Ataque a distancia · 1d12 relámpago · bonus action turno siguiente para repetir.' },
+      // Nivel 2
+      { id:'misty-step',         name:'Misty Step',          level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true,  desc:'Teleportación 9m a lugar visible.' },
+      { id:'mirror-image-m',     name:'Mirror Image',        level:2, castTime:'Acción',    range:'Uno mismo', duration:'1 min',   concentration:false, combat:true,  desc:'3 duplicados ilusorios desvían ataques.' },
+      { id:'web',                name:'Web',                 level:2, castTime:'Acción',    range:'18 m',      duration:'1 h',     concentration:true,  combat:true,  desc:'Cubo 4,5m · save DES o atrapado. Terreno difícil.' },
+      { id:'acid-arrow-m',       name:'Melf\'s Acid Arrow',  level:2, castTime:'Acción',    range:'27 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Ataque a distancia · 4d4 ácido + 2d4 al fin del siguiente turno.' },
+      { id:'alter-self-m',       name:'Alter Self',          level:2, castTime:'Acción',    range:'Uno mismo', duration:'1 h',     concentration:true,  combat:false, desc:'Adaptación acuática, garras (1d6+FUE) o cambio de apariencia.' },
+      { id:'blur-m',             name:'Blur',                level:2, castTime:'Acción',    range:'Uno mismo', duration:'1 min',   concentration:true,  combat:true,  desc:'Ataques contra ti con desventaja (excepto ciegos).' },
+      { id:'cloud-of-daggers-m', name:'Cloud of Daggers',    level:2, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Cubo 1,5m · 4d4 cortante al entrar/pasar. +2d4 por nivel.' },
+      { id:'detect-thoughts-m',  name:'Detect Thoughts',     level:2, castTime:'Acción',    range:'Uno mismo', duration:'1 min',   concentration:true,  combat:false, desc:'Lees pensamientos superficiales; profundos con save INT.' },
+      { id:'hold-person-m',      name:'Hold Person',         level:2, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o paralizado. Repite save c/turno. +1 objetivo por nivel.' },
+      { id:'invisibility-m',     name:'Invisibility',        level:2, castTime:'Acción',    range:'Toque',     duration:'1 h',     concentration:true,  combat:true,  desc:'Invisible hasta que ataque o lance conjuro. +1 criatura por nivel.' },
+      { id:'levitate-m',         name:'Levitate',            level:2, castTime:'Acción',    range:'18 m',      duration:'10 min',  concentration:true,  combat:true,  desc:'Criatura o objeto levita hasta 6m. Save CON si no es voluntario.' },
+      { id:'scorching-ray-m',    name:'Scorching Ray',       level:2, castTime:'Acción',    range:'36 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'3 ataques · 2d6 fuego c/u. +1 rayo por nivel.' },
+      { id:'shatter-m',          name:'Shatter',             level:2, castTime:'Acción',    range:'18 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Esfera 3m · save CON · 3d8 trueno. +1d8 por nivel.' },
+      { id:'suggestion-m',       name:'Suggestion',          level:2, castTime:'Acción',    range:'9 m',       duration:'8 h',     concentration:true,  combat:false, desc:'Save SAB o sigue sugerencia razonable.' },
+      // Nivel 3
+      { id:'fireball',           name:'Fireball',            level:3, castTime:'Acción',    range:'45 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Esfera 6m · save DES · 8d6 fuego. +1d6 por nivel.' },
+      { id:'counterspell',       name:'Counterspell',        level:3, castTime:'Reacción',  range:'18 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Cancela hechizo nv3 o menos automáticamente. Superior: check INT.' },
+      { id:'fly',                name:'Fly',                 level:3, castTime:'Acción',    range:'Toque',     duration:'10 min',  concentration:true,  combat:false, desc:'Vel. vuelo 18m. +1 criatura por nivel.' },
+      { id:'lightning-bolt-m',   name:'Lightning Bolt',      level:3, castTime:'Acción',    range:'Línea 30m', duration:'Inst.',   concentration:false, combat:true,  desc:'Línea 30m · save DES · 8d6 relámpago. +1d6 por nivel.' },
+      { id:'blink-m',            name:'Blink',               level:3, castTime:'Acción',    range:'Uno mismo', duration:'1 min',   concentration:false, combat:true,  desc:'50% de probabilidad al fin de cada turno de ir al plano etéreo.' },
+      { id:'dispel-magic-m',     name:'Dispel Magic',        level:3, castTime:'Acción',    range:'36 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Termina conjuros en objetivo. Superior a nv3: check INT para los más altos.' },
+      { id:'fear-m',             name:'Fear',                level:3, castTime:'Acción',    range:'Uno mismo (cono 9m)', duration:'1 min', concentration:true, combat:true, desc:'Save SAB o asustado · huye · descarta objeto.' },
+      { id:'haste-m',            name:'Haste',               level:3, castTime:'Acción',    range:'9 m',       duration:'1 min',   concentration:true,  combat:true,  desc:'+2CA, vent DES, vel×2, acción extra (ataque/Dash/Disengage/Hide/Use).' },
+      { id:'hypnotic-pattern-m', name:'Hypnotic Pattern',    level:3, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Cubo 9m · save SAB o encantado e incapacitado.' },
+      { id:'slow-m',             name:'Slow',                level:3, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Hasta 6 criaturas · save SAB o vel/2, -2CA/DES, 1 conjuro/turno.' },
+      { id:'stinking-cloud-m',   name:'Stinking Cloud',      level:3, castTime:'Acción',    range:'27 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Esfera 6m · save CON o náuseas · pierde acción.' },
+      { id:'tongues-m',          name:'Tongues',             level:3, castTime:'Acción',    range:'Toque',     duration:'1 h',     concentration:false, combat:false, desc:'Entiende y habla cualquier idioma.' },
+      // Nivel 4
+      { id:'arcane-eye-m',       name:'Arcane Eye',          level:4, castTime:'Acción',    range:'9 m',       duration:'1 h',     concentration:true,  combat:false, desc:'Ojo invisible de 1 pulgada · visión darkvision 12m · vel 9m.' },
+      { id:'banishment-m',       name:'Banishment',          level:4, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save CAR o desterrado al plano de origen.' },
+      { id:'blight-m',           name:'Blight',              level:4, castTime:'Acción',    range:'9 m',       duration:'Inst.',   concentration:false, combat:true,  desc:'Save CON · 8d8 necrótico. +1d8 por nivel. Doble vs plantas.' },
+      { id:'confusion-m',        name:'Confusion',           level:4, castTime:'Acción',    range:'27 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Esfera 3m · save SAB o acción aleatoria c/turno.' },
+      { id:'dimension-door-m',   name:'Dimension Door',      level:4, castTime:'Acción',    range:'150 m',     duration:'Inst.',   concentration:false, combat:true,  desc:'Teleportación vos +1 aliado a cualquier punto a 150m.' },
+      { id:'greater-invis-m',    name:'Greater Invisibility',level:4, castTime:'Acción',    range:'Toque',     duration:'1 min',   concentration:true,  combat:true,  desc:'Invisible incluso atacando. Ventaja en ataques, desventaja en recibidos.' },
+      { id:'ice-storm-m',        name:'Ice Storm',           level:4, castTime:'Acción',    range:'90 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Cilindro 6m radio · 2d8 B + 4d6 frío · terreno difícil.' },
+      { id:'phantasmal-killer-m',name:'Phantasmal Killer',   level:4, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o asustado · 4d10 psíquico por turno.' },
+      { id:'polymorph-m',        name:'Polymorph',           level:4, castTime:'Acción',    range:'18 m',      duration:'1 h',     concentration:true,  combat:true,  desc:'Save SAB o transformado en bestia. HP propio de la bestia.' },
+      { id:'stoneskin-m',        name:'Stoneskin',           level:4, castTime:'Acción',    range:'Toque',     duration:'1 h',     concentration:true,  combat:true,  desc:'Resistencia a daño no mágico de arma.' },
+      { id:'wall-of-fire-m',     name:'Wall of Fire',        level:4, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Muro 18m largo · 5d8 fuego al otro lado o al cruzar.' },
+      // Nivel 5
+      { id:'animate-objects-m',  name:'Animate Objects',     level:5, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Hasta 10 objetos pequeños animados atacan.' },
+      { id:'bigbys-hand-m',      name:"Bigby's Hand",        level:5, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Mano de fuerza: 4d8 fuerza, empuje, agarre, bloqueo.' },
+      { id:'cloudkill-m',        name:'Cloudkill',           level:5, castTime:'Acción',    range:'27 m',      duration:'10 min',  concentration:true,  combat:true,  desc:'Esfera 6m verde · save CON · 5d8 veneno (mitad si pasa). Se mueve 3m/turno.' },
+      { id:'cone-of-cold-m',     name:'Cone of Cold',        level:5, castTime:'Acción',    range:'Cono 18m',  duration:'Inst.',   concentration:false, combat:true,  desc:'Cono 18m · save CON · 8d8 frío. +1d8 por nivel.' },
+      { id:'dominate-person-m',  name:'Dominate Person',     level:5, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o humanoide bajo tu control.' },
+      { id:'hold-monster-m',     name:'Hold Monster',        level:5, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o paralizado (cualquier criatura). Repite save c/turno.' },
+      { id:'seeming-m',          name:'Seeming',             level:5, castTime:'Acción',    range:'9 m',       duration:'8 h',     concentration:false, combat:false, desc:'Cambia apariencia de criaturas en rango. Save CAR para resistir.' },
+      { id:'synaptic-static-m',  name:'Synaptic Static',     level:5, castTime:'Acción',    range:'36 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Esfera 6m · save INT · 8d6 psíquico + 1d6 penalización en checks/ataques.' },
+      { id:'telekinesis-m',      name:'Telekinesis',         level:5, castTime:'Acción',    range:'18 m',      duration:'10 min',  concentration:true,  combat:true,  desc:'Mueve objetos o criaturas con la mente. Criatura: save FUE.' },
+      { id:'teleportation-circle-m',name:'Teleportation Circle',level:5, castTime:'1 min', range:'3 m',       duration:'1 ronda', concentration:false, combat:false, desc:'Portal a círculo conocido en el mismo plano.' },
+      // Nivel 6
+      { id:'chain-lightning-m',  name:'Chain Lightning',     level:6, castTime:'Acción',    range:'30 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'10d8 relámpago objetivo principal + 3 secundarios (save DES mitad).' },
+      { id:'disintegrate-m',     name:'Disintegrate',        level:6, castTime:'Acción',    range:'18 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Save DES · 10d6+40 fuerza. +3d6 por nivel. Reduce a polvo si mata.' },
+      { id:'eyebite-m',          name:'Eyebite',             level:6, castTime:'Acción',    range:'Uno mismo', duration:'1 min',   concentration:true,  combat:true,  desc:'Mirada mágica c/turno: dormido, asustado o mareado (save SAB).' },
+      { id:'flesh-to-stone-m',   name:'Flesh to Stone',      level:6, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save CON ×3 fallos consecutivos o petrificado.' },
+      { id:'globe-invuln-m',     name:'Globe of Invulnerability',level:6, castTime:'Acción',range:'Uno mismo', duration:'1 min',   concentration:true,  combat:true,  desc:'Esfera 3m · bloquea conjuros de nivel 5 o inferior.' },
+      { id:'mass-suggestion-m',  name:'Mass Suggestion',     level:6, castTime:'Acción',    range:'18 m',      duration:'24 h',    concentration:false, combat:false, desc:'Save SAB o hasta 12 criaturas siguen sugerencia razonable.' },
+      { id:'ottos-dance-m',      name:"Otto's Irresistible Dance",level:6, castTime:'Acción',range:'9 m',     duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o baila: vel 0, -2CA, desventaja DES saves, no puede usar acción de concentración.' },
+      { id:'true-seeing-m',      name:'True Seeing',         level:6, castTime:'Acción',    range:'Toque',     duration:'1 h',     concentration:false, combat:false, desc:'Ve invisibles, ilusiones reales, oscuridad total, plano etéreo. Visión 36m.' },
     ],
 
     'Brujo': [
-      { id:'eldritch-blast', name:'Eldritch Blast', level:0, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'Rayo de fuerza · 1d10 · +1 rayo a nv5/11/17.' },
-      { id:'toll-dead-w',    name:'Toll the Dead',  level:0, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true,  desc:'Save SAB · 1d8 necrótico (1d12 si ya herido).' },
-      { id:'minor-illusion-w', name:'Minor Illusion', level:0, castTime:'Acción', range:'9 m', duration:'1 min', concentration:false, combat:false, desc:'Sonido o imagen estática cubo 5ft.' },
+      // Cantrips
+      { id:'eldritch-blast',   name:'Eldritch Blast',  level:0, castTime:'Acción', range:'36 m',  duration:'Inst.',  concentration:false, combat:true,  desc:'Rayo de fuerza · 1d10 · +1 rayo a nv5/11/17.' },
+      { id:'toll-dead-w',      name:'Toll the Dead',   level:0, castTime:'Acción', range:'18 m',  duration:'Inst.',  concentration:false, combat:true,  desc:'Save SAB · 1d8 necrótico (1d12 si ya herido). Escala nv5/11/17.' },
+      { id:'minor-illusion-w', name:'Minor Illusion',  level:0, castTime:'Acción', range:'9 m',   duration:'1 min',  concentration:false, combat:false, desc:'Sonido o imagen estática cubo 5ft.' },
+      { id:'chill-touch-w',    name:'Chill Touch',     level:0, castTime:'Acción', range:'18 m',  duration:'1 ronda',concentration:false, combat:true,  desc:'Ataque a distancia · 1d8 necrótico · muertos vivientes con desventaja.' },
+      { id:'poison-spray-w',   name:'Poison Spray',    level:0, castTime:'Acción', range:'3 m',   duration:'Inst.',  concentration:false, combat:true,  desc:'Save CON · 1d12 veneno. Escala nv5/11/17.' },
+      { id:'mage-hand-w',      name:'Mage Hand',       level:0, castTime:'Acción', range:'9 m',   duration:'1 min',  concentration:false, combat:false, desc:'Mano espectral manipula objetos hasta 5 kg.' },
+      { id:'true-strike-w',    name:'True Strike',     level:0, castTime:'Acción bonus', range:'9 m', duration:'Conc 1r', concentration:true, combat:true, desc:'Conc · ventaja en tu primer ataque vs el objetivo el próximo turno.' },
       { id:'hex',            name:'Hex',             level:1, castTime:'Acción bonus', range:'27 m', duration:'1 h', concentration:true, combat:true, desc:'Maldición: +1d6 necrótico en ataques · desventaja en check elegido.' },
       { id:'arms-of-hadar',  name:'Arms of Hadar',   level:1, castTime:'Acción', range:'Uno mismo (10ft)', duration:'Inst.', concentration:false, combat:true, desc:'Save FUE · 2d6 necrótico · no puede tomar reacciones hasta su turno.' },
       { id:'hellish-rebuke', name:'Hellish Rebuke',  level:1, castTime:'Reacción', range:'18 m', duration:'Inst.', concentration:false, combat:true, desc:'Reacción al ser golpeado · save DES · 2d10 fuego. +1d10 por nivel.' },
       { id:'misty-step-w',   name:'Misty Step',      level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m.' },
       { id:'hold-person-w',  name:'Hold Person',     level:2, castTime:'Acción', range:'18 m', duration:'1 min', concentration:true, combat:true, desc:'Save SAB o paralizado (humanoides). Repite save c/turno.' },
+      { id:'spider-climb-w', name:'Spider Climb',    level:2, castTime:'Acción', range:'Toque', duration:'1 h', concentration:true, combat:false, desc:'Escala paredes y techos a velocidad normal.' },
+      { id:'suggestion-w',   name:'Suggestion',      level:2, castTime:'Acción', range:'9 m',  duration:'8 h',   concentration:true, combat:false, desc:'Save SAB o sigue sugerencia razonable.' },
+      // ── Nivel 3 ──
+      { id:'hunger-hadar-w', name:'Hunger of Hadar', level:3, castTime:'Acción', range:'45 m', duration:'1 min', concentration:true, combat:true, desc:'Esfera de oscuridad 6m · 2d6 frío al inicio y 2d6 ácido al final si en zona. Ciega.' },
+      { id:'hypnotic-pattern-w', name:'Hypnotic Pattern', level:3, castTime:'Acción', range:'36 m', duration:'1 min', concentration:true, combat:true, desc:'Cubo 9m · save SAB o encantado e incapacitado.' },
+      { id:'fear-w',         name:'Fear',            level:3, castTime:'Acción', range:'Cono 9m', duration:'1 min', concentration:true, combat:true, desc:'Save SAB o asustado y huye; descarta objetos.' },
+      { id:'counterspell-w', name:'Counterspell',    level:3, castTime:'Reacción', range:'18 m', duration:'Inst.', concentration:false, combat:true, desc:'Cancela hechizo nv3 o menos. Superior: check CAR.' },
+      { id:'dispel-magic-w', name:'Dispel Magic',    level:3, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true, desc:'Termina conjuros en objetivo. +alto: check CAR.' },
+      // ── Nivel 4 ──
+      { id:'banishment-w',   name:'Banishment',      level:4, castTime:'Acción', range:'18 m', duration:'1 min', concentration:true, combat:true, desc:'Save CAR o desterrado al plano de origen.' },
+      { id:'shadow-moil-w',  name:'Shadow of Moil',  level:4, castTime:'Acción', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Rodeado de sombras: oscurecido · ataques te dan 2d8 necrótico al atacante.' },
+      { id:'dimension-door-w',name:'Dimension Door', level:4, castTime:'Acción', range:'150 m',duration:'Inst.', concentration:false, combat:true, desc:'Teleportación vos +1 aliado a 150m.' },
+      { id:'hallucinatory-terrain-w', name:'Hallucinatory Terrain', level:4, castTime:'10 min', range:'90 m', duration:'24 h', concentration:false, combat:false, desc:'Ilusión de terreno natural en área 45m cúbica.' },
+      // ── Nivel 5 ──
+      { id:'synaptic-static-w', name:'Synaptic Static', level:5, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true, desc:'Esfera 6m · save INT · 8d6 psíquico + penalización en rolls.' },
+      { id:'hold-monster-w', name:'Hold Monster',    level:5, castTime:'Acción', range:'18 m', duration:'1 min', concentration:true, combat:true, desc:'Save SAB o paralizado (cualquier criatura).' },
+      { id:'dream-w',        name:'Dream',           level:5, castTime:'1 min',  range:'Especial', duration:'8 h', concentration:false, combat:false, desc:'Envía mensajes a través de los sueños de una criatura conocida.' },
+      { id:'scrying-w',      name:'Scrying',         level:5, castTime:'10 min', range:'Uno mismo', duration:'10 min', concentration:true, combat:false, desc:'Observás a una criatura en otro lugar (save SAB).' },
     ],
 
     'Paladín': [
@@ -3100,6 +3295,22 @@ const Characters = (() => {
       { id:'misty-step-p',   name:'Misty Step',      level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m.' },
       { id:'daylight',       name:'Daylight',         level:3, castTime:'Acción', range:'18 m', duration:'1 h', concentration:false, combat:false, desc:'Esfera de luz brillante 18 m de radio.' },
       { id:'revivify-p',     name:'Revivify',         level:3, castTime:'Acción', range:'Toque', duration:'Inst.', concentration:false, combat:false, desc:'Revive criatura muerta hace <1 min con 1 HP.' },
+      { id:'aura-vitality-p',name:'Aura of Vitality', level:3, castTime:'Acción', range:'Uno mismo (9m)', duration:'1 min', concentration:true, combat:false, desc:'Acción bonus: cura 2d6 HP a una criatura en aura.' },
+      { id:'crusader-mantle-p', name:"Crusader's Mantle", level:3, castTime:'Acción', range:'Uno mismo (9m)', duration:'1 min', concentration:true, combat:true, desc:'Aliados en aura: +1d4 radiante en cada golpe de arma.' },
+      { id:'dispel-magic-p', name:'Dispel Magic',     level:3, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true, desc:'Termina conjuros en objetivo. +alto: check CAR.' },
+      { id:'protection-energy-p', name:'Protection from Energy', level:3, castTime:'Acción', range:'Toque', duration:'1 h', concentration:true, combat:true, desc:'Resistencia a tipo de daño elemental elegido.' },
+      // ── Nivel 4 ──
+      { id:'aura-purity-p',  name:'Aura of Purity',  level:4, castTime:'Acción', range:'Uno mismo (9m)', duration:'10 min', concentration:true, combat:false, desc:'Aliados en aura: inmunes a enfermedades, ventaja en saves de veneno/condiciones.' },
+      { id:'banishment-p',   name:'Banishment',       level:4, castTime:'Acción', range:'18 m', duration:'1 min', concentration:true, combat:true, desc:'Save CAR o desterrado al plano de origen.' },
+      { id:'death-ward-p',   name:'Death Ward',       level:4, castTime:'Acción', range:'Toque', duration:'8 h', concentration:false, combat:false, desc:'Una vez: si caés a 0 HP, quedás a 1 HP. Termina el conjuro.' },
+      { id:'freedom-movement-p', name:'Freedom of Movement', level:4, castTime:'Acción', range:'Toque', duration:'1 h', concentration:false, combat:true, desc:'Ignora terreno difícil y efectos de inmovilización.' },
+      // ── Nivel 5 ──
+      { id:'destructive-wave-p', name:'Destructive Wave', level:5, castTime:'Acción', range:'Uno mismo (9m)', duration:'Inst.', concentration:false, combat:true, desc:'Onda divina 9m: save CON o 5d6 trueno + 5d6 radiante/necrótico, derribado.' },
+      { id:'dispel-evil-p',  name:'Dispel Evil and Good', level:5, castTime:'Acción', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Aura vs criaturas de otros planos: desventaja en ataques, o exorcizás o destierras.' },
+      { id:'geas-p',         name:'Geas',             level:5, castTime:'1 min',  range:'18 m', duration:'30 días', concentration:false, combat:false, desc:'Save SAB o misión encomendada. 5d10 psíquico por acción contra la misión.' },
+      { id:'holy-weapon-p',  name:'Holy Weapon',      level:5, castTime:'Acción bonus', range:'Toque', duration:'1 h', concentration:true, combat:true, desc:'Arma sagrada: +2d8 radiante al golpear. Destellar: save CON o cegado.' },
+      { id:'raise-dead-p',   name:'Raise Dead',       level:5, castTime:'1 h',    range:'Toque', duration:'Inst.', concentration:false, combat:false, desc:'Revive criatura muerta hace <10 días con 1 HP. -4 a rolls por 4 días.' },
+      { id:'smite-evil-p',   name:'Banishing Smite',  level:5, castTime:'Acción bonus', range:'Uno mismo', duration:'1 min', concentration:true, combat:true, desc:'Próximo golpe: +5d10 fuerza. Si queda en ≤ 50HP, es desterrado.' },
     ],
 
     'Explorador': [
@@ -3120,6 +3331,21 @@ const Characters = (() => {
       { id:'lightning-arrow',  name:'Lightning Arrow',  level:3, castTime:'Acción bonus', range:'Uno mismo',  duration:'Inst.',  concentration:true,  combat:true,  desc:'Reemplaza un ataque a distancia: 4d8 relámpago al objetivo, 2d8 a adyacentes (save DES mitad).' },
       { id:'conjure-animals',  name:'Conjure Animals',  level:3, castTime:'Acción',       range:'18 m',       duration:'1 h',    concentration:true,  combat:true,  desc:'Invoca bestias CR ≤ 2 que obedecen tus órdenes.' },
       { id:'nondetection',     name:'Nondetection',     level:3, castTime:'Acción',       range:'Toque',      duration:'8 h',    concentration:false, combat:false, desc:'Criatura/objeto no puede ser detectado por magia de adivinación.' },
+      { id:'water-breathing-r',name:'Water Breathing',  level:3, castTime:'Acción',       range:'9 m',        duration:'24 h',   concentration:false, combat:false, ritual:true, desc:'Hasta 10 criaturas respiran bajo el agua. Ritual.' },
+      { id:'plant-growth-r',   name:'Plant Growth',     level:3, castTime:'Varía',        range:'45 m',       duration:'Inst./8 h', concentration:false, combat:true, desc:'Enreda terreno 50ft radio (movimiento ÷ 4) o enriquece cultivos.' },
+      { id:'wind-wall-r',      name:'Wind Wall',        level:3, castTime:'Acción',       range:'36 m',       duration:'1 min',  concentration:true,  combat:true,  desc:'Muro de viento 15m × 5m: impide proyectiles y empuja criaturas pequeñas.' },
+      // ── Nivel 4 ──
+      { id:'conjure-woodland-r',name:'Conjure Woodland Beings', level:4, castTime:'Acción', range:'18 m',    duration:'1 h',    concentration:true,  combat:true,  desc:'Invoca hadas de CR ≤ 2 o una criatura de CR ≤ 4.' },
+      { id:'freedom-movement-r',name:'Freedom of Movement', level:4, castTime:'Acción',   range:'Toque',     duration:'1 h',    concentration:false, combat:true,  desc:'Ignora terreno difícil y efectos de inmovilización.' },
+      { id:'locate-creature-r',name:'Locate Creature',  level:4, castTime:'Acción',       range:'Uno mismo', duration:'1 h',    concentration:true,  combat:false, desc:'Sientes la dirección de la criatura conocida a ≤ 300ft.' },
+      { id:'stoneskin-r',      name:'Stoneskin',        level:4, castTime:'Acción',       range:'Toque',     duration:'1 h',    concentration:true,  combat:true,  desc:'Resistencia a daño no mágico de arma (B/P/S).' },
+      // ── Nivel 5 ──
+      { id:'commune-nature-r', name:'Commune with Nature', level:5, castTime:'1 min',    range:'Uno mismo',  duration:'Inst.',  concentration:false, combat:false, ritual:true, desc:'Obtenés información sobre el terreno en un radio de 5 km. Ritual.' },
+      { id:'conjure-volley-r', name:'Conjure Volley',   level:5, castTime:'Acción',       range:'45 m',       duration:'Inst.',  concentration:false, combat:true,  desc:'Lluvia de proyectiles en cilindro 12m × 12m: save DES o 8d8 daño.' },
+      { id:'greater-restoration-r', name:'Greater Restoration', level:5, castTime:'Acción', range:'Toque',  duration:'Inst.',  concentration:false, combat:false, desc:'Elimina una condición debilitante: hechizado, petrificado, maldito, nivel agotamiento, reducción de stat max.' },
+      { id:'steel-wind-strike-r',name:'Steel Wind Strike', level:5, castTime:'Acción',    range:'9 m',        duration:'Inst.',  concentration:false, combat:true,  desc:'5 ataques a distinta criatura (pueden ser todas distintas): 6d10 fuerza c/u · teleportás junto a una.' },
+      { id:'swift-quiver-r',   name:'Swift Quiver',     level:5, castTime:'Acción bonus', range:'Toque',      duration:'1 min',  concentration:true,  combat:true,  desc:'Acción bonus c/turno: 2 ataques con arma a distancia.' },
+      { id:'tree-stride-r',    name:'Tree Stride',      level:5, castTime:'Acción',       range:'Uno mismo',  duration:'1 min',  concentration:true,  combat:false, desc:'Entras y salís de árboles del mismo tipo a 90m de distancia.' },
     ],
 
     'Eldritch Knight': [
@@ -3496,7 +3722,22 @@ const Characters = (() => {
         fullDesc: '',
       };
     });
-    const spells = (CLASE_SPELLS[claseNombre] || []).map(s => ({ ...s }));
+    // Para la lista inicial de hechizos: incluir todos los de nivel 1+,
+    // pero para cantrips solo hasta el máximo de la tabla (los primeros N del catálogo)
+    const allCatalogSpells = (CLASE_SPELLS[claseNombre] || []);
+    const maxCantrips = (() => {
+      const c = CLASES_CONFIG[claseNombre];
+      if (c && c.cantripsKnown) return c.cantripsKnown[Math.min(nivel - 1, 19)];
+      return null; // sin límite (clases preparadoras)
+    })();
+    const catalogCantrips = allCatalogSpells.filter(s => s.level === 0);
+    const initialCantrips = maxCantrips !== null
+      ? catalogCantrips.slice(0, maxCantrips)   // limitar al máximo de la tabla
+      : catalogCantrips;                          // sin límite: incluir todos
+    const spells = [
+      ...initialCantrips.map(s => ({ ...s })),
+      ...allCatalogSpells.filter(s => s.level > 0).map(s => ({ ...s })),
+    ];
 
     // HP correcto según nivel: dado1 + promedio*(nivel-1) + CON mod * nivel
     // Con CON 10 (mod 0) es simplemente dado1 + (floor(die/2)+1)*(nivel-1)
@@ -3997,6 +4238,20 @@ const Characters = (() => {
     },
   };
 
+  // ── METAMAGIC_OPTIONS: opciones de Metamagia para el Hechicero ───────────
+  const METAMAGIC_OPTIONS = [
+    { id:'mm-careful',     name:'Careful Spell',     desc:'Gastas 1 Sorcery Point. Criaturas elegidas automáticamente superan el save del hechizo.' },
+    { id:'mm-distant',     name:'Distant Spell',      desc:'Gastas 1 SP. Duplica el alcance del hechizo (de toque → 9 m).' },
+    { id:'mm-empowered',   name:'Empowered Spell',   desc:'Gastas 1 SP. Puedes relanzar hasta CHA dados de daño del hechizo; debés usar los nuevos resultados.' },
+    { id:'mm-extended',    name:'Extended Spell',     desc:'Gastas 1 SP. Duplica la duración del hechizo (máximo 24 h).' },
+    { id:'mm-heightened',  name:'Heightened Spell',  desc:'Gastas 3 SP. Un objetivo del hechizo tiene desventaja en su primera tirada de salvación.' },
+    { id:'mm-quickened',   name:'Quickened Spell',   desc:'Gastas 2 SP. Cambia el tiempo de lanzamiento de Acción a Acción Bonus.' },
+    { id:'mm-seeking',     name:'Seeking Spell',      desc:'Gastas 2 SP. Si fallás un ataque de hechizo, podés relanzar el dado de ataque una vez.' },
+    { id:'mm-subtle',      name:'Subtle Spell',       desc:'Gastas 1 SP. El hechizo no requiere componentes verbales ni somáticos.' },
+    { id:'mm-transmuted',  name:'Transmuted Spell',  desc:'Gastas 1 SP. Cambia el tipo de daño del hechizo (ácido, frío, fuego, relámpago, veneno, trueno).' },
+    { id:'mm-twinned',     name:'Twinned Spell',      desc:'Gastas SP igual al nivel del hechizo (mín 1). Afecta a un segundo objetivo que no estaba en el rango original.' },
+  ];
+
   const CHOICES_CONFIG = {
     'Guerrero': [
       { id:'fighting-style',  level:1,  type:'pick1',     label:'Fighting Style',
@@ -4086,10 +4341,19 @@ const Characters = (() => {
         prompt:'Elegí tu origen arcano:',
         options: HECHICERO_SUBCLASES,
         appliesSubclass: true },
+      { id:'metamagic-3',  level:3,  type:'pickMultiple', count:2, label:'Metamagic (elegí 2)',
+        prompt:'Elegí 2 opciones de Metamagia. Aparecerán en tus Habilidades:',
+        options: METAMAGIC_OPTIONS },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
+      { id:'metamagic-10', level:10, type:'pickMultiple', count:1, label:'Metamagic (+1 opción)',
+        prompt:'Elegí 1 opción adicional de Metamagia:',
+        options: METAMAGIC_OPTIONS },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
       { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
+      { id:'metamagic-17', level:17, type:'pickMultiple', count:1, label:'Metamagic (+1 opción)',
+        prompt:'Elegí 1 opción adicional de Metamagia:',
+        options: METAMAGIC_OPTIONS },
       { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
     ],
     'Mago': [
@@ -4211,6 +4475,30 @@ const Characters = (() => {
       });
     }
 
+    // Si es metamagia (pickMultiple con ids de METAMAGIC_OPTIONS), agregar features
+    if (choiceId.startsWith('metamagic-') && Array.isArray(value)) {
+      const levelNum = choiceId.replace('metamagic-', '');
+      if (!char.features) char.features = [];
+      value.forEach(mmId => {
+        const mmDef = METAMAGIC_OPTIONS.find(m => m.id === mmId);
+        if (!mmDef) return;
+        const fId = mmId + '-' + choiceId;
+        if (!char.features.find(f => f.id === fId)) {
+          char.features.push({
+            id:       fId,
+            name:     mmDef.name,
+            source:   `Metamagia · Nivel ${levelNum}`,
+            type:     'passive',
+            action:   'Pasiva',
+            range:    'Personal',
+            recharge: null,
+            desc:     mmDef.desc,
+            fullDesc: mmDef.desc,
+          });
+        }
+      });
+    }
+
     // Si aplica subclase (choice de tipo pick1 con appliesSubclass:true)
     // value es el id del option elegido (ej: 'sub-battle-master')
     // Buscamos el nombre real en las listas de subclases
@@ -4271,6 +4559,7 @@ const Characters = (() => {
     PRIMAL_COMPANION_BEASTS,
     ARMOR_CATALOG,
     GENERAL_FEATS,
+    METAMAGIC_OPTIONS,
     WARLOCK_SLOTS,
     WARLOCK_SLOT_LEVEL,
     calcMod,
