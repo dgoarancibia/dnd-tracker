@@ -1057,11 +1057,21 @@ const App = (() => {
       return;
     }
 
-    const prepared = c.preparedToday || [];
-    const preparedMax = Characters.getPreparedMax(c);
-    const preparedCount = (c.spells || []).filter(s =>
-      s.level > 0 && !s.domain && !s.mi && prepared.includes(s.id)
-    ).length;
+    const isKnown   = Characters.isKnownCaster(c);
+    const prepared  = c.preparedToday || [];
+    const spellsMax = Characters.getPreparedMax(c);
+
+    // Para known casters: "conocidos" = total de conjuros nv1+ que tiene
+    // Para prepare casters: "preparados hoy" = los marcados
+    const knownCount   = isKnown
+      ? (c.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi).length
+      : null;
+    const preparedCount = isKnown ? knownCount
+      : (c.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi && prepared.includes(s.id)).length;
+
+    // Cantrips conocidos
+    const cantripsKnown = Characters.getCantripsKnown(c);
+    const cantripsCount = (c.spells || []).filter(s => s.level === 0).length;
 
     // Aviso para half-casters en nivel 1 (sin slots aún)
     const totalSlots = Object.values(c.spellSlots || {}).reduce((s, v) => s + (v.max || 0), 0);
@@ -1069,14 +1079,29 @@ const App = (() => {
 
     _renderConjurosIzq();
 
-    // Columna derecha: preparados hoy
+    // Columna derecha: etiqueta adaptada por tipo de caster
+    const headerLabel    = isKnown ? 'Conjuros conocidos' : 'Preparados hoy';
+    const headerSubLabel = isKnown
+      ? `<span style="font-size:10px;color:var(--text-dim);display:block;margin-top:2px;">Todos siempre disponibles</span>`
+      : '';
+
     let htmlDer = `
     <div class="spells-prepared-header">
-      <span class="prepared-label">Preparados hoy</span>
+      <span class="prepared-label">${headerLabel}${headerSubLabel}</span>
       <span class="prepared-count" id="preparedCount">${preparedCount}</span>
-      <span class="prepared-max"> / ${preparedMax}</span>
-    </div>
-    <div class="section-hd">Dominio — siempre activos</div>`;
+      <span class="prepared-max"> / ${spellsMax}</span>
+    </div>`;
+
+    // Cantrips conocidos (solo para known casters con tabla)
+    if (cantripsKnown !== null) {
+      htmlDer += `
+    <div style="font-size:11px;color:var(--text-dim);padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:8px;">
+      Cantrips conocidos: <strong style="color:${cantripsCount > cantripsKnown ? '#e07070' : 'var(--text)'}">${cantripsCount}</strong> / ${cantripsKnown}
+      ${cantripsCount > cantripsKnown ? '<span style="color:#e07070;"> ⚠ excede el máximo</span>' : ''}
+    </div>`;
+    }
+
+    htmlDer += `<div class="section-hd">Dominio — siempre activos</div>`;
 
     const domainSpells = (c.spells || []).filter(s => s.domain && s.level > 0);
     domainSpells.forEach(sp => {
@@ -1093,48 +1118,77 @@ const App = (() => {
       </div>`;
     });
 
-    htmlDer += `<div class="section-hd" style="margin-top:14px;">Preparados — canjeables en descanso largo</div>`;
-
-    const preparedList = (c.spells || []).filter(s =>
-      s.level > 0 && !s.domain && !s.mi && prepared.includes(s.id)
-    );
-
-    if (preparedList.length === 0) {
-      htmlDer += `<div style="font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;">Toca los conjuros de la izquierda para marcarlos como preparados.</div>`;
-    } else {
-      preparedList.forEach(sp => {
-        htmlDer += `
-        <div class="spell-card">
-          <div class="spell-checkbox checked" onclick="App.toggleSpellPrepared('${sp.id}')" style="cursor:pointer;"></div>
-          <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
-            <div class="spell-top">
-              <span class="spell-lvl">${sp.level}</span>
-              <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
+    if (isKnown) {
+      // Known casters: lista de todos los conjuros nv1+ conocidos, siempre activos
+      const knownList = (c.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi);
+      htmlDer += `<div class="section-hd" style="margin-top:14px;">Conjuros conocidos — siempre disponibles</div>`;
+      if (knownList.length === 0) {
+        htmlDer += `<div style="font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;">Aún no tenés conjuros. Agrega con "+" en la izquierda.</div>`;
+      } else {
+        knownList.forEach(sp => {
+          htmlDer += `
+          <div class="spell-card">
+            <div class="spell-checkbox known-always"></div>
+            <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
+              <div class="spell-top">
+                <span class="spell-lvl">${sp.level}</span>
+                <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
+              </div>
+              <div class="spell-desc">${sp.desc}</div>
             </div>
-            <div class="spell-desc">${sp.desc}</div>
-          </div>
-        </div>`;
-      });
-    }
-
-    if (_noSlotsYet) {
-      htmlDer += `
-      <div class="note-block" style="margin-top:12px;border-color:rgba(201,151,58,0.4);background:rgba(201,151,58,0.07);">
-        <strong style="color:var(--gold);">⚠ Nivel 1 — sin slots aún</strong><br>
-        <span style="font-size:11px;color:var(--text-mid);">
-          ${c.clase === 'Explorador' ? 'El Explorador' : 'El Paladín'} es un <em>half-caster</em>:
-          obtiene sus primeros slots de conjuro al <strong>nivel 2</strong>.
-          Puedes ver y preparar los hechizos, pero no podrás lanzarlos hasta entonces.
-        </span>
-      </div>`;
-    } else {
-      const castStat     = c.spellcastingStat || 'sab';
+          </div>`;
+        });
+      }
+      const castStat     = c.spellcastingStat || 'car';
       const castStatName = (Characters.STAT_NAMES[castStat] || castStat.toUpperCase());
       const castMod      = Characters.calcMod(c.stats[castStat]);
       htmlDer += `
       <div class="note-block" style="margin-top:12px;">
-        <strong>Máx preparados:</strong> ${preparedMax} = ${castStatName} mod (${castMod >= 0 ? '+' : ''}${castMod}) + Nvl (${c.nivel})
+        <strong>Conjuros conocidos:</strong> ${spellsMax} (tabla · Nivel ${c.nivel})<br>
+        <span style="font-size:11px;color:var(--text-dim);">CD conjuros: ${8 + Characters.calcProfBonus(c.nivel) + castMod} · Bono ataque: ${Characters.calcProfBonus(c.nivel) + castMod >= 0 ? '+' : ''}${Characters.calcProfBonus(c.nivel) + castMod}</span>
       </div>`;
+    } else {
+      // Prepare casters: lista de preparados hoy
+      htmlDer += `<div class="section-hd" style="margin-top:14px;">Preparados — canjeables en descanso largo</div>`;
+      const preparedList = (c.spells || []).filter(s =>
+        s.level > 0 && !s.domain && !s.mi && prepared.includes(s.id)
+      );
+      if (preparedList.length === 0) {
+        htmlDer += `<div style="font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;">Toca los conjuros de la izquierda para marcarlos como preparados.</div>`;
+      } else {
+        preparedList.forEach(sp => {
+          htmlDer += `
+          <div class="spell-card">
+            <div class="spell-checkbox checked" onclick="App.toggleSpellPrepared('${sp.id}')" style="cursor:pointer;"></div>
+            <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
+              <div class="spell-top">
+                <span class="spell-lvl">${sp.level}</span>
+                <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
+              </div>
+              <div class="spell-desc">${sp.desc}</div>
+            </div>
+          </div>`;
+        });
+      }
+
+      if (_noSlotsYet) {
+        htmlDer += `
+        <div class="note-block" style="margin-top:12px;border-color:rgba(201,151,58,0.4);background:rgba(201,151,58,0.07);">
+          <strong style="color:var(--gold);">⚠ Nivel 1 — sin slots aún</strong><br>
+          <span style="font-size:11px;color:var(--text-mid);">
+            ${c.clase === 'Explorador' ? 'El Explorador' : 'El Paladín'} es un <em>half-caster</em>:
+            obtiene sus primeros slots de conjuro al <strong>nivel 2</strong>.
+          </span>
+        </div>`;
+      } else {
+        const castStat     = c.spellcastingStat || 'sab';
+        const castStatName = (Characters.STAT_NAMES[castStat] || castStat.toUpperCase());
+        const castMod      = Characters.calcMod(c.stats[castStat]);
+        htmlDer += `
+        <div class="note-block" style="margin-top:12px;">
+          <strong>Máx preparados:</strong> ${spellsMax} = ${castStatName} mod (${castMod >= 0 ? '+' : ''}${castMod}) + Nvl (${c.nivel})
+        </div>`;
+      }
     }
 
     document.getElementById('col-conjuros-der').innerHTML = htmlDer;

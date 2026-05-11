@@ -87,15 +87,24 @@ const Characters = (() => {
     11:[4],12:[4],13:[4],14:[4],15:[4],16:[4],17:[4],18:[4],19:[4],20:[4]
   };
 
+  // knownCaster: true → conjuros conocidos (tabla fija), siempre disponibles, no se "preparan"
+  // preparesCaster: true → preparan de una lista (mod+nivel), como Clérigo/Druida/Mago/Paladín
   const CLASES_CONFIG = {
-    'Clérigo':      { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['sab', 'car'], slotTable: 'full' },
-    'Druida':       { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['int', 'sab'], slotTable: 'full' },
-    'Bardo':        { hitDie: 8,  spellcastingStat: 'car', savingThrows: ['des', 'car'], slotTable: 'full' },
-    'Hechicero':    { hitDie: 6,  spellcastingStat: 'car', savingThrows: ['con', 'car'], slotTable: 'full' },
-    'Mago':         { hitDie: 6,  spellcastingStat: 'int', savingThrows: ['int', 'sab'], slotTable: 'full' },
-    'Brujo':        { hitDie: 8,  spellcastingStat: 'car', savingThrows: ['sab', 'car'], slotTable: 'warlock' },
-    'Paladín':      { hitDie: 10, spellcastingStat: 'car', savingThrows: ['sab', 'car'], slotTable: 'half' },
-    'Explorador':   { hitDie: 10, spellcastingStat: 'sab', savingThrows: ['fue', 'des'], slotTable: 'half' },
+    'Clérigo':      { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['sab', 'car'], slotTable: 'full',    preparesCaster: true },
+    'Druida':       { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['int', 'sab'], slotTable: 'full',    preparesCaster: true },
+    'Bardo':        { hitDie: 8,  spellcastingStat: 'car', savingThrows: ['des', 'car'], slotTable: 'full',    knownCaster: true,
+      // cantrips conocidos por nivel: [nv1..20]
+      cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
+      spellsKnown:   [4,5,6,7,8,9,10,11,12,14,15,15,16,18,19,19,20,22,22,22] },
+    'Hechicero':    { hitDie: 6,  spellcastingStat: 'car', savingThrows: ['con', 'car'], slotTable: 'full',    knownCaster: true,
+      cantripsKnown: [4,4,4,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6],
+      spellsKnown:   [2,3,4,5,6,7,8,9,10,11,12,12,13,13,14,14,15,15,15,15] },
+    'Brujo':        { hitDie: 8,  spellcastingStat: 'car', savingThrows: ['sab', 'car'], slotTable: 'warlock', knownCaster: true,
+      cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
+      spellsKnown:   [2,3,4,5,6,7,8,9,10,10,11,11,12,12,13,13,14,14,14,15] },
+    'Mago':         { hitDie: 6,  spellcastingStat: 'int', savingThrows: ['int', 'sab'], slotTable: 'full',    preparesCaster: true },
+    'Paladín':      { hitDie: 10, spellcastingStat: 'car', savingThrows: ['sab', 'car'], slotTable: 'half',    preparesCaster: true },
+    'Explorador':   { hitDie: 10, spellcastingStat: 'sab', savingThrows: ['fue', 'des'], slotTable: 'half',    preparesCaster: true },
     'Guerrero':     { hitDie: 10, spellcastingStat: null,  savingThrows: ['fue', 'con'], slotTable: null },
     'Bárbaro':      { hitDie: 12, spellcastingStat: null,  savingThrows: ['fue', 'con'], slotTable: null },
     'Monje':        { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['fue', 'des'], slotTable: null },
@@ -573,8 +582,31 @@ const Characters = (() => {
 
   function getPreparedMax(char) {
     if (!char.spellcastingStat) return 0;
+    const cfg = CLASES_CONFIG[char.clase];
+    const nivel = char.nivel || 1;
+
+    // Known casters (Hechicero, Bardo, Brujo): usan tabla fija de conjuros conocidos
+    if (cfg && cfg.knownCaster && cfg.spellsKnown) {
+      return cfg.spellsKnown[Math.min(nivel - 1, 19)];
+    }
+
+    // Prepare casters (Clérigo, Druida, Mago, Paladín, Explorador): mod + nivel
     const mod = calcMod(char.stats[char.spellcastingStat]);
-    return Math.max(1, mod + char.nivel);
+    return Math.max(1, mod + nivel);
+  }
+
+  // Retorna cantidad de cantrips que puede conocer según clase y nivel
+  function getCantripsKnown(char) {
+    const cfg = CLASES_CONFIG[char.clase];
+    if (!cfg || !cfg.cantripsKnown) return null; // null = sin límite fijo
+    const nivel = char.nivel || 1;
+    return cfg.cantripsKnown[Math.min(nivel - 1, 19)];
+  }
+
+  // true si la clase conoce conjuros (no los prepara)
+  function isKnownCaster(char) {
+    const cfg = CLASES_CONFIG[char.clase];
+    return !!(cfg && cfg.knownCaster);
   }
 
   function getXPForLevel(nivel) {
@@ -2988,15 +3020,45 @@ const Characters = (() => {
     ],
 
     'Hechicero': [
-      { id:'fire-bolt-s',   name:'Fire Bolt',      level:0, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d10 fuego. (2d10 nv5, 3d10 nv11).' },
-      { id:'ray-of-frost',  name:'Ray of Frost',   level:0, castTime:'Acción', range:'18 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d8 frío · vel -10ft hasta tu turno.' },
-      { id:'mage-hand-s',   name:'Mage Hand',      level:0, castTime:'Acción', range:'9 m',  duration:'1 min', concentration:false, combat:false, desc:'Mano espectral puede manipular objetos hasta 5 kg.' },
-      { id:'burning-hands', name:'Burning Hands',  level:1, castTime:'Acción', range:'Cono 15ft', duration:'Inst.', concentration:false, combat:true, desc:'Save DES · 3d6 fuego. +1d6 por nivel superior.' },
-      { id:'chromatic-orb', name:'Chromatic Orb',  level:1, castTime:'Acción', range:'27 m', duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 3d8 de tipo elegido. +1d8 por nivel.' },
-      { id:'magic-missile-s', name:'Magic Missile', level:1, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true, desc:'3 dardos infalibles · 1d4+1 fuerza c/u. +1 dardo por nivel.' },
-      { id:'scorching-ray', name:'Scorching Ray',  level:2, castTime:'Acción', range:'36 m', duration:'Inst.', concentration:false, combat:true,  desc:'3 ataques a distancia · 2d6 fuego c/u. +1 rayo por nivel.' },
-      { id:'mirror-image',  name:'Mirror Image',   level:2, castTime:'Acción', range:'Uno mismo', duration:'1 min', concentration:false, combat:true, desc:'3 duplicados ilusorios. Ataques pueden golpear duplicado.' },
-      { id:'misty-step-s',  name:'Misty Step',     level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m a lugar visible.' },
+      // ── Cantrips (6 a nivel 12 según tabla) ──
+      { id:'fire-bolt-s',       name:'Fire Bolt',         level:0, castTime:'Acción',       range:'36 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d10 fuego. (2d10 nv5, 3d10 nv11, 4d10 nv17).' },
+      { id:'ray-of-frost-s',    name:'Ray of Frost',      level:0, castTime:'Acción',       range:'18 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 1d8 frío · vel -10ft hasta tu turno. Escala nv5/11/17.' },
+      { id:'shocking-grasp-s',  name:'Shocking Grasp',    level:0, castTime:'Acción',       range:'Toque',      duration:'Inst.', concentration:false, combat:true,  desc:'Ataque de toque · 1d8 relámpago · objetivo no puede reaccionar hasta su turno. Ventaja si lleva metal.' },
+      { id:'minor-illusion-s',  name:'Minor Illusion',    level:0, castTime:'Acción',       range:'9 m',        duration:'1 min', concentration:false, combat:false, desc:'Sonido o imagen pequeña (cubo 5ft). Investigación para descubrir.' },
+      { id:'prestidigitation-s',name:'Prestidigitation',  level:0, castTime:'Acción',       range:'3 m',        duration:'1 h',   concentration:false, combat:false, desc:'Trucos menores mágicos: limpiar, encender, crear símbolo, sabor, olor…' },
+      { id:'mage-hand-s',       name:'Mage Hand',         level:0, castTime:'Acción',       range:'9 m',        duration:'1 min', concentration:false, combat:false, desc:'Mano espectral puede manipular objetos hasta 5 kg.' },
+      { id:'chill-touch-s',     name:'Chill Touch',       level:0, castTime:'Acción',       range:'18 m',       duration:'1 ronda', concentration:false, combat:true, desc:'Ataque a distancia · 1d8 necrótico · muertos vivientes con desventaja en ataques vs vos.' },
+      { id:'poison-spray-s',    name:'Poison Spray',      level:0, castTime:'Acción',       range:'3 m',        duration:'Inst.', concentration:false, combat:true,  desc:'Save CON · 1d12 veneno. Escala nv5/11/17.' },
+      { id:'true-strike-s',     name:'True Strike',       level:0, castTime:'Acción bonus', range:'9 m',        duration:'Conc. 1 ronda', concentration:true, combat:true, desc:'Concentración en objetivo; ventaja en tu primer ataque vs él el próximo turno.' },
+      // ── Nivel 1 ──
+      { id:'burning-hands-s',   name:'Burning Hands',     level:1, castTime:'Acción',       range:'Cono 15ft',  duration:'Inst.', concentration:false, combat:true,  desc:'Save DES · 3d6 fuego. +1d6 por nivel superior.' },
+      { id:'chromatic-orb-s',   name:'Chromatic Orb',     level:1, castTime:'Acción',       range:'27 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · 3d8 de tipo elegido. +1d8 por nivel.' },
+      { id:'magic-missile-s',   name:'Magic Missile',     level:1, castTime:'Acción',       range:'36 m',       duration:'Inst.', concentration:false, combat:true,  desc:'3 dardos infalibles · 1d4+1 fuerza c/u. +1 dardo por nivel.' },
+      { id:'shield-s',          name:'Shield',            level:1, castTime:'Reacción',     range:'Uno mismo',  duration:'1 ronda', concentration:false, combat:true, desc:'Reacción al ser atacado · +5 CA hasta inicio de tu próximo turno · bloquea Magic Missile.' },
+      { id:'thunderwave-s',     name:'Thunderwave',       level:1, castTime:'Acción',       range:'Uno mismo (4,5m)', duration:'Inst.', concentration:false, combat:true, desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 3m. +1d8 por nivel.' },
+      { id:'detect-magic-s',    name:'Detect Magic',      level:1, castTime:'Acción',       range:'Uno mismo',  duration:'10 min', concentration:true,  combat:false, ritual:true, desc:'Detecta magia en 9 m · ves auras · ritual.' },
+      { id:'sleep-s',           name:'Sleep',             level:1, castTime:'Acción',       range:'27 m',       duration:'1 min', concentration:false, combat:true,  desc:'5d8 HP de criaturas se duermen (las de menos HP primero). Despierta al recibir daño.' },
+      // ── Nivel 2 ──
+      { id:'scorching-ray-s',   name:'Scorching Ray',     level:2, castTime:'Acción',       range:'36 m',       duration:'Inst.', concentration:false, combat:true,  desc:'3 ataques a distancia · 2d6 fuego c/u. +1 rayo por nivel.' },
+      { id:'mirror-image-s',    name:'Mirror Image',      level:2, castTime:'Acción',       range:'Uno mismo',  duration:'1 min', concentration:false, combat:true,  desc:'3 duplicados ilusorios. Ataques pueden golpear duplicado.' },
+      { id:'misty-step-s',      name:'Misty Step',        level:2, castTime:'Acción bonus', range:'Uno mismo',  duration:'Inst.', concentration:false, combat:true,  desc:'Teleportación 9 m a lugar visible.' },
+      { id:'invisibility-s',    name:'Invisibility',      level:2, castTime:'Acción',       range:'Toque',      duration:'1 h',   concentration:true,  combat:true,  desc:'Criatura invisible · termina si ataca o lanza conjuro. +1 criatura por nivel superior.' },
+      { id:'shatter-s',         name:'Shatter',           level:2, castTime:'Acción',       range:'18 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Esfera 3m · save CON · 3d8 trueno. +1d8 por nivel. Desventaja para criaturas inorgánicas.' },
+      // ── Nivel 3 ──
+      { id:'fireball-s',        name:'Fireball',          level:3, castTime:'Acción',       range:'45 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Esfera 20ft · save DES · 8d6 fuego. +1d6 por nivel.' },
+      { id:'lightning-bolt-s',  name:'Lightning Bolt',    level:3, castTime:'Acción',       range:'Línea 30m',  duration:'Inst.', concentration:false, combat:true,  desc:'Línea 30m · save DES · 8d6 relámpago. +1d6 por nivel.' },
+      { id:'counterspell-s',    name:'Counterspell',      level:3, castTime:'Reacción',     range:'18 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Cancela un hechizo nv3 o menos. Superior: check con CAR.' },
+      { id:'fly-s',             name:'Fly',               level:3, castTime:'Acción',       range:'Toque',      duration:'10 min', concentration:true, combat:false, desc:'Velocidad vuelo 18 m · conc 10 min. +1 criatura por nivel.' },
+      { id:'haste-s',           name:'Haste',             level:3, castTime:'Acción',       range:'9 m',        duration:'1 min', concentration:true,  combat:true,  desc:'+2 CA, ventaja en saves DES, vel ×2, Acción extra (ataque/Dash/Disengage/Hide/Use Object).' },
+      // ── Nivel 4 ──
+      { id:'dimension-door-s',  name:'Dimension Door',    level:4, castTime:'Acción',       range:'150 m',      duration:'Inst.', concentration:false, combat:true,  desc:'Teleportación tú + 1 aliado a cualquier punto a 150 m.' },
+      { id:'greater-invis-s',   name:'Greater Invisibility', level:4, castTime:'Acción',   range:'Toque',      duration:'1 min', concentration:true,  combat:true,  desc:'Invisible incluso al atacar o lanzar conjuros. Ventaja en ataques, desventaja en ataques recibidos.' },
+      // ── Nivel 5 ──
+      { id:'cone-of-cold-s',    name:'Cone of Cold',      level:5, castTime:'Acción',       range:'Cono 60ft',  duration:'Inst.', concentration:false, combat:true,  desc:'Cono 18m · save CON · 8d8 frío. +1d8 por nivel.' },
+      { id:'telekinesis-s',     name:'Telekinesis',        level:5, castTime:'Acción',       range:'18 m',       duration:'10 min', concentration:true, combat:true,  desc:'Mueve objetos/criaturas con la mente. Criatura: save FUE o la movés 9m.' },
+      // ── Nivel 6 ──
+      { id:'disintegrate-s',    name:'Disintegrate',      level:6, castTime:'Acción',       range:'18 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Ataque a distancia · save DES · 10d6+40 fuerza. +3d6 por nivel. Reduce a polvo si mata.' },
+      { id:'chain-lightning-s', name:'Chain Lightning',   level:6, castTime:'Acción',       range:'30 m',       duration:'Inst.', concentration:false, combat:true,  desc:'10d8 relámpago al objetivo principal + 3 objetivos secundarios (save DES mitad).' },
     ],
 
     'Mago': [
@@ -4225,6 +4287,8 @@ const Characters = (() => {
     getSlotsForClass,
     calcMulticlassSlots,
     getPreparedMax,
+    getCantripsKnown,
+    isKnownCaster,
     getXPForLevel,
     getNextLevelXP,
     getLevelFromXP,
