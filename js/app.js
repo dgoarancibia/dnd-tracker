@@ -3716,36 +3716,52 @@ const App = (() => {
     const STAT_LABELS = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
     const stats = _char ? _char.stats : { for:10, des:10, con:10, int:10, sab:10, car:10 };
     bodyEl.innerHTML = `
-      <p class="choice-prompt">Ganás +2 a un atributo, o +1/+1 a dos atributos distintos.</p>
+      <p class="choice-prompt">Ganás +2 a un atributo, o +1/+1 a dos atributos distintos.<br>
+      <span style="font-size:11px;color:var(--text-dim);">Máximo 20 por atributo.</span></p>
       <div class="asi-mode-toggle">
         <button class="asi-mode-btn active" id="asiMode-single" onclick="App._setASIMode('single')">+2 a uno</button>
         <button class="asi-mode-btn" id="asiMode-split"  onclick="App._setASIMode('split')">+1/+1 a dos</button>
       </div>
       <div id="asiSingleSection">
         <div class="choice-options-list asi-grid">
-          ${Object.keys(STAT_LABELS).map(s => `
-            <label class="choice-option asi-option">
-              <input type="radio" name="asiSingle" value="${s}" onchange="App._onASISingleChange(this)">
+          ${Object.keys(STAT_LABELS).map(s => {
+            const cur  = stats[s] || 10;
+            const next = Math.min(20, cur + 2);
+            const atMax = cur >= 20;
+            const gain  = next - cur;
+            const note  = atMax ? '✓ ya en 20' : `${cur} → ${next}${gain < 2 ? ' (máx)' : ''}`;
+            return `
+            <label class="choice-option asi-option${atMax ? ' disabled' : ''}">
+              <input type="radio" name="asiSingle" value="${s}"
+                     ${atMax ? 'disabled' : ''}
+                     onchange="App._onASISingleChange(this)">
               <div class="choice-opt-content">
                 <strong>${STAT_LABELS[s]}</strong>
-                <span class="choice-opt-desc">${stats[s]} → ${stats[s]+2}</span>
+                <span class="choice-opt-desc" style="${atMax ? 'color:var(--text-dim)' : ''}">${note}</span>
               </div>
-            </label>
-          `).join('')}
+            </label>`;
+          }).join('')}
         </div>
       </div>
       <div id="asiSplitSection" style="display:none;">
         <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Elegí dos atributos distintos:</p>
         <div class="choice-options-list asi-grid" id="asiSplitGrid">
-          ${Object.keys(STAT_LABELS).map(s => `
-            <label class="choice-option asi-option">
-              <input type="checkbox" name="asiSplit" value="${s}" onchange="App._onASISplitChange(this)">
+          ${Object.keys(STAT_LABELS).map(s => {
+            const cur  = stats[s] || 10;
+            const next = Math.min(20, cur + 1);
+            const atMax = cur >= 20;
+            const note  = atMax ? '✓ ya en 20' : `${cur} → ${next}`;
+            return `
+            <label class="choice-option asi-option${atMax ? ' disabled' : ''}">
+              <input type="checkbox" name="asiSplit" value="${s}"
+                     ${atMax ? 'disabled' : ''}
+                     onchange="App._onASISplitChange(this)">
               <div class="choice-opt-content">
                 <strong>${STAT_LABELS[s]}</strong>
-                <span class="choice-opt-desc">${stats[s]} → ${stats[s]+1}</span>
+                <span class="choice-opt-desc" style="${atMax ? 'color:var(--text-dim)' : ''}">${note}</span>
               </div>
-            </label>
-          `).join('')}
+            </label>`;
+          }).join('')}
         </div>
       </div>`;
     window._asiMode = 'single';

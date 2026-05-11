@@ -4010,13 +4010,13 @@ const Characters = (() => {
     if (!char.choices) char.choices = {};
     char.choices[choiceId] = value;
 
-    // Si es ASI, aplicar al stat directamente
+    // Si es ASI, aplicar al stat directamente (máximo 20)
     if (choiceId.startsWith('asi-')) {
       if (value.mode === 'single' && value.stat) {
-        char.stats[value.stat] = (char.stats[value.stat] || 10) + 2;
+        char.stats[value.stat] = Math.min(20, (char.stats[value.stat] || 10) + 2);
       } else if (value.mode === 'split' && value.stat1 && value.stat2) {
-        char.stats[value.stat1] = (char.stats[value.stat1] || 10) + 1;
-        char.stats[value.stat2] = (char.stats[value.stat2] || 10) + 1;
+        char.stats[value.stat1] = Math.min(20, (char.stats[value.stat1] || 10) + 1);
+        char.stats[value.stat2] = Math.min(20, (char.stats[value.stat2] || 10) + 1);
       }
     }
 
