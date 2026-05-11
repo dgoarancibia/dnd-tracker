@@ -1085,10 +1085,13 @@ const App = (() => {
       // Para el título de cantrips: mostrar conteo real vs máximo
       const maxC   = Characters.getCantripsKnown(c);
       const totalC = (c.spells || []).filter(s => s.level === 0).length;
-      const freeC  = (c.spells || []).filter(s => s.level === 0 && s.cantrip_subclass).length;
+      const freeSubC  = (c.spells || []).filter(s => s.level === 0 && s.cantrip_subclass).length;
+      const freeRaceC = (c.spells || []).filter(s => s.level === 0 && s.cantrip_racial).length;
+      const freeC  = freeSubC + freeRaceC;
       const paidC  = totalC - freeC;
+      const freeLabel = [freeSubC > 0 ? `+${freeSubC} subclase` : '', freeRaceC > 0 ? `+${freeRaceC} raza` : ''].filter(Boolean).join(', ');
       const cantripLabel = maxC !== null
-        ? `Cantrips — ${paidC}/${maxC}${freeC > 0 ? ` +${freeC} subclase` : ''}`
+        ? `Cantrips — ${paidC}/${maxC}${freeLabel ? ` (${freeLabel})` : ''}`
         : `Cantrips — ${totalC}`;
 
       Object.keys(byLevel).sort((a,b) => +a - +b).forEach(lv => {
@@ -1102,12 +1105,18 @@ const App = (() => {
           const isPrepared = prepared.includes(sp.id) || isDomain || isMI || isCantrip;
           const tags = _buildTagsHTML(sp);
 
+          // Buscar versión del hechizo en char.spells (puede tener cantrip_racial/subclass)
+          const knownVersion = (c.spells || []).find(s => s.id === sp.id);
           let checkClass, checkClick, checkCursor, checkTitle;
           if (isCantrip) {
-            checkClass  = sp.cantrip_subclass ? 'domain' : (isKnown ? 'cantrip' : '');
-            checkClick  = `onclick="App.openCantripPicker()"`;
-            checkCursor = 'cursor:pointer;';
-            checkTitle  = 'Editar cantrips';
+            const isFree = (knownVersion && (knownVersion.cantrip_subclass || knownVersion.cantrip_racial))
+                        || sp.cantrip_subclass || sp.cantrip_racial;
+            checkClass  = isFree ? 'domain' : (isKnown ? 'cantrip' : '');
+            checkClick  = isFree ? '' : (isKnown
+              ? `onclick="App.removeKnownSpell('${sp.id}')"`
+              : `onclick="App.addKnownSpell('${sp.id}')"`);
+            checkCursor = isFree ? '' : 'cursor:pointer;';
+            checkTitle  = isFree ? 'Cantrip gratuito (raza/subclase)' : (isKnown ? 'Quitar cantrip' : 'Agregar cantrip');
           } else if (isDomain || isMI) {
             checkClass  = 'domain';
             checkClick  = '';
@@ -1183,11 +1192,11 @@ const App = (() => {
       : (c.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi && prepared.includes(s.id)).length;
     const knownOver     = isKnown && knownCount > spellsMax;
 
-    // Cantrips: los de subclase (cantrip_subclass:true) no cuentan contra el límite
+    // Cantrips: los de subclase o raza no cuentan contra el límite
     const cantripsKnown = Characters.getCantripsKnown(c);
     const allCantrips   = (c.spells || []).filter(s => s.level === 0);
-    const freeCantrips  = allCantrips.filter(s => s.cantrip_subclass);    // gratis por subclase
-    const paidCantrips  = allCantrips.filter(s => !s.cantrip_subclass);   // cuentan contra el límite
+    const freeCantrips  = allCantrips.filter(s => s.cantrip_subclass || s.cantrip_racial);
+    const paidCantrips  = allCantrips.filter(s => !s.cantrip_subclass && !s.cantrip_racial);
     const cantripsCount = paidCantrips.length;
 
     // Aviso para half-casters en nivel 1 (sin slots aún)
@@ -1210,19 +1219,53 @@ const App = (() => {
       ${isKnown ? `<button onclick="App.clearAllKnownSpells()" style="margin-left:auto;font-size:10px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer;" title="Limpiar todos los conjuros conocidos">🗑 Limpiar</button>` : ''}
     </div>`;
 
-    // Cantrips conocidos — fila con contador + botón editar
+    // Cantrips conocidos — sección con contador y lista de cantrips
     if (cantripsKnown !== null || (cfg && cfg.slotTable !== null)) {
       const over = cantripsKnown !== null && cantripsCount > cantripsKnown;
+      const freeSubCantrips  = freeCantrips.filter(s => s.cantrip_subclass);
+      const freeRaceCantrips = freeCantrips.filter(s => s.cantrip_racial);
+      const freeLbl = [freeSubCantrips.length > 0 ? `+${freeSubCantrips.length} subclase` : '', freeRaceCantrips.length > 0 ? `+${freeRaceCantrips.length} raza` : ''].filter(Boolean).join(', ');
       const countText = cantripsKnown !== null
-        ? `${cantripsCount} / ${cantripsKnown}${freeCantrips.length > 0 ? ` +${freeCantrips.length} subclase` : ''}`
+        ? `${cantripsCount} / ${cantripsKnown}${freeLbl ? ` (${freeLbl})` : ''}`
         : `${allCantrips.length}`;
       htmlDer += `
-    <div style="padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;">
+    <div style="padding:6px 0 4px;border-bottom:1px solid var(--border);margin-bottom:6px;">
       <span style="font-size:12px;color:var(--text-dim);">
         Cantrips: <strong style="color:${over ? '#e07070' : 'var(--text)'}">${countText}</strong>
         ${over ? '<span style="color:#e07070;margin-left:4px;">⚠ excede el máximo</span>' : ''}
       </span>
     </div>`;
+      // Listar cantrips como mini-cards
+      if (allCantrips.length > 0) {
+        allCantrips.forEach(sp => {
+          const isRacial  = sp.cantrip_racial;
+          const isSubcls  = sp.cantrip_subclass;
+          const isFree    = isRacial || isSubcls;
+          const badgeHtml = isRacial
+            ? `<span style="font-size:9px;background:rgba(80,160,220,0.2);color:#60a8d8;border:1px solid rgba(80,160,220,0.35);border-radius:3px;padding:1px 4px;margin-left:4px;">🔒 raza</span>`
+            : isSubcls
+              ? `<span style="font-size:9px;background:rgba(201,151,58,0.2);color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:1px 4px;margin-left:4px;">◆ subclase</span>`
+              : '';
+          const toggleBtn = !isFree
+            ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.12);border:1px solid rgba(80,160,220,0.3);border-radius:3px;color:#60a8d8;cursor:pointer;white-space:nowrap;" title="Marcar como cantrip de raza (no contará contra el límite)">+ raza</button>`
+            : isRacial
+              ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.2);border:1px solid rgba(80,160,220,0.4);border-radius:3px;color:#60a8d8;cursor:pointer;" title="Quitar marca de raza">✕ raza</button>`
+              : '';
+          htmlDer += `
+          <div class="spell-card" style="padding:4px 6px;margin-bottom:3px;">
+            <div class="spell-checkbox ${isFree ? 'domain' : 'cantrip'}" ${!isFree ? `onclick="App.removeKnownSpell('${sp.id}')" style="cursor:pointer;" title="Quitar cantrip"` : 'title="Cantrip gratuito"'}></div>
+            <div class="spell-info" style="flex:1;min-width:0;">
+              <div class="spell-top" style="flex-wrap:wrap;gap:3px;">
+                <span class="spell-lvl">C</span>
+                <span class="spell-name" style="font-size:12px;">${sp.name}</span>
+                ${badgeHtml}
+                <span style="margin-left:auto;">${toggleBtn}</span>
+              </div>
+            </div>
+          </div>`;
+        });
+      }
+      htmlDer += `<div style="margin-bottom:8px;"></div>`;
     }
 
     htmlDer += `<div class="section-hd">Dominio — siempre activos</div>`;
@@ -3236,11 +3279,11 @@ const App = (() => {
     if (countEl) countEl.textContent = newCount;
   }
 
-  // Quita un conjuro de la lista de "conocidos" (solo para known casters: Hechicero, Bardo, Brujo)
+  // Quita un conjuro/cantrip de la lista de conocidos
   function removeKnownSpell(id) {
     if (!_char) return;
     const spell = (_char.spells || []).find(s => s.id === id);
-    if (!spell || spell.level === 0 || spell.domain || spell.mi) return;
+    if (!spell || spell.domain || spell.mi || spell.cantrip_subclass || spell.cantrip_racial) return;
     // Confirmar si excede el máximo (para que sea fácil limpiar)
     _char.spells = _char.spells.filter(s => s.id !== id);
     // También limpiar de preparedToday por si acaso
@@ -3271,28 +3314,52 @@ const App = (() => {
     );
   }
 
-  // Agrega un conjuro a la lista de "conocidos" (solo para known casters)
+  // Agrega un conjuro/cantrip a la lista de "conocidos"
   function addKnownSpell(id) {
     if (!_char) return;
-    // Buscar en catálogo
     const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[_char.clase]) || [];
     const spell = catalog.find(s => s.id === id);
     if (!spell) return;
-    // Verificar límite de conjuros conocidos (no cantrips)
-    const maxKnown = Characters.getPreparedMax(_char);
-    const currentKnown = (_char.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi).length;
-    if (currentKnown >= maxKnown) {
-      showToast(`Máximo ${maxKnown} conjuros conocidos. Quita uno primero.`);
-      return;
-    }
     if (!_char.spells) _char.spells = [];
-    if (!_char.spells.find(s => s.id === id)) {
-      _char.spells.push(spell);
+    if (_char.spells.find(s => s.id === id)) return;
+
+    if (spell.level === 0) {
+      // Cantrip: verificar límite (no cuentan raciales/subclase)
+      const maxC = Characters.getCantripsKnown(_char);
+      if (maxC !== null) {
+        const paidC = (_char.spells || []).filter(s => s.level === 0 && !s.cantrip_subclass && !s.cantrip_racial).length;
+        if (paidC >= maxC) {
+          showToast(`Máximo ${maxC} cantrips. Quitá uno primero.`);
+          return;
+        }
+      }
+    } else {
+      // Conjuro nv1+: verificar límite de conocidos
+      const maxKnown = Characters.getPreparedMax(_char);
+      const currentKnown = (_char.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi).length;
+      if (currentKnown >= maxKnown) {
+        showToast(`Máximo ${maxKnown} conjuros conocidos. Quita uno primero.`);
+        return;
+      }
     }
+    _char.spells.push(spell);
     _saveChar();
     _renderConjurosIzq();
     _renderConjurosTab();
-    showToast(`${spell.name} agregado a conjuros conocidos`);
+    showToast(`${spell.name} agregado`);
+  }
+
+  // Marca/desmarca un cantrip como "de raza" (gratuito, no cuenta contra el límite)
+  function toggleCantripRacial(id) {
+    if (!_char) return;
+    const spell = (_char.spells || []).find(s => s.id === id);
+    if (!spell || spell.level !== 0 || spell.cantrip_subclass) return; // no tocar subclase
+    spell.cantrip_racial = !spell.cantrip_racial;
+    _saveChar();
+    if (window.Cloud && Cloud.isLoggedIn()) Cloud.saveNow(_char);
+    _renderConjurosIzq();
+    _renderConjurosTab();
+    showToast(spell.cantrip_racial ? `${spell.name} marcado como cantrip de raza (no cuenta contra el límite).` : `${spell.name} ya no es de raza.`);
   }
 
   /* ══════════════════════════════════════════════════════
@@ -5440,7 +5507,7 @@ const App = (() => {
     toggleInspiration,
 
     // Conjuros
-    toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, setSpellFilter,
+    toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter,
     castSpell, confirmCastAtLevel, closeCastPicker,
     openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
 
