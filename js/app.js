@@ -1033,29 +1033,43 @@ const App = (() => {
     const c = _char;
     const prepared = c.preparedToday || [];
     const { tag, level } = _spellFilter;
+    const isKnownCasterCtx = Characters.isKnownCaster(c);
 
-    // Build filter chips header (level buttons from spells that exist)
-    const levels = [...new Set((c.spells || []).filter(s => s.level > 0).map(s => s.level))].sort((a,b)=>a-b);
+    // Para known casters: mostrar catálogo completo de la clase
+    // Para prepare casters: mostrar los conjuros guardados en char.spells
+    const sourceSpells = isKnownCasterCtx
+      ? (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase] || [])
+      : (c.spells || []);
+
+    const knownIds = new Set((c.spells || []).map(s => s.id));
+
+    // Build filter chips from sourceSpells levels
+    const levels = [...new Set(sourceSpells.filter(s => s.level > 0).map(s => s.level))].sort((a,b)=>a-b);
+
+    const subLabel = isKnownCasterCtx
+      ? 'Toca ★ para agregar/quitar de conocidos'
+      : 'Toca para preparar/despreparar';
 
     let htmlIzq = `
     <div class="section-hd" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
       <span>Todos los Conjuros</span>
-      <span style="font-size:10px;color:var(--text-dim);font-family:'Crimson Pro',serif;font-style:italic;text-transform:none;letter-spacing:0;">Toca para preparar/despreparar</span>
+      <span style="font-size:10px;color:var(--text-dim);font-family:'Crimson Pro',serif;font-style:italic;text-transform:none;letter-spacing:0;">${subLabel}</span>
     </div>
     <div class="sf-bar">
       <button class="sf-chip${tag==='all'?' active':''}" data-tag="all" onclick="App.setSpellFilter('all')">Todos</button>
-      <button class="sf-chip${tag==='prep'?' active':''}" data-tag="prep" onclick="App.setSpellFilter('prep')">Preparados</button>
+      ${isKnownCasterCtx ? `<button class="sf-chip${tag==='known'?' active':''}" data-tag="known" onclick="App.setSpellFilter('known')">Conocidos</button>` : `<button class="sf-chip${tag==='prep'?' active':''}" data-tag="prep" onclick="App.setSpellFilter('prep')">Preparados</button>`}
       <button class="sf-chip${tag==='conc'?' active':''}" data-tag="conc" onclick="App.setSpellFilter('conc')">Conc</button>
       <button class="sf-chip${tag==='bonus'?' active':''}" data-tag="bonus" onclick="App.setSpellFilter('bonus')">Bonus</button>
       ${levels.map(l => `<button class="sf-chip sf-lvl${tag==='lvl'&&level===l?' active':''}" data-tag="lvl" data-level="${l}" onclick="App.setSpellFilter('lvl',${l})">Nvl ${l}</button>`).join('')}
     </div>`;
 
     // Apply filter
-    let spells = (c.spells || []);
-    if (tag === 'prep')  spells = spells.filter(s => s.level === 0 || s.domain || s.mi || prepared.includes(s.id));
-    else if (tag === 'conc')  spells = spells.filter(s => s.concentration);
-    else if (tag === 'bonus') spells = spells.filter(s => s.bonus);
-    else if (tag === 'lvl')   spells = spells.filter(s => s.level === level);
+    let spells = sourceSpells;
+    if (tag === 'known')  spells = spells.filter(s => knownIds.has(s.id));
+    else if (tag === 'prep')   spells = spells.filter(s => s.level === 0 || s.domain || s.mi || prepared.includes(s.id));
+    else if (tag === 'conc')   spells = spells.filter(s => s.concentration);
+    else if (tag === 'bonus')  spells = spells.filter(s => s.bonus);
+    else if (tag === 'lvl')    spells = spells.filter(s => s.level === level);
 
     const byLevel = {};
     spells.forEach(s => {
@@ -1067,11 +1081,10 @@ const App = (() => {
       htmlIzq += `<div style="padding:20px 0;color:var(--text-dim);font-style:italic;font-size:13px;">Sin conjuros con ese filtro.</div>`;
     } else {
       // Para el título de cantrips: mostrar conteo real vs máximo
-      const cCfg        = Characters.CLASES_CONFIG[c.clase];
-      const maxC        = Characters.getCantripsKnown(c);
-      const totalC      = (c.spells || []).filter(s => s.level === 0).length;
-      const freeC       = (c.spells || []).filter(s => s.level === 0 && s.cantrip_subclass).length;
-      const paidC       = totalC - freeC;
+      const maxC   = Characters.getCantripsKnown(c);
+      const totalC = (c.spells || []).filter(s => s.level === 0).length;
+      const freeC  = (c.spells || []).filter(s => s.level === 0 && s.cantrip_subclass).length;
+      const paidC  = totalC - freeC;
       const cantripLabel = maxC !== null
         ? `Cantrips — ${paidC}/${maxC}${freeC > 0 ? ` +${freeC} subclase` : ''}`
         : `Cantrips — ${totalC}`;
@@ -1080,21 +1093,16 @@ const App = (() => {
         const label = +lv === 0 ? cantripLabel : `Nivel ${lv}`;
         htmlIzq += `<div class="spell-group-title">${label}</div>`;
         byLevel[lv].forEach(sp => {
-          const isCantrip = sp.level === 0;
-          const isDomain  = sp.domain;
-          const isMI      = sp.mi;
+          const isCantrip  = sp.level === 0;
+          const isDomain   = sp.domain;
+          const isMI       = sp.mi;
+          const isKnown    = knownIds.has(sp.id);
           const isPrepared = prepared.includes(sp.id) || isDomain || isMI || isCantrip;
           const tags = _buildTagsHTML(sp);
 
-          // Determinar acción del checkbox según tipo de conjuro y tipo de caster:
-          // - Cantrip → abre picker de cantrips
-          // - Dominio/MI → sin acción
-          // - Known caster (Hechicero/Bardo/Brujo) conjuro nv1+ → toggle agregar/quitar de conocidos
-          // - Prepare caster conjuro nv1+ → toggle preparar/despreparar
-          const isKnownCasterCtx = Characters.isKnownCaster(c);
           let checkClass, checkClick, checkCursor, checkTitle;
           if (isCantrip) {
-            checkClass  = sp.cantrip_subclass ? 'domain' : 'cantrip';
+            checkClass  = sp.cantrip_subclass ? 'domain' : (isKnown ? 'cantrip' : '');
             checkClick  = `onclick="App.openCantripPicker()"`;
             checkCursor = 'cursor:pointer;';
             checkTitle  = 'Editar cantrips';
@@ -1104,12 +1112,13 @@ const App = (() => {
             checkCursor = '';
             checkTitle  = '';
           } else if (isKnownCasterCtx) {
-            // Known caster: checkbox muestra si está en la lista de conocidos; click = toggle
-            const isKnown = !isDomain && !isMI;   // todos los no-domain son "conocidos" si están en c.spells
-            checkClass  = 'known-always';
-            checkClick  = `onclick="App.removeKnownSpell('${sp.id}')"`;
+            // Known caster: ★ marcado si está en conocidos, click = toggle agregar/quitar
+            checkClass  = isKnown ? 'known-always' : '';
+            checkClick  = isKnown
+              ? `onclick="App.removeKnownSpell('${sp.id}')"`
+              : `onclick="App.addKnownSpell('${sp.id}')"`;
             checkCursor = 'cursor:pointer;';
-            checkTitle  = 'Quitar de conocidos';
+            checkTitle  = isKnown ? 'Quitar de conocidos' : 'Agregar a conocidos';
           } else {
             checkClass  = isPrepared ? 'checked' : '';
             checkClick  = `onclick="App.toggleSpellPrepared('${sp.id}')"`;
@@ -3238,6 +3247,30 @@ const App = (() => {
     _renderConjurosIzq();
     _renderConjurosTab();
     showToast(`${spell.name} quitado de conjuros conocidos`);
+  }
+
+  // Agrega un conjuro a la lista de "conocidos" (solo para known casters)
+  function addKnownSpell(id) {
+    if (!_char) return;
+    // Buscar en catálogo
+    const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[_char.clase]) || [];
+    const spell = catalog.find(s => s.id === id);
+    if (!spell) return;
+    // Verificar límite de conjuros conocidos (no cantrips)
+    const maxKnown = Characters.getPreparedMax(_char);
+    const currentKnown = (_char.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi).length;
+    if (currentKnown >= maxKnown) {
+      showToast(`Máximo ${maxKnown} conjuros conocidos. Quita uno primero.`);
+      return;
+    }
+    if (!_char.spells) _char.spells = [];
+    if (!_char.spells.find(s => s.id === id)) {
+      _char.spells.push(spell);
+    }
+    _saveChar();
+    _renderConjurosIzq();
+    _renderConjurosTab();
+    showToast(`${spell.name} agregado a conjuros conocidos`);
   }
 
   /* ══════════════════════════════════════════════════════
@@ -5385,7 +5418,7 @@ const App = (() => {
     toggleInspiration,
 
     // Conjuros
-    toggleSpellPrepared, removeKnownSpell, setSpellFilter,
+    toggleSpellPrepared, removeKnownSpell, addKnownSpell, setSpellFilter,
     castSpell, confirmCastAtLevel, closeCastPicker,
     openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
 
