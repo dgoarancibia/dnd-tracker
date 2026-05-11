@@ -1215,12 +1215,11 @@ const App = (() => {
         ? `${cantripsCount} / ${cantripsKnown}${freeCantrips.length > 0 ? ` +${freeCantrips.length} subclase` : ''}`
         : `${allCantrips.length}`;
       htmlDer += `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+    <div style="padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;">
       <span style="font-size:12px;color:var(--text-dim);">
         Cantrips: <strong style="color:${over ? '#e07070' : 'var(--text)'}">${countText}</strong>
-        ${over ? '<span style="color:#e07070;margin-left:4px;">⚠ excede</span>' : ''}
+        ${over ? '<span style="color:#e07070;margin-left:4px;">⚠ excede el máximo</span>' : ''}
       </span>
-      <button onclick="App.openCantripPicker()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;white-space:nowrap;">✎ Editar cantrips</button>
     </div>`;
     }
 
