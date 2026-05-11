@@ -206,10 +206,12 @@ const App = (() => {
       // Otros personajes: sync de catálogo de spells por clase
       // Solo añade conjuros de NIVEL 1+ que no existan aún — los cantrips los elige el jugador con el picker
       const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[_char.clase]) || [];
-      if (catalog.length > 0) {
+      if (catalog.length > 0 && !Characters.isKnownCaster(_char)) {
+        // Solo prepare casters (Clérigo, Druida, Mago, Paladín, Explorador) sincronizan
+        // el catálogo completo al init. Known casters (Hechicero, Bardo, Brujo) eligen
+        // sus conjuros manualmente — no auto-agregar para no sobrepasar el límite.
         const savedPrepared = _char.preparedToday || [];
         const existingIds   = new Set((_char.spells || []).map(s => s.id));
-        // Solo sincronizar hechizos de nivel 1+ (no cantrips) para no sobrepasar el límite de la tabla
         const newSpells = catalog.filter(s => s.level > 0 && !existingIds.has(s.id)).map(s => ({ ...s }));
         if (newSpells.length > 0) {
           _char.spells = [...(_char.spells || []), ...newSpells];
@@ -3260,6 +3262,8 @@ const App = (() => {
         _char.spells = (_char.spells || []).filter(s => s.level === 0 || s.domain || s.mi);
         if (_char.preparedToday) _char.preparedToday = [];
         _saveChar();
+        // Forzar sync inmediato a la nube para que no vuelvan al recargar
+        if (window.Cloud && Cloud.isLoggedIn()) Cloud.saveNow(_char);
         _renderConjurosIzq();
         _renderConjurosTab();
         showToast('Conjuros conocidos limpiados.');
