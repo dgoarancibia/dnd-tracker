@@ -5408,7 +5408,7 @@ const App = (() => {
 
     // Elecciones de personaje
     openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice,
-    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _onPickSkillChange, _onPickMultipleChange,
+    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _onPickSkillChange, _onPickMultipleChange, _renderPickMultiple,
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,
