@@ -31,7 +31,71 @@ const App = (() => {
       ...claseFeatList.filter(f => !subIds.has(f.id)),
       ...subFeatures,
     ];
+
+    // Re-aplicar features derivadas de choices (feats tomados en ASI, metamagias elegidas)
+    // Estas features no vienen de CLASE_FEATURES sino de decisiones del jugador.
+    if (c.choices) {
+      Object.entries(c.choices).forEach(([choiceId, val]) => {
+        // Feats elegidos en ASI
+        if (choiceId.startsWith('asi-') && val && val.mode === 'feat' && val.featId) {
+          const featDef = Characters.GENERAL_FEATS && Characters.GENERAL_FEATS.find(f => f.id === val.featId);
+          if (featDef) {
+            const fId = val.featId + '-' + choiceId;
+            if (!c.features.find(f => f.id === fId)) {
+              c.features.push({ id:fId, name:featDef.name, source:`Feat · Nivel ${choiceId.replace('asi-','')}`, type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:featDef.desc, fullDesc:featDef.fullDesc || '' });
+            }
+          }
+        }
+        // Metamagias elegidas (pickMultiple)
+        if (choiceId.startsWith('metamagic-') && Array.isArray(val)) {
+          const levelNum = choiceId.replace('metamagic-', '');
+          val.forEach(mmId => {
+            const mmDef = Characters.METAMAGIC_OPTIONS && Characters.METAMAGIC_OPTIONS.find(m => m.id === mmId);
+            if (!mmDef) return;
+            const fId = mmId + '-' + choiceId;
+            if (!c.features.find(f => f.id === fId)) {
+              c.features.push({ id:fId, name:mmDef.name, source:`Metamagia · Nivel ${levelNum}`, type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:mmDef.desc, fullDesc:mmDef.desc });
+            }
+          });
+        }
+      });
+    }
   }
+
+  // Elimina duplicados de spells (por id) y recorta cantrips al máximo de la tabla.
+  // Preserva cantrips de subclase (cantrip_subclass:true) fuera del límite.
+  function _cleanSpells(c) {
+    if (!c || !c.spells) return;
+    let changed = false;
+
+    // 1. Deduplicar por id (conservar primera aparición)
+    const seen = new Set();
+    const deduped = c.spells.filter(s => {
+      if (seen.has(s.id)) { changed = true; return false; }
+      seen.add(s.id); return true;
+    });
+    if (changed) c.spells = deduped;
+
+    // 2. Recortar cantrips al máximo de la tabla (si aplica)
+    const maxCantrips = Characters.getCantripsKnown(c);
+    if (maxCantrips !== null) {
+      const freeC = c.spells.filter(s => s.level === 0 && s.cantrip_subclass);
+      const paidC = c.spells.filter(s => s.level === 0 && !s.cantrip_subclass);
+      if (paidC.length > maxCantrips) {
+        // Recortar a los primeros maxCantrips pagados
+        const trimmed = paidC.slice(0, maxCantrips);
+        c.spells = [
+          ...freeC,
+          ...trimmed,
+          ...c.spells.filter(s => s.level > 0),
+        ];
+        changed = true;
+      }
+    }
+
+    return changed;
+  }
+
   let _activeTab = 'combate';
   let _toastTimer = null;
   let _concAlertTimer = null;
@@ -97,6 +161,9 @@ const App = (() => {
       return;
     }
 
+    // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
+    if (_cleanSpells(_char)) Storage.saveChar(_char);
+
     // ── Sincronizar datos maestros desde characters.js ──────────────────────
     // Preserva: spellSlots usados, preparedToday, cantidades de consumables
     // Aplica a TODOS los personajes (no solo Lursey)
@@ -137,18 +204,19 @@ const App = (() => {
 
     } else {
       // Otros personajes: sync de catálogo de spells por clase
-      // Solo añade hechizos del catálogo que no existan aún — preserva los del usuario
+      // Solo añade conjuros de NIVEL 1+ que no existan aún — los cantrips los elige el jugador con el picker
       const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[_char.clase]) || [];
       if (catalog.length > 0) {
         const savedPrepared = _char.preparedToday || [];
         const existingIds   = new Set((_char.spells || []).map(s => s.id));
-        const newSpells     = catalog.filter(s => !existingIds.has(s.id)).map(s => ({ ...s }));
+        // Solo sincronizar hechizos de nivel 1+ (no cantrips) para no sobrepasar el límite de la tabla
+        const newSpells = catalog.filter(s => s.level > 0 && !existingIds.has(s.id)).map(s => ({ ...s }));
         if (newSpells.length > 0) {
           _char.spells = [...(_char.spells || []), ...newSpells];
-          Storage.saveChar(_char);
         }
         _char.preparedToday = savedPrepared;
       }
+      Storage.saveChar(_char);
 
       // Sync de recursos por clase: actualizar max/note si el nivel escaló
       const claseFeat = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[_char.clase];
@@ -998,26 +1066,60 @@ const App = (() => {
     if (spells.length === 0) {
       htmlIzq += `<div style="padding:20px 0;color:var(--text-dim);font-style:italic;font-size:13px;">Sin conjuros con ese filtro.</div>`;
     } else {
+      // Para el título de cantrips: mostrar conteo real vs máximo
+      const cCfg        = Characters.CLASES_CONFIG[c.clase];
+      const maxC        = Characters.getCantripsKnown(c);
+      const totalC      = (c.spells || []).filter(s => s.level === 0).length;
+      const freeC       = (c.spells || []).filter(s => s.level === 0 && s.cantrip_subclass).length;
+      const paidC       = totalC - freeC;
+      const cantripLabel = maxC !== null
+        ? `Cantrips — ${paidC}/${maxC}${freeC > 0 ? ` +${freeC} subclase` : ''}`
+        : `Cantrips — ${totalC}`;
+
       Object.keys(byLevel).sort((a,b) => +a - +b).forEach(lv => {
-        const label = +lv === 0 ? 'Cantrips — ∞' : `Nivel ${lv}`;
+        const label = +lv === 0 ? cantripLabel : `Nivel ${lv}`;
         htmlIzq += `<div class="spell-group-title">${label}</div>`;
         byLevel[lv].forEach(sp => {
           const isCantrip = sp.level === 0;
-          const isDomain = sp.domain;
-          const isMI = sp.mi;
+          const isDomain  = sp.domain;
+          const isMI      = sp.mi;
           const isPrepared = prepared.includes(sp.id) || isDomain || isMI || isCantrip;
           const tags = _buildTagsHTML(sp);
 
-          let checkClass = 'cantrip';
-          if (!isCantrip && isDomain) checkClass = 'domain';
-          else if (!isCantrip && isMI) checkClass = 'cantrip';
-          else if (!isCantrip) checkClass = isPrepared ? 'checked' : '';
-
-          const clickable = !isCantrip && !isDomain && !isMI;
+          // Determinar acción del checkbox según tipo de conjuro y tipo de caster:
+          // - Cantrip → abre picker de cantrips
+          // - Dominio/MI → sin acción
+          // - Known caster (Hechicero/Bardo/Brujo) conjuro nv1+ → toggle agregar/quitar de conocidos
+          // - Prepare caster conjuro nv1+ → toggle preparar/despreparar
+          const isKnownCasterCtx = Characters.isKnownCaster(c);
+          let checkClass, checkClick, checkCursor, checkTitle;
+          if (isCantrip) {
+            checkClass  = sp.cantrip_subclass ? 'domain' : 'cantrip';
+            checkClick  = `onclick="App.openCantripPicker()"`;
+            checkCursor = 'cursor:pointer;';
+            checkTitle  = 'Editar cantrips';
+          } else if (isDomain || isMI) {
+            checkClass  = 'domain';
+            checkClick  = '';
+            checkCursor = '';
+            checkTitle  = '';
+          } else if (isKnownCasterCtx) {
+            // Known caster: checkbox muestra si está en la lista de conocidos; click = toggle
+            const isKnown = !isDomain && !isMI;   // todos los no-domain son "conocidos" si están en c.spells
+            checkClass  = 'known-always';
+            checkClick  = `onclick="App.removeKnownSpell('${sp.id}')"`;
+            checkCursor = 'cursor:pointer;';
+            checkTitle  = 'Quitar de conocidos';
+          } else {
+            checkClass  = isPrepared ? 'checked' : '';
+            checkClick  = `onclick="App.toggleSpellPrepared('${sp.id}')"`;
+            checkCursor = 'cursor:pointer;';
+            checkTitle  = isPrepared ? 'Despreparar' : 'Preparar';
+          }
 
           htmlIzq += `
           <div class="spell-card">
-            <div class="spell-checkbox ${checkClass}" id="spchk-${sp.id}" ${clickable ? `onclick="App.toggleSpellPrepared('${sp.id}')"` : ''} style="${clickable?'cursor:pointer;':''}"></div>
+            <div class="spell-checkbox ${checkClass}" id="spchk-${sp.id}" ${checkClick} style="${checkCursor}" title="${checkTitle}"></div>
             <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
               <div class="spell-top">
                 <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
@@ -1059,19 +1161,23 @@ const App = (() => {
 
     const isKnown   = Characters.isKnownCaster(c);
     const prepared  = c.preparedToday || [];
-    const spellsMax = Characters.getPreparedMax(c);
+    const spellsMax = Characters.getPreparedMax(c);   // para known: spellsKnown[nivel-1]; para prepare: mod+nivel
 
-    // Para known casters: "conocidos" = total de conjuros nv1+ que tiene
-    // Para prepare casters: "preparados hoy" = los marcados
-    const knownCount   = isKnown
+    // Para known casters: contamos cuántos conjuros nv1+ tiene actualmente vs cuántos puede conocer
+    const knownCount    = isKnown
       ? (c.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi).length
       : null;
+    // preparedCount: para known casters mostramos conocidos/máximo; para prepare: preparados/máximo
     const preparedCount = isKnown ? knownCount
       : (c.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi && prepared.includes(s.id)).length;
+    const knownOver     = isKnown && knownCount > spellsMax;
 
-    // Cantrips conocidos
+    // Cantrips: los de subclase (cantrip_subclass:true) no cuentan contra el límite
     const cantripsKnown = Characters.getCantripsKnown(c);
-    const cantripsCount = (c.spells || []).filter(s => s.level === 0).length;
+    const allCantrips   = (c.spells || []).filter(s => s.level === 0);
+    const freeCantrips  = allCantrips.filter(s => s.cantrip_subclass);    // gratis por subclase
+    const paidCantrips  = allCantrips.filter(s => !s.cantrip_subclass);   // cuentan contra el límite
+    const cantripsCount = paidCantrips.length;
 
     // Aviso para half-casters en nivel 1 (sin slots aún)
     const totalSlots = Object.values(c.spellSlots || {}).reduce((s, v) => s + (v.max || 0), 0);
@@ -1088,16 +1194,23 @@ const App = (() => {
     let htmlDer = `
     <div class="spells-prepared-header">
       <span class="prepared-label">${headerLabel}${headerSubLabel}</span>
-      <span class="prepared-count" id="preparedCount">${preparedCount}</span>
-      <span class="prepared-max"> / ${spellsMax}</span>
+      <span class="prepared-count" id="preparedCount" style="${knownOver ? 'color:#e07070;' : ''}">${preparedCount}</span>
+      <span class="prepared-max"> / ${spellsMax}${knownOver ? ' <span style="font-size:10px;color:#e07070;">⚠ excede</span>' : ''}</span>
     </div>`;
 
-    // Cantrips conocidos (solo para known casters con tabla)
-    if (cantripsKnown !== null) {
+    // Cantrips conocidos — fila con contador + botón editar
+    if (cantripsKnown !== null || (cfg && cfg.slotTable !== null)) {
+      const over = cantripsKnown !== null && cantripsCount > cantripsKnown;
+      const countText = cantripsKnown !== null
+        ? `${cantripsCount} / ${cantripsKnown}${freeCantrips.length > 0 ? ` +${freeCantrips.length} subclase` : ''}`
+        : `${allCantrips.length}`;
       htmlDer += `
-    <div style="font-size:11px;color:var(--text-dim);padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:8px;">
-      Cantrips conocidos: <strong style="color:${cantripsCount > cantripsKnown ? '#e07070' : 'var(--text)'}">${cantripsCount}</strong> / ${cantripsKnown}
-      ${cantripsCount > cantripsKnown ? '<span style="color:#e07070;"> ⚠ excede el máximo</span>' : ''}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+      <span style="font-size:12px;color:var(--text-dim);">
+        Cantrips: <strong style="color:${over ? '#e07070' : 'var(--text)'}">${countText}</strong>
+        ${over ? '<span style="color:#e07070;margin-left:4px;">⚠ excede</span>' : ''}
+      </span>
+      <button onclick="App.openCantripPicker()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;white-space:nowrap;">✎ Editar cantrips</button>
     </div>`;
     }
 
@@ -1120,15 +1233,19 @@ const App = (() => {
 
     if (isKnown) {
       // Known casters: lista de todos los conjuros nv1+ conocidos, siempre activos
+      // El checkbox ★ actúa como "quitar de conocidos" al hacer click
       const knownList = (c.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi);
-      htmlDer += `<div class="section-hd" style="margin-top:14px;">Conjuros conocidos — siempre disponibles</div>`;
+      const sectionTitle = knownOver
+        ? `Conjuros conocidos <span style="color:#e07070;font-size:11px;font-family:sans-serif;font-weight:400;">— tenés ${knownCount}, máximo ${spellsMax} · click ★ para quitar</span>`
+        : `Conjuros conocidos <span style="font-size:11px;color:var(--text-dim);font-family:sans-serif;font-weight:400;">— click ★ para quitar</span>`;
+      htmlDer += `<div class="section-hd" style="margin-top:14px;">${sectionTitle}</div>`;
       if (knownList.length === 0) {
-        htmlDer += `<div style="font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;">Aún no tenés conjuros. Agrega con "+" en la izquierda.</div>`;
+        htmlDer += `<div style="font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;">Aún no tenés conjuros. Agrupalos desde la lista de la izquierda.</div>`;
       } else {
         knownList.forEach(sp => {
           htmlDer += `
           <div class="spell-card">
-            <div class="spell-checkbox known-always"></div>
+            <div class="spell-checkbox known-always" onclick="App.removeKnownSpell('${sp.id}')" style="cursor:pointer;" title="Quitar de conocidos"></div>
             <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
               <div class="spell-top">
                 <span class="spell-lvl">${sp.level}</span>
@@ -1139,13 +1256,14 @@ const App = (() => {
           </div>`;
         });
       }
-      const castStat     = c.spellcastingStat || 'car';
-      const castStatName = (Characters.STAT_NAMES[castStat] || castStat.toUpperCase());
-      const castMod      = Characters.calcMod(c.stats[castStat]);
+      const castStat  = c.spellcastingStat || 'car';
+      const castMod   = Characters.calcMod(c.stats[castStat]);
+      const profBonus = Characters.calcProfBonus(c.nivel);
+      const attackStr = (profBonus + castMod) >= 0 ? `+${profBonus + castMod}` : `${profBonus + castMod}`;
       htmlDer += `
       <div class="note-block" style="margin-top:12px;">
-        <strong>Conjuros conocidos:</strong> ${spellsMax} (tabla · Nivel ${c.nivel})<br>
-        <span style="font-size:11px;color:var(--text-dim);">CD conjuros: ${8 + Characters.calcProfBonus(c.nivel) + castMod} · Bono ataque: ${Characters.calcProfBonus(c.nivel) + castMod >= 0 ? '+' : ''}${Characters.calcProfBonus(c.nivel) + castMod}</span>
+        <strong>Conocés:</strong> ${knownCount} / ${spellsMax} conjuros (tabla Nivel ${c.nivel})<br>
+        <span style="font-size:11px;color:var(--text-dim);">CD: ${8 + profBonus + castMod} · Ataque: ${attackStr}</span>
       </div>`;
     } else {
       // Prepare casters: lista de preparados hoy
@@ -3107,6 +3225,21 @@ const App = (() => {
     if (countEl) countEl.textContent = newCount;
   }
 
+  // Quita un conjuro de la lista de "conocidos" (solo para known casters: Hechicero, Bardo, Brujo)
+  function removeKnownSpell(id) {
+    if (!_char) return;
+    const spell = (_char.spells || []).find(s => s.id === id);
+    if (!spell || spell.level === 0 || spell.domain || spell.mi) return;
+    // Confirmar si excede el máximo (para que sea fácil limpiar)
+    _char.spells = _char.spells.filter(s => s.id !== id);
+    // También limpiar de preparedToday por si acaso
+    if (_char.preparedToday) _char.preparedToday = _char.preparedToday.filter(p => p !== id);
+    _saveChar();
+    _renderConjurosIzq();
+    _renderConjurosTab();
+    showToast(`${spell.name} quitado de conjuros conocidos`);
+  }
+
   /* ══════════════════════════════════════════════════════
      EQUIPO
   ══════════════════════════════════════════════════════ */
@@ -3438,6 +3571,127 @@ const App = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
+     CANTRIP PICKER
+  ══════════════════════════════════════════════════════ */
+
+  function openCantripPicker() {
+    if (!_char) return;
+    const modal = document.getElementById('cantripPickerModal');
+    if (!modal) return;
+    _renderCantripPickerBody();
+    modal.style.display = 'flex';
+  }
+
+  function closeCantripPicker() {
+    const modal = document.getElementById('cantripPickerModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function _renderCantripPickerBody() {
+    const c       = _char;
+    const body    = document.getElementById('cantripPickerBody');
+    const cfg     = Characters.CLASES_CONFIG[c.clase];
+    const maxKnown= Characters.getCantripsKnown(c);  // null = sin límite fijo
+
+    // Catálogo: todos los cantrips de la clase (level === 0) más los que ya tiene el personaje
+    const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase] || []).filter(s => s.level === 0);
+    // Cantrips que ya tiene guardados
+    const existing= (c.spells || []).filter(s => s.level === 0);
+    // Unir: catálogo + los que el personaje ya tiene y no están en el catálogo
+    const allOptions = [...catalog];
+    existing.forEach(e => {
+      if (!allOptions.find(o => o.id === e.id)) allOptions.push(e);
+    });
+
+    const existingIds      = new Set(existing.map(s => s.id));
+    const freeIds          = new Set(existing.filter(s => s.cantrip_subclass).map(s => s.id));
+    const paidCount        = existing.filter(s => !s.cantrip_subclass).length;
+
+    const limitNote = maxKnown !== null
+      ? `<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">
+          Podés conocer <strong style="color:var(--text);">${maxKnown}</strong> cantrips según tu nivel.
+          ${freeIds.size > 0 ? `Los de subclase (🎁) son <em>adicionales</em> y no cuentan.` : ''}
+         </div>`
+      : `<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Sin límite fijo. Marcá los que querés usar.</div>`;
+
+    const optionsHTML = allOptions.map(opt => {
+      const isChecked = existingIds.has(opt.id);
+      const isFree    = freeIds.has(opt.id);
+      return `
+      <label class="choice-option${isChecked ? ' selected' : ''}${isFree ? ' cantrip-free' : ''}" style="gap:10px;">
+        <input type="checkbox" name="cantripPick" value="${opt.id}"
+               ${isChecked ? 'checked' : ''}
+               ${isFree ? 'disabled checked' : ''}
+               onchange="App._onCantripCheck(this, ${maxKnown !== null ? maxKnown : 999})">
+        <div class="choice-opt-content" style="flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <strong>${opt.name}</strong>
+            ${isFree ? '<span style="font-size:10px;color:var(--gold);background:rgba(201,151,58,0.15);padding:1px 6px;border-radius:10px;">🎁 subclase</span>' : ''}
+          </div>
+          <span class="choice-opt-desc">${opt.desc || ''}</span>
+        </div>
+      </label>`;
+    }).join('');
+
+    body.innerHTML = limitNote + `<div class="choice-options-list">${optionsHTML}</div>`;
+  }
+
+  function _onCantripCheck(checkbox, max) {
+    if (max >= 999) return; // sin límite
+    // Contar checked no-disabled (= cantrips pagados, no los de subclase)
+    const checked = document.querySelectorAll('[name="cantripPick"]:checked:not(:disabled)');
+    if (checked.length > max) {
+      checkbox.checked = false;
+      checkbox.closest('.choice-option')?.classList.remove('selected');
+      showToast(`Máximo ${max} cantrips para tu nivel`);
+      return;
+    }
+    checkbox.closest('.choice-option')?.classList.toggle('selected', checkbox.checked);
+  }
+
+  function saveCantripPicker() {
+    if (!_char) return;
+    const c = _char;
+
+    // IDs seleccionados (non-disabled = los pagados)
+    const selectedPaid = new Set(
+      Array.from(document.querySelectorAll('[name="cantripPick"]:checked:not(:disabled)')).map(el => el.value)
+    );
+    // IDs de subclase (siempre se mantienen)
+    const freeIds = new Set((c.spells || []).filter(s => s.level === 0 && s.cantrip_subclass).map(s => s.id));
+
+    // Construir nueva lista de cantrips:
+    //   - Cantrips de subclase: siempre incluidos tal cual
+    //   - Cantrips pagados: solo los seleccionados
+    const keepFree    = (c.spells || []).filter(s => s.level === 0 && freeIds.has(s.id));
+    const catalog     = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase] || []).filter(s => s.level === 0);
+    const existingPaid= (c.spells || []).filter(s => s.level === 0 && !freeIds.has(s.id));
+
+    // Para cada ID seleccionado: buscar en spells existentes (preserva cambios manuales),
+    // si no existe buscarlo en catálogo, y si tampoco existe mantener el existente tal cual.
+    const newPaid = [];
+    selectedPaid.forEach(id => {
+      const existing = existingPaid.find(s => s.id === id);
+      if (existing) { newPaid.push(existing); return; }
+      const fromCatalog = catalog.find(s => s.id === id);
+      if (fromCatalog) { newPaid.push({ ...fromCatalog }); return; }
+    });
+
+    // Reemplazar solo los cantrips; mantener todos los demás (level > 0)
+    c.spells = [
+      ...keepFree,
+      ...newPaid,
+      ...(c.spells || []).filter(s => s.level > 0),
+    ];
+
+    _saveChar();
+    closeCantripPicker();
+    _renderConjurosIzq();
+    _renderConjurosTab();
+    showToast(`Cantrips guardados (${newPaid.length + keepFree.length} total)`);
+  }
+
+  /* ══════════════════════════════════════════════════════
      HABILIDADES
   ══════════════════════════════════════════════════════ */
 
@@ -3742,6 +3996,8 @@ const App = (() => {
       _renderASI(bodyEl, choice);
     } else if (choice.type === 'pickSkills') {
       _renderPickSkills(bodyEl, choice);
+    } else if (choice.type === 'pickMultiple') {
+      _renderPickMultiple(bodyEl, choice);
     }
 
     overlay.style.display = 'flex';
@@ -3873,6 +4129,37 @@ const App = (() => {
       </div>`;
   }
 
+  function _renderPickMultiple(bodyEl, choice) {
+    const count   = choice.count || 1;
+    const options = choice.options || [];
+    // Collect already chosen in previous pickMultiple rounds for this class
+    const alreadyChosen = new Set();
+    if (_char && _char.choices) {
+      Object.entries(_char.choices).forEach(([cid, val]) => {
+        if (cid !== choice.id && cid.startsWith(choice.id.replace(/-\d+$/, '-')) && Array.isArray(val)) {
+          val.forEach(v => alreadyChosen.add(v));
+        }
+      });
+    }
+    bodyEl.innerHTML = `
+      <p class="choice-prompt">${choice.prompt || `Elegí ${count} opciones:`} (elegí ${count})</p>
+      <div class="choice-options-list">
+        ${options.map(opt => {
+          const taken = alreadyChosen.has(opt.id);
+          return `
+          <label class="choice-option ${taken ? 'disabled' : ''}">
+            <input type="checkbox" name="pickMultiple" value="${opt.id}"
+                   ${taken ? 'disabled checked' : ''}
+                   onchange="App._onPickMultipleChange(this, ${count})">
+            <div class="choice-opt-content">
+              <strong>${opt.name}</strong>
+              <span class="choice-opt-desc">${opt.desc || ''}</span>
+            </div>
+          </label>`;
+        }).join('')}
+      </div>`;
+  }
+
   function _onPick1Change(radio) {
     document.querySelectorAll('#choiceModalBody .choice-option').forEach(el => el.classList.remove('selected'));
     radio.closest('.choice-option').classList.add('selected');
@@ -3926,6 +4213,16 @@ const App = (() => {
     checkbox.closest('.choice-option').classList.toggle('selected', checkbox.checked);
   }
 
+  function _onPickMultipleChange(checkbox, max) {
+    const checked = document.querySelectorAll('[name="pickMultiple"]:checked:not(:disabled)');
+    if (checked.length > max) {
+      checkbox.checked = false;
+      showToast(`Solo podés elegir ${max} opciones`);
+      return;
+    }
+    checkbox.closest('.choice-option').classList.toggle('selected', checkbox.checked);
+  }
+
   function _saveChoice() {
     const choice = window._currentChoice;
     if (!choice || !_char) { _processNextChoice(); return; }
@@ -3955,6 +4252,11 @@ const App = (() => {
       const checks = Array.from(document.querySelectorAll('[name="pickSkill"]:checked:not(:disabled)'));
       const count = choice.count || 2;
       if (checks.length !== count) { showToast(`Elegí exactamente ${count} skills`); return; }
+      value = checks.map(c => c.value);
+    } else if (choice.type === 'pickMultiple') {
+      const checks = Array.from(document.querySelectorAll('[name="pickMultiple"]:checked:not(:disabled)'));
+      const count = choice.count || 1;
+      if (checks.length !== count) { showToast(`Elegí exactamente ${count} opción${count > 1 ? 'es' : ''}`); return; }
       value = checks.map(c => c.value);
     }
 
@@ -5083,8 +5385,9 @@ const App = (() => {
     toggleInspiration,
 
     // Conjuros
-    toggleSpellPrepared, setSpellFilter,
+    toggleSpellPrepared, removeKnownSpell, setSpellFilter,
     castSpell, confirmCastAtLevel, closeCastPicker,
+    openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
 
     // Equipo
     addWeapon, openAddWeapon, openEditWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
@@ -5105,7 +5408,7 @@ const App = (() => {
 
     // Elecciones de personaje
     openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice,
-    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _onPickSkillChange,
+    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _onPickSkillChange, _onPickMultipleChange,
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,

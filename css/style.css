@@ -6991,3 +6991,13 @@ mark.diary-highlight {
   color: var(--text-dim);
   margin-top: 1px;
 }
+
+/* Cantrip picker — cantrip de subclase (gratis) */
+.choice-option.cantrip-free {
+  border-color: rgba(201,151,58,0.4);
+  background: rgba(201,151,58,0.06);
+  cursor: default;
+}
+.choice-option.cantrip-free input[type="checkbox"] {
+  accent-color: var(--gold);
+}
