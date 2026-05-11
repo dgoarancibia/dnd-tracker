@@ -1132,8 +1132,9 @@ function showCharsScreen(user) {
 }
 
 function initCharsScreen() {
-  // Primer run: crear Lursey si no hay nada
-  if (Storage.isFirstRun()) {
+  // Primer run: crear Lursey solo si NO hay sesión activa (usuario anónimo)
+  // Si hay usuario logueado, el sync de la nube trae los personajes — no crear nada
+  if (Storage.isFirstRun() && !_currentUser) {
     const lursey = Characters.buildLursey();
     Storage.saveChar(lursey);
     Storage.setActiveId(lursey.id);
