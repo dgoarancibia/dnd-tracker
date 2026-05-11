@@ -3715,13 +3715,34 @@ const App = (() => {
   function _renderASI(bodyEl, choice) {
     const STAT_LABELS = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
     const stats = _char ? _char.stats : { for:10, des:10, con:10, int:10, sab:10, car:10 };
+
+    // Feats agrupados por categoría
+    const feats    = Characters.GENERAL_FEATS || [];
+    const cats     = [...new Set(feats.map(f => f.category))];
+    const featHTML = cats.map(cat => {
+      const list = feats.filter(f => f.category === cat);
+      return `
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:10px 0 4px;">${cat}</div>
+        ${list.map(f => `
+          <label class="choice-option feat-pick-option">
+            <input type="radio" name="asiFeat" value="${f.id}" onchange="App._onASIFeatChange(this)">
+            <div class="choice-opt-content">
+              <strong>${f.name}</strong>
+              ${f.prereq ? `<span style="font-size:10px;color:var(--gold-dim);display:block;">Req: ${f.prereq}</span>` : ''}
+              <span class="choice-opt-desc">${f.desc}</span>
+            </div>
+          </label>`).join('')}`;
+    }).join('');
+
     bodyEl.innerHTML = `
-      <p class="choice-prompt">Ganás +2 a un atributo, o +1/+1 a dos atributos distintos.<br>
+      <p class="choice-prompt">Ganás +2 a un atributo, +1/+1 a dos, o tomás un <strong>Feat</strong>.<br>
       <span style="font-size:11px;color:var(--text-dim);">Máximo 20 por atributo.</span></p>
       <div class="asi-mode-toggle">
         <button class="asi-mode-btn active" id="asiMode-single" onclick="App._setASIMode('single')">+2 a uno</button>
-        <button class="asi-mode-btn" id="asiMode-split"  onclick="App._setASIMode('split')">+1/+1 a dos</button>
+        <button class="asi-mode-btn" id="asiMode-split"  onclick="App._setASIMode('split')">+1 / +1</button>
+        <button class="asi-mode-btn" id="asiMode-feat"   onclick="App._setASIMode('feat')">🎓 Feat</button>
       </div>
+
       <div id="asiSingleSection">
         <div class="choice-options-list asi-grid">
           ${Object.keys(STAT_LABELS).map(s => {
@@ -3743,6 +3764,7 @@ const App = (() => {
           }).join('')}
         </div>
       </div>
+
       <div id="asiSplitSection" style="display:none;">
         <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Elegí dos atributos distintos:</p>
         <div class="choice-options-list asi-grid" id="asiSplitGrid">
@@ -3763,7 +3785,15 @@ const App = (() => {
             </label>`;
           }).join('')}
         </div>
+      </div>
+
+      <div id="asiFeatSection" style="display:none;">
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Elegí un feat — aparecerá en tu pestaña Habilidades:</p>
+        <div class="choice-options-list" style="max-height:280px;overflow-y:auto;">
+          ${featHTML}
+        </div>
       </div>`;
+
     window._asiMode = 'single';
   }
 
@@ -3796,15 +3826,25 @@ const App = (() => {
 
   function _setASIMode(mode) {
     window._asiMode = mode;
-    document.getElementById('asiMode-single').classList.toggle('active', mode === 'single');
-    document.getElementById('asiMode-split').classList.toggle('active', mode === 'split');
-    document.getElementById('asiSingleSection').style.display = mode === 'single' ? 'block' : 'none';
-    document.getElementById('asiSplitSection').style.display  = mode === 'split'  ? 'block' : 'none';
+    document.getElementById('asiMode-single')?.classList.toggle('active', mode === 'single');
+    document.getElementById('asiMode-split')?.classList.toggle('active',  mode === 'split');
+    document.getElementById('asiMode-feat')?.classList.toggle('active',   mode === 'feat');
+    const single = document.getElementById('asiSingleSection');
+    const split  = document.getElementById('asiSplitSection');
+    const feat   = document.getElementById('asiFeatSection');
+    if (single) single.style.display = mode === 'single' ? 'block' : 'none';
+    if (split)  split.style.display  = mode === 'split'  ? 'block' : 'none';
+    if (feat)   feat.style.display   = mode === 'feat'   ? 'block' : 'none';
     // Deselect all
-    document.querySelectorAll('[name="asiSingle"],[name="asiSplit"]').forEach(i => {
+    document.querySelectorAll('[name="asiSingle"],[name="asiSplit"],[name="asiFeat"]').forEach(i => {
       i.checked = false;
-      i.closest('.choice-option').classList.remove('selected');
+      i.closest('.choice-option')?.classList.remove('selected');
     });
+  }
+
+  function _onASIFeatChange(radio) {
+    document.querySelectorAll('#asiFeatSection .choice-option').forEach(el => el.classList.remove('selected'));
+    radio.closest('.choice-option').classList.add('selected');
   }
 
   function _onASISingleChange(radio) {
@@ -3848,10 +3888,14 @@ const App = (() => {
         const radio = document.querySelector('[name="asiSingle"]:checked');
         if (!radio) { showToast('Elegí un atributo'); return; }
         value = { mode:'single', stat: radio.value };
-      } else {
+      } else if (mode === 'split') {
         const checks = Array.from(document.querySelectorAll('[name="asiSplit"]:checked'));
         if (checks.length !== 2) { showToast('Elegí exactamente 2 atributos'); return; }
         value = { mode:'split', stat1: checks[0].value, stat2: checks[1].value };
+      } else if (mode === 'feat') {
+        const radio = document.querySelector('[name="asiFeat"]:checked');
+        if (!radio) { showToast('Elegí un feat'); return; }
+        value = { mode:'feat', featId: radio.value };
       }
     } else if (choice.type === 'pickSkills') {
       const checks = Array.from(document.querySelectorAll('[name="pickSkill"]:checked:not(:disabled)'));
@@ -5007,7 +5051,7 @@ const App = (() => {
 
     // Elecciones de personaje
     openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice,
-    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onPickSkillChange,
+    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _onPickSkillChange,
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,

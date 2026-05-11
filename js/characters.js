@@ -3222,6 +3222,48 @@ const Characters = (() => {
     'Healer':                    { desc:'Usás un Healer\'s Kit para estabilizar a un personaje caído y además restaurarle 1d6+4+nivel HP. Podés usarlo una vez por criatura entre descansos cortos/largos.', fullDesc:'' },
   };
 
+  // ── Catálogo de feats generales (PHB 2014 + 2024 + Tasha's más usados) ────────
+  const GENERAL_FEATS = [
+    // Combate
+    { id:'feat-grappler',         name:'Grappler',              category:'Combate', prereq:'FUE 13+', desc:'Ventaja en ataques contra criaturas que tenés agarradas. Podés restringirlas (ambos quedan restringidos).', fullDesc:'' },
+    { id:'feat-great-weapon-master', name:'Great Weapon Master', category:'Combate', prereq:'FUE 13+', desc:'Con arma de dos manos: -5 al golpe para +10 al daño. Si hacés un crítico o matás con ella, hacés un ataque de Bonus Action.', fullDesc:'' },
+    { id:'feat-polearm-master',   name:'Polearm Master',        category:'Combate', prereq:'FUE o DES 13+', desc:'Con alabarda/lanza: Bonus Action para golpear con el extremo (d4 contundente). Reacción para atacar cuando alguien entra a tu alcance.', fullDesc:'' },
+    { id:'feat-sentinel',         name:'Sentinel',              category:'Combate', prereq:null, desc:'Opp attacks reducen velocidad a 0. Podés hacer opp attack aunque el enemigo use Disengage. Reacción para atacar a quien ataque a un aliado adyacente.', fullDesc:'' },
+    { id:'feat-sharpshooter',     name:'Sharpshooter',          category:'Combate', prereq:'DES 13+', desc:'-5 al golpe para +10 al daño con armas a distancia. Ignorás cobertura media y tres cuartos. Sin penalización de largo alcance.', fullDesc:'' },
+    { id:'feat-crossbow-expert',  name:'Crossbow Expert',       category:'Combate', prereq:null, desc:'Sin desventaja en ataque a distancia de cerca. Bonus Action con ballesta de mano. Ignorás la propiedad Loading.', fullDesc:'' },
+    { id:'feat-dual-wielder',     name:'Dual Wielder',          category:'Combate', prereq:null, desc:'+1 CA con dos armas. Podés two-weapon fight con armas no ligeras. Desenfundás/enfundás dos armas a la vez.', fullDesc:'' },
+    { id:'feat-shield-master',    name:'Shield Master',         category:'Combate', prereq:null, desc:'Bonus Action para empujar a criatura adyacente. +2 a saves de DES que afectan solo a vos. Si fallás un save DES, podés gastar Reacción para no tomar daño.', fullDesc:'' },
+    { id:'feat-mobile',           name:'Mobile',                category:'Combate', prereq:null, desc:'+10 ft de velocidad. Al Dash en terreno difícil no gastas extra. Si atacás a alguien (golpee o no), no provoca opp attack en tu turno.', fullDesc:'' },
+    { id:'feat-war-caster',       name:'War Caster',            category:'Combate', prereq:'Capacidad de lanzar conjuros', desc:'Ventaja en CON saves de concentración. Podés lanzar conjuros con las manos ocupadas (escudo/arma). Podés lanzar un conjuro como opp attack.', fullDesc:'' },
+    { id:'feat-resilient',        name:'Resilient',             category:'Combate', prereq:null, desc:'+1 a un stat a elección + proficiencia en saves de ese stat.', fullDesc:'' },
+    // Magia
+    { id:'feat-elemental-adept',  name:'Elemental Adept',       category:'Magia', prereq:'Capacidad de lanzar conjuros', desc:'Elegís un tipo de daño (ácido/frío/fuego/rayo/trueno). Tus conjuros de ese tipo ignoran resistencia. Los 1 en dados de ese daño se tratan como 2.', fullDesc:'' },
+    { id:'feat-spell-sniper',     name:'Spell Sniper',          category:'Magia', prereq:'Capacidad de lanzar conjuros', desc:'El alcance de conjuros de ataque se duplica. Ignorás cobertura media y tres cuartos con conjuros de ataque. Aprendés 1 cantrip de ataque de cualquier lista.', fullDesc:'' },
+    { id:'feat-metamagic-adept',  name:'Metamagic Adept',       category:'Magia', prereq:'Capacidad de lanzar conjuros', desc:'Aprendés 2 opciones de Metamagic y ganás 2 Sorcery Points para usarlas (se recuperan en Long Rest). (Tasha\'s)', fullDesc:'' },
+    { id:'feat-artificer-init',   name:'Artificer Initiate',    category:'Magia', prereq:null, desc:'Aprendés 1 cantrip de Artificer + 1 conjuro de nivel 1 (lanzable 1/día). Proficiencia en herramientas de artesano a elección.', fullDesc:'' },
+    { id:'feat-ritual-caster',    name:'Ritual Caster',         category:'Magia', prereq:'INT o SAB 13+', desc:'Adquirís un libro de rituales con 2 conjuros de nivel 1 que tengan la etiqueta ritual. Podés agregar más rituales al libro. Podés lanzarlos como ritual sin gastar slot.', fullDesc:'' },
+    // Utilidad
+    { id:'feat-athlete',          name:'Athlete',               category:'Utilidad', prereq:null, desc:'+1 FUE o DES. Levantarte solo cuesta 5 ft. Escalar no reduce tu velocidad. Salto con carrera con solo 5 ft de movimiento.', fullDesc:'' },
+    { id:'feat-actor',            name:'Actor',                 category:'Utilidad', prereq:null, desc:'+1 CAR. Ventaja en Performance/Engaño cuando te hacés pasar por alguien. Podés imitar voz/sonidos de criaturas que hayas escuchado (Perspicacia CD 14 para detectarte).', fullDesc:'' },
+    { id:'feat-charger',          name:'Charger',               category:'Utilidad', prereq:null, desc:'Al Dash como Action: Bonus Action para atacar (+5 daño) o empujar (10 ft). Bonus: +1 FUE o CON.', fullDesc:'' },
+    { id:'feat-dungeon-delver',   name:'Dungeon Delver',        category:'Utilidad', prereq:null, desc:'Ventaja en Percepción/Investigación para puertas secretas. Ventaja en saves vs trampas. Resistencia al daño de trampas. Normal pace para buscar trampas.', fullDesc:'' },
+    { id:'feat-durable',          name:'Durable',               category:'Utilidad', prereq:null, desc:'+1 CON. Mínimo de HP recuperado en un Hit Die = 2×mod CON (mínimo 2).', fullDesc:'' },
+    { id:'feat-linguist',         name:'Linguist',              category:'Utilidad', prereq:null, desc:'+1 INT. Aprendés 3 idiomas. Podés crear cifrados escritos; solo vos y quienes enseñés pueden leerlos (Investigación para romperlo, CD = 8+INT mod+PB).', fullDesc:'' },
+    { id:'feat-observant',        name:'Observant',             category:'Utilidad', prereq:null, desc:'+1 INT o SAB. Podés leer labios. +5 a Percepción pasiva e Investigación pasiva.', fullDesc:'' },
+    { id:'feat-prodigy',          name:'Prodigy',               category:'Utilidad', prereq:'Half-human o humano', desc:'Proficiencia en 1 skill, 1 herramienta y 1 idioma. Ganás Expertise en 1 skill de las que ya tenés proficiencia. (Xanathar\'s)', fullDesc:'' },
+    { id:'feat-skulker',          name:'Skulker',               category:'Utilidad', prereq:'DES 13+', desc:'Podés ocultarte cuando estés ligeramente cubierto. Si fallás un ataque oculto, no te revelás. Estar en luz tenue no es desventaja en Sigilo.', fullDesc:'' },
+    { id:'feat-inspiring-leader', name:'Inspiring Leader',      category:'Utilidad', prereq:'CAR 13+', desc:'10 min de inspiración a hasta 6 aliados que te puedan escuchar. Cada uno gana Temp HP = tu nivel + mod CAR. 1 uso por Short/Long Rest.', fullDesc:'' },
+    { id:'feat-lucky',            name:'Lucky',                 category:'Utilidad', prereq:null, desc:'3 puntos de suerte (se recuperan en Long Rest). Gastás uno para tirar un d20 adicional en ataque/check/save y elegís cuál resultado usar. También podés forzar a que el atacante tire de vuelta y te quedás con el resultado más bajo.', fullDesc:'' },
+    { id:'feat-alert',            name:'Alert',                 category:'Utilidad', prereq:null, desc:'+5 a iniciativa. No podés ser sorprendido mientras estés consciente. Los enemigos ocultos no ganan ventaja en ataques contra vos.', fullDesc:'' },
+    { id:'feat-tough',            name:'Tough',                 category:'Utilidad', prereq:null, desc:'HP máximo aumenta en 2 × tu nivel (retroactivo). En cada nivel futuro HP máximo aumenta 2 puntos extra adicionales.', fullDesc:'' },
+    { id:'feat-skilled',          name:'Skilled',               category:'Utilidad', prereq:null, desc:'Ganás proficiencia en 3 skills o herramientas a elección (cualquier combinación).', fullDesc:'' },
+    { id:'feat-telekinetic',      name:'Telekinetic',           category:'Utilidad', prereq:null, desc:'+1 INT/SAB/CAR. Aprendés Mage Hand (invisible). Bonus Action: empujás/atraés a criatura a 5 ft (STR save CD 8+PB+stat mod). (Tasha\'s)', fullDesc:'' },
+    { id:'feat-telepathic',       name:'Telepathic',            category:'Utilidad', prereq:null, desc:'+1 INT/SAB/CAR. Podés hablar telepáticamente con alguien a 60 ft (no necesita compartir idioma). 1/día: Detect Thoughts sin slot. (Tasha\'s)', fullDesc:'' },
+    { id:'feat-fey-touched',      name:'Fey Touched',           category:'Magia', prereq:null, desc:'+1 INT/SAB/CAR. Aprendés Misty Step + 1 conjuro de nivel 1 de las escuelas de Adivinación o Encantamiento. Cada uno lanzable 1/día gratis. (Tasha\'s)', fullDesc:'' },
+    { id:'feat-shadow-touched',   name:'Shadow Touched',        category:'Magia', prereq:null, desc:'+1 INT/SAB/CAR. Aprendés Invisibility + 1 conjuro de nivel 1 de las escuelas de Ilusión o Necromancia. Cada uno lanzable 1/día gratis. (Tasha\'s)', fullDesc:'' },
+    { id:'feat-custom',           name:'Feat personalizado',    category:'Otro', prereq:null, desc:'Agregá una descripción manual del feat en tus features después de crearlo.', fullDesc:'' },
+  ];
+
   // ── applyTrasfondo: aplica skills, feat y rasgos de trasfondo al personaje ───
   function applyTrasfondo(char, trasfondoNombre) {
     if (!trasfondoNombre) return char;
@@ -4067,13 +4109,35 @@ const Characters = (() => {
     if (!char.choices) char.choices = {};
     char.choices[choiceId] = value;
 
-    // Si es ASI, aplicar al stat directamente (máximo 20)
+    // Si es ASI, aplicar al stat directamente (máximo 20) o agregar feat
     if (choiceId.startsWith('asi-')) {
       if (value.mode === 'single' && value.stat) {
         char.stats[value.stat] = Math.min(20, (char.stats[value.stat] || 10) + 2);
       } else if (value.mode === 'split' && value.stat1 && value.stat2) {
         char.stats[value.stat1] = Math.min(20, (char.stats[value.stat1] || 10) + 1);
         char.stats[value.stat2] = Math.min(20, (char.stats[value.stat2] || 10) + 1);
+      } else if (value.mode === 'feat' && value.featId) {
+        // Buscar el feat en el catálogo general
+        const featDef = GENERAL_FEATS.find(f => f.id === value.featId);
+        if (featDef) {
+          const source = `Feat · Nivel ${choiceId.replace('asi-', '')}`;
+          const feature = {
+            id:       value.featId + '-' + choiceId,
+            name:     featDef.name,
+            source,
+            type:     'passive',
+            action:   'Pasiva',
+            range:    'Personal',
+            recharge: null,
+            desc:     featDef.desc,
+            fullDesc: featDef.fullDesc || '',
+          };
+          if (!char.features) char.features = [];
+          // Evitar duplicados
+          if (!char.features.find(f => f.id === feature.id)) {
+            char.features.push(feature);
+          }
+        }
       }
     }
 
@@ -4144,6 +4208,7 @@ const Characters = (() => {
     LURSEY_IFTTT,
     PRIMAL_COMPANION_BEASTS,
     ARMOR_CATALOG,
+    GENERAL_FEATS,
     WARLOCK_SLOTS,
     WARLOCK_SLOT_LEVEL,
     calcMod,
