@@ -1205,6 +1205,7 @@ const App = (() => {
       <span class="prepared-label">${headerLabel}${headerSubLabel}</span>
       <span class="prepared-count" id="preparedCount" style="${knownOver ? 'color:#e07070;' : ''}">${preparedCount}</span>
       <span class="prepared-max"> / ${spellsMax}${knownOver ? ' <span style="font-size:10px;color:#e07070;">⚠ excede</span>' : ''}</span>
+      ${isKnown ? `<button onclick="App.clearAllKnownSpells()" style="margin-left:auto;font-size:10px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer;" title="Limpiar todos los conjuros conocidos">🗑 Limpiar</button>` : ''}
     </div>`;
 
     // Cantrips conocidos — fila con contador + botón editar
@@ -3247,6 +3248,24 @@ const App = (() => {
     _renderConjurosIzq();
     _renderConjurosTab();
     showToast(`${spell.name} quitado de conjuros conocidos`);
+  }
+
+  // Limpia todos los conjuros conocidos nv1+ (con confirmación)
+  function clearAllKnownSpells() {
+    if (!_char) return;
+    const count = (_char.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi).length;
+    if (count === 0) { showToast('No tenés conjuros conocidos para limpiar.'); return; }
+    _confirm(
+      `¿Seguro que querés limpiar los ${count} conjuros conocidos? Los cantrips y conjuros de dominio/MI no se borran.`,
+      () => {
+        _char.spells = (_char.spells || []).filter(s => s.level === 0 || s.domain || s.mi);
+        if (_char.preparedToday) _char.preparedToday = [];
+        _saveChar();
+        _renderConjurosIzq();
+        _renderConjurosTab();
+        showToast('Conjuros conocidos limpiados.');
+      }
+    );
   }
 
   // Agrega un conjuro a la lista de "conocidos" (solo para known casters)
@@ -5418,7 +5437,7 @@ const App = (() => {
     toggleInspiration,
 
     // Conjuros
-    toggleSpellPrepared, removeKnownSpell, addKnownSpell, setSpellFilter,
+    toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, setSpellFilter,
     castSpell, confirmCastAtLevel, closeCastPicker,
     openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
 
