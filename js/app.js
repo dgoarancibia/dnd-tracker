@@ -92,37 +92,23 @@ const App = (() => {
         c.subclase = c.classes[0].subclass;
         changed = true;
       }
-      // b) desde choices['subclase-1'] — el choice guarda el ID (ej: 'sub-aberrant-mind')
-      //    buscar en SUBCLASES_CONFIG cuya key ES el nombre real
-      if (!c.subclase && c.choices && c.choices['subclase-1']) {
-        const choiceId = c.choices['subclase-1'];
+      // b) desde choices['subclase-N'] — distintas clases usan subclase-1/2/3
+      //    buscar la primera key que empiece con 'subclase-'
+      const subclaseChoiceKey = c.choices && Object.keys(c.choices).find(k => k.startsWith('subclase-'));
+      if (!c.subclase && subclaseChoiceKey) {
+        const choiceId = c.choices[subclaseChoiceKey];
         // SUBCLASES_CONFIG tiene como keys los nombres reales ('Aberrant Mind', etc.)
         // Buscamos la key cuyo valor tenga coincidencia, o buscamos en CHOICES_CONFIG el name
-        const allSubs = Characters.SUBCLASES_CONFIG || {};
-        // Buscar por nombre en todas las listas de subclases del CHOICES_CONFIG
+        // Buscar el nombre real del choiceId recorriendo TODAS las opciones de subclase
         let foundName = null;
-        const claseCfg = Characters.CHOICES_CONFIG && Characters.CHOICES_CONFIG[c.clase];
-        if (claseCfg) {
-          const subChoice = claseCfg.find(ch => ch.id === 'subclase-1');
-          if (subChoice && subChoice.options) {
-            const opt = subChoice.options.find(o => o.id === choiceId);
-            if (opt) foundName = opt.name;
-          }
-        }
-        // Si no encontramos por CHOICES_CONFIG, buscar directamente en SUBCLASES_CONFIG keys
-        if (!foundName && allSubs[choiceId]) foundName = choiceId;
-        // Fallback: buscar en todos los objetos de subclase por id
-        if (!foundName) {
-          // Recorrer todas las listas de subclases exportadas vía CHOICES_CONFIG
-          Object.values(Characters.CHOICES_CONFIG || {}).forEach(list => {
-            list.forEach(ch => {
-              if (ch.id === 'subclase-1' && ch.options) {
-                const opt = ch.options.find(o => o.id === choiceId);
-                if (opt && !foundName) foundName = opt.name;
-              }
-            });
+        Object.values(Characters.CHOICES_CONFIG || {}).forEach(list => {
+          list.forEach(ch => {
+            if (ch.id && ch.id.startsWith('subclase-') && ch.options) {
+              const opt = ch.options.find(o => o.id === choiceId);
+              if (opt && !foundName) foundName = opt.name;
+            }
           });
-        }
+        });
         if (foundName) {
           c.subclase = foundName;
           if (c.classes && c.classes[0]) c.classes[0].subclass = foundName;
