@@ -1818,6 +1818,13 @@ const Characters = (() => {
 
     'Gloom Stalker': {
       clase: 'Explorador',
+      subclassSpells: (nivel) => [
+        { id:'gs-disguise-self',  name:'Disguise Self ◆',      level:1, castTime:'Acción',       range:'Uno mismo', duration:'1 h',     concentration:false, combat:false, domain:true, desc:'Cambia apariencia visual. Siempre preparado.' },
+        ...(nivel >= 5 ? [{ id:'gs-rope-trick',   name:'Rope Trick ◆',          level:2, castTime:'Acción',       range:'Toque', duration:'1 h',         concentration:false, combat:false, domain:true, desc:'Espacio extradimensional en extremo de cuerda. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'gs-fear',         name:'Fear ◆',                level:3, castTime:'Acción',       range:'Cono 9m', duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save SAB o asustado + huye. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'gs-greater-invis',name:'Greater Invisibility ◆', level:4, castTime:'Acción',    range:'Toque', duration:'Conc. 1 min',   concentration:true, combat:true, domain:true, desc:'Invisible incluso al atacar o lanzar. Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'gs-seeming',     name:'Seeming ◆',              level:5, castTime:'Acción',      range:'9 m',   duration:'8 h',           concentration:false, combat:false, domain:true, desc:'Hasta 6 criaturas cambian apariencia. Siempre preparado.' }] : []),
+      ],
       resources: (nivel) => [
         { id:'dread-ambusher', name:'Dread Ambusher',
           current: 1, max: 1, recharge:'long',
@@ -1936,11 +1943,35 @@ const Characters = (() => {
           recharge:'long',
           note:'1d4 en ataque/save/check · 9m · max = prof bonus' },
       ],
+      subclassSpells: () => [
+        { id:'heroism',        name:'Heroism ◆',             level:1, castTime:'Acción',       range:'Toque',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Inmune a Asustado + HP temp = SAB mod/turno. Siempre preparado.' },
+        { id:'sanctuary',      name:'Sanctuary ◆',           level:1, castTime:'Acción bonus', range:'9 m',    duration:'1 min',       concentration:false, combat:false, domain:true, desc:'Criaturas hostiles deben superar save SAB para atacar al objetivo. Siempre preparado.' },
+        { id:'aid',            name:'Aid ◆',                 level:2, castTime:'Acción',       range:'9 m',    duration:'8 h',         concentration:false, combat:false, domain:true, desc:'Hasta 3 criaturas +5 HP máximos y actuales. Siempre preparado.' },
+        { id:'warding-bond',   name:'Warding Bond ◆',        level:2, castTime:'Acción',       range:'Toque',  duration:'Conc. 1 h',   concentration:true,  combat:false, domain:true, desc:'+1 CA, +1 saves, resist al daño. Receptor recibe mitad del daño que vos. Siempre preparado.' },
+        { id:'beacon-of-hope', name:'Beacon of Hope ◆',      level:3, castTime:'Acción',       range:'9 m',    duration:'Conc. 1 min', concentration:true,  combat:false, domain:true, desc:'Ventaja en SAB saves y saves de muerte + máximo en dados de curación. Siempre preparado.' },
+        { id:'slow',           name:'Slow ◆',                level:3, castTime:'Acción',       range:'36 m',   duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Hasta 6 criaturas · save SAB · vel÷2, -2 CA/DES saves, 1 acción/turno. Siempre preparado.' },
+        { id:'aura-of-purity', name:'Aura of Purity ◆',      level:4, castTime:'Acción',       range:'9 m',    duration:'Conc. 10 min',concentration:true,  combat:false, domain:true, desc:'Vos y aliados: inmunes a enfermedades + ventaja en saves de múltiples condiciones. Siempre preparado.' },
+        { id:'otiluke-sphere',  name:"Otiluke's Resilient Sphere ◆", level:4, castTime:'Acción',range:'9 m',   duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Esfera impenetrable alrededor de criatura · save DES. Inmune al daño y fuerza aérea. Siempre preparado.' },
+        { id:'greater-restoration', name:'Greater Restoration ◆', level:5, castTime:'Acción',  range:'Toque',  duration:'Inst.',       concentration:false, combat:false, domain:true, desc:'Reduce agotamiento, elimina encantamiento/maldición/petrificación, restaura HP max. Siempre preparado.' },
+        { id:'rary-telepathic-bond', name:"Rary's Telepathic Bond ◆", level:5, castTime:'Acción',range:'9 m', duration:'1 h',         concentration:false, combat:false, domain:true, desc:'Hasta 8 criaturas se comunican telepáticamente sin concentración. Siempre preparado.' },
+      ],
       features: () => [],
     },
 
     'Life Domain': {
       clase: 'Clérigo',
+      subclassSpells: () => [
+        { id:'ld-bless',        name:'Bless ◆',              level:1, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Hasta 3 criaturas +1d4 en ataques y saves. Siempre preparado.' },
+        { id:'ld-cure-wounds',  name:'Cure Wounds ◆',        level:1, castTime:'Acción',       range:'Toque', duration:'Inst.',       concentration:false, combat:false, domain:true, desc:'1d8+SAB mod HP curados. Siempre preparado.' },
+        { id:'ld-lesser-rest',  name:'Lesser Restoration ◆', level:2, castTime:'Acción',       range:'Toque', duration:'Inst.',       concentration:false, combat:false, domain:true, desc:'Elimina enfermedad o condición (cegado, sordo, paralizado, envenenado). Siempre preparado.' },
+        { id:'ld-spiritual-weapon', name:'Spiritual Weapon ◆', level:2, castTime:'Acción bonus',range:'18 m', duration:'1 min',       concentration:false, combat:true,  domain:true, desc:'Arma espectral: ataque con acción bonus, 1d8+SAB daño. Siempre preparado.' },
+        { id:'ld-beacon-hope',  name:'Beacon of Hope ◆',     level:3, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 min', concentration:true,  combat:false, domain:true, desc:'Ventaja en SAB saves y de muerte + máximo en curación. Siempre preparado.' },
+        { id:'ld-revivify',     name:'Revivify ◆',           level:3, castTime:'Acción',       range:'Toque', duration:'Inst.',       concentration:false, combat:true,  domain:true, desc:'Revive criatura muerta hace ≤1 min con 1 HP. Siempre preparado.' },
+        { id:'ld-death-ward',   name:'Death Ward ◆',         level:4, castTime:'Acción',       range:'Toque', duration:'8 h',         concentration:false, combat:false, domain:true, desc:'Criatura sobrevive 1 vez a muerte cayendo a 1 HP en su lugar. Siempre preparado.' },
+        { id:'ld-guardian-faith',name:'Guardian of Faith ◆', level:4, castTime:'Acción',       range:'9 m',   duration:'8 h',         concentration:false, combat:true,  domain:true, desc:'Guardián espectral: 20 radiante a hostilas en 3m (save DES mitad). Siempre preparado.' },
+        { id:'ld-mass-cure',    name:'Mass Cure Wounds ◆',   level:5, castTime:'Acción',       range:'18 m',  duration:'Inst.',       concentration:false, combat:false, domain:true, desc:'Hasta 6 criaturas en 9m radio curan 3d8+SAB. Siempre preparado.' },
+        { id:'ld-raise-dead',   name:'Raise Dead ◆',         level:5, castTime:'1 h',          range:'Toque', duration:'Inst.',       concentration:false, combat:false, domain:true, desc:'Revive muerto hace ≤10 días (sin veneno ni tiempo). Siempre preparado.' },
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-life', name:'Channel Divinity',
           current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
@@ -1978,6 +2009,18 @@ const Characters = (() => {
 
     'Light Domain': {
       clase: 'Clérigo',
+      subclassSpells: () => [
+        { id:'ltd-burning-hands', name:'Burning Hands ◆',     level:1, castTime:'Acción',       range:'Cono 4,5m', duration:'Inst.',      concentration:false, combat:true,  domain:true, desc:'Save DES · 3d6 fuego. +1d6 por nivel. Siempre preparado.' },
+        { id:'ltd-faerie-fire',   name:'Faerie Fire ◆',       level:1, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Objetos/criaturas en cubo 6m brillan · ataques con ventaja vs ellos. Siempre preparado.' },
+        { id:'ltd-flaming-sphere',name:'Flaming Sphere ◆',   level:2, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Esfera de fuego 1,5m · 2d6 fuego (save DES). Siempre preparado.' },
+        { id:'ltd-scorching-ray', name:'Scorching Ray ◆',    level:2, castTime:'Acción',       range:'36 m',  duration:'Inst.',       concentration:false, combat:true,  domain:true, desc:'3 ataques a distancia · 2d6 fuego c/u. +1 rayo por nivel. Siempre preparado.' },
+        { id:'ltd-daylight',      name:'Daylight ◆',          level:3, castTime:'Acción',       range:'18 m',  duration:'1 h',         concentration:false, combat:false, domain:true, desc:'Esfera luz brillante 18m radius. Siempre preparado.' },
+        { id:'ltd-fireball',      name:'Fireball ◆',          level:3, castTime:'Acción',       range:'45 m',  duration:'Inst.',       concentration:false, combat:true,  domain:true, desc:'Esfera 20ft · save DES · 8d6 fuego. Siempre preparado.' },
+        { id:'ltd-guardian-faith',name:'Guardian of Faith ◆',level:4, castTime:'Acción',       range:'9 m',   duration:'8 h',         concentration:false, combat:true,  domain:true, desc:'Guardián espectral: 20 radiante a hostiles en 3m. Siempre preparado.' },
+        { id:'ltd-wall-of-fire',  name:'Wall of Fire ◆',      level:4, castTime:'Acción',       range:'36 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Muro 18m · 5d8 fuego al otro lado. Siempre preparado.' },
+        { id:'ltd-flame-strike',  name:'Flame Strike ◆',      level:5, castTime:'Acción',       range:'18 m',  duration:'Inst.',       concentration:false, combat:true,  domain:true, desc:'Columna de fuego divino 4d6 fuego + 4d6 radiante (save DES). Siempre preparado.' },
+        { id:'ltd-scrying',       name:'Scrying ◆',           level:5, castTime:'10 min',       range:'Uno mismo', duration:'Conc. 10 min', concentration:true, combat:false, domain:true, desc:'Ves/oyes a una criatura conocida en otro lugar (save SAB negación). Siempre preparado.' },
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-light', name:'Channel Divinity',
           current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
@@ -2011,6 +2054,18 @@ const Characters = (() => {
 
     'War Domain': {
       clase: 'Clérigo',
+      subclassSpells: () => [
+        { id:'wd-divine-favor',  name:'Divine Favor ◆',       level:1, castTime:'Acción bonus', range:'Uno mismo', duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'+1d4 radiante en cada ataque con arma. Siempre preparado.' },
+        { id:'wd-shield-faith',  name:'Shield of Faith ◆',    level:1, castTime:'Acción bonus', range:'18 m',  duration:'Conc. 10 min', concentration:true, combat:false, domain:true, desc:'+2 CA a una criatura. Siempre preparado.' },
+        { id:'wd-magic-weapon',  name:'Magic Weapon ◆',       level:2, castTime:'Acción bonus', range:'Toque', duration:'1 h',          concentration:true, combat:true, domain:true, desc:'Arma +1 (o más alto con slots altos). Siempre preparado.' },
+        { id:'wd-spiritual-weapon',name:'Spiritual Weapon ◆', level:2, castTime:'Acción bonus', range:'18 m', duration:'1 min',        concentration:false, combat:true, domain:true, desc:'Arma espectral: ataque con acción bonus, 1d8+SAB daño. Siempre preparado.' },
+        { id:'wd-crusaders-mantle',name:"Crusader's Mantle ◆",level:3, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Aliados en 9m +1d4 daño en ataques. Siempre preparado.' },
+        { id:'wd-spirit-guardians',name:'Spirit Guardians ◆', level:3, castTime:'Acción',       range:'Uno mismo (4,5m)', duration:'Conc. 10 min', concentration:true, combat:true, domain:true, desc:'Criaturas hostiles en 3m radio: vel÷2 + 3d8 radiante/necrótico (save SAB mitad). Siempre preparado.' },
+        { id:'wd-freedom-movement',name:'Freedom of Movement ◆', level:4, castTime:'Acción',   range:'Toque', duration:'1 h',          concentration:false, combat:true, domain:true, desc:'Inmune a terreno difícil mágico, parálisis, reducción velocidad. Siempre preparado.' },
+        { id:'wd-stoneskin',     name:'Stoneskin ◆',          level:4, castTime:'Acción',       range:'Toque', duration:'Conc. 1 h',   concentration:true, combat:true, domain:true, desc:'Resistencia a daño no mágico B/P/S. Siempre preparado.' },
+        { id:'wd-flame-strike',  name:'Flame Strike ◆',       level:5, castTime:'Acción',       range:'18 m',  duration:'Inst.',        concentration:false, combat:true, domain:true, desc:'4d6 fuego + 4d6 radiante (save DES). Siempre preparado.' },
+        { id:'wd-hold-monster',  name:'Hold Monster ◆',       level:5, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save SAB o paralizado (cualquier criatura). Siempre preparado.' },
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-war', name:'Channel Divinity',
           current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
@@ -2053,6 +2108,18 @@ const Characters = (() => {
 
     'Trickery Domain': {
       clase: 'Clérigo',
+      subclassSpells: () => [
+        { id:'td-charm-person',  name:'Charm Person ◆',       level:1, castTime:'Acción',       range:'9 m',   duration:'1 h',         concentration:false, combat:false, domain:true, desc:'Save SAB o encantado. Siempre preparado.' },
+        { id:'td-disguise-self', name:'Disguise Self ◆',      level:1, castTime:'Acción',       range:'Uno mismo', duration:'1 h',      concentration:false, combat:false, domain:true, desc:'Cambia apariencia visual. Siempre preparado.' },
+        { id:'td-mirror-image',  name:'Mirror Image ◆',       level:2, castTime:'Acción',       range:'Uno mismo', duration:'1 min',    concentration:false, combat:true,  domain:true, desc:'3 duplicados ilusorios desvían ataques. Siempre preparado.' },
+        { id:'td-pass-without-trace', name:'Pass Without Trace ◆', level:2, castTime:'Acción',  range:'Uno mismo', duration:'Conc. 1 h', concentration:true, combat:false, domain:true, desc:'+10 a Stealth y no se puede rastrear por magia. Siempre preparado.' },
+        { id:'td-blink',         name:'Blink ◆',              level:3, castTime:'Acción',       range:'Uno mismo', duration:'1 min',    concentration:false, combat:true,  domain:true, desc:'50% prob de ir al plano etéreo al fin de cada turno. Siempre preparado.' },
+        { id:'td-dispel-magic',  name:'Dispel Magic ◆',       level:3, castTime:'Acción',       range:'36 m',  duration:'Inst.',        concentration:false, combat:true,  domain:true, desc:'Termina conjuros automáticamente nv3 o menos. Siempre preparado.' },
+        { id:'td-dimension-door',name:'Dimension Door ◆',     level:4, castTime:'Acción',       range:'150 m', duration:'Inst.',        concentration:false, combat:true,  domain:true, desc:'Teleportación vos + 1 aliado a hasta 150m. Siempre preparado.' },
+        { id:'td-polymorph',     name:'Polymorph ◆',          level:4, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 h',   concentration:true,  combat:true,  domain:true, desc:'Save SAB o transformado en bestia. Siempre preparado.' },
+        { id:'td-dominate-person',name:'Dominate Person ◆',   level:5, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Save SAB o humanoide bajo tu control. Siempre preparado.' },
+        { id:'td-modify-memory', name:'Modify Memory ◆',      level:5, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 min', concentration:true,  combat:false, domain:true, desc:'Save SAB o podés alterar el recuerdo de un evento. Siempre preparado.' },
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-trick', name:'Channel Divinity',
           current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
@@ -2086,6 +2153,18 @@ const Characters = (() => {
 
     'Knowledge Domain': {
       clase: 'Clérigo',
+      subclassSpells: () => [
+        { id:'kd-command',       name:'Command ◆',            level:1, castTime:'Acción',       range:'18 m',  duration:'1 turno',     concentration:false, combat:true,  domain:true, desc:'Save SAB · 1 palabra: Huye/Detente/Cae/Acércate/Suéltalo. Siempre preparado.' },
+        { id:'kd-identify',      name:'Identify ◆',           level:1, castTime:'1 min',        range:'Toque', duration:'Inst.',        concentration:false, combat:false, domain:true, desc:'Ritual. Identifica propiedades mágicas de objeto. Siempre preparado.' },
+        { id:'kd-augury',        name:'Augury ◆',             level:2, castTime:'1 min',        range:'Uno mismo', duration:'Inst.',    concentration:false, combat:false, domain:true, desc:'Ritual. Presagio sobre acción en los próximos 30 min (bien/mal/ambas/ninguna). Siempre preparado.' },
+        { id:'kd-suggestion',    name:'Suggestion ◆',         level:2, castTime:'Acción',       range:'9 m',   duration:'Conc. 8 h',   concentration:true,  combat:false, domain:true, desc:'Save SAB o sigue sugerencia razonable. Siempre preparado.' },
+        { id:'kd-nondetection',  name:'Nondetection ◆',       level:3, castTime:'Acción',       range:'Toque', duration:'8 h',         concentration:false, combat:false, domain:true, desc:'Criatura/objeto indetectable por magia de adivinación. Siempre preparado.' },
+        { id:'kd-speak-dead',    name:'Speak with Dead ◆',    level:3, castTime:'Acción',       range:'3 m',   duration:'10 min',      concentration:false, combat:false, domain:true, desc:'Cadáver responde 5 preguntas. Siempre preparado.' },
+        { id:'kd-arcane-eye',    name:'Arcane Eye ◆',         level:4, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 h',   concentration:true,  combat:false, domain:true, desc:'Ojo mágico invisible que podés mover. Siempre preparado.' },
+        { id:'kd-confusion',     name:'Confusion ◆',          level:4, castTime:'Acción',       range:'27 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Save SAB en área 3m o acción aleatoria. Siempre preparado.' },
+        { id:'kd-legend-lore',   name:'Legend Lore ◆',        level:5, castTime:'10 min',       range:'Uno mismo', duration:'Inst.',   concentration:false, combat:false, domain:true, desc:'Información legendaria sobre persona, lugar u objeto. Siempre preparado.' },
+        { id:'kd-scrying',       name:'Scrying ◆',            level:5, castTime:'10 min',       range:'Uno mismo', duration:'Conc. 10 min', concentration:true, combat:false, domain:true, desc:'Ves/oyes a criatura conocida (save SAB negación). Siempre preparado.' },
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-know', name:'Channel Divinity',
           current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
@@ -2122,6 +2201,18 @@ const Characters = (() => {
 
     'Nature Domain': {
       clase: 'Clérigo',
+      subclassSpells: () => [
+        { id:'nd-animal-friendship',name:'Animal Friendship ◆',level:1, castTime:'Acción',      range:'9 m',   duration:'24 h',        concentration:false, combat:false, domain:true, desc:'Save SAB o bestia con INT ≤3 encantada 24h. Siempre preparado.' },
+        { id:'nd-speak-animals', name:'Speak with Animals ◆',  level:1, castTime:'Acción',      range:'Uno mismo', duration:'10 min',  concentration:false, combat:false, domain:true, desc:'Ritual. Comunicación verbal con bestias. Siempre preparado.' },
+        { id:'nd-barkskin',      name:'Barkskin ◆',            level:2, castTime:'Acción',      range:'Toque', duration:'Conc. 1 h',   concentration:true,  combat:false, domain:true, desc:'CA mínima 17 mientras dure. Siempre preparado.' },
+        { id:'nd-spike-growth',  name:'Spike Growth ◆',        level:2, castTime:'Acción',      range:'45 m',  duration:'Conc. 10 min',concentration:true,  combat:true,  domain:true, desc:'Área 4,5m radio: terreno difícil + 2d4 perforante por 1,5m. Siempre preparado.' },
+        { id:'nd-plant-growth',  name:'Plant Growth ◆',        level:3, castTime:'Acción/8 h',  range:'45 m',  duration:'Inst.',       concentration:false, combat:true,  domain:true, desc:'Vegetación enloquecida: terreno 4× difícil en 30m. Siempre preparado.' },
+        { id:'nd-wind-wall',     name:'Wind Wall ◆',           level:3, castTime:'Acción',      range:'36 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Muro de viento: bloquea proyectiles + 3d8 contundente a criaturas. Siempre preparado.' },
+        { id:'nd-dominate-beast',name:'Dominate Beast ◆',      level:4, castTime:'Acción',      range:'18 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Save SAB o bestia bajo control. Siempre preparado.' },
+        { id:'nd-grasping-vine', name:'Grasping Vine ◆',       level:4, castTime:'Acción bonus', range:'9 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Enredadera conjurada: mueve criatura 4,5m hacia ella (save DES). Siempre preparado.' },
+        { id:'nd-insect-plague', name:'Insect Plague ◆',       level:5, castTime:'Acción',      range:'90 m',  duration:'Conc. 10 min',concentration:true,  combat:true,  domain:true, desc:'Esfera 6m radio: terreno difícil + 4d10 perforante/turno (save CON mitad). Siempre preparado.' },
+        { id:'nd-tree-stride',   name:'Tree Stride ◆',         level:5, castTime:'Acción',      range:'Uno mismo', duration:'Conc. 1 min', concentration:true, combat:false, domain:true, desc:'Teleportación entre árboles del mismo tipo en 150m. Siempre preparado.' },
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-nature', name:'Channel Divinity',
           current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
@@ -2158,6 +2249,18 @@ const Characters = (() => {
 
     'Tempest Domain': {
       clase: 'Clérigo',
+      subclassSpells: () => [
+        { id:'tmd-fog-cloud',    name:'Fog Cloud ◆',           level:1, castTime:'Acción',       range:'27 m',  duration:'Conc. 1 h',   concentration:true,  combat:true,  domain:true, desc:'Esfera niebla 6m radio: visibilidad nula. Siempre preparado.' },
+        { id:'tmd-thunderwave',  name:'Thunderwave ◆',         level:1, castTime:'Acción',       range:'Uno mismo (4,5m)', duration:'Inst.', concentration:false, combat:true, domain:true, desc:'Cubo 15ft · save CON · 2d8 trueno + empuja 3m. Siempre preparado.' },
+        { id:'tmd-gust-of-wind', name:'Gust of Wind ◆',        level:2, castTime:'Acción',       range:'Uno mismo (18m)', duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Línea de viento 18m: criaturas deben usar el doble de movimiento. Siempre preparado.' },
+        { id:'tmd-shatter',      name:'Shatter ◆',             level:2, castTime:'Acción',       range:'18 m',  duration:'Inst.',        concentration:false, combat:true,  domain:true, desc:'Esfera 3m · save CON · 3d8 trueno. +1d8 por nivel. Siempre preparado.' },
+        { id:'tmd-call-lightning',name:'Call Lightning ◆',     level:3, castTime:'Acción',       range:'27 m',  duration:'Conc. 10 min',concentration:true,  combat:true,  domain:true, desc:'Nube de tormenta: acción bonus = rayo 3d10 en 9m área. Siempre preparado.' },
+        { id:'tmd-sleet-storm',  name:'Sleet Storm ◆',         level:3, castTime:'Acción',       range:'45 m',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Tormenta helada 6m radio: terreno difícil, concentración en desventaja. Siempre preparado.' },
+        { id:'tmd-control-water',name:'Control Water ◆',       level:4, castTime:'Acción',       range:'90 m',  duration:'Conc. 10 min',concentration:true,  combat:false, domain:true, desc:'Controla agua: diluvio, remolino, corriente, inundación. Siempre preparado.' },
+        { id:'tmd-ice-storm',    name:'Ice Storm ◆',           level:4, castTime:'Acción',       range:'90 m',  duration:'Inst.',        concentration:false, combat:true,  domain:true, desc:'Cilindro 6m radio: 2d8 contundente + 4d6 frío (save DES mitad). Siempre preparado.' },
+        { id:'tmd-destructive-wave',name:'Destructive Wave ◆', level:5, castTime:'Acción',       range:'9 m',   duration:'Inst.',        concentration:false, combat:true,  domain:true, desc:'Onda 9m radio: 5d6 trueno + 5d6 radiante/necrótico (save CON) · derriba. Siempre preparado.' },
+        { id:'tmd-insect-plague2',name:'Insect Plague ◆',      level:5, castTime:'Acción',       range:'90 m',  duration:'Conc. 10 min',concentration:true,  combat:true,  domain:true, desc:'Esfera 6m: terreno difícil + 4d10 perforante/turno. Siempre preparado.' },
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-tempest', name:'Channel Divinity',
           current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
@@ -2257,6 +2360,43 @@ const Characters = (() => {
           desc:'Las bestias y plantas deben superar un save de SAB o no pueden atacarte. Las afectadas se vuelven inmunes a este efecto 24 hs.',
           fullDesc:'A nivel 14, las criaturas del mundo natural sienten tu vínculo con la naturaleza y dudan en atacarte. Cuando una bestia o planta te ataca, debe superar un save de SAB contra tu DC de conjuros o elegir un objetivo diferente. Si supera el save, es inmune al efecto durante 24 horas.' }] : []),
       ],
+      // Circle Spells varían por terreno. Cargamos los del Bosque (Forest) como base — ajustar según terreno elegido.
+      subclassSpells: (nivel) => [
+        // Nv3 (Bosque/Forest — siempre preparados)
+        { id:'barkskin', name:'Barkskin', level:2, castTime:'1 acción', range:'Toque',
+          duration:'1 hora', concentration:true, combat:false,
+          desc:'La CA del objetivo no puede bajar de 16 mientras dure el conjuro.', domain:true },
+        { id:'spider-climb', name:'Spider Climb', level:2, castTime:'1 acción', range:'Toque',
+          duration:'1 hora', concentration:true, combat:false,
+          desc:'Una criatura puede escalar superficies difíciles, incluso techos, con velocidad de escalar.', domain:true },
+        // Nv5
+        ...(nivel >= 5 ? [
+          { id:'call-lightning', name:'Call Lightning', level:3, castTime:'1 acción', range:'36 m',
+            duration:'10 minutos', concentration:true, combat:true,
+            desc:'Convocas tormenta. Cada turno (acción): rayo de 3d10 rayos en cilindro de 1.5 m. Doble daño en tormenta real.', domain:true },
+          { id:'plant-growth', name:'Plant Growth', level:3, castTime:'1 acción / 8 hs', range:'45 m',
+            duration:'Instantáneo', concentration:false, combat:true,
+            desc:'Las plantas en un radio de 30 m se espigan: terreno difícil. O revitalizas la tierra para que sea más fértil.', domain:true },
+        ] : []),
+        // Nv7
+        ...(nivel >= 7 ? [
+          { id:'divination', name:'Divination', level:4, castTime:'1 acción', range:'Personal',
+            duration:'Instantáneo', concentration:false, combat:false,
+            desc:'Recibes una respuesta breve y verídica sobre un evento en 7 días. Ritual disponible.', domain:true },
+          { id:'freedom-of-movement', name:'Freedom of Movement', level:4, castTime:'1 acción', range:'Toque',
+            duration:'1 hora', concentration:false, combat:false,
+            desc:'Ignorás terreno difícil mágico/no mágico, no podés ser paralizado ni restringido por conjuros.', domain:true },
+        ] : []),
+        // Nv9
+        ...(nivel >= 9 ? [
+          { id:'commune-with-nature', name:'Commune with Nature', level:5, castTime:'1 minuto', range:'Personal',
+            duration:'Instantáneo', concentration:false, combat:false,
+            desc:'Ritual: te sintonizás con la tierra en 4.5 km (o 90 m bajo tierra). Obtenés 3 hechos sobre el área.', domain:true },
+          { id:'tree-stride', name:'Tree Stride', level:5, castTime:'1 acción', range:'Personal',
+            duration:'1 minuto', concentration:true, combat:false,
+            desc:'Podés entrar en un árbol y salir desde otro árbol del mismo tipo a 150 m. 1 vez/turno.', domain:true },
+        ] : []),
+      ],
     },
 
     'Circle of Spores': {
@@ -2290,6 +2430,56 @@ const Characters = (() => {
           source:'Circle of Spores · Nv14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Inmune a estados: Blinded, Deafened, Frightened, Poisoned. Ataques críticos contra vos se vuelven golpes normales.',
           fullDesc:'A nivel 14, las esporas de tu cuerpo te protegen de varios peligros. Eres inmune a las condiciones Blinded, Deafened, Frightened y Poisoned. Además, cualquier golpe crítico contra vos se convierte en un golpe normal.' }] : []),
+      ],
+      subclassSpells: (nivel) => [
+        // Cantrip libre
+        { id:'chill-touch', name:'Chill Touch', level:0, castTime:'1 acción', range:'18 m',
+          duration:'1 ronda', concentration:false, combat:true,
+          desc:'Ataque de conjuro a distancia: 1d10 necrótico. El objetivo no puede recuperar HP hasta el inicio de tu próximo turno.',
+          cantrip_subclass:true },
+        // Nv2 (Tasha's: siempre preparados desde que se elige la subclase)
+        { id:'blindness-deafness', name:'Blindness/Deafness', level:2, castTime:'1 acción', range:'27 m',
+          duration:'1 minuto', concentration:false, combat:true,
+          desc:'Save CON: ciega o ensordece a una criatura. Puede repetir el save al final de cada turno.', domain:true },
+        { id:'gentle-repose', name:'Gentle Repose', level:2, castTime:'1 acción', range:'Toque',
+          duration:'10 días', concentration:false, combat:false,
+          desc:'Preserva un cadáver de putrefacción. Los muertos protegidos no pueden ser animados.', domain:true },
+        // Nv3
+        ...(nivel >= 3 ? [
+          { id:'animate-dead', name:'Animate Dead', level:3, castTime:'1 minuto', range:'3 m',
+            duration:'24 horas', concentration:false, combat:false,
+            desc:'Animas un montón de huesos o cadáver como zombi o esqueleto bajo tu control (24 hs, renovable).', domain:true },
+          { id:'gaseous-form', name:'Gaseous Form', level:3, castTime:'1 acción', range:'Toque',
+            duration:'1 hora', concentration:true, combat:false,
+            desc:'Transformas a una criatura voluntaria en una nube de gas. Puede volar 3 m, es resistente a varios daños.', domain:true },
+        ] : []),
+        // Nv5
+        ...(nivel >= 5 ? [
+          { id:'blight', name:'Blight', level:4, castTime:'1 acción', range:'27 m',
+            duration:'Instantáneo', concentration:false, combat:true,
+            desc:'8d8 necrótico (save CON mitad). Las plantas no hacen save y reciben daño máximo.', domain:true },
+          { id:'confusion', name:'Confusion', level:4, castTime:'1 acción', range:'27 m',
+            duration:'1 minuto', concentration:true, combat:true,
+            desc:'Save SAB: criaturas en esfera de 3 m actúan aleatoriamente. Pueden repetir al final de cada turno.', domain:true },
+        ] : []),
+        // Nv7
+        ...(nivel >= 7 ? [
+          { id:'contagion', name:'Contagion', level:5, castTime:'1 acción', range:'Toque',
+            duration:'7 días', concentration:false, combat:true,
+            desc:'Ataque de conjuro cuerpo a cuerpo: infecta con una de 6 enfermedades (Blinding Sickness, Filth Fever, etc.).', domain:true },
+          { id:'insect-plague', name:'Insect Plague', level:5, castTime:'1 acción', range:'90 m',
+            duration:'10 minutos', concentration:true, combat:true,
+            desc:'Esfera de 6 m de langostas picadoras: 4d10 perforante (save CON mitad). Terreno difícil.', domain:true },
+        ] : []),
+        // Nv9
+        ...(nivel >= 9 ? [
+          { id:'animate-objects', name:'Animate Objects', level:5, castTime:'1 acción', range:'36 m',
+            duration:'1 minuto', concentration:true, combat:true,
+            desc:'Animas hasta 10 objetos pequeños o menos pero más grandes. Actúan en tu turno.', domain:true },
+          { id:'cloudkill', name:'Cloudkill', level:5, castTime:'1 acción', range:'27 m',
+            duration:'10 minutos', concentration:true, combat:true,
+            desc:'Nube venenosa de 6 m: 5d8 veneno (save CON mitad). Se mueve 3 m/turno.', domain:true },
+        ] : []),
       ],
     },
 
@@ -2326,6 +2516,18 @@ const Characters = (() => {
           source:'Circle of Stars · Nv14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Mientras Starry Form está activa, eres incorpóreo: resistencia a daño contundente, cortante y perforante de ataques no mágicos.',
           fullDesc:'A nivel 14, mientras tu Starry Form está activa, te vuelves parcialmente incorpóreo. Tienes resistencia al daño contundente, cortante y perforante de ataques no mágicos.' }] : []),
+      ],
+      subclassSpells: () => [
+        // Guiding Bolt: siempre preparado (Star Map feature a nv2). No ocupa cupo de preparación.
+        { id:'guiding-bolt', name:'Guiding Bolt', level:1, castTime:'1 acción', range:'36 m',
+          duration:'1 ronda', concentration:false, combat:true,
+          desc:'Ataque de conjuro a distancia: 4d6 radiante. El próximo ataque contra el objetivo tiene ventaja.',
+          domain:true },
+        // Guidance: disponible como cantrip libre (Star Map). Cantrip extra, no ocupa cupo.
+        { id:'guidance', name:'Guidance', level:0, castTime:'1 acción', range:'Toque',
+          duration:'Concentración, hasta 1 min', concentration:true, combat:false,
+          desc:'Una criatura voluntaria puede tirar 1d4 y sumar el resultado a una prueba de habilidad.',
+          cantrip_subclass:true },
       ],
     },
 
@@ -2635,6 +2837,18 @@ const Characters = (() => {
     // ── PALADÍN ───────────────────────────────────────────────────────────────
     'Oath of Devotion': {
       clase: 'Paladín',
+      subclassSpells: (nivel) => [
+        { id:'od-protection-evil',name:'Protection from Evil ◆', level:1, castTime:'Acción',    range:'Toque', duration:'Conc. 10 min',concentration:true, combat:true, domain:true, desc:'Desventaja en ataques de aberraciones/celestiales/elementales/fey/fiends/muertos. Siempre preparado.' },
+        { id:'od-sanctuary',     name:'Sanctuary ◆',             level:1, castTime:'Acción bonus',range:'9 m', duration:'1 min',       concentration:false,combat:false,domain:true, desc:'Criaturas deben superar save SAB para atacar al objetivo. Siempre preparado.' },
+        ...(nivel >= 5 ? [{ id:'od-lesser-rest',name:'Lesser Restoration ◆', level:2, castTime:'Acción', range:'Toque', duration:'Inst.', concentration:false, combat:false, domain:true, desc:'Elimina enfermedad o condición. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'od-zone-truth', name:'Zone of Truth ◆',       level:2, castTime:'Acción', range:'18 m',  duration:'10 min',concentration:false,combat:false, domain:true, desc:'Esfera 4,5m: criaturas no pueden mentir conscientemente. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'od-beacon-hope',name:'Beacon of Hope ◆',      level:3, castTime:'Acción', range:'9 m',   duration:'Conc. 1 min', concentration:true, combat:false, domain:true, desc:'Ventaja SAB saves y muerte + max en curación. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'od-dispel-magic',name:'Dispel Magic ◆',       level:3, castTime:'Acción', range:'36 m',  duration:'Inst.',       concentration:false, combat:true, domain:true, desc:'Termina conjuros nv3 o menos automáticamente. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'od-freedom-mov',name:'Freedom of Movement ◆',level:4, castTime:'Acción', range:'Toque', duration:'1 h',         concentration:false, combat:true, domain:true, desc:'Inmune terreno difícil mágico y parálisis. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'od-guardian-faith',name:'Guardian of Faith ◆',level:4,castTime:'Acción', range:'9 m',   duration:'8 h',         concentration:false, combat:true, domain:true, desc:'Guardián espectral: 20 radiante a hostiles. Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'od-commune',    name:'Commune ◆',             level:5, castTime:'1 min',  range:'Uno mismo',duration:'1 min',      concentration:false, combat:false, domain:true, desc:'Ritual. 3 preguntas sí/no a tu deidad. Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'od-flame-strike',name:'Flame Strike ◆',      level:5, castTime:'Acción',  range:'18 m',  duration:'Inst.',       concentration:false, combat:true, domain:true, desc:'4d6 fuego + 4d6 radiante (save DES). Siempre preparado.' }] : []),
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-pal', name:'Channel Divinity',
           current: 1, max: 1, recharge:'short',
@@ -2662,6 +2876,18 @@ const Characters = (() => {
 
     'Oath of the Ancients': {
       clase: 'Paladín',
+      subclassSpells: (nivel) => [
+        { id:'oa-ensnaring-strike',name:'Ensnaring Strike ◆', level:1, castTime:'Acción bonus', range:'Uno mismo', duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Tu próximo ataque puede enredar al objetivo (save FUE). Siempre preparado.' },
+        { id:'oa-speak-animals', name:'Speak with Animals ◆', level:1, castTime:'Acción',       range:'Uno mismo', duration:'10 min', concentration:false, combat:false, domain:true, desc:'Comunicación verbal con bestias. Siempre preparado.' },
+        ...(nivel >= 5 ? [{ id:'oa-misty-step',  name:'Misty Step ◆',         level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.',  concentration:false, combat:true, domain:true, desc:'Teleportación 9m a lugar visible. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'oa-moonbeam',    name:'Moonbeam ◆',            level:2, castTime:'Acción',       range:'45 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Rayo lunar 1,5m radio: 2d10 radiante/turno (save CON mitad). Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'oa-plant-growth',name:'Plant Growth ◆',        level:3, castTime:'Acción',       range:'45 m',  duration:'Inst.',       concentration:false, combat:true, domain:true, desc:'Vegetación: terreno 4× difícil en 30m. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'oa-protection-energy',name:'Protection from Energy ◆', level:3, castTime:'Acción', range:'Toque', duration:'Conc. 1 h', concentration:true, combat:true, domain:true, desc:'Resistencia a 1 tipo de daño elemental. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'oa-ice-storm',  name:'Ice Storm ◆',           level:4, castTime:'Acción',       range:'90 m',  duration:'Inst.',       concentration:false, combat:true, domain:true, desc:'2d8 contundente + 4d6 frío en cilindro. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'oa-stoneskin',  name:'Stoneskin ◆',           level:4, castTime:'Acción',       range:'Toque', duration:'Conc. 1 h',   concentration:true, combat:true, domain:true, desc:'Resistencia a daño no mágico B/P/S. Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'oa-commune-nature',name:'Commune with Nature ◆', level:5, castTime:'1 min',     range:'Uno mismo', duration:'Inst.',   concentration:false, combat:false, domain:true, desc:'Ritual. Información del terreno en 4,5 km. Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'oa-tree-stride',name:'Tree Stride ◆',         level:5, castTime:'Acción',       range:'Uno mismo', duration:'Conc. 1 min', concentration:true, combat:false, domain:true, desc:'Teleportación entre árboles del mismo tipo. Siempre preparado.' }] : []),
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-anc', name:'Channel Divinity',
           current: 1, max: 1, recharge:'short',
@@ -2693,6 +2919,18 @@ const Characters = (() => {
 
     'Oath of Vengeance': {
       clase: 'Paladín',
+      subclassSpells: (nivel) => [
+        { id:'ov-bane',          name:'Bane ◆',               level:1, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Hasta 3 criaturas: save CAR o -1d4 en ataques y saves. Siempre preparado.' },
+        { id:'ov-hunters-mark',  name:"Hunter's Mark ◆",       level:1, castTime:'Acción bonus', range:'27 m',  duration:'Conc. 1 h',   concentration:true, combat:true, domain:true, desc:'+1d6 daño vs objetivo marcado + ventaja en Perception/Survival contra él. Siempre preparado.' },
+        ...(nivel >= 5 ? [{ id:'ov-hold-person',name:'Hold Person ◆',          level:2, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save SAB o paralizado. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'ov-misty-step', name:'Misty Step ◆',           level:2, castTime:'Acción bonus', range:'Uno mismo', duration:'Inst.',  concentration:false, combat:true, domain:true, desc:'Teleportación 9m a lugar visible. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'ov-haste',      name:'Haste ◆',                level:3, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'+2 CA, vel ×2, acción extra (ataque/Dash). Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'ov-protection-energy',name:'Protection from Energy ◆', level:3, castTime:'Acción', range:'Toque', duration:'Conc. 1 h', concentration:true, combat:true, domain:true, desc:'Resistencia a 1 tipo daño elemental. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'ov-banishment',name:'Banishment ◆',           level:4, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save CAR o desterrado al plano de origen. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'ov-dim-door',  name:'Dimension Door ◆',        level:4, castTime:'Acción',       range:'150 m', duration:'Inst.',       concentration:false, combat:true, domain:true, desc:'Teleportación vos + 1 aliado. Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'ov-hold-monster',name:'Hold Monster ◆',        level:5, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save SAB o paralizado (cualquier criatura). Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'ov-scrying',   name:'Scrying ◆',               level:5, castTime:'10 min',       range:'Uno mismo', duration:'Conc. 10 min', concentration:true, combat:false, domain:true, desc:'Ves/oyes a criatura conocida (save SAB negación). Siempre preparado.' }] : []),
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-ven', name:'Channel Divinity',
           current: 1, max: 1, recharge:'short',
@@ -2724,6 +2962,18 @@ const Characters = (() => {
 
     'Oath of Glory': {
       clase: 'Paladín',
+      subclassSpells: (nivel) => [
+        { id:'og-guiding-bolt',  name:'Guiding Bolt ◆',       level:1, castTime:'Acción',       range:'36 m',  duration:'1 turno',     concentration:false, combat:true, domain:true, desc:'Ataque conjuro · 4d6 radiante · ventaja al siguiente atacante. Siempre preparado.' },
+        { id:'og-heroism',       name:'Heroism ◆',            level:1, castTime:'Acción',       range:'Toque', duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Inmune asustado + HP temp = SAB mod/turno. Siempre preparado.' },
+        ...(nivel >= 5 ? [{ id:'og-enhance-ability',name:'Enhance Ability ◆',   level:2, castTime:'Acción',       range:'Toque', duration:'Conc. 1 h',   concentration:true, combat:false, domain:true, desc:'Vantaja en checks de stat elegido + bonus. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'og-magic-weapon', name:'Magic Weapon ◆',        level:2, castTime:'Acción bonus', range:'Toque', duration:'1 h',         concentration:true, combat:true, domain:true, desc:'Arma +1 o más. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'og-haste',         name:'Haste ◆',              level:3, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'+2 CA, vel ×2, acción extra. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'og-protection-energy',name:'Protection from Energy ◆', level:3, castTime:'Acción', range:'Toque', duration:'Conc. 1 h', concentration:true, combat:true, domain:true, desc:'Resistencia a 1 tipo daño elemental. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'og-compulsion',   name:'Compulsion ◆',          level:4, castTime:'Acción',       range:'9 m',   duration:'Conc. 1 min', concentration:true, combat:false, domain:true, desc:'Criaturas deben moverse hacia dirección que designés. Siempre preparado.' }] : []),
+        ...(nivel >= 13 ? [{ id:'og-freedom-mov2', name:'Freedom of Movement ◆', level:4, castTime:'Acción',       range:'Toque', duration:'1 h',         concentration:false, combat:true, domain:true, desc:'Inmune terreno difícil mágico y parálisis. Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'og-legend-lore',  name:'Legend Lore ◆',         level:5, castTime:'10 min',       range:'Uno mismo', duration:'Inst.',   concentration:false, combat:false, domain:true, desc:'Información legendaria sobre persona, lugar u objeto. Siempre preparado.' }] : []),
+        ...(nivel >= 17 ? [{ id:'og-yolandes-regal-presence',name:'Yolande\'s Regal Presence ◆', level:5, castTime:'Acción', range:'9 m', duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Criaturas hostiles en 9m: save SAB o reducida velocidad + 4d6 psíquico/turno. Siempre preparado.' }] : []),
+      ],
       resources: (nivel) => [
         { id:'channel-divinity-glo', name:'Channel Divinity',
           current: 1, max: 1, recharge:'short',
@@ -3020,6 +3270,18 @@ const Characters = (() => {
     // ── BRUJO ─────────────────────────────────────────────────────────────────
     'The Fiend': {
       clase: 'Brujo',
+      subclassSpells: (nivel) => [
+        { id:'tf-burning-hands', name:'Burning Hands ◆',       level:1, castTime:'Acción',       range:'Cono 4,5m',duration:'Inst.',       concentration:false, combat:true, domain:true, desc:'Save DES · 3d6 fuego. Siempre preparado.' },
+        { id:'tf-command',       name:'Command ◆',             level:1, castTime:'Acción',       range:'18 m',  duration:'1 turno',        concentration:false, combat:true, domain:true, desc:'Save SAB · 1 palabra de comando. Siempre preparado.' },
+        ...(nivel >= 3 ? [{ id:'tf-blindness',   name:'Blindness/Deafness ◆',   level:2, castTime:'Acción',       range:'9 m',   duration:'1 min',       concentration:false, combat:true, domain:true, desc:'Save CON o cegado/ensordecido. Siempre preparado.' }] : []),
+        ...(nivel >= 3 ? [{ id:'tf-scorching-ray',name:'Scorching Ray ◆',       level:2, castTime:'Acción',       range:'36 m',  duration:'Inst.',        concentration:false, combat:true, domain:true, desc:'3 ataques · 2d6 fuego c/u. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'tf-fireball',    name:'Fireball ◆',             level:3, castTime:'Acción',       range:'45 m',  duration:'Inst.',        concentration:false, combat:true, domain:true, desc:'Esfera 20ft · save DES · 8d6 fuego. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'tf-stinking-cloud',name:'Stinking Cloud ◆',     level:3, castTime:'Acción',       range:'27 m',  duration:'Conc. 1 min',  concentration:true, combat:true, domain:true, desc:'Esfera nauseabunda · save CON o pierde acción. Siempre preparado.' }] : []),
+        ...(nivel >= 7 ? [{ id:'tf-fire-shield', name:'Fire Shield ◆',          level:4, castTime:'Acción',       range:'Uno mismo', duration:'10 min',   concentration:false, combat:true, domain:true, desc:'Escudo de fuego/frío: 2d8 al atacante melee. Siempre preparado.' }] : []),
+        ...(nivel >= 7 ? [{ id:'tf-wall-of-fire',name:'Wall of Fire ◆',          level:4, castTime:'Acción',       range:'36 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Muro 18m · 5d8 fuego. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'tf-flame-strike',name:'Flame Strike ◆',          level:5, castTime:'Acción',       range:'18 m',  duration:'Inst.',        concentration:false, combat:true, domain:true, desc:'4d6 fuego + 4d6 radiante (save DES). Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'tf-hallow',      name:'Hallow ◆',                level:5, castTime:'24 h',         range:'Toque', duration:'Hasta dispel', concentration:false, combat:false, domain:true, desc:'Santifica un área 18m radio con efectos a elegir. Siempre preparado.' }] : []),
+      ],
       resources: () => [],
       features: (nivel) => [
         { id:'fiend-dark-ones-blessing', name:"Dark One's Blessing",
@@ -3043,6 +3305,18 @@ const Characters = (() => {
 
     'The Great Old One': {
       clase: 'Brujo',
+      subclassSpells: (nivel) => [
+        { id:'goo-dissonant-whispers',name:'Dissonant Whispers ◆', level:1, castTime:'Acción',  range:'18 m',  duration:'Inst.',        concentration:false, combat:true, domain:true, desc:'Save SAB · 3d6 psíquico + huye. Siempre preparado.' },
+        { id:'goo-tasha-hideous',name:"Tasha's Hideous Laughter ◆",level:1, castTime:'Acción',  range:'9 m',   duration:'Conc. 1 min',  concentration:true, combat:true, domain:true, desc:'Save SAB o incapacitado: se ríe sin control. Siempre preparado.' },
+        ...(nivel >= 3 ? [{ id:'goo-detect-thoughts',name:'Detect Thoughts ◆',  level:2, castTime:'Acción',       range:'Uno mismo', duration:'Conc. 1 min', concentration:true, combat:false, domain:true, desc:'Lee pensamientos superficiales. Siempre preparado.' }] : []),
+        ...(nivel >= 3 ? [{ id:'goo-phantasmal-force',name:'Phantasmal Force ◆',level:2, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save INT o la criatura cree ilusión y recibe 1d6 psíquico/turno. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'goo-clairvoyance', name:'Clairvoyance ◆',       level:3, castTime:'10 min',       range:'1,5 km',duration:'Conc. 10 min', concentration:true, combat:false, domain:true, desc:'Sensor invisible en lugar conocido: ves/oyes. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'goo-sending',      name:'Sending ◆',            level:3, castTime:'Acción',       range:'Ilimitado', duration:'1 ronda',  concentration:false, combat:false, domain:true, desc:'Mensaje 25 palabras a cualquier plano. Siempre preparado.' }] : []),
+        ...(nivel >= 7 ? [{ id:'goo-dom-beast',    name:'Dominate Beast ◆',     level:4, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save SAB o bestia bajo control. Siempre preparado.' }] : []),
+        ...(nivel >= 7 ? [{ id:'goo-evards-tentacles',name:"Evard's Black Tentacles ◆", level:4, castTime:'Acción', range:'27 m', duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Área 6m: atrapado + 3d6 contundente/turno. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'goo-dom-person',   name:'Dominate Person ◆',    level:5, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save SAB o humanoide bajo control. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'goo-telekinesis',  name:'Telekinesis ◆',         level:5, castTime:'Acción',       range:'18 m',  duration:'Conc. 10 min',concentration:true, combat:true, domain:true, desc:'Mueve objetos/criaturas con la mente. Siempre preparado.' }] : []),
+      ],
       resources: () => [],
       features: (nivel) => [
         { id:'goo-awakened-mind', name:'Awakened Mind',
@@ -3066,6 +3340,18 @@ const Characters = (() => {
 
     'The Archfey': {
       clase: 'Brujo',
+      subclassSpells: (nivel) => [
+        { id:'af-faerie-fire',   name:'Faerie Fire ◆',          level:1, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Objetos/criaturas brillan · ventaja en ataques vs ellos. Siempre preparado.' },
+        { id:'af-sleep',         name:'Sleep ◆',                level:1, castTime:'Acción',       range:'27 m',  duration:'1 min',       concentration:false, combat:true, domain:true, desc:'5d8 HP de criaturas se duermen (menos HP primero). Siempre preparado.' },
+        ...(nivel >= 3 ? [{ id:'af-calm-emotions',name:'Calm Emotions ◆',        level:2, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:false, domain:true, desc:'Neutraliza Charmed/Frightened o suprime hostilidad. Siempre preparado.' }] : []),
+        ...(nivel >= 3 ? [{ id:'af-phantasmal-force2',name:'Phantasmal Force ◆', level:2, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save INT o criatura cree ilusión + 1d6 psíquico/turno. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'af-blink',         name:'Blink ◆',               level:3, castTime:'Acción',       range:'Uno mismo', duration:'1 min',   concentration:false, combat:true, domain:true, desc:'50% prob de ir al plano etéreo por turno. Siempre preparado.' }] : []),
+        ...(nivel >= 5 ? [{ id:'af-plant-growth',  name:'Plant Growth ◆',         level:3, castTime:'Acción',       range:'45 m',  duration:'Inst.',       concentration:false, combat:true, domain:true, desc:'Vegetación 4× difícil en 30m. Siempre preparado.' }] : []),
+        ...(nivel >= 7 ? [{ id:'af-dom-beast2',    name:'Dominate Beast ◆',        level:4, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save SAB o bestia bajo control. Siempre preparado.' }] : []),
+        ...(nivel >= 7 ? [{ id:'af-greater-invis2',name:'Greater Invisibility ◆', level:4, castTime:'Acción',       range:'Toque', duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Invisible incluso al atacar. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'af-dom-person2',   name:'Dominate Person ◆',       level:5, castTime:'Acción',       range:'18 m',  duration:'Conc. 1 min', concentration:true, combat:true, domain:true, desc:'Save SAB o humanoide bajo control. Siempre preparado.' }] : []),
+        ...(nivel >= 9 ? [{ id:'af-seeming',       name:'Seeming ◆',               level:5, castTime:'Acción',       range:'9 m',   duration:'8 h',         concentration:false, combat:false, domain:true, desc:'Hasta 6 criaturas cambian apariencia visual y auditiva. Siempre preparado.' }] : []),
+      ],
       resources: () => [],
       features: (nivel) => [
         { id:'af-fey-presence', name:'Fey Presence',
