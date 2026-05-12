@@ -1268,7 +1268,12 @@ const App = (() => {
       htmlDer += `<div style="margin-bottom:8px;"></div>`;
     }
 
-    htmlDer += `<div class="section-hd">Dominio — siempre activos</div>`;
+    const domainLabel = {
+      'Clérigo': 'Dominio — siempre preparados',
+      'Paladín': 'Juramento — siempre preparados',
+      'Explorador': 'Subclase — siempre preparados',
+    }[c.clase] || 'Subclase — siempre preparados';
+    htmlDer += `<div class="section-hd">${domainLabel}</div>`;
 
     const domainSpells = (c.spells || []).filter(s => s.domain && s.level > 0);
     domainSpells.forEach(sp => {

@@ -2835,6 +2835,106 @@ const Characters = (() => {
       ],
     },
 
+    // ── HECHICERO: subclases con spells de subclase siempre preparados ────────
+    'Aberrant Mind': {
+      clase: 'Hechicero',
+      resources: () => [],
+      // subclassSpells: se añaden al personaje con subclass:true (siempre preparados, no ocupan cupo de conocidos)
+      subclassSpells: (nivel) => [
+        // Cantrips psiónicos (nivel 1+): minor illusion telepática + mind sliver
+        { id:'ab-mind-sliver',       name:'Mind Sliver ✦',       level:0, castTime:'Acción',       range:'18 m',     duration:'1 ronda', concentration:false, combat:true,  cantrip_subclass:true, desc:'Save INT · 1d6 psíquico · -1d4 en próx. save del objetivo. Cantrip psiónco gratis. (Tasha\'s)' },
+        { id:'ab-minor-illusion',    name:'Minor Illusion ✦',    level:0, castTime:'Acción',       range:'9 m',      duration:'1 min',   concentration:false, combat:false, cantrip_subclass:true, desc:'Sonido o imagen pequeña ilusoria. Cantrip psiónco gratis. (Tasha\'s)' },
+        // Psionic Spells siempre preparados por nivel (domain:true = nunca ocupan cupo de conocidos)
+        { id:'ab-arms-of-hadar',     name:'Arms of Hadar ✦',     level:1, castTime:'Acción',       range:'Uno mismo (3m)', duration:'Inst.', concentration:false, combat:true,  domain:true, desc:'Tentáculos en 3m radio · save FUE · 2d6 necrótico · niega reacciones hasta próx. turno. Siempre preparado.' },
+        { id:'ab-dissonant-whisp',   name:'Dissonant Whispers ✦',level:1, castTime:'Acción',       range:'18 m',     duration:'Inst.',   concentration:false, combat:true,  domain:true, desc:'Save SAB · 3d6 psíquico · huye con reacción. Siempre preparado.' },
+        ...(nivel >= 3 ? [
+        { id:'ab-calm-emotions',     name:'Calm Emotions ✦',     level:2, castTime:'Acción',       range:'18 m',     duration:'1 min',   concentration:true,  combat:false, domain:true, desc:'Esfera 4,5m · neutraliza Charmed/Frightened o suprime hostilidad (save CAR). Siempre preparado.' },
+        { id:'ab-detect-thoughts',   name:'Detect Thoughts ✦',   level:2, castTime:'Acción',       range:'Uno mismo',duration:'1 min',   concentration:true,  combat:false, domain:true, desc:'Lees pensamientos superficiales; profundos con save INT. Siempre preparado.' },
+        ] : []),
+        ...(nivel >= 5 ? [
+        { id:'ab-hunger-of-hadar',   name:'Hunger of Hadar ✦',   level:3, castTime:'Acción',       range:'45 m',     duration:'1 min',   concentration:true,  combat:true,  domain:true, desc:'Esfera 4,5m oscuridad · comienzo de turno 2d6 frío · fin de turno save DES o 2d6 ácido. Siempre preparado.' },
+        { id:'ab-sending',           name:'Sending ✦',            level:3, castTime:'Acción',       range:'Ilimitado',duration:'1 ronda', concentration:false, combat:false, domain:true, desc:'Envías mensaje de 25 palabras a cualquier criatura en cualquier plano. Siempre preparado.' },
+        ] : []),
+        ...(nivel >= 7 ? [
+        { id:'ab-evards-tentacles',  name:"Evard's Black Tentacles ✦", level:4, castTime:'Acción', range:'27 m',     duration:'1 min',   concentration:true,  combat:true,  domain:true, desc:'Área 6m cubo · save DES o atrapado + 3d6 contundente/turno. Siempre preparado.' },
+        { id:'ab-summon-aberration', name:'Summon Aberration ✦',  level:4, castTime:'Acción',       range:'27 m',     duration:'1 h',     concentration:true,  combat:true,  domain:true, desc:'Invoca criatura aberración (beholderkin, slaad, star spawn) para luchar por vos. Siempre preparado.' },
+        ] : []),
+        ...(nivel >= 9 ? [
+        { id:'ab-telekinesis',       name:'Telekinesis ✦',        level:5, castTime:'Acción',       range:'18 m',     duration:'10 min',  concentration:true,  combat:true,  domain:true, desc:'Mueve objetos/criaturas con la mente · criatura: save FUE o movida 9m. Siempre preparado.' },
+        { id:'ab-rarys-bond',        name:"Rary's Telepathic Bond ✦", level:5, castTime:'Acción',   range:'9 m',      duration:'1 h',     concentration:false, combat:false, domain:true, desc:'Hasta 8 criaturas se comunican telepáticamente sin importar idioma. SIN concentración. Siempre preparado.' },
+        ] : []),
+      ],
+      features: (nivel) => [
+        { id:'am-psionic-spells', name:'Psionic Spells',
+          source:'Aberrant Mind · Nv1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Ganás 2 cantrips psiónicos (Mind Sliver, Minor Illusion) y una lista de conjuros siempre preparados que escalan con tu nivel. No cuentan contra tu límite de conjuros conocidos.',
+          fullDesc:'A nivel 1 recibes los cantrips Mind Sliver y Minor Illusion de forma gratuita. Además, aprendés conjuros adicionales (Arms of Hadar, Dissonant Whispers a nv1; Calm Emotions, Detect Thoughts a nv3; Hunger of Hadar, Sending a nv5; Evard\'s Black Tentacles, Summon Aberration a nv7; Telekinesis, Rary\'s Telepathic Bond a nv9). Estos conjuros siempre están preparados y no cuentan contra tu número de conjuros conocidos. Si no son de Hechicero, igualmente puedes usarlos.' },
+        { id:'am-telepathic-speech', name:'Telepathic Speech',
+          source:'Aberrant Mind · Nv1', type:'active', action:'Bonus Action', range:'18 m', recharge:null,
+          desc:'Acción bonus: establecés comunicación telepática con una criatura visible (INT ≥ 1). Dura min(INT mod, 1) minutos. No requiere idioma compartido.',
+          fullDesc:'A nivel 1 puedes comunicarte telepáticamente con cualquier criatura que puedas ver a 18m con Inteligencia de al menos 1. La comunicación dura un número de minutos igual a tu modificador de Inteligencia (mínimo 1 minuto). No necesitas compartir idioma, pero la criatura debe ser capaz de entender al menos un idioma para que la comunicación sea significativa.' },
+        ...(nivel >= 6 ? [{ id:'am-revelation-in-flesh', name:'Revelation in the Flesh',
+          source:'Aberrant Mind · Nv6', type:'active', action:'Acción bonus (1 SP)', range:'Personal', recharge:null,
+          desc:'Gasta 1+ Sorcery Point: transformación aberrante 10 min. 1SP: acuático o terrestre sin daño por movimiento. 2SP: vuelo 9m. 3SP: transparente (invisible a magos). 4SP: tentáculos (alcance extra).',
+          fullDesc:'A nivel 6, puedes transformar tu cuerpo de formas aberrantes. Gastas 1 o más puntos de hechicería como acción adicional para ganar efectos durante 10 minutos: 1SP: adaptación acuática o movimiento sin restricciones. 2SP: vuelo 9m. 3SP: volverse transparente. 4SP: tentáculos con alcance extra.' }] : []),
+        ...(nivel >= 10 ? [{ id:'am-warping-implosion', name:'Warping Implosion',
+          source:'Aberrant Mind · Nv10', type:'active', action:'Acción (5 SP)', range:'27 m', recharge:'Long Rest',
+          desc:'5 SP: teleportás a espacio visible en 27m · todas las criaturas en 9m del origen: save FUE o 3d10 fuerza + atraídas 9m. 1/LR gratis, luego cuesta 5 SP.',
+          fullDesc:'A nivel 10 puedes usar tu acción para teleportarte a un espacio desocupado que puedas ver dentro de 27m. Inmediatamente, cada criatura dentro de 9m del espacio que dejaste debe hacer un save de FUE (CD = tu CD de conjuros) o recibir 3d10 de daño de fuerza y ser jalada hasta 9m hacia el espacio que acabas de dejar. Puedes usar esta capacidad una vez sin gastar puntos de hechicería. Luego debes gastar 5 puntos de hechicería para usarla.' }] : []),
+        ...(nivel >= 14 ? [{ id:'am-create-thrall', name:'Create Thrall',
+          source:'Aberrant Mind · Nv14', type:'active', action:'Acción', range:'Toque', recharge:null,
+          desc:'Toque en criatura incapacitada: queda bajo tu control telepático. Detectás su ubicación siempre, y podés comunicarte con ella.',
+          fullDesc:'A nivel 14, cuando tocas a un humanoide incapacitado, puedes lanzar un hechizo psiónico sobre él. La criatura no está encantada, pero queda bajo tu influencia psiónica. Siempre sabes la localización del thrall y puedes comunicarte telepáticamente con él sin importar la distancia (incluso en otros planos). El efecto termina si usas esta habilidad en otra criatura.' }] : []),
+      ],
+    },
+
+    'Clockwork Soul': {
+      clase: 'Hechicero',
+      resources: () => [],
+      subclassSpells: (nivel) => [
+        { id:'cs-alarm',             name:'Alarm ✦',               level:1, castTime:'1 min',        range:'27 m',     duration:'8 h',     concentration:false, combat:false, domain:true, desc:'Alerta cuando una criatura entra en el área protegida. Siempre preparado.' },
+        { id:'cs-protection-evil',   name:'Protection from Evil ✦', level:1, castTime:'Acción',      range:'Toque',    duration:'10 min',  concentration:true,  combat:true,  domain:true, desc:'Desventaja en ataques de seres supernaturales + inmunidad a encantamiento/miedo. Siempre preparado.' },
+        ...(nivel >= 3 ? [
+        { id:'cs-aid',               name:'Aid ✦',                  level:2, castTime:'Acción',      range:'9 m',      duration:'8 h',     concentration:false, combat:false, domain:true, desc:'Hasta 3 criaturas +5 HP máximos y actuales durante 8 h. Siempre preparado.' },
+        { id:'cs-lesser-restoration',name:'Lesser Restoration ✦',   level:2, castTime:'Acción',      range:'Toque',    duration:'Inst.',   concentration:false, combat:false, domain:true, desc:'Elimina una enfermedad o condición (cegado, ensordecido, paralizado, envenenado). Siempre preparado.' },
+        ] : []),
+        ...(nivel >= 5 ? [
+        { id:'cs-dispel-magic',      name:'Dispel Magic ✦',         level:3, castTime:'Acción',      range:'36 m',     duration:'Inst.',   concentration:false, combat:true,  domain:true, desc:'Termina conjuros en objetivo automáticamente si nv3 o menos. Siempre preparado.' },
+        { id:'cs-protection-energy', name:'Protection from Energy ✦', level:3, castTime:'Acción',    range:'Toque',    duration:'1 h',     concentration:true,  combat:true,  domain:true, desc:'Resistencia a 1 tipo de daño energético elemental durante 1h. Siempre preparado.' },
+        ] : []),
+        ...(nivel >= 7 ? [
+        { id:'cs-freedom-movement',  name:'Freedom of Movement ✦',  level:4, castTime:'Acción',      range:'Toque',    duration:'1 h',     concentration:false, combat:true,  domain:true, desc:'Inmune a terreno difícil mágico, parálisis, reducción de velocidad. Siempre preparado.' },
+        { id:'cs-summon-construct',  name:'Summon Construct ✦',      level:4, castTime:'Acción',      range:'27 m',     duration:'1 h',     concentration:true,  combat:true,  domain:true, desc:'Invoca espíritu constructo para luchar por vos. Siempre preparado.' },
+        ] : []),
+        ...(nivel >= 9 ? [
+        { id:'cs-greater-restoration',name:'Greater Restoration ✦', level:5, castTime:'Acción',      range:'Toque',    duration:'Inst.',   concentration:false, combat:false, domain:true, desc:'Reduce agotamiento, elimina encantamiento/maldición/petrificación, restaura HP max. Siempre preparado.' },
+        { id:'cs-wall-of-force',     name:'Wall of Force ✦',         level:5, castTime:'Acción',      range:'36 m',     duration:'10 min',  concentration:true,  combat:true,  domain:true, desc:'Pared invisible impenetrable de fuerza. Siempre preparado.' },
+        ] : []),
+      ],
+      features: (nivel) => [
+        { id:'cs-clockwork-magic', name:'Clockwork Magic',
+          source:'Clockwork Soul · Nv1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Ganás una lista de conjuros siempre preparados que no cuentan contra tu límite de conocidos.',
+          fullDesc:'A nivel 1 aprendés conjuros adicionales siempre preparados según tu nivel (Alarm, Protection from Evil nv1; Aid, Lesser Restoration nv3; Dispel Magic, Protection from Energy nv5; Freedom of Movement, Summon Construct nv7; Greater Restoration, Wall of Force nv9).' },
+        { id:'cs-restore-balance', name:'Restore Balance',
+          source:'Clockwork Soul · Nv1', type:'active', action:'Reacción', range:'18 m', recharge:'Long Rest',
+          desc:'Reacción cuando una criatura visible recibe ventaja o desventaja: cancela ese efecto. Usos = CAR mod (mín 1).',
+          fullDesc:'A nivel 1, cuando una criatura que puedes ver a 18m va a tirar con ventaja o desventaja, puedes usar tu reacción para cancelar la ventaja o desventaja. Puedes usar esta característica un número de veces igual a tu modificador de Carisma (mínimo una). Recuperas todos los usos al final de un descanso largo.' },
+        ...(nivel >= 6 ? [{ id:'cs-bastion-of-law', name:'Bastion of Law',
+          source:'Clockwork Soul · Nv6', type:'active', action:'Acción (1-5 SP)', range:'9 m', recharge:null,
+          desc:'Gasta 1-5 SP: criatura visible almacena 1d8/SP como escudo. Absorbe ese daño antes que sus HP reales.',
+          fullDesc:'A nivel 6 puedes atraer el poder del plano mecánico para protegerte a ti o a un aliado. Como acción, puedes gastar de 1 a 5 puntos de hechicería para crear un escudo mágico en torno a ti mismo o una criatura consentidora visible a 9m. El escudo absorbe un total de 1d8 de daño por punto de hechicería gastado. El escudo dura hasta que sea reducido a 0 o hasta que termines un descanso largo.' }] : []),
+        ...(nivel >= 10 ? [{ id:'cs-trance-of-order', name:'Trance of Order',
+          source:'Clockwork Soul · Nv10', type:'active', action:'Acción bonus', range:'Personal', recharge:'Long Rest',
+          desc:'1/LR: durante 1 min, tiradas de ataque contra vos no tienen ventaja + tiras cualquier d20 y podés reemplazarlo por 10.',
+          fullDesc:'A nivel 10 puedes alinear tu mente con el orden de los planos. Como acción adicional, puedes entrar en un estado de enfoque ordenado por 1 minuto. Mientras dure: los ataques contra ti no pueden tener ventaja, y cada vez que hagas una tirada de ataque, una prueba de habilidad o una tirada de salvación, puedes tratar un d20 como si hubiera sacado un 10.' }] : []),
+        ...(nivel >= 14 ? [{ id:'cs-clockwork-cavalcade', name:'Clockwork Cavalcade',
+          source:'Clockwork Soul · Nv14', type:'active', action:'Acción (7 SP)', range:'Uno mismo (9m)', recharge:'Long Rest',
+          desc:'7 SP: invocás autómatas en 9m radio — curan 4d10 HP a criaturas de tu elección, terminan conjuros de nv6 o menos, y reparan objetos.',
+          fullDesc:'A nivel 14, convocas una avalancha de autómatas del plano mecánico. Como acción, gastas 7 puntos de hechicería y un destello de autómatas mecánicos aparece en un cubo de 9m centrado en ti. Los autómatas realizan tres efectos en el área: restauran hasta 4d10 HP a criaturas de tu elección; terminan todos los conjuros activos de nivel 6 o inferior; reparan todos los objetos no mágicos dañados.' }] : []),
+      ],
+    },
+
     // ── MAGO ──────────────────────────────────────────────────────────────────
     'School of Evocation': {
       clase: 'Mago',
@@ -3759,6 +3859,22 @@ const Characters = (() => {
       char.maneuvers = [];
     }
 
+    // Aplicar subclassSpells (hechizos siempre preparados de subclase, ej. Aberrant Mind / Clockwork Soul)
+    if (typeof sub.subclassSpells === 'function') {
+      const subclSpells = sub.subclassSpells(nivel);
+      if (!char.spells) char.spells = [];
+      subclSpells.forEach(s => {
+        // Si ya existe una versión sin domain:true (del catálogo base), actualizar a domain:true
+        const existing = char.spells.find(e => e.id === s.id);
+        if (existing) {
+          if (s.domain) existing.domain = true;
+          if (s.cantrip_subclass) existing.cantrip_subclass = true;
+        } else {
+          char.spells.push({ ...s });
+        }
+      });
+    }
+
     // Para subclases conjuradoras (Eldritch Knight, Arcane Trickster):
     // si existen spells en CLASE_SPELLS[subclaseName], añadirlos al personaje
     const subSpells = CLASE_SPELLS[subclaseName] || [];
@@ -3984,6 +4100,24 @@ const Characters = (() => {
           char.features.push({ ...f });
         }
       });
+    }
+
+    // Actualizar subclassSpells al subir de nivel (ej. Aberrant Mind desbloquea por nivel)
+    if (char.subclase) {
+      const sub = SUBCLASES_CONFIG[char.subclase];
+      if (sub && typeof sub.subclassSpells === 'function') {
+        const subclSpells = sub.subclassSpells(newLevel);
+        if (!char.spells) char.spells = [];
+        subclSpells.forEach(s => {
+          const existing = char.spells.find(e => e.id === s.id);
+          if (existing) {
+            if (s.domain) existing.domain = true;
+            if (s.cantrip_subclass) existing.cantrip_subclass = true;
+          } else {
+            char.spells.push({ ...s });
+          }
+        });
+      }
     }
 
     return char;
