@@ -262,7 +262,7 @@ const App = (() => {
 
       }
       // Sync de subclassSpells: re-aplicar hechizos de subclase si la subclase tiene lista propia
-      console.log('[DND] subclase:', _char.subclase, '| spells con domain:', (_char.spells||[]).filter(s=>s.domain).map(s=>s.id));
+      console.log('[DND] subclase:', _char.subclase, '| classes:', JSON.stringify(_char.classes), '| spells con domain:', (_char.spells||[]).filter(s=>s.domain).map(s=>s.id));
       if (_char.subclase) {
         const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
         console.log('[DND] subConf encontrado:', !!subConf, '| tiene subclassSpells:', !!(subConf && subConf.subclassSpells));
