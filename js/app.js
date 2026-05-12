@@ -240,6 +240,30 @@ const App = (() => {
         });
 
       }
+      // Sync de subclassSpells: re-aplicar hechizos de subclase si la subclase tiene lista propia
+      // Esto garantiza que personajes creados antes de que se implementara subclassSpells
+      // reciban sus spells de dominio/juramento/psiónicos al recargar la app.
+      if (_char.subclase) {
+        const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
+        if (subConf && typeof subConf.subclassSpells === 'function') {
+          const nivel = _char.nivel || 1;
+          const subclSpells = subConf.subclassSpells(nivel);
+          if (!_char.spells) _char.spells = [];
+          let subclChanged = false;
+          subclSpells.forEach(s => {
+            const existing = _char.spells.find(e => e.id === s.id);
+            if (existing) {
+              if (s.domain && !existing.domain)           { existing.domain = true; subclChanged = true; }
+              if (s.cantrip_subclass && !existing.cantrip_subclass) { existing.cantrip_subclass = true; subclChanged = true; }
+            } else {
+              _char.spells.push({ ...s });
+              subclChanged = true;
+            }
+          });
+          if (subclChanged) Storage.saveChar(_char);
+        }
+      }
+
       _refreshCharFeatures(_char);
     }
 
