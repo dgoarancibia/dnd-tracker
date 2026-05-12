@@ -5638,6 +5638,7 @@ const App = (() => {
 
     // Cloud / Undo
     undoLastChange, toggleTheme,
+    getActiveChar() { return _char; },
     reloadChar(char) {
       _char = char || Storage.getActiveChar();
       if (_char && _char.id !== 'lursey-brumaclara') {
