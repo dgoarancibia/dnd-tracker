@@ -896,9 +896,21 @@ const App = (() => {
     const colDer = document.getElementById('col-combate-der');
     if (!c || !colDer) return;
 
-    // Conjuros clave referencia: cantrips de combate, MI, domain, o preparados hoy
-    const keySells = (c.spells || []).filter(s =>
-      (s.level === 0 && s.combat !== false) || s.mi || s.domain || (c.preparedToday||[]).includes(s.id));
+    // Conjuros clave referencia:
+    // - Cantrips de combate
+    // - Spells con mi:true o domain:true (siempre preparados) — siempre incluidos
+    // - Known casters (Hechicero/Bardo/Brujo): sus spells conocidos
+    //   · combat:true → siempre en combate
+    //   · combat:false → solo si están en preparedToday (utility spells excluidos)
+    //   · combat no definido → incluir (asumir combate)
+    // - Prepare casters: los preparados hoy
+    const isKnownCasterCtx = Characters.isKnownCaster(c);
+    const keySells = (c.spells || []).filter(s => {
+      if (s.level === 0) return s.combat !== false;
+      if (s.mi || s.domain) return true;
+      if (isKnownCasterCtx) return s.combat !== false;  // excluir solo los marcados como no-combate
+      return (c.preparedToday || []).includes(s.id);
+    });
 
     // Initiative tracker — solo visible en combate activo
     let html = '';
