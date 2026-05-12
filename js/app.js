@@ -83,10 +83,52 @@ const App = (() => {
       });
     }
 
-    // 2. Reparar subclase vacío desde classes[0].subclass
-    if (!c.subclase && c.classes && c.classes[0] && c.classes[0].subclass) {
-      c.subclase = c.classes[0].subclass;
-      changed = true;
+    // 2. Reparar subclase vacío — tres fuentes posibles:
+    //    a) classes[0].subclass
+    //    b) choices['subclase-1'] → buscar nombre real en SUBCLASES_CONFIG
+    if (!c.subclase) {
+      // a) desde classes[]
+      if (c.classes && c.classes[0] && c.classes[0].subclass) {
+        c.subclase = c.classes[0].subclass;
+        changed = true;
+      }
+      // b) desde choices['subclase-1'] — el choice guarda el ID (ej: 'sub-aberrant-mind')
+      //    buscar en SUBCLASES_CONFIG cuya key ES el nombre real
+      if (!c.subclase && c.choices && c.choices['subclase-1']) {
+        const choiceId = c.choices['subclase-1'];
+        // SUBCLASES_CONFIG tiene como keys los nombres reales ('Aberrant Mind', etc.)
+        // Buscamos la key cuyo valor tenga coincidencia, o buscamos en CHOICES_CONFIG el name
+        const allSubs = Characters.SUBCLASES_CONFIG || {};
+        // Buscar por nombre en todas las listas de subclases del CHOICES_CONFIG
+        let foundName = null;
+        const claseCfg = Characters.CHOICES_CONFIG && Characters.CHOICES_CONFIG[c.clase];
+        if (claseCfg) {
+          const subChoice = claseCfg.find(ch => ch.id === 'subclase-1');
+          if (subChoice && subChoice.options) {
+            const opt = subChoice.options.find(o => o.id === choiceId);
+            if (opt) foundName = opt.name;
+          }
+        }
+        // Si no encontramos por CHOICES_CONFIG, buscar directamente en SUBCLASES_CONFIG keys
+        if (!foundName && allSubs[choiceId]) foundName = choiceId;
+        // Fallback: buscar en todos los objetos de subclase por id
+        if (!foundName) {
+          // Recorrer todas las listas de subclases exportadas vía CHOICES_CONFIG
+          Object.values(Characters.CHOICES_CONFIG || {}).forEach(list => {
+            list.forEach(ch => {
+              if (ch.id === 'subclase-1' && ch.options) {
+                const opt = ch.options.find(o => o.id === choiceId);
+                if (opt && !foundName) foundName = opt.name;
+              }
+            });
+          });
+        }
+        if (foundName) {
+          c.subclase = foundName;
+          if (c.classes && c.classes[0]) c.classes[0].subclass = foundName;
+          changed = true;
+        }
+      }
     }
 
     // 3. Re-sync subclassSpells (spells de dominio/juramento/psiónicos)
