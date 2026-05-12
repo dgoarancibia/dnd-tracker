@@ -162,16 +162,24 @@ const App = (() => {
     }
 
     // ── Migración de IDs de spells renombrados ──────────────────────────────
-    // Si el personaje tiene un spell con ID viejo, renombrarlo al nuevo ID.
     const _SPELL_ID_RENAMES = {
-      'mind-whip-s': 'synaptic-static-s',  // Synaptic Static tenía ID incorrecto
+      'mind-whip-s': 'synaptic-static-s',
     };
+    // Prefijos de IDs de subclase → siempre deben tener domain:true o cantrip_subclass:true
+    // Esto repara spells añadidos antes de que se implementara el flag correctamente
+    const _SUBCLASS_ID_PREFIXES = ['ab-', 'cs-', 'td-', 'pc-'];  // aberrant, clockwork, trickery, peace
     if (_char.spells) {
-      let renamed = false;
+      let migChanged = false;
       _char.spells.forEach(s => {
-        if (_SPELL_ID_RENAMES[s.id]) { s.id = _SPELL_ID_RENAMES[s.id]; renamed = true; }
+        // Renombrar IDs viejos
+        if (_SPELL_ID_RENAMES[s.id]) { s.id = _SPELL_ID_RENAMES[s.id]; migChanged = true; }
+        // Forzar flags de subclase en spells con prefijo de subclase
+        if (_SUBCLASS_ID_PREFIXES.some(pfx => s.id.startsWith(pfx))) {
+          if (s.level === 0 && !s.cantrip_subclass) { s.cantrip_subclass = true; migChanged = true; }
+          if (s.level > 0  && !s.domain)            { s.domain = true;           migChanged = true; }
+        }
       });
-      if (renamed) Storage.saveChar(_char);
+      if (migChanged) Storage.saveChar(_char);
     }
 
     // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
@@ -897,18 +905,15 @@ const App = (() => {
     if (!c || !colDer) return;
 
     // Conjuros clave referencia:
-    // - Cantrips de combate
-    // - Spells con mi:true o domain:true (siempre preparados) — siempre incluidos
-    // - Known casters (Hechicero/Bardo/Brujo): sus spells conocidos
-    //   · combat:true → siempre en combate
-    //   · combat:false → solo si están en preparedToday (utility spells excluidos)
-    //   · combat no definido → incluir (asumir combate)
+    // - Cantrips conocidos: TODOS los que el jugador eligió (combat:false se ignora — si lo eligió, lo quiere ver)
+    // - Domain/MI: siempre incluidos (subclase siempre preparados)
+    // - Known casters (Hechicero/Bardo/Brujo): todos sus spells conocidos nivel 1+
     // - Prepare casters: los preparados hoy
     const isKnownCasterCtx = Characters.isKnownCaster(c);
     const keySells = (c.spells || []).filter(s => {
-      if (s.level === 0) return s.combat !== false;
-      if (s.mi || s.domain) return true;
-      if (isKnownCasterCtx) return s.combat !== false;  // excluir solo los marcados como no-combate
+      if (s.level === 0) return true;          // cantrips: siempre mostrar los elegidos
+      if (s.mi || s.domain) return true;       // siempre preparados: siempre
+      if (isKnownCasterCtx) return true;       // known caster: todos sus conocidos
       return (c.preparedToday || []).includes(s.id);
     });
 
