@@ -262,13 +262,14 @@ const App = (() => {
 
       }
       // Sync de subclassSpells: re-aplicar hechizos de subclase si la subclase tiene lista propia
-      // Esto garantiza que personajes creados antes de que se implementara subclassSpells
-      // reciban sus spells de dominio/juramento/psiónicos al recargar la app.
+      console.log('[DND] subclase:', _char.subclase, '| spells con domain:', (_char.spells||[]).filter(s=>s.domain).map(s=>s.id));
       if (_char.subclase) {
         const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
+        console.log('[DND] subConf encontrado:', !!subConf, '| tiene subclassSpells:', !!(subConf && subConf.subclassSpells));
         if (subConf && typeof subConf.subclassSpells === 'function') {
           const nivel = _char.nivel || 1;
           const subclSpells = subConf.subclassSpells(nivel);
+          console.log('[DND] subclassSpells a agregar:', subclSpells.map(s=>s.id));
           if (!_char.spells) _char.spells = [];
           let subclChanged = false;
           subclSpells.forEach(s => {
@@ -281,6 +282,7 @@ const App = (() => {
               subclChanged = true;
             }
           });
+          console.log('[DND] subclChanged:', subclChanged);
           if (subclChanged) Storage.saveChar(_char);
         }
       }
