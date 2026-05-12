@@ -262,6 +262,12 @@ const App = (() => {
 
       }
       // Sync de subclassSpells: re-aplicar hechizos de subclase si la subclase tiene lista propia
+      // Reparar subclase si está vacío pero classes[0].subclass tiene valor
+      if (!_char.subclase && _char.classes && _char.classes[0] && _char.classes[0].subclass) {
+        _char.subclase = _char.classes[0].subclass;
+        Storage.saveChar(_char);
+        console.log('[DND] subclase reparado desde classes[0].subclass:', _char.subclase);
+      }
       console.log('[DND] subclase:', _char.subclase, '| classes:', JSON.stringify(_char.classes), '| spells con domain:', (_char.spells||[]).filter(s=>s.domain).map(s=>s.id));
       if (_char.subclase) {
         const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
