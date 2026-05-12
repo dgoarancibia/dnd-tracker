@@ -161,6 +161,19 @@ const App = (() => {
       return;
     }
 
+    // ── Migración de IDs de spells renombrados ──────────────────────────────
+    // Si el personaje tiene un spell con ID viejo, renombrarlo al nuevo ID.
+    const _SPELL_ID_RENAMES = {
+      'mind-whip-s': 'synaptic-static-s',  // Synaptic Static tenía ID incorrecto
+    };
+    if (_char.spells) {
+      let renamed = false;
+      _char.spells.forEach(s => {
+        if (_SPELL_ID_RENAMES[s.id]) { s.id = _SPELL_ID_RENAMES[s.id]; renamed = true; }
+      });
+      if (renamed) Storage.saveChar(_char);
+    }
+
     // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
     if (_cleanSpells(_char)) Storage.saveChar(_char);
 
