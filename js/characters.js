@@ -3481,6 +3481,7 @@ const Characters = (() => {
 
     'Hechicero': [
       // ── Cantrips (6 a nivel 12 según tabla) ──
+      { id:'sorcerous-burst-s', name:'Sorcerous Burst',   level:0, castTime:'Acción',       range:'27 m',       duration:'Inst.',       concentration:false, combat:true,  desc:'Ataque a distancia · 1d8 del tipo elegido (ácido, frío, fuego, rayo, veneno, psíquico, trueno). Si tirás el máximo en cualquier dado, tirás 1d8 extra del mismo tipo. (PHB 2024)' },
       { id:'fire-bolt-s',       name:'Fire Bolt',         level:0, castTime:'Acción',       range:'36 m',       duration:'Inst.',       concentration:false, combat:true,  desc:'Ataque a distancia · 1d10 fuego. (2d10 nv5, 3d10 nv11, 4d10 nv17).' },
       { id:'ray-of-frost-s',    name:'Ray of Frost',      level:0, castTime:'Acción',       range:'18 m',       duration:'Inst.',       concentration:false, combat:true,  desc:'Ataque a distancia · 1d8 frío · vel -10ft hasta tu turno. Escala nv5/11/17.' },
       { id:'shocking-grasp-s',  name:'Shocking Grasp',    level:0, castTime:'Acción',       range:'Toque',      duration:'Inst.',       concentration:false, combat:true,  desc:'Ataque de toque · 1d8 relámpago · objetivo no puede reaccionar hasta su turno. Ventaja si lleva metal.' },
@@ -3630,7 +3631,7 @@ const Characters = (() => {
       { id:'creation-s',          name:'Creation',             level:5, castTime:'1 min',      range:'9 m',       duration:'Varía',   concentration:false, combat:false, desc:'Crea objeto de materia inerte de hasta 5ft cúbicos. Duración según material.' },
       { id:'dominate-person-s',   name:'Dominate Person',      level:5, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o humanoide bajo tu control. Repite save al recibir daño.' },
       { id:'hold-monster-s',      name:'Hold Monster',         level:5, castTime:'Acción',    range:'18 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Save SAB o paralizado (cualquier criatura). Repite save c/turno.' },
-      { id:'mind-whip-s',         name:'Synaptic Static',      level:5, castTime:'Acción',    range:'36 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Esfera 6m · save INT · 8d6 psíquico + desventaja en ataques y concentración.' },
+      { id:'synaptic-static-s',   name:'Synaptic Static',      level:5, castTime:'Acción',    range:'36 m',      duration:'Inst.',   concentration:false, combat:true,  desc:'Esfera 6m · save INT · 8d6 psíquico + desventaja en ataques y concentración 1d6 penalización.' },
       { id:'mislead-s',           name:'Mislead',              level:5, castTime:'Acción',    range:'Uno mismo', duration:'1 h',     concentration:true,  combat:false, desc:'Invisible + creas doble ilusorio controlable desde tu perspectiva.' },
       { id:'wall-of-stone-s',     name:'Wall of Stone',        level:5, castTime:'Acción',    range:'36 m',      duration:'10 min',  concentration:true,  combat:true,  desc:'Muro de piedra sólida de hasta 10 paneles (3x1m c/u).' },
       { id:'bigbys-hand-s',       name:"Bigby's Hand",         level:5, castTime:'Acción',    range:'36 m',      duration:'1 min',   concentration:true,  combat:true,  desc:'Mano gigante de fuerza: golpe, empuje, agarre, bloqueo. 4d8 fuerza.' },
