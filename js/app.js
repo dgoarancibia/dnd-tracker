@@ -62,6 +62,56 @@ const App = (() => {
     }
   }
 
+  // ── _syncCharData: aplica migraciones y syncs al personaje activo ───────────
+  // Se llama tanto en init() como en reloadChar() para que los personajes que
+  // llegan desde Firebase también reciban las migraciones correctamente.
+  function _syncCharData(c) {
+    if (!c || c.id === 'lursey-brumaclara') return false;
+
+    let changed = false;
+
+    // 1. Renombrar IDs de spells obsoletos
+    const SPELL_ID_RENAMES = { 'mind-whip-s': 'synaptic-static-s' };
+    const SUBCLASS_PREFIXES = ['ab-', 'cs-', 'td-', 'pc-'];
+    if (c.spells) {
+      c.spells.forEach(s => {
+        if (SPELL_ID_RENAMES[s.id]) { s.id = SPELL_ID_RENAMES[s.id]; changed = true; }
+        if (SUBCLASS_PREFIXES.some(pfx => s.id.startsWith(pfx))) {
+          if (s.level === 0 && !s.cantrip_subclass) { s.cantrip_subclass = true; changed = true; }
+          if (s.level > 0  && !s.domain)            { s.domain = true;           changed = true; }
+        }
+      });
+    }
+
+    // 2. Reparar subclase vacío desde classes[0].subclass
+    if (!c.subclase && c.classes && c.classes[0] && c.classes[0].subclass) {
+      c.subclase = c.classes[0].subclass;
+      changed = true;
+    }
+
+    // 3. Re-sync subclassSpells (spells de dominio/juramento/psiónicos)
+    if (c.subclase) {
+      const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[c.subclase];
+      if (subConf && typeof subConf.subclassSpells === 'function') {
+        const nivel = c.nivel || 1;
+        const subclSpells = subConf.subclassSpells(nivel);
+        if (!c.spells) c.spells = [];
+        subclSpells.forEach(s => {
+          const existing = c.spells.find(e => e.id === s.id);
+          if (existing) {
+            if (s.domain && !existing.domain)                       { existing.domain = true;           changed = true; }
+            if (s.cantrip_subclass && !existing.cantrip_subclass)   { existing.cantrip_subclass = true; changed = true; }
+          } else {
+            c.spells.push({ ...s });
+            changed = true;
+          }
+        });
+      }
+    }
+
+    return changed;
+  }
+
   // Elimina duplicados de spells (por id) y recorta cantrips al máximo de la tabla.
   // Preserva cantrips de subclase (cantrip_subclass:true) fuera del límite.
   function _cleanSpells(c) {
@@ -161,26 +211,8 @@ const App = (() => {
       return;
     }
 
-    // ── Migración de IDs de spells renombrados ──────────────────────────────
-    const _SPELL_ID_RENAMES = {
-      'mind-whip-s': 'synaptic-static-s',
-    };
-    // Prefijos de IDs de subclase → siempre deben tener domain:true o cantrip_subclass:true
-    // Esto repara spells añadidos antes de que se implementara el flag correctamente
-    const _SUBCLASS_ID_PREFIXES = ['ab-', 'cs-', 'td-', 'pc-'];  // aberrant, clockwork, trickery, peace
-    if (_char.spells) {
-      let migChanged = false;
-      _char.spells.forEach(s => {
-        // Renombrar IDs viejos
-        if (_SPELL_ID_RENAMES[s.id]) { s.id = _SPELL_ID_RENAMES[s.id]; migChanged = true; }
-        // Forzar flags de subclase en spells con prefijo de subclase
-        if (_SUBCLASS_ID_PREFIXES.some(pfx => s.id.startsWith(pfx))) {
-          if (s.level === 0 && !s.cantrip_subclass) { s.cantrip_subclass = true; migChanged = true; }
-          if (s.level > 0  && !s.domain)            { s.domain = true;           migChanged = true; }
-        }
-      });
-      if (migChanged) Storage.saveChar(_char);
-    }
+    // ── Migración y sync de datos del personaje ─────────────────────────────
+    if (_syncCharData(_char)) Storage.saveChar(_char);
 
     // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
     if (_cleanSpells(_char)) Storage.saveChar(_char);
@@ -261,40 +293,6 @@ const App = (() => {
         });
 
       }
-      // Sync de subclassSpells: re-aplicar hechizos de subclase si la subclase tiene lista propia
-      // Exponer personaje para debug en consola
-      window._charDebug = _char;
-      // Reparar subclase si está vacío pero classes[0].subclass tiene valor
-      if (!_char.subclase && _char.classes && _char.classes[0] && _char.classes[0].subclass) {
-        _char.subclase = _char.classes[0].subclass;
-        Storage.saveChar(_char);
-        console.log('[DND] subclase reparado desde classes[0].subclass:', _char.subclase);
-      }
-      console.log('[DND] subclase:', JSON.stringify(_char.subclase), '| classes:', JSON.stringify(_char.classes), '| spells count:', (_char.spells||[]).length, '| domain spells:', (_char.spells||[]).filter(s=>s.domain).map(s=>s.id));
-      if (_char.subclase) {
-        const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
-        console.log('[DND] subConf encontrado:', !!subConf, '| tiene subclassSpells:', !!(subConf && subConf.subclassSpells));
-        if (subConf && typeof subConf.subclassSpells === 'function') {
-          const nivel = _char.nivel || 1;
-          const subclSpells = subConf.subclassSpells(nivel);
-          console.log('[DND] subclassSpells a agregar:', subclSpells.map(s=>s.id));
-          if (!_char.spells) _char.spells = [];
-          let subclChanged = false;
-          subclSpells.forEach(s => {
-            const existing = _char.spells.find(e => e.id === s.id);
-            if (existing) {
-              if (s.domain && !existing.domain)           { existing.domain = true; subclChanged = true; }
-              if (s.cantrip_subclass && !existing.cantrip_subclass) { existing.cantrip_subclass = true; subclChanged = true; }
-            } else {
-              _char.spells.push({ ...s });
-              subclChanged = true;
-            }
-          });
-          console.log('[DND] subclChanged:', subclChanged);
-          if (subclChanged) Storage.saveChar(_char);
-        }
-      }
-
       _refreshCharFeatures(_char);
     }
 
@@ -5642,12 +5640,13 @@ const App = (() => {
     reloadChar(char) {
       _char = char || Storage.getActiveChar();
       if (_char && _char.id !== 'lursey-brumaclara') {
+        // Aplicar migraciones y sync de subclassSpells también en carga desde Firebase
+        const syncChanged = _syncCharData(_char);
+        _cleanSpells(_char);
         const before = JSON.stringify(_char.features);
         _refreshCharFeatures(_char);
         const after = JSON.stringify(_char.features);
-        if (before !== after) {
-          // Features cambiaron — guardar localmente y subir a Firestore
-          // para que la próxima sync ya traiga datos limpios
+        if (syncChanged || before !== after) {
           Storage.saveCharRaw(_char);
           if (window.Cloud && Cloud.isLoggedIn()) Cloud.saveNow(_char);
         }
