@@ -1138,11 +1138,21 @@ const App = (() => {
     const { tag, level } = _spellFilter;
     const isKnownCasterCtx = Characters.isKnownCaster(c);
 
-    // Para known casters: mostrar catálogo completo de la clase
-    // Para prepare casters: mostrar los conjuros guardados en char.spells
-    const sourceSpells = isKnownCasterCtx
-      ? (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase] || [])
-      : (c.spells || []);
+    // Catálogo completo de la clase (used for both known and prepare casters)
+    const classCatalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase]) || [];
+    // Para prepare casters: unión de catálogo + spells propios del personaje (de subclase/dominio/raza)
+    // Para known casters: catálogo completo solamente
+    let sourceSpells;
+    if (isKnownCasterCtx) {
+      sourceSpells = classCatalog;
+    } else {
+      // Prepare caster: catálogo + spells del char que no están en el catálogo (dominio, magia de subclase, etc.)
+      const catalogIds = new Set(classCatalog.map(s => s.id));
+      const extraSpells = (c.spells || []).filter(s => !catalogIds.has(s.id));
+      sourceSpells = classCatalog.length > 0
+        ? [...classCatalog, ...extraSpells]
+        : (c.spells || []);
+    }
 
     const knownIds = new Set((c.spells || []).map(s => s.id));
 
@@ -3347,7 +3357,20 @@ const App = (() => {
 
   function toggleSpellPrepared(id) {
     if (!_char) return;
-    const spell = (_char.spells || []).find(s => s.id === id);
+    let spell = (_char.spells || []).find(s => s.id === id);
+
+    // Si el spell viene del catálogo pero no está en char.spells aún,
+    // lo agregamos automáticamente (prepare casters eligen de la lista completa)
+    if (!spell) {
+      const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[_char.clase]) || [];
+      const fromCatalog = catalog.find(s => s.id === id);
+      if (fromCatalog && fromCatalog.level > 0) {
+        if (!_char.spells) _char.spells = [];
+        _char.spells.push({ ...fromCatalog });
+        spell = _char.spells[_char.spells.length - 1];
+      }
+    }
+
     if (!spell || spell.level === 0 || spell.domain || spell.mi) return;
 
     const prepared = _char.preparedToday || [];
