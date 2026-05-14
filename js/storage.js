@@ -82,14 +82,14 @@ const Storage = (() => {
      correcto pero no tienen el campo choices (o lo tienen vacío).
   ── */
   function _ensureChoicesFilled(char) {
-    if (char.id === LURSEY_ID) return; // Lursey tiene sus propios datos
-    if (typeof Characters === 'undefined') return; // characters.js aún no cargado
+    if (char.id === LURSEY_ID) return false; // Lursey tiene sus propios datos
+    if (typeof Characters === 'undefined') return false; // characters.js aún no cargado
 
     const nivel = char.nivel || 1;
     // Solo actuar si el personaje es "ya construido": nivel > 1, tiene subclase o features
     const isBuiltChar = nivel > 1 &&
       (char.subclase || (Array.isArray(char.features) && char.features.length > 0));
-    if (!isBuiltChar) return;
+    if (!isBuiltChar) return false;
 
     // Verificar que tenga choices pendientes reales (no basta con que el objeto exista vacío)
     // Calculamos cuántas choices estáticas hay hasta su nivel
@@ -105,7 +105,7 @@ const Storage = (() => {
     const isKnownCaster = clasesCfg && clasesCfg.knownCaster;
 
     // Si ya tiene todas las choices resueltas, no hacer nada
-    if (missingStatic.length === 0 && !isKnownCaster) return;
+    if (missingStatic.length === 0 && !isKnownCaster) return false;
 
     // Hay choices pendientes → rellenar como __imported__
     missingStatic.forEach(ch => {
@@ -128,6 +128,7 @@ const Storage = (() => {
         if (!char.choices[`spellPick-${lvl}-2`]) char.choices[`spellPick-${lvl}-2`] = '__imported__';
       }
     }
+    return true; // indica que se modificó el char
   }
 
   /* ── Migrations ── */
@@ -310,7 +311,7 @@ const Storage = (() => {
     // ── Siempre: rellenar choices vacías en personajes ya construidos ──────────
     // Corre INDEPENDIENTEMENTE de la versión. Cubre personajes importados con
     // _dataVersion ya correcto pero sin campo choices (ej: JSONs generados por IA).
-    _ensureChoicesFilled(char);
+    char._choicesFilled = _ensureChoicesFilled(char); // true si se modificó
 
     return char;
   }
@@ -334,7 +335,20 @@ const Storage = (() => {
   function getChar(id) {
     const all = getAllChars();
     const char = all[id];
-    return char ? _migrate(char) : null;
+    if (!char) return null;
+    const migrated = _migrate(char);
+    // Si _ensureChoicesFilled rellenó choices (o la versión cambió), persiste inmediatamente
+    // para que la próxima lectura no vuelva a ver el char sin choices.
+    if (migrated._choicesFilled || (migrated._dataVersion !== (char._dataVersion || 1))) {
+      delete migrated._choicesFilled; // campo temporal, no persistir
+      const snapshot = getAllChars();
+      snapshot[id] = migrated;
+      _set(CHARS_KEY, snapshot);
+      _idbPut(migrated);
+    } else {
+      delete migrated._choicesFilled;
+    }
+    return migrated;
   }
 
   function saveChar(char) {
