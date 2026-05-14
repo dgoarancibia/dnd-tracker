@@ -7,7 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
-  const DATA_VERSION = 12;  // Incrementar al cambiar el esquema
+  const DATA_VERSION = 13;  // Incrementar al cambiar el esquema
   const LURSEY_ID    = 'lursey-brumaclara'; // personaje de demo — sus features vienen de buildLursey()
 
   // ── IndexedDB shadow backup ──────────────────────────────────────────────
@@ -246,6 +246,52 @@ const Storage = (() => {
         char.currency.ep = 0;
       }
       char._dataVersion = 12;
+    }
+    if (char._dataVersion < 13) {
+      // v12 → v13: auto-completar choices vacías en personajes importados o creados externamente.
+      // Si choices está vacío pero el personaje ya tiene nivel > 1 con subclase y features,
+      // marcamos todas las choices estáticas hasta su nivel como '__imported__' para que
+      // getPendingChoices no los vuelva a pedir.
+      if (char.id !== LURSEY_ID) {
+        const hasEmptyChoices = !char.choices || Object.keys(char.choices).length === 0;
+        const isBuiltChar     = (char.nivel || 1) > 1 &&
+                                (char.subclase || (char.features && char.features.length > 0));
+        if (hasEmptyChoices && isBuiltChar) {
+          if (!char.choices) char.choices = {};
+          const classCfg = (typeof Characters !== 'undefined' && Characters.CHOICES_CONFIG)
+            ? (Characters.CHOICES_CONFIG[char.clase] || [])
+            : [];
+          classCfg.forEach(ch => {
+            if (ch.level <= (char.nivel || 1)) {
+              // Para subclase: usar el nombre de subclase como valor si lo tenemos
+              if (ch.appliesSubclass && char.subclase) {
+                // Buscar el id de opción que coincida con el nombre de subclase
+                const opt = (ch.options || []).find(o =>
+                  o.name === char.subclase || o.id === char.subclase
+                );
+                char.choices[ch.id] = opt ? opt.id : '__imported__';
+              } else {
+                char.choices[ch.id] = '__imported__';
+              }
+            }
+          });
+          // También marcar spellPick/cantripPick como resueltos para cada nivel
+          // (el personaje ya viene con sus spells en el JSON)
+          const cfg = (typeof Characters !== 'undefined' && Characters.CLASES_CONFIG)
+            ? Characters.CLASES_CONFIG[char.clase]
+            : null;
+          if (cfg && cfg.knownCaster) {
+            for (let lvl = 1; lvl <= (char.nivel || 1); lvl++) {
+              char.choices[`spellPick-${lvl}`]   = '__imported__';
+              char.choices[`cantripPick-${lvl}`] = '__imported__';
+              // También para los multi-pick (ej Bardo lvl10 gana 2)
+              char.choices[`spellPick-${lvl}-1`] = '__imported__';
+              char.choices[`spellPick-${lvl}-2`] = '__imported__';
+            }
+          }
+        }
+      }
+      char._dataVersion = 13;
     }
     return char;
   }
