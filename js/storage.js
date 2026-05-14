@@ -13,16 +13,25 @@ const Storage = (() => {
   // ── IndexedDB shadow backup ──────────────────────────────────────────────
   // Se escribe en cada saveChar/saveCharRaw. Sobrevive al Clear site data del SW.
   // Se usa para recuperar personajes si el localStorage queda vacío.
-  const IDB_NAME  = 'dnd_shadow_v1';
-  const IDB_STORE = 'chars';
-  let   _idb      = null;
+  // IDB v2 agrega el store 'deleted' para recordar IDs eliminados intencionalmente.
+  const IDB_NAME    = 'dnd_shadow_v1';
+  const IDB_STORE   = 'chars';
+  const IDB_DELETED = 'deleted'; // store de IDs eliminados
+  let   _idb        = null;
 
   function _openIDB() {
     if (_idb) return Promise.resolve(_idb);
     return new Promise((resolve) => {
-      const req = indexedDB.open(IDB_NAME, 1);
+      // Versión 2: agrega store 'deleted'
+      const req = indexedDB.open(IDB_NAME, 2);
       req.onupgradeneeded = e => {
-        e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' });
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) {
+          db.createObjectStore(IDB_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(IDB_DELETED)) {
+          db.createObjectStore(IDB_DELETED, { keyPath: 'id' });
+        }
       };
       req.onsuccess  = e => { _idb = e.target.result; resolve(_idb); };
       req.onerror    = ()  => resolve(null); // fallo silencioso
@@ -35,6 +44,21 @@ const Storage = (() => {
       try {
         const tx = db.transaction(IDB_STORE, 'readwrite');
         tx.objectStore(IDB_STORE).put(char);
+      } catch (_) {}
+    });
+  }
+
+  // Marca un ID como eliminado en IDB y lo borra del store de chars
+  function _idbMarkDeleted(id) {
+    _openIDB().then(db => {
+      if (!db) return;
+      try {
+        // Guardar en 'deleted' con timestamp
+        const tx1 = db.transaction(IDB_DELETED, 'readwrite');
+        tx1.objectStore(IDB_DELETED).put({ id, deletedAt: new Date().toISOString() });
+        // Quitar del store de chars
+        const tx2 = db.transaction(IDB_STORE, 'readwrite');
+        tx2.objectStore(IDB_STORE).delete(id);
       } catch (_) {}
     });
   }
@@ -52,6 +76,20 @@ const Storage = (() => {
     });
   }
 
+  // Devuelve el Set de IDs que fueron eliminados intencionalmente
+  function _idbGetDeletedIds() {
+    return _openIDB().then(db => {
+      if (!db) return new Set();
+      return new Promise(resolve => {
+        try {
+          const req = db.transaction(IDB_DELETED, 'readonly').objectStore(IDB_DELETED).getAll();
+          req.onsuccess = e => resolve(new Set((e.target.result || []).map(r => r.id)));
+          req.onerror   = ()  => resolve(new Set());
+        } catch (_) { resolve(new Set()); }
+      });
+    });
+  }
+
   // Restaura desde IDB al localStorage si localStorage está vacío (ej: después de clear site data)
   async function _maybeRestoreFromIDB() {
     const existing = _get(CHARS_KEY);
@@ -60,14 +98,15 @@ const Storage = (() => {
     const missingNonLursey = ids.filter(id => id !== LURSEY_ID).length === 0;
     if (!missingNonLursey) return 0; // ya hay personajes, no tocar
 
-    const shadow = await _idbGetAll();
-    const nonLursey = shadow.filter(c => c.id !== LURSEY_ID);
-    if (nonLursey.length === 0) return 0;
+    const [shadow, deletedIds] = await Promise.all([_idbGetAll(), _idbGetDeletedIds()]);
+    // Filtrar: no restaurar Lursey ni los que fueron eliminados intencionalmente
+    const toRestore = shadow.filter(c => c.id !== LURSEY_ID && !deletedIds.has(c.id));
+    if (toRestore.length === 0) return 0;
 
     // Restaurar al localStorage
     const all = existing || {};
     let restored = 0;
-    for (const char of nonLursey) {
+    for (const char of toRestore) {
       all[char.id] = char;
       restored++;
     }
@@ -372,6 +411,8 @@ const Storage = (() => {
     const all = getAllChars();
     delete all[id];
     _set(CHARS_KEY, all);
+    // Registrar en IDB como eliminado para que _maybeRestoreFromIDB no lo restaure
+    _idbMarkDeleted(id);
     // Si era el activo, limpiar
     if (getActiveId() === id) {
       const remaining = Object.keys(all);
