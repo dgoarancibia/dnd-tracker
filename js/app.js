@@ -1007,39 +1007,50 @@ const App = (() => {
       });
     });
 
-    // Habilidades de clase
+    // Habilidades — separar clase vs subclase para secciones distintas
     const features = c.features || [];
-    if (features.length) {
-      html += `<div class="section-hd" style="margin-top:16px;">⚡ Habilidades de Clase</div>`;
-      features.forEach(f => {
-        const badge = f.type === 'passive'
-          ? `<span class="feat-badge feat-passive">Pasiva</span>`
-          : `<span class="feat-badge feat-active">Activa</span>`;
+    const isSubclaseFeat = f => f.source && c.subclase && f.source.toLowerCase().includes(c.subclase.toLowerCase());
+    const classFeats = features.filter(f => !isSubclaseFeat(f));
+    const subclassFeats = features.filter(f => isSubclaseFeat(f));
 
-        // Si la feature tiene una elección asociada, mostrar la opción elegida
-        let displayDesc = f.desc;
-        let choiceBtn = '';
-        const claseCfg = Characters.CHOICES_CONFIG[c.clase] || [];
-        const linkedChoice = claseCfg.find(ch => ch.id === f.id || f.id.startsWith(ch.id.replace(/-\d+$/,'')));
-        if (linkedChoice && linkedChoice.type === 'pick1') {
-          const chosenId = c.choices && c.choices[linkedChoice.id];
-          if (chosenId) {
-            const opt = linkedChoice.options.find(o => o.id === chosenId);
-            if (opt) {
-              displayDesc = `<strong style="color:var(--gold-light);">${opt.name}</strong>${opt.desc ? ' — ' + opt.desc : ''}`;
-            }
-          } else {
-            displayDesc = `<em style="color:var(--text-dim);">Sin elegir</em>`;
-            choiceBtn = `<button class="btn-choice-inline" onclick="event.stopPropagation();App._promptChoice('${linkedChoice.id}')">Elegir</button>`;
+    const _renderFeatCard = (f) => {
+      const badge = f.type === 'passive'
+        ? `<span class="feat-badge feat-passive">Pasiva</span>`
+        : `<span class="feat-badge feat-active">Activa</span>`;
+
+      // Si la feature tiene una elección asociada, mostrar la opción elegida
+      let displayDesc = f.desc;
+      let choiceBtn = '';
+      const claseCfg = Characters.CHOICES_CONFIG[c.clase] || [];
+      const linkedChoice = claseCfg.find(ch => ch.id === f.id || f.id.startsWith(ch.id.replace(/-\d+$/,'')));
+      if (linkedChoice && linkedChoice.type === 'pick1') {
+        const chosenId = c.choices && c.choices[linkedChoice.id];
+        if (chosenId) {
+          const opt = linkedChoice.options.find(o => o.id === chosenId);
+          if (opt) {
+            displayDesc = `<strong style="color:var(--gold-light);">${opt.name}</strong>${opt.desc ? ' — ' + opt.desc : ''}`;
           }
+        } else {
+          displayDesc = `<em style="color:var(--text-dim);">Sin elegir</em>`;
+          choiceBtn = `<button class="btn-choice-inline" onclick="event.stopPropagation();App._promptChoice('${linkedChoice.id}')">Elegir</button>`;
         }
+      }
+      return `<div class="feat-card" onclick="App.openFeatureDetail('${f.id}')">
+        <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}${choiceBtn}</div>
+        <div class="feat-source">${f.source}</div>
+        <div class="feat-desc">${displayDesc}</div>
+      </div>`;
+    };
 
-        html += `<div class="feat-card" onclick="App.openFeatureDetail('${f.id}')">
-          <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}${choiceBtn}</div>
-          <div class="feat-source">${f.source}</div>
-          <div class="feat-desc">${displayDesc}</div>
-        </div>`;
-      });
+    if (classFeats.length) {
+      html += `<div class="section-hd" style="margin-top:16px;">⚡ Habilidades de Clase</div>`;
+      classFeats.forEach(f => { html += _renderFeatCard(f); });
+    }
+
+    // Habilidades de subclase (sección separada)
+    if (subclassFeats.length) {
+      html += `<div class="section-hd" style="margin-top:16px;">✦ Habilidades de Subclase <span style="font-size:10px;font-weight:400;color:var(--text-dim);text-transform:none;">${c.subclase}</span></div>`;
+      subclassFeats.forEach(f => { html += _renderFeatCard(f); });
     }
 
     // Battle Master maneuvers — mostrar las elegidas
@@ -3656,11 +3667,57 @@ const App = (() => {
   }
 
   function addMagicItem() {
-    const name = prompt('Nombre del ítem mágico:');
-    if (!name) return;
-    const desc = prompt('Descripción breve (opcional):', '') || '';
+    // Crear o reusar modal de ítem mágico
+    let overlay = document.getElementById('magicItemModalOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'magicItemModalOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:380px;width:100%;">
+          <div class="modal-header"><span>✦ Ítem Mágico</span></div>
+          <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:4px;">Nombre</label>
+              <input id="magicItemNameInput" type="text" placeholder="Ej: Ring of Protection"
+                     style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:14px;"
+                     onkeydown="if(event.key==='Enter')App._saveMagicItemModal()">
+            </div>
+            <div>
+              <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:4px;">Descripción <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+              <input id="magicItemDescInput" type="text" placeholder="Ej: +1 CA y Saving Throws"
+                     style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:13px;"
+                     onkeydown="if(event.key==='Enter')App._saveMagicItemModal()">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" onclick="App._closeMagicItemModal()">Cancelar</button>
+            <button class="btn-primary" onclick="App._saveMagicItemModal()">Agregar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+    // Limpiar y mostrar
+    document.getElementById('magicItemNameInput').value = '';
+    document.getElementById('magicItemDescInput').value = '';
+    overlay.style.display = 'flex';
+    setTimeout(() => document.getElementById('magicItemNameInput').focus(), 50);
+  }
+
+  function _closeMagicItemModal() {
+    const overlay = document.getElementById('magicItemModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  function _saveMagicItemModal() {
+    const name = (document.getElementById('magicItemNameInput')?.value || '').trim();
+    if (!name) { showToast('El nombre es obligatorio'); return; }
+    const desc = (document.getElementById('magicItemDescInput')?.value || '').trim();
+    if (!_char.magicItems) _char.magicItems = [];
     _char.magicItems.push({ name, desc });
     _saveChar();
+    _closeMagicItemModal();
     _renderEquipoTab();
   }
 
@@ -4215,6 +4272,10 @@ const App = (() => {
       _renderPickSkills(bodyEl, choice);
     } else if (choice.type === 'pickMultiple') {
       _renderPickMultiple(bodyEl, choice);
+    } else if (choice.type === 'spellPick') {
+      _renderSpellPick(bodyEl, choice, false);
+    } else if (choice.type === 'cantripPick') {
+      _renderSpellPick(bodyEl, choice, true);
     }
 
     overlay.style.display = 'flex';
@@ -4377,6 +4438,69 @@ const App = (() => {
       </div>`;
   }
 
+  // ── Renderer: elegir hechizo / cantrip para known casters ──────────────────
+  function _renderSpellPick(bodyEl, choice, cantripOnly) {
+    const clase = choice.clase || (_char && _char.clase);
+    const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[clase]) || [];
+    const maxLvl  = cantripOnly ? 0 : (choice.maxSpellLevel || 9);
+    const minLvl  = cantripOnly ? 0 : 1;
+
+    // Filtrar: solo hechizos del nivel correcto que el personaje NO tiene ya
+    const ownedIds = new Set((_char && _char.spells || []).map(s => s.id));
+    const available = catalog.filter(s => {
+      if (s.level < minLvl || s.level > maxLvl) return false;
+      if (ownedIds.has(s.id)) return false;
+      return true;
+    });
+
+    // Agrupar por nivel
+    const byLevel = {};
+    available.forEach(s => {
+      const k = s.level === 0 ? 'cantrip' : `Nivel ${s.level}`;
+      if (!byLevel[k]) byLevel[k] = [];
+      byLevel[k].push(s);
+    });
+
+    // Filtro de búsqueda y lista
+    bodyEl.innerHTML = `
+      <p class="choice-prompt">${choice.prompt || 'Elegí un hechizo:'}</p>
+      <input type="text" id="spellPickSearch" placeholder="Buscar hechizo…"
+             oninput="App._filterSpellPickList(this.value)"
+             style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);margin-bottom:10px;font-size:13px;">
+      <div id="spellPickList" class="choice-options-list" style="max-height:55vh;overflow-y:auto;">
+        ${available.length === 0
+          ? `<p style="color:var(--text-dim);text-align:center;padding:20px 0;">No hay hechizos disponibles</p>`
+          : available.map(s => `
+            <label class="choice-option spell-pick-option" data-spell-name="${s.name.toLowerCase()}" data-spell-id="${s.id}">
+              <input type="radio" name="spellPickRadio" value="${s.id}" onchange="App._onSpellPickChange(this)">
+              <div class="choice-opt-content">
+                <div style="display:flex;align-items:baseline;gap:6px;">
+                  <strong>${s.name}</strong>
+                  <span style="font-size:10px;color:var(--gold);background:rgba(201,168,76,0.12);padding:1px 6px;border-radius:10px;">${s.level === 0 ? 'Cantrip' : `Nv ${s.level}`}</span>
+                  ${s.concentration ? `<span style="font-size:10px;color:var(--text-dim);">Conc.</span>` : ''}
+                </div>
+                <span class="choice-opt-desc" style="font-size:11px;">${s.castTime} · ${s.range} · ${s.duration}</span>
+                <span class="choice-opt-desc" style="font-size:11px;margin-top:2px;">${s.desc}</span>
+              </div>
+            </label>`).join('')}
+      </div>`;
+    // Guardar lista completa para filtrado
+    window._spellPickAll = available;
+  }
+
+  function _filterSpellPickList(query) {
+    const q = (query || '').toLowerCase().trim();
+    document.querySelectorAll('#spellPickList .spell-pick-option').forEach(el => {
+      const name = el.dataset.spellName || '';
+      el.style.display = (!q || name.includes(q)) ? '' : 'none';
+    });
+  }
+
+  function _onSpellPickChange(radio) {
+    document.querySelectorAll('#choiceModalBody .choice-option').forEach(el => el.classList.remove('selected'));
+    radio.closest('.choice-option').classList.add('selected');
+  }
+
   function _onPick1Change(radio) {
     document.querySelectorAll('#choiceModalBody .choice-option').forEach(el => el.classList.remove('selected'));
     radio.closest('.choice-option').classList.add('selected');
@@ -4475,6 +4599,14 @@ const App = (() => {
       const count = choice.count || 1;
       if (checks.length !== count) { showToast(`Elegí exactamente ${count} opción${count > 1 ? 'es' : ''}`); return; }
       value = checks.map(c => c.value);
+    } else if (choice.type === 'spellPick' || choice.type === 'cantripPick') {
+      const radio = document.querySelector('[name="spellPickRadio"]:checked');
+      if (!radio) { showToast('Elegí un hechizo'); return; }
+      // Encontrar el objeto completo del hechizo en el catálogo
+      const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[choice.clase || _char.clase]) || [];
+      const spellObj = catalog.find(s => s.id === radio.value);
+      if (!spellObj) { showToast('Hechizo no encontrado'); return; }
+      value = { ...spellObj };
     }
 
     if (value !== null) {
@@ -4779,7 +4911,8 @@ const App = (() => {
     const newFeatures = _getNewFeaturesForLevel(oldLevel, newLevel);
 
     // Disparar elecciones pendientes, y al final mostrar novedades
-    const pending = Characters.getPendingChoices(_char, newLevel);
+    // Pasamos oldLevel explícitamente porque _char.nivel ya es newLevel en este punto
+    const pending = Characters.getPendingChoices(_char, newLevel, oldLevel);
     const afterChoices = () => {
       _renderCombateTab();
       _renderHabilidadesTab();
@@ -5611,7 +5744,7 @@ const App = (() => {
     openAddItem, openEditItem, closeAddItem, saveAddItem, toggleContainerBtn,
     adjustConsumable, deleteConsumable, addConsumable, refillContainer,
     setCurrency, setAttunement,
-    addMagicItem, deleteMagicItem,
+    addMagicItem, deleteMagicItem, _closeMagicItemModal, _saveMagicItemModal,
     setNotes, setSpeciesTraits,
 
     // Habilidades
@@ -5626,6 +5759,7 @@ const App = (() => {
     // Elecciones de personaje
     openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice,
     _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _onPickSkillChange, _onPickMultipleChange, _renderPickMultiple,
+    _filterSpellPickList, _onSpellPickChange,
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,

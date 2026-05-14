@@ -4951,11 +4951,90 @@ const Characters = (() => {
     ],
   };
 
-  // Devuelve las elecciones pendientes para un char dado un nivel objetivo
-  function getPendingChoices(char, targetLevel) {
+  // Devuelve el nivel máximo de spell slot que tiene el char en targetLevel
+  function _maxSpellLevelAt(clase, nivel) {
+    const cfg = CLASES_CONFIG[clase];
+    if (!cfg || !cfg.slotTable) return 0;
+    let slots;
+    if (cfg.slotTable === 'full')    slots = FULL_CASTER_SLOTS[nivel];
+    else if (cfg.slotTable === 'half')   slots = HALF_CASTER_SLOTS[nivel];
+    else if (cfg.slotTable === 'warlock') slots = null; // Brujo: usa nivel de slot propio
+    if (cfg.slotTable === 'warlock') {
+      // Brujo: spell level = WARLOCK_SLOT_LEVEL[nivel]
+      return WARLOCK_SLOT_LEVEL[nivel] || 1;
+    }
+    if (!slots) return 0;
+    for (let i = 8; i >= 0; i--) {
+      if (slots[i] > 0) return i + 1;
+    }
+    return 0;
+  }
+
+  // Devuelve las elecciones pendientes para un char dado un nivel objetivo.
+  // fromLevel: nivel ANTES de subir (por defecto char.nivel, pero se puede pasar explícitamente
+  //            porque applyLevelUp() ya modifica char.nivel antes de llamar aquí)
+  function getPendingChoices(char, targetLevel, fromLevel) {
     const claseCfg = CHOICES_CONFIG[char.clase] || [];
     const existing = char.choices || {};
-    return claseCfg.filter(c => c.level <= targetLevel && !existing[c.id]);
+    const staticChoices = claseCfg.filter(c => c.level <= targetLevel && !existing[c.id]);
+
+    // Para known casters (Hechicero, Bardo, Brujo): generar elecciones de hechizo por nivel
+    const cfg = CLASES_CONFIG[char.clase];
+    if (!cfg || !cfg.knownCaster) return staticChoices;
+
+    const spellChoices = [];
+    // fromLevel puede pasarse explícitamente (cuando char.nivel ya fue actualizado por applyLevelUp)
+    const prevLevel = (fromLevel !== undefined ? fromLevel : (char.nivel || 1));
+
+    for (let lvl = prevLevel + 1; lvl <= targetLevel; lvl++) {
+      const shouldKnow    = cfg.spellsKnown    ? cfg.spellsKnown[Math.min(lvl - 1, 19)]    : 0;
+      const shouldCantrip = cfg.cantripsKnown  ? cfg.cantripsKnown[Math.min(lvl - 1, 19)]  : 0;
+      const prevShouldKnow    = cfg.spellsKnown    ? cfg.spellsKnown[Math.min(lvl - 2, 19)]    : 0;
+      const prevShouldCantrip = cfg.cantripsKnown  ? cfg.cantripsKnown[Math.min(lvl - 2, 19)]  : 0;
+
+      // ¿Gana hechizos nuevos en este nivel? (puede ganar más de 1, ej. Bardo nv10 gana 2)
+      const gainedSpells = shouldKnow - prevShouldKnow;
+      if (gainedSpells > 0) {
+        const maxSpellLvl = _maxSpellLevelAt(char.clase, lvl);
+        for (let pick = 1; pick <= gainedSpells; pick++) {
+          const spellChoiceId = gainedSpells > 1 ? `spellPick-${lvl}-${pick}` : `spellPick-${lvl}`;
+          if (!existing[spellChoiceId]) {
+            const suffix = gainedSpells > 1 ? ` (${pick}/${gainedSpells})` : '';
+            spellChoices.push({
+              id:      spellChoiceId,
+              level:   lvl,
+              type:    'spellPick',
+              label:   `Nuevo Hechizo — Nivel ${lvl}${suffix}`,
+              prompt:  `Elegí un hechizo nuevo (hasta nivel ${maxSpellLvl})${suffix}:`,
+              clase:   char.clase,
+              maxSpellLevel: maxSpellLvl,
+            });
+          }
+        }
+      }
+      // ¿Gana un cantrip nuevo en este nivel?
+      const gainedCantrips = shouldCantrip - prevShouldCantrip;
+      if (gainedCantrips > 0) {
+        for (let pick = 1; pick <= gainedCantrips; pick++) {
+          const cantripChoiceId = gainedCantrips > 1 ? `cantripPick-${lvl}-${pick}` : `cantripPick-${lvl}`;
+          if (!existing[cantripChoiceId]) {
+            const suffix = gainedCantrips > 1 ? ` (${pick}/${gainedCantrips})` : '';
+            spellChoices.push({
+              id:    cantripChoiceId,
+              level: lvl,
+              type:  'cantripPick',
+              label: `Nuevo Cantrip — Nivel ${lvl}${suffix}`,
+              prompt:`Elegí un cantrip nuevo${suffix}:`,
+              clase: char.clase,
+            });
+          }
+        }
+      }
+    }
+
+    // Intercalar en el orden correcto: primero los estáticos (si aplican a ese nivel),
+    // luego los de hechizo, para que las subclases y ASIs salgan antes que los hechizos.
+    return [...staticChoices, ...spellChoices];
   }
 
   // Aplica una elección al char object
@@ -5025,6 +5104,15 @@ const Characters = (() => {
           });
         }
       });
+    }
+
+    // Si es elección de hechizo (spellPick / cantripPick), agregar spell al personaje
+    if ((choiceId.startsWith('spellPick-') || choiceId.startsWith('cantripPick-')) && value && typeof value === 'object') {
+      // value = objeto spell del catálogo (con id, name, level, etc.)
+      if (!char.spells) char.spells = [];
+      if (!char.spells.find(s => s.id === value.id)) {
+        char.spells.push({ ...value });
+      }
     }
 
     // Si aplica subclase (choice de tipo pick1 con appliesSubclass:true)
