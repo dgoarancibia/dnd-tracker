@@ -76,6 +76,60 @@ const Storage = (() => {
     return restored;
   }
 
+  /* ── Rellena choices vacías en personajes ya construidos ─────────────────
+     Se ejecuta al final de _migrate() SIEMPRE, sin importar _dataVersion.
+     Cubre personajes importados desde JSONs externos que ya traen el nivel
+     correcto pero no tienen el campo choices (o lo tienen vacío).
+  ── */
+  function _ensureChoicesFilled(char) {
+    if (char.id === LURSEY_ID) return; // Lursey tiene sus propios datos
+    if (typeof Characters === 'undefined') return; // characters.js aún no cargado
+
+    const nivel = char.nivel || 1;
+    // Solo actuar si el personaje es "ya construido": nivel > 1, tiene subclase o features
+    const isBuiltChar = nivel > 1 &&
+      (char.subclase || (Array.isArray(char.features) && char.features.length > 0));
+    if (!isBuiltChar) return;
+
+    // Verificar que tenga choices pendientes reales (no basta con que el objeto exista vacío)
+    // Calculamos cuántas choices estáticas hay hasta su nivel
+    const classCfg = Characters.CHOICES_CONFIG
+      ? (Characters.CHOICES_CONFIG[char.clase] || [])
+      : [];
+    const staticChoices = classCfg.filter(c => c.level <= nivel);
+
+    if (!char.choices) char.choices = {};
+
+    const missingStatic = staticChoices.filter(c => !char.choices[c.id]);
+    const clasesCfg = Characters.CLASES_CONFIG ? Characters.CLASES_CONFIG[char.clase] : null;
+    const isKnownCaster = clasesCfg && clasesCfg.knownCaster;
+
+    // Si ya tiene todas las choices resueltas, no hacer nada
+    if (missingStatic.length === 0 && !isKnownCaster) return;
+
+    // Hay choices pendientes → rellenar como __imported__
+    missingStatic.forEach(ch => {
+      if (ch.appliesSubclass && char.subclase) {
+        const opt = (ch.options || []).find(o =>
+          o.name === char.subclase || o.id === char.subclase
+        );
+        char.choices[ch.id] = opt ? opt.id : '__imported__';
+      } else {
+        char.choices[ch.id] = '__imported__';
+      }
+    });
+
+    // Marcar picks de hechizos para casters de lista conocida
+    if (isKnownCaster) {
+      for (let lvl = 1; lvl <= nivel; lvl++) {
+        if (!char.choices[`spellPick-${lvl}`])   char.choices[`spellPick-${lvl}`]   = '__imported__';
+        if (!char.choices[`cantripPick-${lvl}`]) char.choices[`cantripPick-${lvl}`] = '__imported__';
+        if (!char.choices[`spellPick-${lvl}-1`]) char.choices[`spellPick-${lvl}-1`] = '__imported__';
+        if (!char.choices[`spellPick-${lvl}-2`]) char.choices[`spellPick-${lvl}-2`] = '__imported__';
+      }
+    }
+  }
+
   /* ── Migrations ── */
   function _migrate(char) {
     const v = char._dataVersion || 1;
@@ -248,51 +302,16 @@ const Storage = (() => {
       char._dataVersion = 12;
     }
     if (char._dataVersion < 13) {
-      // v12 → v13: auto-completar choices vacías en personajes importados o creados externamente.
-      // Si choices está vacío pero el personaje ya tiene nivel > 1 con subclase y features,
-      // marcamos todas las choices estáticas hasta su nivel como '__imported__' para que
-      // getPendingChoices no los vuelva a pedir.
-      if (char.id !== LURSEY_ID) {
-        const hasEmptyChoices = !char.choices || Object.keys(char.choices).length === 0;
-        const isBuiltChar     = (char.nivel || 1) > 1 &&
-                                (char.subclase || (char.features && char.features.length > 0));
-        if (hasEmptyChoices && isBuiltChar) {
-          if (!char.choices) char.choices = {};
-          const classCfg = (typeof Characters !== 'undefined' && Characters.CHOICES_CONFIG)
-            ? (Characters.CHOICES_CONFIG[char.clase] || [])
-            : [];
-          classCfg.forEach(ch => {
-            if (ch.level <= (char.nivel || 1)) {
-              // Para subclase: usar el nombre de subclase como valor si lo tenemos
-              if (ch.appliesSubclass && char.subclase) {
-                // Buscar el id de opción que coincida con el nombre de subclase
-                const opt = (ch.options || []).find(o =>
-                  o.name === char.subclase || o.id === char.subclase
-                );
-                char.choices[ch.id] = opt ? opt.id : '__imported__';
-              } else {
-                char.choices[ch.id] = '__imported__';
-              }
-            }
-          });
-          // También marcar spellPick/cantripPick como resueltos para cada nivel
-          // (el personaje ya viene con sus spells en el JSON)
-          const cfg = (typeof Characters !== 'undefined' && Characters.CLASES_CONFIG)
-            ? Characters.CLASES_CONFIG[char.clase]
-            : null;
-          if (cfg && cfg.knownCaster) {
-            for (let lvl = 1; lvl <= (char.nivel || 1); lvl++) {
-              char.choices[`spellPick-${lvl}`]   = '__imported__';
-              char.choices[`cantripPick-${lvl}`] = '__imported__';
-              // También para los multi-pick (ej Bardo lvl10 gana 2)
-              char.choices[`spellPick-${lvl}-1`] = '__imported__';
-              char.choices[`spellPick-${lvl}-2`] = '__imported__';
-            }
-          }
-        }
-      }
+      // v12 → v13: agregar campo ep (Electrum) a currency si no existe (se movió de v12 a acá)
+      // Las choices ahora se manejan en _ensureChoicesFilled() que corre siempre.
       char._dataVersion = 13;
     }
+
+    // ── Siempre: rellenar choices vacías en personajes ya construidos ──────────
+    // Corre INDEPENDIENTEMENTE de la versión. Cubre personajes importados con
+    // _dataVersion ya correcto pero sin campo choices (ej: JSONs generados por IA).
+    _ensureChoicesFilled(char);
+
     return char;
   }
 
@@ -465,18 +484,35 @@ const Storage = (() => {
       try {
         const data = JSON.parse(e.target.result);
 
-        // Estructura esperada: { version, exportedAt, characters: { [id]: char } }
         if (!data || typeof data !== 'object') {
           onError('Archivo inválido: no es JSON válido');
           return;
         }
-        if (!data.characters || typeof data.characters !== 'object' || Array.isArray(data.characters)) {
-          onError('Archivo inválido: falta la clave "characters"');
+
+        // ── Detectar formato: backup completo vs personaje individual ──────────
+        // Backup:     { version, exportedAt, characters: { [id]: char } }
+        // Individual: { id, name, clase, ... } (objeto de personaje directo)
+        let rawChars = [];
+
+        if (data.characters && typeof data.characters === 'object' && !Array.isArray(data.characters)) {
+          // Formato backup
+          rawChars = Object.values(data.characters);
+        } else if (
+          typeof data.id === 'string' && data.id.length > 0 &&
+          typeof data.name === 'string' && data.name.length > 0 &&
+          typeof data.clase === 'string'
+        ) {
+          // Formato personaje individual — asegurar que tiene id
+          rawChars = [data];
+        } else if (Array.isArray(data)) {
+          // Array de personajes
+          rawChars = data;
+        } else {
+          onError('Archivo inválido: formato no reconocido. Debe ser un backup de D&D Tracker o un JSON de personaje individual.');
           return;
         }
 
-        const chars = data.characters;
-        const valid = Object.values(chars).filter(c =>
+        const valid = rawChars.filter(c =>
           c && typeof c === 'object' &&
           typeof c.id === 'string' && c.id.length > 0 &&
           typeof c.name === 'string' && c.name.length > 0 &&
