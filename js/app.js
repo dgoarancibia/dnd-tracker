@@ -5672,7 +5672,7 @@ const App = (() => {
     const file = input.files[0];
     if (!file) return;
     Storage.importJSON(file,
-      count => {
+      (count, firstId) => {
         input.value = '';
         _char = Storage.getActiveChar();
         _refreshCharFeatures(_char);

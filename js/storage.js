@@ -457,14 +457,47 @@ const Storage = (() => {
     reader.readAsText(file);
   }
 
+  function _normalizeImportedChar(c) {
+    // Normalizar magicItems: la app usa { name, desc }
+    // JSONs externos pueden traer { id, name, rarity, attunement, desc }
+    if (Array.isArray(c.magicItems)) {
+      c.magicItems = c.magicItems.map(item => ({
+        name: item.name || '',
+        desc: item.desc || (item.rarity ? `${item.rarity}${item.attunement ? ' · Attunement' : ''}` : ''),
+      })).filter(item => item.name);
+    }
+    // Normalizar weapons: asegurar campos mínimos
+    if (Array.isArray(c.weapons)) {
+      c.weapons = c.weapons.map(w => ({
+        id:           w.id || ('w-' + Math.random().toString(36).slice(2,7)),
+        name:         w.name || 'Arma',
+        attackBonus:  typeof w.attackBonus === 'number' ? w.attackBonus : 0,
+        damage:       w.damage || '1d6',
+        damageType:   w.damageType || '',
+        range:        w.range || '',
+        notes:        w.notes || '',
+      }));
+    }
+    // Normalizar currency: asegurar todos los campos
+    if (!c.currency) c.currency = { pp:0, gp:0, ep:0, sp:0, cp:0 };
+    ['pp','gp','ep','sp','cp'].forEach(k => { if (typeof c.currency[k] !== 'number') c.currency[k] = 0; });
+    // Normalizar bonuses: campos esperados por la app
+    if (!c.bonuses) c.bonuses = {};
+    const bDefs = { init:0, ataque:0, hpMax:0, ca:0, cd:0, savesAll:0, skills:{}, saves:{} };
+    Object.entries(bDefs).forEach(([k,v]) => { if (c.bonuses[k] === undefined) c.bonuses[k] = v; });
+    return c;
+  }
+
   function _doImport(validChars, onSuccess) {
     const existing = getAllChars();
-    validChars.forEach(c => { existing[c.id] = c; });
+    validChars.forEach(c => {
+      _normalizeImportedChar(c);
+      existing[c.id] = c;
+    });
     _set(CHARS_KEY, existing);
-    if (!getActiveId() && validChars.length > 0) {
-      setActiveId(validChars[0].id);
-    }
-    onSuccess(validChars.length);
+    // Siempre activar el primer personaje importado
+    setActiveId(validChars[0].id);
+    onSuccess(validChars.length, validChars[0].id);
   }
 
   function autoBackup() {

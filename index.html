@@ -1071,8 +1071,8 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/storage.js?v=39"></script>
-<script src="js/characters.js?v=72"></script>
+<script src="js/storage.js?v=42"></script>
+<script src="js/characters.js?v=73"></script>
 <script type="module" src="js/firebase.js?v=36"></script>
 <script>
 // ═══════════════════════════════════════════════════
@@ -1732,8 +1732,13 @@ function importChars(input) {
   const file = input.files[0];
   if (!file) return;
   Storage.importJSON(file,
-    count => { input.value = ''; renderGrid(); showToast('✓ ' + count + ' personaje(s) importado(s)'); },
-    err   => { showToast('Error: ' + err); input.value = ''; }
+    (count, firstId) => {
+      input.value = '';
+      showToast('✓ ' + count + ' personaje(s) importado(s)');
+      // Redirigir a app con el personaje recién importado activo
+      setTimeout(() => { window.location.href = 'app.html'; }, 600);
+    },
+    err => { showToast('Error: ' + err); input.value = ''; }
   );
 }
 
