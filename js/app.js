@@ -1645,6 +1645,7 @@ const App = (() => {
           </div>
           <div class="item-row-right">
             ${_itemCatBadge('Valuable')}
+            <button class="item-edit" onclick="App.editMagicItem(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteMagicItem(${i})">✕</button>
           </div>
         </div>`;
@@ -3666,8 +3667,14 @@ const App = (() => {
     _saveChar();
   }
 
-  function addMagicItem() {
-    // Crear o reusar modal de ítem mágico
+  // _magicItemEditIdx: null = agregar nuevo, número = editar ese índice
+  let _magicItemEditIdx = null;
+
+  function _openMagicItemModal(idx) {
+    _magicItemEditIdx = idx !== undefined ? idx : null;
+    const isEdit = _magicItemEditIdx !== null;
+    const item   = isEdit ? (_char.magicItems[_magicItemEditIdx] || {}) : {};
+
     let overlay = document.getElementById('magicItemModalOverlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -3676,7 +3683,7 @@ const App = (() => {
       overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
       overlay.innerHTML = `
         <div class="modal" style="max-width:380px;width:100%;">
-          <div class="modal-header"><span>✦ Ítem Mágico</span></div>
+          <div class="modal-header"><span id="magicItemModalTitle"></span></div>
           <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
             <div>
               <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:4px;">Nombre</label>
@@ -3693,21 +3700,27 @@ const App = (() => {
           </div>
           <div class="modal-footer">
             <button class="btn-secondary" onclick="App._closeMagicItemModal()">Cancelar</button>
-            <button class="btn-primary" onclick="App._saveMagicItemModal()">Agregar</button>
+            <button id="magicItemSaveBtn" class="btn-primary" onclick="App._saveMagicItemModal()"></button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
     }
-    // Limpiar y mostrar
-    document.getElementById('magicItemNameInput').value = '';
-    document.getElementById('magicItemDescInput').value = '';
+
+    document.getElementById('magicItemModalTitle').textContent = isEdit ? '✎ Editar Ítem Mágico' : '✦ Ítem Mágico';
+    document.getElementById('magicItemSaveBtn').textContent    = isEdit ? 'Guardar' : 'Agregar';
+    document.getElementById('magicItemNameInput').value = item.name || '';
+    document.getElementById('magicItemDescInput').value = item.desc || '';
     overlay.style.display = 'flex';
     setTimeout(() => document.getElementById('magicItemNameInput').focus(), 50);
   }
 
+  function addMagicItem()       { _openMagicItemModal(); }
+  function editMagicItem(idx)   { _openMagicItemModal(idx); }
+
   function _closeMagicItemModal() {
     const overlay = document.getElementById('magicItemModalOverlay');
     if (overlay) overlay.style.display = 'none';
+    _magicItemEditIdx = null;
   }
 
   function _saveMagicItemModal() {
@@ -3715,7 +3728,13 @@ const App = (() => {
     if (!name) { showToast('El nombre es obligatorio'); return; }
     const desc = (document.getElementById('magicItemDescInput')?.value || '').trim();
     if (!_char.magicItems) _char.magicItems = [];
-    _char.magicItems.push({ name, desc });
+    if (_magicItemEditIdx !== null) {
+      // Editar existente
+      _char.magicItems[_magicItemEditIdx] = { ..._char.magicItems[_magicItemEditIdx], name, desc };
+    } else {
+      // Agregar nuevo
+      _char.magicItems.push({ name, desc });
+    }
     _saveChar();
     _closeMagicItemModal();
     _renderEquipoTab();
@@ -5744,7 +5763,7 @@ const App = (() => {
     openAddItem, openEditItem, closeAddItem, saveAddItem, toggleContainerBtn,
     adjustConsumable, deleteConsumable, addConsumable, refillContainer,
     setCurrency, setAttunement,
-    addMagicItem, deleteMagicItem, _closeMagicItemModal, _saveMagicItemModal,
+    addMagicItem, editMagicItem, deleteMagicItem, _closeMagicItemModal, _saveMagicItemModal,
     setNotes, setSpeciesTraits,
 
     // Habilidades
