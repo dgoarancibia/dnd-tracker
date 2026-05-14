@@ -1714,6 +1714,8 @@ function confirmDelete(id) {
       if (others.length) Storage.setActiveId(others[0].id);
     }
     Storage.deleteChar(id);
+    // Borrar también de Firestore si está logueado (evita que el listener lo restaure)
+    if (window.Cloud && Cloud.isLoggedIn()) Cloud.deleteChar(id);
     renderGrid();
     showToast('Personaje eliminado');
   };

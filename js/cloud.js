@@ -238,11 +238,20 @@ const Cloud = (() => {
     });
   }
 
+  // IDs borrados en esta sesión — el listener no los restaura aunque Firestore los tenga
+  const _deletedIds = new Set();
+
+  function markDeleted(id) {
+    _deletedIds.add(id);
+  }
+
   function _applyCloudChars(cloudChars) {
     const local = Storage.getAllChars();
     let changed = false;
 
     for (const [id, cloudChar] of Object.entries(cloudChars)) {
+      // No restaurar personajes que el usuario borró en esta sesión
+      if (_deletedIds.has(id)) continue;
       // Aplicar migraciones locales antes de guardar
       local[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
       changed = true;
@@ -335,6 +344,8 @@ const Cloud = (() => {
   ══════════════════════════════════════════════════════ */
 
   async function deleteChar(charId) {
+    // Marcar como borrado ANTES del await para que el listener no lo restaure
+    _deletedIds.add(charId);
     if (!_uid || !navigator.onLine) return;
     try {
       await FirebaseApp.deleteCharCloud(_uid, charId);
