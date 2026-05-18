@@ -2508,8 +2508,8 @@ function saveCreateModal() {
     ]);
     newChar.skillProfs = [...new Set([...newChar.skillProfs, ...fixedSkills, ..._wizSelectedSkills])];
 
-    // Equipamiento inicial del trasfondo + clase
-    if (!Array.isArray(newChar.items)) newChar.items = [];
+    // Equipamiento inicial del trasfondo + clase → va a consumables (que es lo que renderiza app.js)
+    if (!Array.isArray(newChar.consumables)) newChar.consumables = [];
     newChar.currency = newChar.currency || { pp:0, gp:0, ep:0, sp:0, cp:0 };
 
     const _applyEquipList = (list, source) => {
@@ -2518,7 +2518,7 @@ function saveCreateModal() {
         if (gpMatch) {
           newChar.currency.gp = (newChar.currency.gp || 0) + parseInt(gpMatch[1]);
         } else {
-          newChar.items.push({ id:'item-'+source+'-'+Math.random().toString(36).slice(2,7), name:e, qty:1, weight:0, desc:`Equipo inicial de ${source}`, equipped:false });
+          newChar.consumables.push({ id:'item-'+source+'-'+Math.random().toString(36).slice(2,7), name:e, qty:1, category:'Other', desc:`Equipo inicial de ${source}`, slot:'bag' });
         }
       });
     };
