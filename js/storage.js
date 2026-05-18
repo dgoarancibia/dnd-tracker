@@ -8,6 +8,7 @@ const Storage = (() => {
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
   const DELETED_KEY  = 'dnd_deleted_ids_v1'; // IDs eliminados — persiste en localStorage
+  const TRASH_KEY    = 'dnd_trash_v1';        // Papelera — personajes borrados recuperables
   const DATA_VERSION = 13;  // Incrementar al cambiar el esquema
   const LURSEY_ID    = 'lursey-brumaclara'; // personaje de demo — sus features vienen de buildLursey()
 
@@ -429,19 +430,83 @@ const Storage = (() => {
     return getDeletedIds().has(id);
   }
 
+  /* ── PAPELERA ─────────────────────────────────────────────────────────────
+     deleteChar mueve el personaje a la papelera en vez de borrarlo directo.
+     Desde la papelera se puede recuperar (restoreChar) o eliminar permanente
+     (permanentDeleteChar). emptyTrash vacía toda la papelera.
+  ── */
+
+  function getTrash() {
+    return _get(TRASH_KEY) || {};
+  }
+
+  function getTrashList() {
+    return Object.values(getTrash()).sort((a, b) =>
+      new Date(b._deletedAt || 0) - new Date(a._deletedAt || 0)
+    );
+  }
+
   function deleteChar(id) {
     const all = getAllChars();
+    const char = all[id];
+    if (char) {
+      // Mover a papelera con timestamp
+      const trash = getTrash();
+      trash[id] = { ...char, _deletedAt: new Date().toISOString() };
+      _set(TRASH_KEY, trash);
+    }
     delete all[id];
     _set(CHARS_KEY, all);
-    // Registrar como eliminado en localStorage (persiste entre recargas)
+    // Registrar como eliminado (bloquea restauración desde Firebase/IDB)
     addDeletedId(id);
-    // Registrar también en IDB para _maybeRestoreFromIDB
     _idbMarkDeleted(id);
     // Si era el activo, limpiar
     if (getActiveId() === id) {
       const remaining = Object.keys(all);
       _set(ACTIVE_KEY, remaining.length ? remaining[0] : null);
     }
+  }
+
+  function restoreChar(id) {
+    const trash = getTrash();
+    const char = trash[id];
+    if (!char) return false;
+    // Quitar de papelera
+    delete trash[id];
+    _set(TRASH_KEY, trash);
+    // Quitar de lista negra para que Firebase/IDB no lo bloqueen
+    const ids = getDeletedIds();
+    ids.delete(id);
+    _set(DELETED_KEY, Array.from(ids));
+    // Restaurar a chars (sin _deletedAt)
+    delete char._deletedAt;
+    const all = getAllChars();
+    all[id] = char;
+    _set(CHARS_KEY, all);
+    _idbPut(char);
+    return true;
+  }
+
+  function permanentDeleteChar(id) {
+    // Borra definitivamente de papelera (ya está en lista negra de IDs)
+    const trash = getTrash();
+    delete trash[id];
+    _set(TRASH_KEY, trash);
+    // Borrar de Firestore si está logueado
+    if (window.Cloud && Cloud.isLoggedIn && Cloud.isLoggedIn()) {
+      Cloud.deleteChar(id).catch(() => {});
+    }
+  }
+
+  function emptyTrash() {
+    const trash = getTrash();
+    // Borrar cada uno de Firestore
+    Object.keys(trash).forEach(id => {
+      if (window.Cloud && Cloud.isLoggedIn && Cloud.isLoggedIn()) {
+        Cloud.deleteChar(id).catch(() => {});
+      }
+    });
+    _set(TRASH_KEY, {});
   }
 
   function getAllCharsList() {
@@ -696,5 +761,10 @@ const Storage = (() => {
     restoreFromIDB: _maybeRestoreFromIDB, // recuperación post-clear
     getDeletedIds,   // expuesto para cloud.js — lista negra de IDs eliminados
     isDeleted,       // expuesto para cloud.js
+    getTrash,
+    getTrashList,
+    restoreChar,
+    permanentDeleteChar,
+    emptyTrash,
   };
 })();

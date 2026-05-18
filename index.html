@@ -907,6 +907,7 @@
         <span id="userName" class="idx-user-name"></span>
       </div>
       <button class="theme-btn" id="idxThemeBtn" onclick="toggleIndexTheme()" title="Cambiar tema">☀</button>
+      <button class="btn btn-ghost" onclick="openTrashModal()" id="trashBtn" title="Papelera">🗑</button>
       <button class="btn btn-ghost" onclick="document.getElementById('importInput').click()">📥 Importar</button>
       <button class="btn btn-gold" onclick="openCreateModal()">+ Nuevo personaje</button>
       <button class="btn-danger-sm" id="logoutBtn" style="display:none;" onclick="doLogout()">Cerrar sesión</button>
@@ -1064,14 +1065,33 @@
     <p class="confirm-msg" id="confirmMsg"></p>
     <div class="modal-btns" style="justify-content:center;margin-top:16px;">
       <button class="btn-cancel" onclick="closeConfirm()">Cancelar</button>
-      <button class="btn-danger" id="confirmOkBtn">Eliminar</button>
+      <button class="btn-danger" id="confirmOkBtn">Mover a papelera</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAPELERA -->
+<div class="modal-overlay" id="trashModal">
+  <div class="modal" style="max-width:440px;">
+    <button class="modal-close-x" onclick="closeTrashModal()">✕</button>
+    <div class="modal-title">🗑 Papelera</div>
+    <p style="font-size:12px;color:var(--text-dim);margin:0 0 14px;font-family:'Jost',sans-serif;">
+      Los personajes en la papelera pueden recuperarse. El borrado permanente no se puede deshacer.
+    </p>
+    <div id="trashList" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="trashEmpty" style="display:none;padding:32px 0;text-align:center;color:var(--text-dim);font-size:13px;font-style:italic;">
+      La papelera está vacía.
+    </div>
+    <div class="modal-btns" style="margin-top:16px;justify-content:space-between;">
+      <button class="btn-danger" id="emptyTrashBtn" onclick="emptyTrashAll()" style="font-size:12px;padding:7px 14px;">Vaciar papelera</button>
+      <button class="btn-cancel" onclick="closeTrashModal()">Cerrar</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/storage.js?v=47"></script>
+<script src="js/storage.js?v=48"></script>
 <script src="js/characters.js?v=74"></script>
 <script type="module" src="js/firebase.js?v=36"></script>
 <script>
@@ -1259,6 +1279,7 @@ function renderGrid() {
   </div>`;
 
   grid.innerHTML = html;
+  updateTrashBadge();
 }
 
 function playChar(id) {
@@ -1707,7 +1728,7 @@ function confirmDelete(id) {
     showToast('No puedes eliminar el único personaje');
     return;
   }
-  document.getElementById('confirmMsg').textContent = `"${c.name}" será eliminado. Esta acción no se puede deshacer.`;
+  document.getElementById('confirmMsg').textContent = `"${c.name}" se moverá a la papelera. Podés recuperarlo desde allí.`;
   _confirmCallback = () => {
     if (Storage.getActiveId() === id) {
       const others = Storage.getAllCharsList().filter(x => x.id !== id);
@@ -1717,10 +1738,108 @@ function confirmDelete(id) {
     // Borrar también de Firestore si está logueado (evita que el listener lo restaure)
     if (window.Cloud && Cloud.isLoggedIn()) Cloud.deleteChar(id);
     renderGrid();
-    showToast('Personaje eliminado');
+    updateTrashBadge();
+    showToast(`"${c.name}" movido a la papelera`);
   };
   document.getElementById('confirmOkBtn').onclick = () => { closeConfirm(); _confirmCallback(); };
   document.getElementById('confirmModal').classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════
+// PAPELERA
+// ═══════════════════════════════════════════════════
+function openTrashModal() {
+  renderTrashList();
+  document.getElementById('trashModal').classList.add('show');
+}
+
+function closeTrashModal() {
+  document.getElementById('trashModal').classList.remove('show');
+}
+
+function renderTrashList() {
+  const items = Storage.getTrashList();
+  const listEl  = document.getElementById('trashList');
+  const emptyEl = document.getElementById('trashEmpty');
+  const emptyBtn = document.getElementById('emptyTrashBtn');
+
+  if (items.length === 0) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    emptyBtn.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  emptyBtn.style.display = '';
+
+  listEl.innerHTML = items.map(c => {
+    const sub  = [c.raza, c.subclase].filter(Boolean).join(' · ');
+    const when = c._deletedAt ? _relativeTime(c._deletedAt) : '';
+    return `
+    <div class="trash-card" id="trash-${c.id}">
+      <div class="trash-card-info">
+        <div class="trash-card-name">${_esc(c.name)}</div>
+        <div class="trash-card-meta">
+          <span class="clase-badge" style="font-size:10px;padding:1px 6px;">${_esc(c.clase)}</span>
+          ${sub ? `<span style="font-size:11px;color:var(--text-dim);">${_esc(sub)}</span>` : ''}
+          <span style="font-size:11px;color:var(--text-dim);">Nvl ${c.nivel || 1}</span>
+          ${when ? `<span style="font-size:10px;color:var(--text-dim);margin-left:auto;">Eliminado ${when}</span>` : ''}
+        </div>
+      </div>
+      <div class="trash-card-actions">
+        <button class="btn-restore" onclick="restoreFromTrash('${c.id}')" title="Recuperar">↩ Recuperar</button>
+        <button class="btn-perm-del" onclick="confirmPermDelete('${c.id}', '${_esc(c.name)}')" title="Eliminar para siempre">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function restoreFromTrash(id) {
+  const ok = Storage.restoreChar(id);
+  if (ok) {
+    renderGrid();
+    renderTrashList();
+    updateTrashBadge();
+    showToast('Personaje recuperado ✓');
+  }
+}
+
+function confirmPermDelete(id, name) {
+  if (!confirm(`¿Eliminar "${name}" para siempre? Esta acción no se puede deshacer.`)) return;
+  Storage.permanentDeleteChar(id);
+  renderTrashList();
+  updateTrashBadge();
+  showToast('Eliminado permanentemente');
+}
+
+function emptyTrashAll() {
+  const items = Storage.getTrashList();
+  if (items.length === 0) return;
+  if (!confirm(`¿Vaciar la papelera? Se eliminarán ${items.length} personaje(s) para siempre.`)) return;
+  Storage.emptyTrash();
+  renderTrashList();
+  updateTrashBadge();
+  showToast('Papelera vaciada');
+}
+
+function updateTrashBadge() {
+  const count = Storage.getTrashList().length;
+  const btn = document.getElementById('trashBtn');
+  if (!btn) return;
+  // Mostrar badge con número si hay elementos
+  btn.innerHTML = count > 0 ? `🗑 <span class="trash-badge">${count}</span>` : '🗑';
+}
+
+function _relativeTime(isoStr) {
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (m < 2)  return 'hace un momento';
+  if (m < 60) return `hace ${m} min`;
+  if (h < 24) return `hace ${h}h`;
+  if (d < 7)  return `hace ${d} día${d > 1 ? 's' : ''}`;
+  return new Date(isoStr).toLocaleDateString('es');
 }
 
 function closeConfirm() {

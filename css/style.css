@@ -7001,3 +7001,92 @@ mark.diary-highlight {
 .choice-option.cantrip-free input[type="checkbox"] {
   accent-color: var(--gold);
 }
+
+/* ── PAPELERA ─────────────────────────────────────────────────────────── */
+.trash-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #c0392b;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 10px;
+  font-family: 'Jost', sans-serif;
+  font-weight: 700;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+.trash-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+.trash-card:hover {
+  border-color: var(--gold-dim);
+}
+.trash-card-info {
+  flex: 1;
+  min-width: 0;
+}
+.trash-card-name {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.trash-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.trash-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn-restore {
+  font-size: 11px;
+  padding: 5px 10px;
+  background: rgba(201,151,58,0.12);
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
+  color: var(--gold-light);
+  cursor: pointer;
+  font-family: 'Jost', sans-serif;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-restore:hover {
+  background: rgba(201,151,58,0.22);
+}
+.btn-perm-del {
+  font-size: 13px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(192,57,43,0.1);
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 6px;
+  color: #c0392b;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-perm-del:hover {
+  background: rgba(192,57,43,0.22);
+}
