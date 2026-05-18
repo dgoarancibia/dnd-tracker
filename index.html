@@ -1217,8 +1217,8 @@
         <div id="trasfondoFeat" style="color:var(--gold-light);font-weight:600;margin-bottom:4px;"></div>
         <div id="trasfondoFeatureDesc" style="color:var(--text-muted,var(--text));font-size:11px;margin-bottom:6px;"></div>
         <div id="trasfondoEquipSection" style="display:none;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:4px;">Equipamiento inicial</div>
-          <div id="trasfondoEquipList" style="color:var(--text);font-size:12px;line-height:1.6;"></div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:6px;">Equipamiento inicial — elegí A o B</div>
+          <div id="trasfondoEquipOpts" style="display:flex;flex-direction:column;gap:6px;"></div>
         </div>
       </div>
       <!-- Bonus de stats del Trasfondo (D&D 2024): 3 opciones, jugador elige +2 y +1 -->
@@ -1599,7 +1599,8 @@ const _RAZAS_LISTA = [
 let _selectedClase     = 'Clérigo';
 let _selectedRaza      = '';   // '' = sin raza elegida
 let _selectedTrasfondo = '';   // '' = sin trasfondo elegido
-let _selectedEquipOpt  = 'A';  // opción de equipo de clase: 'A', 'B' o 'C'
+let _selectedEquipOpt      = 'A';  // opción de equipo de clase: 'A', 'B' o 'C'
+let _selectedTrasEquipOpt  = 'A';  // opción de equipo de trasfondo: 'A' o 'B'
 
 // ── Stats wizard ──────────────────────────────────────
 const _STAT_KEYS  = ['for','des','con','int','sab','car'];
@@ -1764,16 +1765,34 @@ function selectTrasfondoChip(el, name) {
   document.getElementById('trasfondoFeat').textContent = t.feat ? `✦ Feat: ${t.feat}` : '';
   document.getElementById('trasfondoFeatureDesc').textContent =
     t.feature ? `${t.feature} — ${t.featureDesc}` : '';
-  // Equipamiento inicial
-  const equip = TRASFONDO_EQUIP[name] || [];
-  const equipSec = document.getElementById('trasfondoEquipSection');
-  const equipList = document.getElementById('trasfondoEquipList');
-  if (equipSec && equipList && equip.length > 0) {
-    equipSec.style.display = '';
-    equipList.innerHTML = equip.map(e => `• ${e}`).join('<br>');
-  } else if (equipSec) {
-    equipSec.style.display = 'none';
-  }
+  // Equipamiento inicial — selector A/B
+  _selectedTrasEquipOpt = 'A';
+  _buildTrasEquipOpts(name);
+}
+
+function _buildTrasEquipOpts(nombre) {
+  const equipSec  = document.getElementById('trasfondoEquipSection');
+  const equipOpts = document.getElementById('trasfondoEquipOpts');
+  if (!equipSec || !equipOpts) return;
+  const equip = TRASFONDO_EQUIP[nombre];
+  if (!equip || !equip.A || equip.A.length === 0) { equipSec.style.display = 'none'; return; }
+  equipSec.style.display = '';
+  const labels = { A: 'Opción A', B: 'Opción B (solo dinero)' };
+  equipOpts.innerHTML = Object.entries(equip).filter(([,v]) => v.length > 0).map(([key, items]) => {
+    const isSel = key === _selectedTrasEquipOpt;
+    return `<label class="equip-opt-row ${isSel ? 'selected' : ''}" onclick="_selectTrasEquipOpt('${key}','${nombre.replace(/'/g,"\\'")}')">
+      <span class="equip-opt-radio">${isSel ? '◉' : '○'}</span>
+      <span class="equip-opt-content">
+        <strong class="equip-opt-label">${labels[key] || key}</strong>
+        <span class="equip-opt-items">${items.join(' · ')}</span>
+      </span>
+    </label>`;
+  }).join('');
+}
+
+function _selectTrasEquipOpt(key, nombre) {
+  _selectedTrasEquipOpt = key;
+  _buildTrasEquipOpts(nombre);
 }
 
 function _buildClaseChips(selected) {
@@ -1968,25 +1987,41 @@ const _WIZ_TOTAL = 6; // pasos para creación nueva
 const _WIZ_STEPS_LABELS = ['Clase', 'Raza', 'Trasfondo', 'Proficiencias', 'Estadísticas', 'Resumen'];
 let _wizSelectedSkills = []; // skills opcionales elegidas por el usuario
 
-// Equipamiento inicial por trasfondo
+// Equipamiento inicial por trasfondo — opciones A/B (PHB 2024)
 const TRASFONDO_EQUIP = {
-  'Acólito':        ['Libro sagrado o símbolo divino', 'Incienso (5 varillas)', 'Vestiduras de sacerdote', '15 gp'],
-  'Artesano':       ['Herramientas de artesano a elección', 'Carta de recomendación del gremio', '15 gp'],
-  'Charlatán':      ['Kit de disfraz', 'Kit de falsificación', 'Ropa elegante', '15 gp'],
-  'Criminal':       ['Herramientas de ladrón', 'Palanca', 'Ropa oscura con capucha', '15 gp'],
-  'Erudito':        ['Botella de tinta', 'Pluma de escribir', 'Libro de notas pequeño', '10 gp'],
-  'Héroe del Pueblo':['Herramientas de artesano a elección', 'Pala', 'Olla de hierro', '10 gp'],
-  'Noble':          ['Ropa elegante', 'Anillo con sello familiar', 'Pergamino de genealogía', '25 gp'],
-  'Forajido':       ['Mapa de la región', 'Antorcha (5)', 'Capa con capucha', '10 gp'],
-  'Soldado':        ['Insignia de rango', 'Trofeo de un enemigo caído', 'Juego de dados de hueso', '10 gp'],
-  'Entretenido':    ['Kit de disfraz', 'Instrumento musical a elección', 'Ropa de actuación', '15 gp'],
-  'Marinero':       ['Cuerda de seda (15m)', 'Amuleto de la suerte', 'Cuchillo de marinero', '10 gp'],
-  'Sabio Callejero':['Ropa común', 'Herramientas de ladrón', 'Mapa de la ciudad', '10 gp'],
-  'Ermitaño':       ['Kit de herbolario', 'Diario de notas', 'Ropa común', '5 gp'],
-  'Guía':           ['Herramientas de cartógrafo', 'Cuerda (15m)', 'Provisiones (10 días)', '10 gp'],
-  'Mercader':       ['Mulas (2) con carreta', 'Mercancía variada (valor 50 gp)', 'Libro mayor', '100 gp'],
-  'Granjero':       ['Herramienta de granja', 'Mula', 'Carro de heno', '10 gp'],
-  'Custom':         ['Equipamiento a acordar con el DM'],
+  'Acólito':         { A: ['Símbolo sagrado', 'Libro de oraciones', 'Incienso (5)', 'Vestiduras de sacerdote', 'Ropas comunes', '14 gp'],
+                       B: ['50 gp'] },
+  'Artesano':        { A: ['Herramientas de artesano a elección', 'Carta de gremio', 'Ropa de viaje', '15 gp'],
+                       B: ['50 gp'] },
+  'Charlatán':       { A: ['Kit de disfraz', 'Kit de falsificación', 'Ropa elegante', '15 gp'],
+                       B: ['50 gp'] },
+  'Criminal':        { A: ['Herramientas de ladrón', 'Palanca', 'Ropa oscura con capucha', '15 gp'],
+                       B: ['50 gp'] },
+  'Erudito':         { A: ['Botella de tinta', 'Pluma', 'Libro de notas', 'Ropa común', '10 gp'],
+                       B: ['50 gp'] },
+  'Héroe del Pueblo':{ A: ['Herramientas de artesano a elección', 'Pala', 'Olla de hierro', 'Ropa común', '10 gp'],
+                       B: ['50 gp'] },
+  'Noble':           { A: ['Ropa elegante', 'Anillo con sello familiar', 'Pergamino de genealogía', '25 gp'],
+                       B: ['50 gp'] },
+  'Forajido':        { A: ['Instrumento musical a elección', 'Mapa de la región', 'Capa con capucha', 'Ropa de viaje', '10 gp'],
+                       B: ['50 gp'] },
+  'Soldado':         { A: ['Lanza', 'Arco corto', 'Carcaj (20 flechas)', 'Juego de azar a elección', 'Útiles de sanador', 'Ropa de viaje', '14 gp'],
+                       B: ['50 gp'] },
+  'Entretenido':     { A: ['Instrumento musical a elección', 'Kit de disfraz', 'Espejo', 'Perfume', 'Ropa de actuación', '11 gp'],
+                       B: ['50 gp'] },
+  'Marinero':        { A: ['Cuerda de seda (15m)', 'Amuleto de la suerte', 'Ropa común', '10 gp'],
+                       B: ['50 gp'] },
+  'Sabio Callejero': { A: ['Herramientas de ladrón', 'Ropa común', 'Mapa de la ciudad', '10 gp'],
+                       B: ['50 gp'] },
+  'Ermitaño':        { A: ['Kit de herbolario', 'Libro de notas', 'Ropa común', '5 gp'],
+                       B: ['50 gp'] },
+  'Guía':            { A: ['Herramientas de cartógrafo', 'Instrumento musical a elección', 'Cuerda (15m)', 'Ropa de viaje', '10 gp'],
+                       B: ['50 gp'] },
+  'Mercader':        { A: ['Herramientas de navegante', 'Mulas (2) con carreta', 'Libro mayor', '100 gp'],
+                       B: ['50 gp'] },
+  'Granjero':        { A: ['Herramienta de granja', 'Mula', 'Carro', 'Ropa común', '10 gp'],
+                       B: ['50 gp'] },
+  'Custom':          { A: ['Equipamiento a acordar con el DM'], B: [] },
 };
 
 // Equipamiento inicial por clase (D&D 2024 PHB)
@@ -2341,7 +2376,8 @@ function openCreateModal() {
   if (_lvlSum) _lvlSum.style.display = 'none';
   const tInfo = document.getElementById('trasfondoInfo');
   if (tInfo) tInfo.style.display = 'none';
-  _selectedEquipOpt = 'A';
+  _selectedEquipOpt     = 'A';
+  _selectedTrasEquipOpt = 'A';
   _buildClaseChips('Guerrero');
   _buildClaseEquipOpts('Guerrero');
   _buildRazaChips('');
@@ -2490,7 +2526,10 @@ function saveCreateModal() {
     const claseEquipOpts = CLASE_EQUIP[_selectedClase];
     const claseEquipList = claseEquipOpts ? (claseEquipOpts[_selectedEquipOpt] || claseEquipOpts['A']) : [];
     _applyEquipList(claseEquipList, 'clase');
-    _applyEquipList(TRASFONDO_EQUIP[_selectedTrasfondo], 'trasfondo');
+    // Equipo de trasfondo: usar opción elegida (A/B)
+    const trasEquipOpts = TRASFONDO_EQUIP[_selectedTrasfondo];
+    const trasEquipList = trasEquipOpts ? (trasEquipOpts[_selectedTrasEquipOpt] || trasEquipOpts['A']) : [];
+    _applyEquipList(trasEquipList, 'trasfondo');
 
     Storage.saveChar(newChar);
     Storage.setActiveId(newChar.id);
