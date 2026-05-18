@@ -965,16 +965,34 @@ if ('serviceWorker' in navigator) {
 <script type="module">
   await import('./js/firebase.js');
 
-  // Guard: esperar primer evento de auth antes de mostrar la app
+  // Guard: esperar sesión de auth antes de mostrar la app.
+  // Safari iOS post-redirect puede emitir null primero mientras resuelve
+  // la sesión desde localStorage — esperamos hasta 4s antes de redirigir.
   await new Promise(resolve => {
+    let redirectTimer = null;
     const unsub = FirebaseApp.onAuthChange(user => {
-      unsub();
-      if (!user) {
-        // Sin sesión: guardar la ruta destino y redirigir al home
-        sessionStorage.setItem('dnd_redirect_after_login', 'app.html');
-        window.location.replace('./index.html');
+      if (user) {
+        // Sesión confirmada — cancelar timer y continuar
+        if (redirectTimer) clearTimeout(redirectTimer);
+        unsub();
+        resolve(user);
+      } else {
+        // Sin usuario todavía — esperar 4s por si es Safari post-redirect
+        if (!redirectTimer) {
+          redirectTimer = setTimeout(() => {
+            // Verificar de nuevo antes de redirigir (por si llegó después)
+            const currentUser = FirebaseApp.getCurrentUser();
+            if (!currentUser) {
+              unsub();
+              sessionStorage.setItem('dnd_redirect_after_login', 'app.html');
+              window.location.replace('./index.html');
+            } else {
+              unsub();
+              resolve(currentUser);
+            }
+          }, 4000);
+        }
       }
-      resolve(user);
     });
   });
 

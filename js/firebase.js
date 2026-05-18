@@ -11,7 +11,9 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  browserLocalPersistence,
+  setPersistence
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore,
@@ -39,17 +41,24 @@ const _auth     = getAuth(_app);
 const _db       = getFirestore(_app);
 const _provider = new GoogleAuthProvider();
 
+// Forzar persistencia en localStorage — necesario para Safari/iOS donde
+// las cookies de terceros están bloqueadas y se pierde la sesión post-redirect
+await setPersistence(_auth, browserLocalPersistence).catch(() => {});
 
 /* ── Auth ── */
 
 async function signIn() {
-  // GitHub Pages bloquea popups por COOP — usar redirect siempre
+  // Asegurar persistencia antes del redirect (crítico en Safari iOS)
+  await setPersistence(_auth, browserLocalPersistence).catch(() => {});
   return signInWithRedirect(_auth, _provider);
 }
 
 // Procesar redirect result con top-level await — garantiza que el usuario
 // esté disponible antes de que cloud.js registre onAuthStateChanged
-const _redirectResult = await getRedirectResult(_auth).catch(() => null);
+const _redirectResult = await getRedirectResult(_auth).catch(e => {
+  console.warn('[firebase] getRedirectResult error:', e.code, e.message);
+  return null;
+});
 if (_redirectResult) {
   console.log('[firebase] redirect result procesado:', _redirectResult.user?.email);
 }
