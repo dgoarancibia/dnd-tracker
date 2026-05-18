@@ -427,22 +427,28 @@ const Storage = (() => {
     const deletedIds = getDeletedIds();
     if (deletedIds.size === 0) return 0;
     const all = getAllChars();
+    const trash = getTrash();
     let removed = 0;
     for (const id of Object.keys(all)) {
       if (deletedIds.has(id)) {
+        // Mover a papelera si no está ya ahí
+        if (!trash[id]) {
+          trash[id] = { ...all[id], _deletedAt: all[id]._deletedAt || new Date().toISOString() };
+        }
         delete all[id];
         removed++;
       }
     }
     if (removed > 0) {
       _set(CHARS_KEY, all);
+      _set(TRASH_KEY, trash);
       // Si el activo era uno de los eliminados, apuntar al primero disponible
       const activeId = getActiveId();
       if (activeId && deletedIds.has(activeId)) {
         const remaining = Object.keys(all);
         _set(ACTIVE_KEY, remaining.length ? remaining[0] : null);
       }
-      console.info(`[Storage] Purgados ${removed} personaje(s) de lista negra del localStorage`);
+      console.info(`[Storage] Purgados ${removed} personaje(s) → papelera`);
     }
     return removed;
   }
