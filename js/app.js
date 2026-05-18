@@ -1095,6 +1095,58 @@ const App = (() => {
       });
     }
 
+    // ── FEATS de referencia ─────────────────────────────────────────────────
+    // Mostrar feats del personaje: features con source "Feat ·" o "Raza ·"
+    const featFeatures = (c.features || []).filter(f =>
+      f.source && (f.source.startsWith('Feat ·') || f.source.startsWith('feat-') ||
+      (f.source.startsWith('Trasfondo') && f.id && f.id.startsWith('bg-feat-')))
+    );
+    // También buscar feats elegidos en ASIs (choices)
+    const asiFeats = [];
+    if (c.choices) {
+      Object.entries(c.choices).forEach(([choiceId, val]) => {
+        if (choiceId.startsWith('asi-') && val && val.mode === 'feat' && val.featId) {
+          const featDef = Characters.GENERAL_FEATS && Characters.GENERAL_FEATS.find(f => f.id === val.featId);
+          // Evitar duplicados con featFeatures
+          const alreadyShown = featFeatures.some(f => f.id === val.featId + '-' + choiceId || f.name === (featDef && featDef.name));
+          if (featDef && !alreadyShown) {
+            asiFeats.push({ ...featDef, source: `ASI · Nivel ${choiceId.replace('asi-','')}` });
+          }
+        }
+      });
+    }
+    const allFeats = [...featFeatures, ...asiFeats];
+    if (allFeats.length > 0) {
+      html += `<div class="section-hd" style="margin-top:16px;">🏅 Feats</div>`;
+      allFeats.forEach(f => {
+        html += `<div class="feat-card">
+          <div class="feat-top">
+            <span class="feat-name">${f.name}</span>
+            <span class="feat-badge feat-passive" style="background:rgba(80,60,140,0.25);color:#b8a0e8;border-color:rgba(120,90,200,0.3);">Feat</span>
+          </div>
+          <div class="feat-source">${f.source || ''}</div>
+          <div class="feat-desc">${f.desc || ''}</div>
+        </div>`;
+      });
+    }
+
+    // Rasgos de raza en combate (referencia rápida)
+    if (c.raza) {
+      const razaCfg = Characters.RAZAS_CONFIG && Characters.RAZAS_CONFIG[c.raza];
+      if (razaCfg && razaCfg.traits && razaCfg.traits.length > 0) {
+        html += `<div class="section-hd" style="margin-top:16px;">🧬 Rasgos de Raza <span style="font-size:10px;font-weight:400;color:var(--text-dim);text-transform:none;">${c.raza}</span></div>`;
+        razaCfg.traits.forEach(t => {
+          const parts = t.split(' — ');
+          const name = parts[0];
+          const desc = parts.slice(1).join(' — ');
+          html += `<div class="feat-card">
+            <div class="feat-top"><span class="feat-name">${name}</span></div>
+            ${desc ? `<div class="feat-desc">${desc}</div>` : ''}
+          </div>`;
+        });
+      }
+    }
+
     // Tips de combate
     const tips = c.combatTips || [];
     if (tips.length > 0) {

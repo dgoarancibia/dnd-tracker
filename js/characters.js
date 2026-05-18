@@ -436,6 +436,19 @@ const Characters = (() => {
       ],
       resistances: [], languages: ['Común', 'Orco'], skillProfs: [], weaponProfs: [],
     },
+    'Shadar-Kai': {
+      emoji: '👤', speed: 30, darkvision: 18,
+      traits: [
+        'Blessing of the Raven Queen — acción bonus: teletransportación 9 m a espacio visible + resistencia a todo daño hasta inicio de tu siguiente turno · Prof Bonus usos/Long Rest',
+        'Fey Ancestry — ventaja en saves contra ser encantado, inmune a dormir mágico',
+        'Keen Senses — proficiencia en Percepción',
+        'Necrotic Resistance — resistencia a daño necrótico',
+        'Trance — Long Rest en 4 h de meditación; las 4 h restantes podés hacer otras actividades',
+        'Darkvision 18 m — ves en penumbra como luz tenue, en oscuridad como penumbra',
+      ],
+      resistances: ['Necrótico'], languages: ['Común', 'Élfico'],
+      skillProfs: ['percepcion'], weaponProfs: [],
+    },
     'Custom': {
       speed: 30, darkvision: 0,
       traits: [],
