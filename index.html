@@ -952,6 +952,92 @@
     background: var(--bg2);
     border-color: var(--gold-dim);
   }
+
+  /* ── Stats step: método Standard/Manual ─────────────── */
+  .wiz-method-btn {
+    padding: 7px 18px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'Jost', sans-serif;
+    transition: all 0.15s;
+  }
+  .wiz-method-btn.active {
+    background: rgba(201,151,58,.15);
+    border-color: var(--gold-dim);
+    color: var(--gold-light);
+  }
+  .wiz-method-btn:hover:not(.active) {
+    background: var(--bg2);
+    border-color: var(--gold-dim);
+  }
+
+  /* ── Stats step: Standard Array grid ────────────────── */
+  .wiz-array-grid { display: flex; flex-direction: column; gap: 8px; }
+  .wiz-array-row { display: flex; align-items: center; gap: 10px; }
+  .wiz-array-stat {
+    width: 36px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    font-family: 'Cinzel', serif;
+  }
+  .wiz-array-mod {
+    width: 32px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold-dim);
+  }
+
+  /* ── Stats step: manual grid ─────────────────────────── */
+  .stats-grid-wiz {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .stat-wiz-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .stat-wiz-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    font-family: 'Cinzel', serif;
+  }
+  .stat-wiz-input {
+    width: 52px;
+    text-align: center;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 700;
+    padding: 3px 0;
+    font-family: 'Jost', sans-serif;
+  }
+  .stat-wiz-mod {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold-dim);
+    font-family: 'Jost', sans-serif;
+  }
 </style>
 </head>
 <body>
@@ -1831,6 +1917,22 @@ const TRASFONDO_EQUIP = {
   'Custom':         ['Equipamiento a acordar con el DM'],
 };
 
+// Equipamiento inicial por clase (D&D 2024 PHB)
+const CLASE_EQUIP = {
+  'Guerrero':   ['Cota de malla', 'Escudo', 'Espada larga', 'Daga (4)', 'Mochila de aventurero', '4 gp'],
+  'Clérigo':    ['Cota de malla', 'Escudo', 'Maza', 'Símbolo sagrado', 'Mochila de sacerdote', '7 gp'],
+  'Mago':       ['Daga (2)', 'Grimorio', 'Bolsa de componentes', 'Mochila de erudito', '10 gp'],
+  'Pícaro':     ['Cuero tachonado', 'Espada corta (2)', 'Arco corto', 'Carcaj (20 flechas)', 'Herramientas de ladrón', 'Mochila de saqueador', '8 gp'],
+  'Bárbaro':    ['Hacha grande', 'Hachas de mano (2)', 'Jabalina (4)', 'Mochila de explorador', '15 gp'],
+  'Bardo':      ['Cuero tachonado', 'Instrumento musical a elección', 'Daga', 'Mochila de entretenido', '19 gp'],
+  'Druida':     ['Escudo de madera', 'Hoz', 'Cuero', 'Foco druídico', 'Mochila de explorador', '9 gp'],
+  'Monje':      ['Daga (5)', 'Bastón de cuarzo', 'Herramientas de artesano a elección', 'Mochila de explorador', '11 gp'],
+  'Paladín':    ['Cota de malla', 'Escudo', 'Martillo de guerra', 'Jabalina (5)', 'Símbolo sagrado', 'Mochila de sacerdote', '9 gp'],
+  'Explorador': ['Cota de escamas', 'Espada corta (2)', 'Arco largo', 'Carcaj (20 flechas)', 'Mochila de explorador', '15 gp'],
+  'Hechicero':  ['Daga (2)', 'Foco arcano', 'Bolsa de componentes', 'Mochila de explorador', '28 gp'],
+  'Brujo':      ['Cuero tachonado', 'Foco arcano', 'Daga (2)', 'Mochila de explorador', '15 gp'],
+};
+
 // Skills opcionales por clase (número a elegir + lista disponible)
 const CLASE_SKILL_CHOICES = {
   'Clérigo':    { count: 2, skills: ['historia','medicina','perspicacia','persuasion','religion'] },
@@ -2246,21 +2348,22 @@ function saveCreateModal() {
     ]);
     newChar.skillProfs = [...new Set([...newChar.skillProfs, ...fixedSkills, ..._wizSelectedSkills])];
 
-    // Equipamiento inicial del trasfondo
-    const equip = TRASFONDO_EQUIP[_selectedTrasfondo] || [];
-    if (equip.length > 0) {
-      if (!Array.isArray(newChar.items)) newChar.items = [];
-      equip.forEach(e => {
-        // Detectar si termina en "gp" para guardarlo como monedas
+    // Equipamiento inicial del trasfondo + clase
+    if (!Array.isArray(newChar.items)) newChar.items = [];
+    newChar.currency = newChar.currency || { pp:0, gp:0, ep:0, sp:0, cp:0 };
+
+    const _applyEquipList = (list, source) => {
+      (list || []).forEach(e => {
         const gpMatch = e.match(/^(\d+)\s*gp$/);
         if (gpMatch) {
-          newChar.currency = newChar.currency || { pp:0, gp:0, ep:0, sp:0, cp:0 };
           newChar.currency.gp = (newChar.currency.gp || 0) + parseInt(gpMatch[1]);
         } else {
-          newChar.items.push({ id:'item-bg-'+Math.random().toString(36).slice(2,7), name:e, qty:1, weight:0, desc:'Equipo inicial de trasfondo', equipped:false });
+          newChar.items.push({ id:'item-'+source+'-'+Math.random().toString(36).slice(2,7), name:e, qty:1, weight:0, desc:`Equipo inicial de ${source}`, equipped:false });
         }
       });
-    }
+    };
+    _applyEquipList(CLASE_EQUIP[_selectedClase], 'clase');
+    _applyEquipList(TRASFONDO_EQUIP[_selectedTrasfondo], 'trasfondo');
 
     Storage.saveChar(newChar);
     Storage.setActiveId(newChar.id);
