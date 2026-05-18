@@ -75,6 +75,8 @@ const Cloud = (() => {
       if (user) {
         _syncOnLogin(user.uid);
         _startListener(user.uid);
+        // Limpiar de Firestore los personajes en lista negra que siguen en la nube
+        purgeDeletedFromCloud();
       } else {
         _stopListener();
       }
@@ -149,10 +151,26 @@ const Cloud = (() => {
         timeout
       ]);
 
+      // Lista negra: IDs que el usuario eliminó (no restaurar ni subir nunca)
+      const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
+      const isBlocked = id => _deletedIds.has(id) || persistedDeleted.has(id);
+
+      // Borrar de Firestore los bloqueados que siguen en la nube
+      for (const id of Object.keys(cloudChars)) {
+        if (isBlocked(id)) {
+          FirebaseApp.deleteCharCloud(uid, id).catch(() => {});
+          delete cloudChars[id];
+        }
+      }
+
+      // Limpiar también del localStorage cualquier bloqueado que haya vuelto antes del fix
       const local = Storage.getAllChars();
+      for (const id of Object.keys(local)) {
+        if (isBlocked(id)) delete local[id];
+      }
 
       if (Object.keys(cloudChars).length === 0) {
-        // Nube vacía — subir todos los locales (primera vez o después de clear)
+        // Nube vacía — subir todos los locales no bloqueados
         for (const char of Object.values(local)) {
           await FirebaseApp.saveCharCloud(uid, char);
         }
@@ -160,11 +178,11 @@ const Cloud = (() => {
       }
 
       // Merge bidireccional: para cada personaje, gana el más reciente (updatedAt)
-      // Si solo existe en uno de los lados, siempre se conserva.
       const merged = { ...local };
-      const toUpload = []; // personajes locales más nuevos que la nube
+      const toUpload = [];
 
       for (const [id, cloudChar] of Object.entries(cloudChars)) {
+        if (isBlocked(id)) continue;
         const localChar = local[id];
         if (!localChar) {
           // Solo en nube → restaurar a local
@@ -176,7 +194,6 @@ const Cloud = (() => {
           if (cloudTs >= localTs) {
             merged[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
           } else {
-            // local más nuevo → subir a nube
             toUpload.push(localChar);
           }
         }
@@ -184,7 +201,7 @@ const Cloud = (() => {
 
       // Personajes solo en local (no están en nube) → subir
       for (const [id, localChar] of Object.entries(local)) {
-        if (!cloudChars[id]) toUpload.push(localChar);
+        if (!cloudChars[id] && !isBlocked(id)) toUpload.push(localChar);
       }
 
       // Guardar merge en localStorage
@@ -246,20 +263,32 @@ const Cloud = (() => {
   }
 
   function _applyCloudChars(cloudChars) {
-    const local = Storage.getAllChars();
-    // Lista negra persistente en localStorage (sobrevive recargas)
+    // Lista negra: en memoria (sesión actual) + localStorage (sesiones anteriores)
     const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
+    const isBlocked = id => _deletedIds.has(id) || persistedDeleted.has(id);
+
+    // Partir de localStorage, pero ya eliminando los que están en lista negra
+    // (pueden haber sido restaurados por Firebase en syncs anteriores al fix)
+    const local = Storage.getAllChars();
     let changed = false;
 
+    // Limpiar del localStorage cualquier char que esté en lista negra
+    for (const id of Object.keys(local)) {
+      if (isBlocked(id)) {
+        delete local[id];
+        changed = true;
+      }
+    }
+
+    // Merge de chars de Firebase, filtrando los bloqueados
     for (const [id, cloudChar] of Object.entries(cloudChars)) {
-      // No restaurar si fue borrado en esta sesión O en sesiones anteriores
-      if (_deletedIds.has(id) || persistedDeleted.has(id)) continue;
-      // Aplicar migraciones locales antes de guardar
+      if (isBlocked(id)) continue;
       local[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
       changed = true;
     }
 
     if (changed) {
+      // Reescribir localStorage completo con el resultado limpio
       for (const char of Object.values(local)) {
         Storage.saveCharRaw(char);
       }
@@ -326,6 +355,16 @@ const Cloud = (() => {
     _setSyncState(SyncState.SAVING);
     try {
       const cloudChars = await FirebaseApp.loadAllCharsCloud(_uid);
+      const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
+      const isBlocked = id => _deletedIds.has(id) || persistedDeleted.has(id);
+
+      // Borrar de Firestore los que están en lista negra pero siguen en la nube
+      for (const id of Object.keys(cloudChars)) {
+        if (isBlocked(id)) {
+          FirebaseApp.deleteCharCloud(_uid, id).catch(() => {});
+          delete cloudChars[id];
+        }
+      }
       for (const char of Object.values(cloudChars)) {
         const migrated = Storage.migrateChar ? Storage.migrateChar(char) : char;
         Storage.saveCharRaw(migrated);
@@ -338,6 +377,25 @@ const Cloud = (() => {
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
       _setSyncState(SyncState.ERROR, e.message);
+    }
+  }
+
+  // Borra de Firestore todos los IDs que están en la lista negra local
+  // Se llama al iniciar sesión para limpiar personajes eliminados que siguen en la nube
+  async function purgeDeletedFromCloud() {
+    if (!_uid || !navigator.onLine) return;
+    const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
+    if (persistedDeleted.size === 0) return;
+    try {
+      const cloudChars = await FirebaseApp.loadAllCharsCloud(_uid);
+      for (const id of Object.keys(cloudChars)) {
+        if (persistedDeleted.has(id)) {
+          await FirebaseApp.deleteCharCloud(_uid, id).catch(() => {});
+          console.log(`[Cloud] Purgado de Firestore: ${id}`);
+        }
+      }
+    } catch (e) {
+      console.warn('[Cloud] purgeDeletedFromCloud error:', e);
     }
   }
 
@@ -364,7 +422,8 @@ const Cloud = (() => {
     scheduleSave,
     saveNow,
     deleteChar,
-    forcePullFromCloud
+    forcePullFromCloud,
+    purgeDeletedFromCloud,
   };
 })();
 
