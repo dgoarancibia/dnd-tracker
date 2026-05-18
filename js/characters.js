@@ -4017,6 +4017,8 @@ const Characters = (() => {
     char.subraza = char.subraza || '';
 
     // Aplicar bonus +2 / +1 a los stats elegidos
+    // En D&D 2024 estos bonos los da el Origen, no la raza.
+    // Solo se aplican si se pasan explícitamente (compatibilidad con flujos viejos).
     if (statBonus2 && char.stats[statBonus2] !== undefined) {
       char.stats[statBonus2] += 2;
     }

@@ -981,29 +981,6 @@
         <div id="razaTraitsPreview" style="margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--gold-dim);font-size:12px;display:none;">
           <div id="razaTraitsList"></div>
         </div>
-        <div class="wiz-section-label" style="margin-top:8px;">Bonus de estadística (D&amp;D 2024)</div>
-        <div class="stat-bonus-row">
-          <div class="stat-bonus-group">
-            <label class="form-label" style="font-size:10px;">+2 a:</label>
-            <div class="form-select-wrap">
-              <select class="form-select" id="cmBonus2">
-                <option value="for">FUE</option><option value="des">DES</option>
-                <option value="con">CON</option><option value="int">INT</option>
-                <option value="sab">SAB</option><option value="car">CAR</option>
-              </select>
-            </div>
-          </div>
-          <div class="stat-bonus-group">
-            <label class="form-label" style="font-size:10px;">+1 a:</label>
-            <div class="form-select-wrap">
-              <select class="form-select" id="cmBonus1">
-                <option value="for">FUE</option><option value="des">DES</option>
-                <option value="con">CON</option><option value="int">INT</option>
-                <option value="sab" selected>SAB</option><option value="car">CAR</option>
-              </select>
-            </div>
-          </div>
-        </div>
         <div class="wiz-section-label" style="margin-top:8px;">Rasgos adicionales <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">(feats, variantes, notas del DM…)</span></div>
         <textarea class="form-input" id="cmExtraTraits" rows="2"
           placeholder="Ej: Squat Nimbleness — +1 velocidad y prof en Atletismo…"
@@ -1013,7 +990,7 @@
 
     <!-- PASO 3: Trasfondo + Equipamiento -->
     <div class="wiz-step" id="wizStep3" style="display:none;">
-      <div class="modal-title">📜 Trasfondo</div>
+      <div class="modal-title">📜 Trasfondo / Origen</div>
       <div class="trasfondo-chip-grid" id="trasfondoChipGrid"></div>
       <div id="trasfondoInfo" style="display:none;margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--gold-dim);font-size:12px;">
         <div id="trasfondoSkills" style="color:var(--text-dim);margin-bottom:2px;"></div>
@@ -1022,6 +999,30 @@
         <div id="trasfondoEquipSection" style="display:none;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:4px;">Equipamiento inicial</div>
           <div id="trasfondoEquipList" style="color:var(--text);font-size:12px;line-height:1.6;"></div>
+        </div>
+      </div>
+      <!-- Bonus de stats: lo da el Origen (D&D 2024), no la raza -->
+      <div class="wiz-section-label" style="margin-top:12px;">Bonus de estadística <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">— D&amp;D 2024: lo elige el jugador libremente</span></div>
+      <div class="stat-bonus-row">
+        <div class="stat-bonus-group">
+          <label class="form-label" style="font-size:10px;">+2 a:</label>
+          <div class="form-select-wrap">
+            <select class="form-select" id="cmBonus2">
+              <option value="for">FUE</option><option value="des">DES</option>
+              <option value="con">CON</option><option value="int">INT</option>
+              <option value="sab">SAB</option><option value="car">CAR</option>
+            </select>
+          </div>
+        </div>
+        <div class="stat-bonus-group">
+          <label class="form-label" style="font-size:10px;">+1 a:</label>
+          <div class="form-select-wrap">
+            <select class="form-select" id="cmBonus1">
+              <option value="for">FUE</option><option value="des">DES</option>
+              <option value="con">CON</option><option value="int">INT</option>
+              <option value="sab" selected>SAB</option><option value="car">CAR</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -1803,14 +1804,20 @@ function _wizBuildSummary() {
   const nivel = parseInt(document.getElementById('cmNivel').value) || 1;
   const trasCfg = Characters.TRASFONDOS_CONFIG && Characters.TRASFONDOS_CONFIG[_selectedTrasfondo];
   const razaCfg = Characters.RAZAS_CONFIG && Characters.RAZAS_CONFIG[_selectedRaza];
-  const claseCfg = CLASE_SKILL_CHOICES[_selectedClase] || { count: 2, skills: [] };
   const fixedSkills = new Set([
     ...(razaCfg  ? (razaCfg.skillProfs  || []) : []),
     ...(trasCfg  ? (trasCfg.skillProfs  || []) : []),
   ]);
   const allSkills = [...new Set([...fixedSkills, ..._wizSelectedSkills])];
-  const stats = _wizCollectStats();
+  const baseStats = _wizCollectStats();
   const equip = (TRASFONDO_EQUIP[_selectedTrasfondo] || []);
+
+  // Aplicar bonos de Origen para mostrar en resumen
+  const bonus2Key = document.getElementById('cmBonus2')?.value || 'for';
+  const bonus1Key = document.getElementById('cmBonus1')?.value || 'sab';
+  const stats = { ...baseStats };
+  if (stats[bonus2Key] !== undefined) stats[bonus2Key] += 2;
+  if (stats[bonus1Key] !== undefined && bonus1Key !== bonus2Key) stats[bonus1Key] += 1;
 
   const modStr = (stat) => { const m = Math.floor((stats[stat]-10)/2); return (m>=0?'+':'')+m; };
   document.getElementById('wizSummary').innerHTML = `
@@ -1821,12 +1828,17 @@ function _wizBuildSummary() {
       ${_selectedTrasfondo ? `&nbsp;·&nbsp;<span style="color:var(--text-dim);">Trasfondo:</span> <strong>${_selectedTrasfondo}</strong>` : ''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
-      ${_STAT_KEYS.map(k=>`<div style="text-align:center;padding:6px 8px;background:var(--bg3);border-radius:8px;min-width:44px;">
-        <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;">${_STAT_LABELS_WIZ[k]}</div>
-        <div style="font-size:16px;font-weight:700;">${stats[k]||10}</div>
-        <div style="font-size:11px;color:var(--gold-dim);">${modStr(k)}</div>
-      </div>`).join('')}
+      ${_STAT_KEYS.map(k=>{
+        const isBonused = k === bonus2Key || (k === bonus1Key && bonus1Key !== bonus2Key);
+        const bonusLabel = k === bonus2Key ? '+2' : (k === bonus1Key && bonus1Key !== bonus2Key ? '+1' : '');
+        return `<div style="text-align:center;padding:6px 8px;background:var(--bg3);border-radius:8px;min-width:44px;${isBonused?'border:1px solid rgba(212,175,55,.4);':'' }">
+          <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;">${_STAT_LABELS_WIZ[k]}</div>
+          <div style="font-size:16px;font-weight:700;">${stats[k]||10}${isBonused?`<span style="font-size:10px;color:var(--gold-light);"> ${bonusLabel}</span>`:''}</div>
+          <div style="font-size:11px;color:var(--gold-dim);">${modStr(k)}</div>
+        </div>`;
+      }).join('')}
     </div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">★ Bonos de Origen (D&D 2024): <strong style="color:var(--gold-light);">${_STAT_LABELS_WIZ[bonus2Key]} +2 · ${_STAT_LABELS_WIZ[bonus1Key]} +1</strong></div>
     ${allSkills.length ? `<div style="margin-bottom:8px;"><span style="color:var(--text-dim);font-size:11px;">PROFICIENCIAS:</span><br>${allSkills.map(s=>`<span style="font-size:12px;margin-right:8px;">${SKILL_NAMES[s]||s}</span>`).join('')}</div>` : ''}
     ${trasCfg && trasCfg.feat ? `<div style="margin-bottom:6px;"><span style="color:var(--text-dim);font-size:11px;">FEAT:</span> <span style="color:var(--gold-light);">${trasCfg.feat}</span></div>` : ''}
     ${equip.length ? `<div><span style="color:var(--text-dim);font-size:11px;">EQUIPAMIENTO INICIAL:</span><br>${equip.map(e=>`<span style="font-size:12px;display:block;padding:1px 0;">• ${e}</span>`).join('')}</div>` : ''}
@@ -1949,11 +1961,15 @@ function saveCreateModal() {
     newChar.hp.max     = hitDie + (nivel - 1) * (Math.floor(hitDie / 2) + 1) + conMod * nivel;
     newChar.hp.current = newChar.hp.max;
 
-    // Raza
+    // Bonus de stats del Origen (D&D 2024) — siempre se aplica, independiente de la raza
+    const bonus2 = document.getElementById('cmBonus2')?.value || 'for';
+    const bonus1 = document.getElementById('cmBonus1')?.value || 'sab';
+    if (newChar.stats[bonus2] !== undefined) newChar.stats[bonus2] += 2;
+    if (newChar.stats[bonus1] !== undefined && bonus1 !== bonus2) newChar.stats[bonus1] += 1;
+
+    // Raza — solo rasgos, sin bonus de stat (ya aplicados arriba)
     if (_selectedRaza && _selectedRaza !== 'Custom') {
-      const bonus2 = document.getElementById('cmBonus2')?.value || 'for';
-      const bonus1 = document.getElementById('cmBonus1')?.value || 'sab';
-      Characters.applyRaza(newChar, _selectedRaza, bonus2, bonus1);
+      Characters.applyRaza(newChar, _selectedRaza, null, null);
       if (_selectedSubraza) Characters.applySubraza(newChar, _selectedSubraza);
     }
     if (_selectedRaza === 'Custom') {
