@@ -1038,6 +1038,45 @@
     color: var(--gold-dim);
     font-family: 'Jost', sans-serif;
   }
+
+  /* ── Equipo inicial de clase ─────────────────────────── */
+  .equip-opt-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-family: 'Jost', sans-serif;
+  }
+  .equip-opt-row.selected {
+    background: rgba(201,151,58,.12);
+    border-color: var(--gold-dim);
+  }
+  .equip-opt-radio {
+    font-size: 14px;
+    color: var(--gold-dim);
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .equip-opt-row.selected .equip-opt-radio { color: var(--gold-light); }
+  .equip-opt-content { display: flex; flex-direction: column; gap: 2px; }
+  .equip-opt-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .equip-opt-items {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .equip-opt-row.selected .equip-opt-items { color: var(--text); }
 </style>
 </head>
 <body>
@@ -1118,6 +1157,11 @@
       <div class="form-group">
         <label class="form-label">Clase</label>
         <div class="clase-chip-grid" id="claseChipGrid"></div>
+      </div>
+      <!-- Equipo inicial de clase: opciones A / B / C -->
+      <div id="claseEquipSection" style="display:none;margin-bottom:12px;">
+        <div class="wiz-section-label" style="padding-top:0;border-top:none;">⚔ Equipo inicial de clase</div>
+        <div id="claseEquipOpts" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>
       </div>
       <div class="form-group" style="max-width:140px;">
         <label class="form-label" for="cmNivel">Nivel</label>
@@ -1555,6 +1599,7 @@ const _RAZAS_LISTA = [
 let _selectedClase     = 'Clérigo';
 let _selectedRaza      = '';   // '' = sin raza elegida
 let _selectedTrasfondo = '';   // '' = sin trasfondo elegido
+let _selectedEquipOpt  = 'A';  // opción de equipo de clase: 'A', 'B' o 'C'
 
 // ── Stats wizard ──────────────────────────────────────
 const _STAT_KEYS  = ['for','des','con','int','sab','car'];
@@ -1747,6 +1792,33 @@ function selectClaseChip(el, name) {
   document.querySelectorAll('.clase-chip').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   _selectedClase = name;
+  _selectedEquipOpt = 'A';
+  _buildClaseEquipOpts(name);
+}
+
+function _buildClaseEquipOpts(clase) {
+  const sec  = document.getElementById('claseEquipSection');
+  const opts = document.getElementById('claseEquipOpts');
+  if (!sec || !opts) return;
+  const equip = CLASE_EQUIP[clase];
+  if (!equip) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  const labels = { A: 'Opción A', B: 'Opción B', C: 'Opción C (solo dinero)' };
+  opts.innerHTML = Object.entries(equip).map(([key, items]) => {
+    const isSelected = key === _selectedEquipOpt;
+    return `<label class="equip-opt-row ${isSelected ? 'selected' : ''}" onclick="_selectEquipOpt('${key}','${clase}')">
+      <span class="equip-opt-radio">${isSelected ? '◉' : '○'}</span>
+      <span class="equip-opt-content">
+        <strong class="equip-opt-label">${labels[key]}</strong>
+        <span class="equip-opt-items">${items.join(' · ')}</span>
+      </span>
+    </label>`;
+  }).join('');
+}
+
+function _selectEquipOpt(key, clase) {
+  _selectedEquipOpt = key;
+  _buildClaseEquipOpts(clase);
 }
 
 function _buildRazaChips(selected) {
@@ -1918,19 +1990,69 @@ const TRASFONDO_EQUIP = {
 };
 
 // Equipamiento inicial por clase (D&D 2024 PHB)
+// Equipamiento inicial por clase — opciones A/B/C según PHB 2024
+// Cada opción es un array de items (strings). El último puede ser "N gp".
 const CLASE_EQUIP = {
-  'Guerrero':   ['Cota de malla', 'Escudo', 'Espada larga', 'Daga (4)', 'Mochila de aventurero', '4 gp'],
-  'Clérigo':    ['Cota de malla', 'Escudo', 'Maza', 'Símbolo sagrado', 'Mochila de sacerdote', '7 gp'],
-  'Mago':       ['Daga (2)', 'Grimorio', 'Bolsa de componentes', 'Mochila de erudito', '10 gp'],
-  'Pícaro':     ['Cuero tachonado', 'Espada corta (2)', 'Arco corto', 'Carcaj (20 flechas)', 'Herramientas de ladrón', 'Mochila de saqueador', '8 gp'],
-  'Bárbaro':    ['Hacha grande', 'Hachas de mano (2)', 'Jabalina (4)', 'Mochila de explorador', '15 gp'],
-  'Bardo':      ['Cuero tachonado', 'Instrumento musical a elección', 'Daga', 'Mochila de entretenido', '19 gp'],
-  'Druida':     ['Escudo de madera', 'Hoz', 'Cuero', 'Foco druídico', 'Mochila de explorador', '9 gp'],
-  'Monje':      ['Daga (5)', 'Bastón de cuarzo', 'Herramientas de artesano a elección', 'Mochila de explorador', '11 gp'],
-  'Paladín':    ['Cota de malla', 'Escudo', 'Martillo de guerra', 'Jabalina (5)', 'Símbolo sagrado', 'Mochila de sacerdote', '9 gp'],
-  'Explorador': ['Cota de escamas', 'Espada corta (2)', 'Arco largo', 'Carcaj (20 flechas)', 'Mochila de explorador', '15 gp'],
-  'Hechicero':  ['Daga (2)', 'Foco arcano', 'Bolsa de componentes', 'Mochila de explorador', '28 gp'],
-  'Brujo':      ['Cuero tachonado', 'Foco arcano', 'Daga (2)', 'Mochila de explorador', '15 gp'],
+  'Guerrero': {
+    A: ['Cota de malla', 'Espadón', 'Mangual', 'Jabalina (8)', 'Mochila de explorador', '4 gp'],
+    B: ['Cuero tachonado', 'Cimitarra', 'Espada corta', 'Arco largo', 'Carcaj (20 flechas)', 'Mochila de explorador', '11 gp'],
+    C: ['155 gp'],
+  },
+  'Clérigo': {
+    A: ['Cota de malla', 'Escudo', 'Maza', 'Símbolo sagrado', 'Mochila de sacerdote', '7 gp'],
+    B: ['Cota de escamas', 'Escudo', 'Maza', 'Símbolo sagrado', 'Mochila de sacerdote', '14 gp'],
+    C: ['110 gp'],
+  },
+  'Mago': {
+    A: ['Bastón de cuarzo', 'Bolsa de componentes', 'Daga (2)', 'Libro de conjuros', 'Mochila de erudito', '5 gp'],
+    B: ['Daga (2)', 'Orbe arcano', 'Libro de conjuros', 'Mochila de erudito', '22 gp'],
+    C: ['125 gp'],
+  },
+  'Pícaro': {
+    A: ['Cuero tachonado', 'Espada corta (2)', 'Arco corto', 'Carcaj (20 flechas)', 'Herramientas de ladrón', 'Mochila de saqueador', '8 gp'],
+    B: ['Cuero tachonado', 'Espada larga', 'Daga (3)', 'Herramientas de ladrón', 'Mochila de saqueador', '8 gp'],
+    C: ['100 gp'],
+  },
+  'Bárbaro': {
+    A: ['Hacha grande', 'Hachas de mano (4)', 'Mochila de explorador', '15 gp'],
+    B: ['Hacha grande', 'Lanza', 'Escudo', 'Jabalina (4)', 'Mochila de explorador', '3 gp'],
+    C: ['75 gp'],
+  },
+  'Bardo': {
+    A: ['Cuero tachonado', 'Espada larga', 'Daga (2)', 'Instrumento musical a elección', 'Mochila de entretenido', '11 gp'],
+    B: ['Cuero tachonado', 'Espada larga', 'Daga (2)', 'Instrumento musical a elección', 'Mochila de diplomático', '19 gp'],
+    C: ['130 gp'],
+  },
+  'Druida': {
+    A: ['Escudo de madera', 'Hoz', 'Cuero', 'Foco druídico (vara)', 'Mochila de explorador', '9 gp'],
+    B: ['Escudo de madera', 'Bastón de cuarzo', 'Cuero', 'Foco druídico (tótem)', 'Mochila de explorador', '6 gp'],
+    C: ['50 gp'],
+  },
+  'Monje': {
+    A: ['Daga (5)', 'Herramientas de artesano a elección', 'Mochila de explorador', '11 gp'],
+    B: ['Daga (5)', 'Herramientas de artesano a elección', 'Mochila de mazmorrero', '16 gp'],
+    C: ['50 gp'],
+  },
+  'Paladín': {
+    A: ['Cota de malla', 'Escudo', 'Jabalina (6)', 'Símbolo sagrado', 'Mochila de sacerdote', '9 gp'],
+    B: ['Cota de malla', 'Escudo', 'Espada larga', 'Símbolo sagrado', 'Mochila de sacerdote', '9 gp'],
+    C: ['150 gp'],
+  },
+  'Explorador': {
+    A: ['Cota de escamas', 'Espada corta (2)', 'Arco largo', 'Carcaj (20 flechas)', 'Mochila de mazmorrero', '3 gp'],
+    B: ['Cuero tachonado', 'Espada corta (2)', 'Arco largo', 'Carcaj (20 flechas)', 'Mochila de explorador', '11 gp'],
+    C: ['150 gp'],
+  },
+  'Hechicero': {
+    A: ['Daga (2)', 'Foco arcano', 'Bolsa de componentes', 'Mochila de explorador', '28 gp'],
+    B: ['Daga (2)', 'Foco arcano', 'Bolsa de componentes', 'Mochila de mazmorrero', '23 gp'],
+    C: ['50 gp'],
+  },
+  'Brujo': {
+    A: ['Cuero tachonado', 'Foco arcano', 'Daga (2)', 'Mochila de mazmorrero', '30 gp'],
+    B: ['Cuero tachonado', 'Foco arcano', 'Daga (2)', 'Mochila de explorador', '12 gp'],
+    C: ['100 gp'],
+  },
 };
 
 // Skills opcionales por clase (número a elegir + lista disponible)
@@ -2219,7 +2341,9 @@ function openCreateModal() {
   if (_lvlSum) _lvlSum.style.display = 'none';
   const tInfo = document.getElementById('trasfondoInfo');
   if (tInfo) tInfo.style.display = 'none';
+  _selectedEquipOpt = 'A';
   _buildClaseChips('Guerrero');
+  _buildClaseEquipOpts('Guerrero');
   _buildRazaChips('');
   _buildTrasfondoChips('');
   _wizGoToStep(1);
@@ -2362,7 +2486,10 @@ function saveCreateModal() {
         }
       });
     };
-    _applyEquipList(CLASE_EQUIP[_selectedClase], 'clase');
+    // Equipo de clase: usar opción elegida (A/B/C)
+    const claseEquipOpts = CLASE_EQUIP[_selectedClase];
+    const claseEquipList = claseEquipOpts ? (claseEquipOpts[_selectedEquipOpt] || claseEquipOpts['A']) : [];
+    _applyEquipList(claseEquipList, 'clase');
     _applyEquipList(TRASFONDO_EQUIP[_selectedTrasfondo], 'trasfondo');
 
     Storage.saveChar(newChar);
