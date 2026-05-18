@@ -47,14 +47,38 @@ await setPersistence(_auth, browserLocalPersistence).catch(() => {});
 
 /* ── Auth ── */
 
+// Detectar Safari / iOS — en esos entornos el redirect falla por ITP
+function _isSafariOrIOS() {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  // Safari en macOS/iOS — no Chrome ni Firefox
+  const isSafariBrowser = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+  return isIOS || isSafariBrowser;
+}
+
 async function signIn() {
-  // Asegurar persistencia antes del redirect (crítico en Safari iOS)
   await setPersistence(_auth, browserLocalPersistence).catch(() => {});
+  if (_isSafariOrIOS()) {
+    // Safari / iOS: usar popup para evitar problemas con ITP y cookies de terceros
+    console.log('[firebase] Safari/iOS detectado — usando signInWithPopup');
+    try {
+      const result = await signInWithPopup(_auth, _provider);
+      console.log('[firebase] popup login OK:', result.user?.email);
+      return result;
+    } catch (e) {
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+        // Popup bloqueado o cerrado — fallback a redirect
+        console.warn('[firebase] popup bloqueado, fallback a redirect:', e.code);
+        return signInWithRedirect(_auth, _provider);
+      }
+      throw e;
+    }
+  }
+  // Otros navegadores: redirect normal
   return signInWithRedirect(_auth, _provider);
 }
 
-// Procesar redirect result con top-level await — garantiza que el usuario
-// esté disponible antes de que cloud.js registre onAuthStateChanged
+// Procesar redirect result con top-level await — para browsers no-Safari
 const _redirectResult = await getRedirectResult(_auth).catch(e => {
   console.warn('[firebase] getRedirectResult error:', e.code, e.message);
   return null;
