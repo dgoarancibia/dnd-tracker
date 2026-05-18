@@ -121,12 +121,12 @@ const Characters = (() => {
   // feat: feat de origen que otorga
   // feature: nombre del rasgo narrativo del trasfondo
   // featureDesc: descripción breve del rasgo
-  // statBonus2 / statBonus1: bonos fijos que otorga el Origen según D&D 2024 PHB
+  // statOptions: array de 3 stats entre las que el jugador elige +2 a una y +1 a otra (D&D 2024)
   const TRASFONDOS_CONFIG = {
     'Acólito': {
       emoji: '⛪', skillProfs: ['perspicacia', 'religion'],
       toolProfs: [],
-      statBonus2: 'sab', statBonus1: 'int',
+      statOptions: ['int', 'sab', 'car'],
       feat: 'Magic Initiate (Clérigo)',
       feature: 'Shelter of the Faithful',
       featureDesc: 'Podés recibir curación y cuidado en templos de tu fe. Vos y tus compañeros pueden descansar allí gratuitamente.',
@@ -134,7 +134,7 @@ const Characters = (() => {
     'Artesano': {
       emoji: '🔨', skillProfs: ['perspicacia', 'persuasion'],
       toolProfs: ['Herramientas de artesano (a elección)'],
-      statBonus2: 'int', statBonus1: 'sab',
+      statOptions: ['for', 'des', 'int'],
       feat: 'Crafter',
       feature: 'Maker\'s Eye',
       featureDesc: 'Podés identificar el valor, calidad y procedencia de objetos manufacturados con solo examinarlos.',
@@ -142,7 +142,7 @@ const Characters = (() => {
     'Charlatán': {
       emoji: '🃏', skillProfs: ['engano', 'juegomanos'],
       toolProfs: ['Kit de disfraz', 'Kit de falsificación'],
-      statBonus2: 'car', statBonus1: 'des',
+      statOptions: ['des', 'con', 'car'],
       feat: 'Skilled',
       feature: 'False Identity',
       featureDesc: 'Tenés una identidad falsa documentada. También podés falsificar documentos con el kit correspondiente.',
@@ -150,7 +150,7 @@ const Characters = (() => {
     'Criminal': {
       emoji: '🗡️', skillProfs: ['engano', 'sigilo'],
       toolProfs: ['Herramientas de ladrón', 'Un juego de azar'],
-      statBonus2: 'des', statBonus1: 'int',
+      statOptions: ['des', 'con', 'int'],
       feat: 'Alert',
       feature: 'Criminal Contact',
       featureDesc: 'Tenés un contacto en el mundo criminal que actúa como enlace con la red de ladrones locales.',
@@ -158,7 +158,7 @@ const Characters = (() => {
     'Erudito': {
       emoji: '📚', skillProfs: ['arcanos', 'historia'],
       toolProfs: [],
-      statBonus2: 'int', statBonus1: 'sab',
+      statOptions: ['con', 'int', 'sab'],
       feat: 'Magic Initiate (Mago)',
       feature: 'Researcher',
       featureDesc: 'Cuando no sabés algo, sabés dónde ir a buscarlo: bibliotecas, guildas académicas, otros eruditos.',
@@ -166,7 +166,7 @@ const Characters = (() => {
     'Héroe del Pueblo': {
       emoji: '🌾', skillProfs: ['manejoanim', 'supervivencia'],
       toolProfs: ['Herramientas de artesano (a elección)', 'Vehículos terrestres'],
-      statBonus2: 'con', statBonus1: 'for',
+      statOptions: ['for', 'con', 'sab'],
       feat: 'Tough',
       feature: 'Rustic Hospitality',
       featureDesc: 'Las personas comunes te dan refugio y comida. Pueden ocultarte de quienes te busquen.',
@@ -174,7 +174,7 @@ const Characters = (() => {
     'Noble': {
       emoji: '👑', skillProfs: ['historia', 'persuasion'],
       toolProfs: ['Un juego de azar'],
-      statBonus2: 'car', statBonus1: 'int',
+      statOptions: ['for', 'int', 'car'],
       feat: 'Skilled',
       feature: 'Position of Privilege',
       featureDesc: 'La gente de alta alcurnia te respeta. Tenés acceso a la alta sociedad y la nobleza.',
@@ -182,7 +182,7 @@ const Characters = (() => {
     'Forajido': {
       emoji: '🏕️', skillProfs: ['atletismo', 'supervivencia'],
       toolProfs: ['Instrumento musical (a elección)', 'Herramientas de cartógrafo'],
-      statBonus2: 'for', statBonus1: 'des',
+      statOptions: ['for', 'des', 'sab'],
       feat: 'Lucky',
       feature: 'Wanderer',
       featureDesc: 'Tenés una memoria excelente para mapas y geografía. Siempre podés recordar el camino de vuelta.',
@@ -190,15 +190,15 @@ const Characters = (() => {
     'Soldado': {
       emoji: '⚔️', skillProfs: ['atletismo', 'intimidacion'],
       toolProfs: ['Vehículos terrestres', 'Un juego de azar'],
-      statBonus2: 'for', statBonus1: 'con',
+      statOptions: ['for', 'des', 'con'],
       feat: 'Savage Attacker',
       feature: 'Military Rank',
       featureDesc: 'Tenés rango militar reconocido. Soldados inferiores obedecen tus órdenes; accedés a equipamiento y campamentos.',
     },
     'Entretenido': {
       emoji: '🎭', skillProfs: ['acrobacias', 'interpretacion'],
-      toolProfs: ['Kit de disfraz', 'Instrumento musical (a elección)'],
-      statBonus2: 'car', statBonus1: 'des',
+      toolProfs: ['Instrumento musical (a elección)'],
+      statOptions: ['for', 'des', 'car'],
       feat: 'Musician',
       feature: 'By Popular Demand',
       featureDesc: 'Siempre podés encontrar alojamiento y comida en tabernas o teatros a cambio de actuar.',
@@ -206,7 +206,7 @@ const Characters = (() => {
     'Marinero': {
       emoji: '⚓', skillProfs: ['atletismo', 'percepcion'],
       toolProfs: ['Herramientas de navegante', 'Vehículos acuáticos'],
-      statBonus2: 'for', statBonus1: 'des',
+      statOptions: ['for', 'des', 'sab'],
       feat: 'Tavern Brawler',
       feature: 'Ship\'s Passage',
       featureDesc: 'Podés asegurar pasaje gratuito en barco para vos y compañeros a cambio de trabajo durante el viaje.',
@@ -214,7 +214,7 @@ const Characters = (() => {
     'Sabio Callejero': {
       emoji: '🏚️', skillProfs: ['engano', 'perspicacia'],
       toolProfs: ['Herramientas de ladrón', 'Un juego de azar'],
-      statBonus2: 'des', statBonus1: 'car',
+      statOptions: ['des', 'sab', 'car'],
       feat: 'Lucky',
       feature: 'City Secrets',
       featureDesc: 'Conocés los pasajes secretos y callejones de la ciudad. Podés moverte entre dos puntos el doble de rápido.',
@@ -222,7 +222,7 @@ const Characters = (() => {
     'Ermitaño': {
       emoji: '🌿', skillProfs: ['medicina', 'religion'],
       toolProfs: ['Kit de herbolario'],
-      statBonus2: 'sab', statBonus1: 'con',
+      statOptions: ['con', 'sab', 'car'],
       feat: 'Healer',
       feature: 'Discovery',
       featureDesc: 'Tu soledad te reveló un secreto único sobre el cosmos, los dioses o las fuerzas del mundo.',
@@ -230,7 +230,7 @@ const Characters = (() => {
     'Guía': {
       emoji: '🧭', skillProfs: ['atletismo', 'supervivencia'],
       toolProfs: ['Herramientas de cartógrafo', 'Instrumento musical (a elección)'],
-      statBonus2: 'sab', statBonus1: 'des',
+      statOptions: ['des', 'con', 'sab'],
       feat: 'Magic Initiate (Druida)',
       feature: 'Wanderer',
       featureDesc: 'Tenés una memoria excelente para mapas y geografía. Siempre podés recordar el camino de vuelta y encontrás doble comida al buscar en tu terreno natural.',
@@ -238,7 +238,7 @@ const Characters = (() => {
     'Mercader': {
       emoji: '⚖️', skillProfs: ['perspicacia', 'persuasion'],
       toolProfs: ['Herramientas de navegante', 'Un idioma adicional'],
-      statBonus2: 'int', statBonus1: 'car',
+      statOptions: ['con', 'int', 'car'],
       feat: 'Lucky',
       feature: 'Merchant\'s Eye',
       featureDesc: 'Conocés los precios y mercados. Podés fijar el valor de objetos y encontrás vendedores en cualquier ciudad.',
@@ -246,7 +246,7 @@ const Characters = (() => {
     'Granjero': {
       emoji: '🌾', skillProfs: ['manejoanim', 'naturaleza'],
       toolProfs: ['Herramientas de artesano (a elección)', 'Vehículos terrestres'],
-      statBonus2: 'con', statBonus1: 'sab',
+      statOptions: ['for', 'con', 'sab'],
       feat: 'Tough',
       feature: 'Homesteader',
       featureDesc: 'Gente rural te da techo y comida de buena voluntad. Conocés las rutas y costumbres del campo.',
@@ -254,7 +254,7 @@ const Characters = (() => {
     'Custom': {
       emoji: '✏️', skillProfs: [],
       toolProfs: [],
-      statBonus2: null, statBonus1: null,
+      statOptions: null,
       feat: '',
       feature: '',
       featureDesc: '',

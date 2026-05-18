@@ -7180,3 +7180,78 @@ mark.diary-highlight {
   font-weight: 700;
   color: var(--gold-dim);
 }
+
+/* ── Wizard: bloques de proficiencias ─────────────────────── */
+.wiz-prof-block {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.wiz-prof-block-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.wiz-prof-block-icon {
+  font-size: 14px;
+}
+.wiz-prof-block-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-light);
+  font-family: 'Cinzel', serif;
+}
+.wiz-prof-block-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'Jost', sans-serif;
+  margin-left: auto;
+}
+
+/* ── Wizard: chips de bonus de stat ──────────────────────── */
+.stat-bonus-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 54px;
+  font-family: 'Jost', sans-serif;
+}
+.stat-bonus-chip:hover:not(.selected-2):not(.selected-1) {
+  border-color: var(--gold-dim);
+  background: var(--bg2);
+}
+.sbc-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'Cinzel', serif;
+}
+.sbc-badge {
+  font-size: 11px;
+  font-weight: 700;
+}
+.stat-bonus-chip.selected-2 {
+  background: rgba(201,151,58,.18);
+  border-color: var(--gold-light);
+}
+.stat-bonus-chip.selected-2 .sbc-label,
+.stat-bonus-chip.selected-2 .sbc-badge {
+  color: var(--gold-light);
+}
+.stat-bonus-chip.selected-1 {
+  background: rgba(100,160,220,.15);
+  border-color: rgba(100,160,220,.5);
+}
+.stat-bonus-chip.selected-1 .sbc-label,
+.stat-bonus-chip.selected-1 .sbc-badge {
+  color: #64a0dc;
+}

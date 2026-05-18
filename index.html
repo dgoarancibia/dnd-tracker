@@ -1001,17 +1001,16 @@
           <div id="trasfondoEquipList" style="color:var(--text);font-size:12px;line-height:1.6;"></div>
         </div>
       </div>
-      <!-- Bonus de stats fijo por trasfondo (D&D 2024) -->
-      <div class="wiz-section-label" style="margin-top:12px;">Bonus de estadística <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">— fijado por el Trasfondo (D&D 2024)</span></div>
-      <!-- Display fijo (trasfondo con bonos definidos) -->
-      <div id="trasfondoBonusFixed" style="display:none;padding:8px 12px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--gold-dim);font-size:13px;">
-        <span id="trasfondoBonus2Label" style="color:var(--gold-light);font-weight:700;"></span>
-        <span style="color:var(--text-dim);margin:0 8px;">·</span>
-        <span id="trasfondoBonus1Label" style="color:var(--gold-light);font-weight:700;"></span>
+      <!-- Bonus de stats del Trasfondo (D&D 2024): 3 opciones, jugador elige +2 y +1 -->
+      <div class="wiz-section-label" style="margin-top:12px;">Bonus de estadística <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">— elegís +2 y +1 entre las 3 opciones del trasfondo</span></div>
+      <!-- Selector interactivo: 3 chips de stat -->
+      <div id="trasfondoBonusSelector" style="display:none;">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Tocá una stat para asignar <strong style="color:var(--gold-light);">+2</strong>, luego otra para <strong style="color:var(--gold-light);">+1</strong>:</div>
+        <div id="statBonusChips" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
         <input type="hidden" id="cmBonus2" value="">
         <input type="hidden" id="cmBonus1" value="">
       </div>
-      <!-- Selects libres (solo para Custom o sin trasfondo elegido) -->
+      <!-- Selects libres (solo para Custom) -->
       <div id="trasfondoBonusFree" style="display:none;">
         <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Elegí libremente (trasfondo custom):</div>
         <div class="stat-bonus-row">
@@ -1046,16 +1045,53 @@
     <!-- PASO 4: Skills -->
     <div class="wiz-step" id="wizStep4" style="display:none;">
       <div class="modal-title">🎯 Proficiencias</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;" id="wizSkillsSubtitle"></div>
-      <!-- Skills fijas (de clase + raza + trasfondo) -->
-      <div id="wizFixedSkillsSection" style="margin-bottom:12px;display:none;">
-        <div class="wiz-section-label" style="padding-top:0;border-top:none;">✔ Incluidas automáticamente</div>
-        <div id="wizFixedSkillsList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+
+      <!-- BLOQUE CLASE -->
+      <div class="wiz-prof-block">
+        <div class="wiz-prof-block-header">
+          <span class="wiz-prof-block-icon">⚔️</span>
+          <span class="wiz-prof-block-title" id="wizProfClaseTitle">Clase</span>
+          <span class="wiz-prof-block-hint" id="wizProfClaseHint"></span>
+        </div>
+        <!-- Skills fijas de clase (si las tuviera) -->
+        <div id="wizClaseFixedSection" style="display:none;margin-bottom:8px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:4px;">Incluidas</div>
+          <div id="wizClaseFixedList" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+        </div>
+        <!-- Skills opcionales de clase -->
+        <div id="wizClaseOptSection" style="display:none;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:4px;">
+            Elegí <span id="wizClaseOptCount" style="color:var(--gold-light);font-weight:700;"></span>
+          </div>
+          <div id="wizClaseOptList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        </div>
       </div>
-      <!-- Skills opcionales a elegir -->
-      <div id="wizOptionalSkillsSection" style="display:none;">
-        <div class="wiz-section-label">Elegí <span id="wizSkillChoiceCount" style="color:var(--gold-light);"></span></div>
-        <div id="wizOptionalSkillsList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+
+      <!-- BLOQUE TRASFONDO -->
+      <div class="wiz-prof-block" style="margin-top:12px;">
+        <div class="wiz-prof-block-header">
+          <span class="wiz-prof-block-icon">📜</span>
+          <span class="wiz-prof-block-title" id="wizProfTrasTitle">Trasfondo</span>
+          <span class="wiz-prof-block-hint" id="wizProfTrasHint"></span>
+        </div>
+        <!-- Skills fijas del trasfondo -->
+        <div id="wizTrasFixedSection" style="display:none;margin-bottom:8px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:4px;">Incluidas</div>
+          <div id="wizTrasFixedList" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+        </div>
+        <!-- Sin trasfondo -->
+        <div id="wizTrasNoneMsg" style="font-size:12px;color:var(--text-dim);">
+          No elegiste trasfondo — sin proficiencias adicionales.
+        </div>
+      </div>
+
+      <!-- BLOQUE RAZA (si aplica) -->
+      <div class="wiz-prof-block" id="wizRazaProfsBlock" style="margin-top:12px;display:none;">
+        <div class="wiz-prof-block-header">
+          <span class="wiz-prof-block-icon">🧬</span>
+          <span class="wiz-prof-block-title">Raza</span>
+        </div>
+        <div id="wizRazaFixedList" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;"></div>
       </div>
     </div>
 
@@ -1411,29 +1447,74 @@ function _buildTrasfondoChips(selected) {
 
 const _STAT_LABELS_FULL = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
 
+// Estado de selección de bonos: null = sin asignar, stat = asignado
+let _bonusSelected2 = ''; // stat que recibe +2
+let _bonusSelected1 = ''; // stat que recibe +1
+
 function _updateTrasfondoBonusUI(t, name) {
-  const fixedEl  = document.getElementById('trasfondoBonusFixed');
-  const freeEl   = document.getElementById('trasfondoBonusFree');
-  const noneEl   = document.getElementById('trasfondoBonusNone');
-  const b2Hidden = document.getElementById('cmBonus2');
-  const b1Hidden = document.getElementById('cmBonus1');
-  if (!fixedEl || !freeEl || !noneEl) return;
+  const selectorEl = document.getElementById('trasfondoBonusSelector');
+  const freeEl     = document.getElementById('trasfondoBonusFree');
+  const noneEl     = document.getElementById('trasfondoBonusNone');
+  if (!selectorEl || !freeEl || !noneEl) return;
+
+  // Resetear selección al cambiar trasfondo
+  _bonusSelected2 = '';
+  _bonusSelected1 = '';
+  document.getElementById('cmBonus2').value = '';
+  document.getElementById('cmBonus1').value = '';
 
   if (!t || !name) {
-    fixedEl.style.display = 'none'; freeEl.style.display = 'none'; noneEl.style.display = '';
+    selectorEl.style.display = 'none'; freeEl.style.display = 'none'; noneEl.style.display = '';
     return;
   }
-  if (name === 'Custom' || (!t.statBonus2 && !t.statBonus1)) {
-    fixedEl.style.display = 'none'; freeEl.style.display = ''; noneEl.style.display = 'none';
+  if (name === 'Custom' || !t.statOptions) {
+    selectorEl.style.display = 'none'; freeEl.style.display = ''; noneEl.style.display = 'none';
     _syncBonusFromFree();
     return;
   }
-  // Trasfondo con bonos fijos
-  fixedEl.style.display = ''; freeEl.style.display = 'none'; noneEl.style.display = 'none';
-  document.getElementById('trasfondoBonus2Label').textContent = `+2 ${_STAT_LABELS_FULL[t.statBonus2] || t.statBonus2}`;
-  document.getElementById('trasfondoBonus1Label').textContent = `+1 ${_STAT_LABELS_FULL[t.statBonus1] || t.statBonus1}`;
-  if (b2Hidden) b2Hidden.value = t.statBonus2;
-  if (b1Hidden) b1Hidden.value = t.statBonus1;
+  // Trasfondo con 3 opciones
+  selectorEl.style.display = ''; freeEl.style.display = 'none'; noneEl.style.display = 'none';
+  _renderStatBonusChips(t.statOptions);
+}
+
+function _renderStatBonusChips(options) {
+  const container = document.getElementById('statBonusChips');
+  if (!container) return;
+  container.innerHTML = options.map(stat => {
+    const label = _STAT_LABELS_FULL[stat] || stat.toUpperCase();
+    let badge = '';
+    let cls = 'stat-bonus-chip';
+    if (stat === _bonusSelected2) { badge = '+2'; cls += ' selected-2'; }
+    else if (stat === _bonusSelected1) { badge = '+1'; cls += ' selected-1'; }
+    return `<button type="button" class="${cls}" onclick="_toggleStatBonusChip('${stat}',${JSON.stringify(options)})">
+      <span class="sbc-label">${label}</span>
+      ${badge ? `<span class="sbc-badge">${badge}</span>` : ''}
+    </button>`;
+  }).join('');
+}
+
+function _toggleStatBonusChip(stat, options) {
+  if (stat === _bonusSelected2) {
+    // Deseleccionar +2
+    _bonusSelected2 = '';
+  } else if (stat === _bonusSelected1) {
+    // Deseleccionar +1
+    _bonusSelected1 = '';
+  } else if (!_bonusSelected2) {
+    // Asignar +2 primero
+    _bonusSelected2 = stat;
+  } else if (!_bonusSelected1) {
+    // Asignar +1
+    if (stat === _bonusSelected2) return; // no puede ser el mismo
+    _bonusSelected1 = stat;
+  } else {
+    // Ambos asignados — reasignar +2 al nuevo, limpiar +1 si conflicto
+    _bonusSelected2 = stat;
+    if (_bonusSelected1 === stat) _bonusSelected1 = '';
+  }
+  document.getElementById('cmBonus2').value = _bonusSelected2;
+  document.getElementById('cmBonus1').value = _bonusSelected1;
+  _renderStatBonusChips(options);
 }
 
 function _syncBonusFromFree() {
@@ -1725,56 +1806,82 @@ function wizPrevStep() {
   if (_wizStep > 1) _wizGoToStep(_wizStep - 1);
 }
 
+function _skillChip(s, selected, source) {
+  const color = source === 'clase' ? '' : 'rgba(74,164,100,.15)';
+  const border = source === 'clase' ? '' : '1px solid rgba(74,164,100,.3)';
+  const textColor = source === 'clase' ? '' : 'var(--green-light,#4aa464)';
+  return `<span style="padding:4px 10px;background:${color||'var(--bg3)'};border:${border||'1px solid var(--border)'};border-radius:20px;font-size:12px;color:${textColor||'var(--text)'};">${SKILL_NAMES[s]||s}</span>`;
+}
+
 function _wizBuildSkillsStep() {
   const claseCfg = CLASE_SKILL_CHOICES[_selectedClase] || { count: 2, skills: [] };
   const razaCfg  = Characters.RAZAS_CONFIG && Characters.RAZAS_CONFIG[_selectedRaza];
   const trasCfg  = Characters.TRASFONDOS_CONFIG && Characters.TRASFONDOS_CONFIG[_selectedTrasfondo];
 
-  // Skills fijas: raza + trasfondo
-  const fixedSkills = new Set([
-    ...(razaCfg  ? (razaCfg.skillProfs  || []) : []),
-    ...(trasCfg  ? (trasCfg.skillProfs  || []) : []),
-  ]);
+  const razaFixed  = razaCfg  ? (razaCfg.skillProfs  || []) : [];
+  const trasFixed  = trasCfg  ? (trasCfg.skillProfs   || []) : [];
+  const allFixed   = new Set([...razaFixed, ...trasFixed]);
 
-  // Skills opcionales: de clase, excluyendo las ya fijas
-  const optionalPool = claseCfg.skills.filter(s => !fixedSkills.has(s));
+  // ── BLOQUE CLASE ──
+  document.getElementById('wizProfClaseTitle').textContent = _selectedClase;
+  const optPool = claseCfg.skills.filter(s => !allFixed.has(s));
+  _wizSelectedSkills = _wizSelectedSkills.filter(s => optPool.includes(s));
 
-  // Subtítulo
-  const sub = document.getElementById('wizSkillsSubtitle');
-  if (sub) {
-    let parts = [];
-    if (fixedSkills.size) parts.push(`${fixedSkills.size} fija${fixedSkills.size>1?'s':''} por raza/trasfondo`);
-    if (claseCfg.count) parts.push(`elegí ${claseCfg.count} de ${_selectedClase}`);
-    sub.textContent = parts.join(' · ');
-  }
+  const claseOptSec  = document.getElementById('wizClaseOptSection');
+  const claseOptList = document.getElementById('wizClaseOptList');
+  const claseOptCnt  = document.getElementById('wizClaseOptCount');
+  const claseFixSec  = document.getElementById('wizClaseFixedSection');
 
-  // Sección fijas
-  const fixedSec  = document.getElementById('wizFixedSkillsSection');
-  const fixedList = document.getElementById('wizFixedSkillsList');
-  if (fixedSkills.size > 0) {
-    fixedSec.style.display = '';
-    fixedList.innerHTML = [...fixedSkills].map(s =>
-      `<span style="padding:4px 10px;background:rgba(74,164,100,.15);border:1px solid rgba(74,164,100,.3);border-radius:20px;font-size:12px;color:var(--green-light,#4aa464);">${SKILL_NAMES[s]||s}</span>`
-    ).join('');
-  } else {
-    fixedSec.style.display = 'none';
-  }
+  claseFixSec.style.display = 'none'; // clase raramente da skills fijas; queda para futuro
 
-  // Sección opcionales
-  const optSec   = document.getElementById('wizOptionalSkillsSection');
-  const optList  = document.getElementById('wizOptionalSkillsList');
-  const countLbl = document.getElementById('wizSkillChoiceCount');
-  if (optionalPool.length > 0 && claseCfg.count > 0) {
-    optSec.style.display = '';
-    if (countLbl) countLbl.textContent = `${claseCfg.count} skill${claseCfg.count>1?'s':''}`;
-    // Mantener selección previa válida
-    _wizSelectedSkills = _wizSelectedSkills.filter(s => optionalPool.includes(s));
-    optList.innerHTML = optionalPool.map(s => {
-      const selected = _wizSelectedSkills.includes(s);
-      return `<button class="skill-choice-btn ${selected?'selected':''}" onclick="wizToggleSkill('${s}',this)">${SKILL_NAMES[s]||s}</button>`;
+  if (optPool.length > 0 && claseCfg.count > 0) {
+    claseOptSec.style.display = '';
+    claseOptCnt.textContent = `${claseCfg.count} de ${optPool.length}`;
+    document.getElementById('wizProfClaseHint').textContent =
+      `(${_wizSelectedSkills.length}/${claseCfg.count} elegidas)`;
+    claseOptList.innerHTML = optPool.map(s => {
+      const sel = _wizSelectedSkills.includes(s);
+      return `<button class="skill-choice-btn ${sel?'selected':''}" onclick="wizToggleSkill('${s}',this)">${SKILL_NAMES[s]||s}</button>`;
     }).join('');
   } else {
-    optSec.style.display = 'none';
+    claseOptSec.style.display = 'none';
+    document.getElementById('wizProfClaseHint').textContent = '(ya incluidas en fijas)';
+  }
+
+  // ── BLOQUE TRASFONDO ──
+  const trasFixSec  = document.getElementById('wizTrasFixedSection');
+  const trasFixList = document.getElementById('wizTrasFixedList');
+  const trasNoneMsg = document.getElementById('wizTrasNoneMsg');
+
+  if (_selectedTrasfondo) {
+    document.getElementById('wizProfTrasTitle').textContent = _selectedTrasfondo;
+    if (trasFixed.length > 0) {
+      trasFixSec.style.display = '';
+      trasNoneMsg.style.display = 'none';
+      trasFixList.innerHTML = trasFixed.map(s => _skillChip(s, false, 'trasfondo')).join('');
+      document.getElementById('wizProfTrasHint').textContent = `(${trasFixed.length} fija${trasFixed.length>1?'s':''})`;
+    } else {
+      trasFixSec.style.display = 'none';
+      trasNoneMsg.style.display = '';
+      trasNoneMsg.textContent = `${_selectedTrasfondo} no otorga proficiencias de habilidad.`;
+      document.getElementById('wizProfTrasHint').textContent = '';
+    }
+  } else {
+    document.getElementById('wizProfTrasTitle').textContent = 'Trasfondo';
+    trasFixSec.style.display = 'none';
+    trasNoneMsg.style.display = '';
+    trasNoneMsg.textContent = 'No elegiste trasfondo — sin proficiencias adicionales.';
+    document.getElementById('wizProfTrasHint').textContent = '';
+  }
+
+  // ── BLOQUE RAZA ──
+  const razaBlock = document.getElementById('wizRazaProfsBlock');
+  const razaList  = document.getElementById('wizRazaFixedList');
+  if (razaFixed.length > 0) {
+    razaBlock.style.display = '';
+    razaList.innerHTML = razaFixed.map(s => _skillChip(s, false, 'raza')).join('');
+  } else {
+    razaBlock.style.display = 'none';
   }
 }
 
@@ -1787,12 +1894,15 @@ function wizToggleSkill(skillId, el) {
     el.classList.remove('selected');
   } else {
     if (_wizSelectedSkills.length >= max) {
-      showToast(`Máximo ${max} skills de clase`);
+      showToast(`Máximo ${max} de ${_selectedClase}`);
       return;
     }
     _wizSelectedSkills.push(skillId);
     el.classList.add('selected');
   }
+  // Actualizar contador
+  const hint = document.getElementById('wizProfClaseHint');
+  if (hint) hint.textContent = `(${_wizSelectedSkills.length}/${max} elegidas)`;
 }
 
 // Standard array assignment
