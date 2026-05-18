@@ -420,6 +420,33 @@ const Storage = (() => {
     return new Set(_get(DELETED_KEY) || []);
   }
 
+  // Elimina del localStorage activo cualquier char que esté en la lista negra.
+  // Se llama al arrancar la app para limpiar personajes que Firebase restauró
+  // en sesiones anteriores al fix.
+  function purgeDeletedFromLocal() {
+    const deletedIds = getDeletedIds();
+    if (deletedIds.size === 0) return 0;
+    const all = getAllChars();
+    let removed = 0;
+    for (const id of Object.keys(all)) {
+      if (deletedIds.has(id)) {
+        delete all[id];
+        removed++;
+      }
+    }
+    if (removed > 0) {
+      _set(CHARS_KEY, all);
+      // Si el activo era uno de los eliminados, apuntar al primero disponible
+      const activeId = getActiveId();
+      if (activeId && deletedIds.has(activeId)) {
+        const remaining = Object.keys(all);
+        _set(ACTIVE_KEY, remaining.length ? remaining[0] : null);
+      }
+      console.info(`[Storage] Purgados ${removed} personaje(s) de lista negra del localStorage`);
+    }
+    return removed;
+  }
+
   function addDeletedId(id) {
     const ids = getDeletedIds();
     ids.add(id);
@@ -759,8 +786,9 @@ const Storage = (() => {
     isFirstRun,
     migrateChar: _migrate,        // expuesto para cloud.js
     restoreFromIDB: _maybeRestoreFromIDB, // recuperación post-clear
-    getDeletedIds,   // expuesto para cloud.js — lista negra de IDs eliminados
-    isDeleted,       // expuesto para cloud.js
+    getDeletedIds,         // expuesto para cloud.js — lista negra de IDs eliminados
+    isDeleted,             // expuesto para cloud.js
+    purgeDeletedFromLocal, // limpia localStorage al arrancar
     getTrash,
     getTrashList,
     restoreChar,

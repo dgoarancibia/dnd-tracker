@@ -213,6 +213,10 @@ const App = (() => {
   ══════════════════════════════════════════════════════ */
 
   async function init() {
+    // Limpiar del localStorage chars que están en la lista negra (eliminados)
+    // Corre antes de todo para que Firebase no los restaure silenciosamente
+    Storage.purgeDeletedFromLocal();
+
     // Intentar restaurar desde IDB shadow backup si el localStorage quedó vacío
     // (pasa después de "Clear site data" para actualizar el SW)
     await Storage.restoreFromIDB();

@@ -1091,7 +1091,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/storage.js?v=48"></script>
+<script src="js/storage.js?v=49"></script>
 <script src="js/characters.js?v=74"></script>
 <script type="module" src="js/firebase.js?v=36"></script>
 <script>
@@ -1236,6 +1236,9 @@ function _esc(str) {
 }
 
 function renderGrid() {
+  // Limpiar del localStorage cualquier char que esté en la lista negra
+  // (puede haber vuelto desde Firebase antes del fix)
+  Storage.purgeDeletedFromLocal();
   const chars = Storage.getAllCharsList();
   const grid  = document.getElementById('charGrid');
   const label = document.getElementById('charCountLabel');
