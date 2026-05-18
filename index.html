@@ -1743,8 +1743,7 @@ function wizToggleSkill(skillId, el) {
 // Standard array assignment
 let _wizArrayAssign = {}; // { for: 15, des: 14, ... }
 const _STD_ARRAY = [15, 14, 13, 12, 10, 8];
-const _STAT_LABELS_WIZ = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
-const _STAT_KEYS = ['for','des','con','int','sab','car'];
+const _STAT_LABELS_WIZ = _STAT_NAMES; // alias — ya declarado arriba
 
 function _wizBuildStatsStep() {
   // Array section
