@@ -1885,5 +1885,41 @@ function toggleIndexTheme() {
   document.getElementById('idxThemeBtn').textContent = next === 'light' ? '🌙' : '☀';
 }
 </script>
+<script>
+// Patch estructural: arregla personajes importados con _dataVersion alto que saltean migraciones
+// Corre en index.html (antes de ir a app.html) para no depender del SW de app.html
+(function() {
+  try {
+    const CHARS_KEY = 'dnd_chars_v1';
+    const raw = localStorage.getItem(CHARS_KEY);
+    if (!raw) return;
+    const all = JSON.parse(raw);
+    let changed = false;
+    Object.values(all).forEach(function(c) {
+      if (!c.hitDice) { c.hitDice = { current: c.nivel || 1, max: c.nivel || 1 }; changed = true; }
+      if (!c.turn) { c.turn = { movement:false, action:false, reaction:false, bonus:false }; changed = true; }
+      if (!Array.isArray(c.conditions)) { c.conditions = []; changed = true; }
+      if (!Array.isArray(c.weapons)) { c.weapons = []; changed = true; }
+      if (typeof c.exhaustion !== 'number') { c.exhaustion = 0; changed = true; }
+      if (!c.bonuses) { c.bonuses = {}; changed = true; }
+      ['init','ataque','hpMax','ca','cd','savesAll'].forEach(function(k) {
+        if (c.bonuses[k] === undefined) { c.bonuses[k] = 0; changed = true; }
+      });
+      if (!c.bonuses.skills) { c.bonuses.skills = {}; changed = true; }
+      if (!c.bonuses.saves)  { c.bonuses.saves  = {}; changed = true; }
+    });
+    if (changed) localStorage.setItem(CHARS_KEY, JSON.stringify(all));
+  } catch(e) {}
+})();
+// Desregistrar SW viejo si hay nueva versión disponible
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) {
+      r.update(); // fuerza chequeo de sw.js
+      if (r.waiting) r.waiting.postMessage({ type: 'SKIP_WAITING' });
+    });
+  });
+}
+</script>
 </body>
 </html>

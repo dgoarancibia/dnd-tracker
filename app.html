@@ -4,6 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>D&D Tracker</title>
+<script>
+// Auto-actualización del Service Worker — fuerza reload cuando hay nueva versión
+const _APP_VERSION = 205;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (!reg) return;
+    reg.update().then(() => {
+      if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+    });
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!sessionStorage.getItem('sw_reloaded_' + _APP_VERSION)) {
+        sessionStorage.setItem('sw_reloaded_' + _APP_VERSION, '1');
+        window.location.reload();
+      }
+    });
+  });
+}
+</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icons/favicon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/favicon.png">
@@ -906,12 +924,41 @@
 <div class="map-overlay-backdrop" id="mapOverlayBackdrop" onclick="Maps.closeMap()"></div>
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="js/storage.js?v=50"></script>
+<script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=74"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=118"></script>
+<script src="js/app.js?v=119"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
+<script>
+// Patch: asegurar hitDice en chars importados con _dataVersion alto que saltean migraciones
+// Esto corre después de storage.js y antes de init(), sin depender del SW
+(function() {
+  try {
+    const CHARS_KEY = 'dnd_chars_v1';
+    const raw = localStorage.getItem(CHARS_KEY);
+    if (!raw) return;
+    const all = JSON.parse(raw);
+    let changed = false;
+    Object.values(all).forEach(c => {
+      if (!c.hitDice) {
+        c.hitDice = { current: c.nivel || 1, max: c.nivel || 1 };
+        changed = true;
+      }
+      if (!c.turn) { c.turn = { movement:false, action:false, reaction:false, bonus:false }; changed = true; }
+      if (!Array.isArray(c.conditions)) { c.conditions = []; changed = true; }
+      if (typeof c.exhaustion !== 'number') { c.exhaustion = 0; changed = true; }
+      if (!c.bonuses) { c.bonuses = {}; changed = true; }
+      ['init','ataque','hpMax','ca','cd','savesAll'].forEach(k => {
+        if (c.bonuses[k] === undefined) { c.bonuses[k] = 0; changed = true; }
+      });
+      if (!c.bonuses.skills) { c.bonuses.skills = {}; changed = true; }
+      if (!c.bonuses.saves)  { c.bonuses.saves  = {}; changed = true; }
+    });
+    if (changed) localStorage.setItem(CHARS_KEY, JSON.stringify(all));
+  } catch(e) { console.warn('Patch hitDice failed:', e); }
+})();
+</script>
 <!-- Firebase + Cloud: firebase.js (ESM) registra window.FirebaseApp,
      luego cloud.js (classic) puede usarlo al cargarse después.
      Guard de auth: si no hay sesión activa, redirige al home. -->
@@ -935,7 +982,14 @@
 </script>
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // Forzar chequeo de actualizaciones en cada carga de página
+      reg.update();
+      // Cuando llega un nuevo SW esperando, activarlo de inmediato sin esperar a que cierren las tabs
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    });
   }
 </script>
 </body>

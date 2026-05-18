@@ -780,6 +780,7 @@ const App = (() => {
     html += `</div>`;
 
     // 2. DADOS DE GOLPE — full width, todos juntos
+    if (!c.hitDice) c.hitDice = { current: c.nivel || 1, max: c.nivel || 1 };
     let hdDotsHtml = '';
     for (let d = 0; d < c.hitDice.max; d++) {
       const used = d >= c.hitDice.current;
@@ -2064,7 +2065,7 @@ const App = (() => {
       </div>
       <div class="xp-row">
         <div class="xp-add-row">
-          <span class="xp-total-val">${c.xp.toLocaleString()}</span>
+          <span class="xp-total-val">${(c.xp||0).toLocaleString()}</span>
           <span class="xp-plus-sep">+</span>
           <input type="number" class="bonus-input-sm xp-add-input" id="xpAddInput"
                  placeholder="XP ganada" min="0"
@@ -3536,6 +3537,7 @@ const App = (() => {
     const bonus    = bonusRaw ? (bonusRaw.startsWith('+') || bonusRaw.startsWith('-') ? bonusRaw : '+' + bonusRaw) : '';
     const type     = document.getElementById('awmType').value || 'melee';
     const notes    = document.getElementById('awmDesc').value.trim();
+    if (!Array.isArray(_char.weapons)) _char.weapons = [];
     if (_editWeaponIdx !== null) {
       const w = _char.weapons[_editWeaponIdx];
       Object.assign(w, { name, die, bonus, type, notes });

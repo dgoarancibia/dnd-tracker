@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v202';
+const CACHE = 'dnd-tracker-v205';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -26,6 +26,11 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+// Permite activación inmediata desde el cliente
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {
@@ -70,6 +75,21 @@ self.addEventListener('fetch', e => {
   // Solo cachear GETs con protocolo http/https
   if (e.request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
+
+  // Archivos JS/CSS con ?v= — network-first SIEMPRE (el ?v= garantiza que cada versión es única)
+  // Esto asegura que cambios de versión se propaguen sin necesidad de actualizar el SW.
+  if (url.search && url.search.startsWith('?v=')) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res.ok && res.status < 400) {
+          const toCache = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, toCache));
+        }
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
 
   // Todos los demás — network-first, cae a caché si offline
   e.respondWith(

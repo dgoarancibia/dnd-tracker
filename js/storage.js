@@ -352,10 +352,30 @@ const Storage = (() => {
       char._dataVersion = 13;
     }
 
+    // ── Siempre: campos estructurales obligatorios ─────────────────────────────
+    // Corre INDEPENDIENTEMENTE de la versión. Cubre JSONs importados con
+    // _dataVersion ya alto que saltearon las migraciones anteriores.
+    let _structFixed = false;
+    function _fixField(condition, fix) { if (condition) { fix(); _structFixed = true; } }
+    _fixField(!char.hitDice,               () => { char.hitDice = { current: char.nivel || 1, max: char.nivel || 1 }; });
+    _fixField(!char.currency,              () => { char.currency = { pp:0, gp:0, ep:0, sp:0, cp:0 }; });
+    _fixField(!Array.isArray(char.diary),  () => { char.diary = []; });
+    _fixField(!Array.isArray(char.ifttt),  () => { char.ifttt = []; });
+    _fixField(!Array.isArray(char.conditions), () => { char.conditions = []; });
+    _fixField(!Array.isArray(char.weapons),    () => { char.weapons = []; });
+    _fixField(typeof char.exhaustion !== 'number', () => { char.exhaustion = 0; });
+    _fixField(!char.turn, () => { char.turn = { movement:false, action:false, reaction:false, bonus:false }; });
+    if (!char.bonuses) { char.bonuses = {}; _structFixed = true; }
+    ['init','ataque','hpMax','ca','cd','savesAll'].forEach(k => {
+      if (char.bonuses[k] === undefined) { char.bonuses[k] = 0; _structFixed = true; }
+    });
+    if (!char.bonuses.skills) { char.bonuses.skills = {}; _structFixed = true; }
+    if (!char.bonuses.saves)  { char.bonuses.saves  = {}; _structFixed = true; }
+
     // ── Siempre: rellenar choices vacías en personajes ya construidos ──────────
     // Corre INDEPENDIENTEMENTE de la versión. Cubre personajes importados con
     // _dataVersion ya correcto pero sin campo choices (ej: JSONs generados por IA).
-    char._choicesFilled = _ensureChoicesFilled(char); // true si se modificó
+    char._choicesFilled = _ensureChoicesFilled(char) || _structFixed; // true si se modificó
 
     return char;
   }
@@ -744,6 +764,13 @@ const Storage = (() => {
     if (!c.bonuses) c.bonuses = {};
     const bDefs = { init:0, ataque:0, hpMax:0, ca:0, cd:0, savesAll:0, skills:{}, saves:{} };
     Object.entries(bDefs).forEach(([k,v]) => { if (c.bonuses[k] === undefined) c.bonuses[k] = v; });
+    // Normalizar hitDice: puede faltar en JSONs externos con _dataVersion alto
+    if (!c.hitDice) c.hitDice = { current: c.nivel || 1, max: c.nivel || 1 };
+    // Normalizar campos requeridos por el motor de combate
+    if (!c.turn) c.turn = { movement: false, action: false, reaction: false, bonus: false };
+    if (!Array.isArray(c.conditions)) c.conditions = [];
+    if (typeof c.exhaustion !== 'number') c.exhaustion = 0;
+    if (!c.hp) c.hp = { max: c.hitDie || 8, current: c.hitDie || 8, temp: 0 };
     return c;
   }
 
