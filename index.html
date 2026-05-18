@@ -1001,29 +1001,45 @@
           <div id="trasfondoEquipList" style="color:var(--text);font-size:12px;line-height:1.6;"></div>
         </div>
       </div>
-      <!-- Bonus de stats: lo da el Origen (D&D 2024), no la raza -->
-      <div class="wiz-section-label" style="margin-top:12px;">Bonus de estadística <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">— D&amp;D 2024: lo elige el jugador libremente</span></div>
-      <div class="stat-bonus-row">
-        <div class="stat-bonus-group">
-          <label class="form-label" style="font-size:10px;">+2 a:</label>
-          <div class="form-select-wrap">
-            <select class="form-select" id="cmBonus2">
-              <option value="for">FUE</option><option value="des">DES</option>
-              <option value="con">CON</option><option value="int">INT</option>
-              <option value="sab">SAB</option><option value="car">CAR</option>
-            </select>
+      <!-- Bonus de stats fijo por trasfondo (D&D 2024) -->
+      <div class="wiz-section-label" style="margin-top:12px;">Bonus de estadística <span style="font-family:'Jost',sans-serif;font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400;">— fijado por el Trasfondo (D&D 2024)</span></div>
+      <!-- Display fijo (trasfondo con bonos definidos) -->
+      <div id="trasfondoBonusFixed" style="display:none;padding:8px 12px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--gold-dim);font-size:13px;">
+        <span id="trasfondoBonus2Label" style="color:var(--gold-light);font-weight:700;"></span>
+        <span style="color:var(--text-dim);margin:0 8px;">·</span>
+        <span id="trasfondoBonus1Label" style="color:var(--gold-light);font-weight:700;"></span>
+        <input type="hidden" id="cmBonus2" value="">
+        <input type="hidden" id="cmBonus1" value="">
+      </div>
+      <!-- Selects libres (solo para Custom o sin trasfondo elegido) -->
+      <div id="trasfondoBonusFree" style="display:none;">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Elegí libremente (trasfondo custom):</div>
+        <div class="stat-bonus-row">
+          <div class="stat-bonus-group">
+            <label class="form-label" style="font-size:10px;">+2 a:</label>
+            <div class="form-select-wrap">
+              <select class="form-select" id="cmBonus2Free" onchange="_syncBonusFromFree()">
+                <option value="for">FUE</option><option value="des">DES</option>
+                <option value="con">CON</option><option value="int">INT</option>
+                <option value="sab">SAB</option><option value="car">CAR</option>
+              </select>
+            </div>
+          </div>
+          <div class="stat-bonus-group">
+            <label class="form-label" style="font-size:10px;">+1 a:</label>
+            <div class="form-select-wrap">
+              <select class="form-select" id="cmBonus1Free" onchange="_syncBonusFromFree()">
+                <option value="for">FUE</option><option value="des">DES</option>
+                <option value="con">CON</option><option value="int">INT</option>
+                <option value="sab" selected>SAB</option><option value="car">CAR</option>
+              </select>
+            </div>
           </div>
         </div>
-        <div class="stat-bonus-group">
-          <label class="form-label" style="font-size:10px;">+1 a:</label>
-          <div class="form-select-wrap">
-            <select class="form-select" id="cmBonus1">
-              <option value="for">FUE</option><option value="des">DES</option>
-              <option value="con">CON</option><option value="int">INT</option>
-              <option value="sab" selected>SAB</option><option value="car">CAR</option>
-            </select>
-          </div>
-        </div>
+      </div>
+      <!-- Sin trasfondo elegido -->
+      <div id="trasfondoBonusNone" style="font-size:12px;color:var(--text-dim);padding:6px 0;">
+        Elegí un trasfondo para ver los bonos correspondientes.
       </div>
     </div>
 
@@ -1393,6 +1409,42 @@ function _buildTrasfondoChips(selected) {
   }).join('');
 }
 
+const _STAT_LABELS_FULL = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
+
+function _updateTrasfondoBonusUI(t, name) {
+  const fixedEl  = document.getElementById('trasfondoBonusFixed');
+  const freeEl   = document.getElementById('trasfondoBonusFree');
+  const noneEl   = document.getElementById('trasfondoBonusNone');
+  const b2Hidden = document.getElementById('cmBonus2');
+  const b1Hidden = document.getElementById('cmBonus1');
+  if (!fixedEl || !freeEl || !noneEl) return;
+
+  if (!t || !name) {
+    fixedEl.style.display = 'none'; freeEl.style.display = 'none'; noneEl.style.display = '';
+    return;
+  }
+  if (name === 'Custom' || (!t.statBonus2 && !t.statBonus1)) {
+    fixedEl.style.display = 'none'; freeEl.style.display = ''; noneEl.style.display = 'none';
+    _syncBonusFromFree();
+    return;
+  }
+  // Trasfondo con bonos fijos
+  fixedEl.style.display = ''; freeEl.style.display = 'none'; noneEl.style.display = 'none';
+  document.getElementById('trasfondoBonus2Label').textContent = `+2 ${_STAT_LABELS_FULL[t.statBonus2] || t.statBonus2}`;
+  document.getElementById('trasfondoBonus1Label').textContent = `+1 ${_STAT_LABELS_FULL[t.statBonus1] || t.statBonus1}`;
+  if (b2Hidden) b2Hidden.value = t.statBonus2;
+  if (b1Hidden) b1Hidden.value = t.statBonus1;
+}
+
+function _syncBonusFromFree() {
+  const b2Free = document.getElementById('cmBonus2Free');
+  const b1Free = document.getElementById('cmBonus1Free');
+  const b2 = document.getElementById('cmBonus2');
+  const b1 = document.getElementById('cmBonus1');
+  if (b2 && b2Free) b2.value = b2Free.value;
+  if (b1 && b1Free) b1.value = b1Free.value;
+}
+
 function selectTrasfondoChip(el, name) {
   document.querySelectorAll('.trasfondo-chip').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
@@ -1400,6 +1452,8 @@ function selectTrasfondoChip(el, name) {
   const cfg = (typeof Characters !== 'undefined' && Characters.TRASFONDOS_CONFIG) || {};
   const t = cfg[name];
   const infoEl = document.getElementById('trasfondoInfo');
+  // Actualizar bonos
+  _updateTrasfondoBonusUI(t, name);
   if (!t || !infoEl) return;
   if (name === 'Custom') { infoEl.style.display = 'none'; return; }
   infoEl.style.display = '';
@@ -1812,12 +1866,12 @@ function _wizBuildSummary() {
   const baseStats = _wizCollectStats();
   const equip = (TRASFONDO_EQUIP[_selectedTrasfondo] || []);
 
-  // Aplicar bonos de Origen para mostrar en resumen
-  const bonus2Key = document.getElementById('cmBonus2')?.value || 'for';
-  const bonus1Key = document.getElementById('cmBonus1')?.value || 'sab';
+  // Aplicar bonos de Origen para mostrar en resumen (pueden estar vacíos si no hay trasfondo)
+  const bonus2Key = document.getElementById('cmBonus2')?.value || '';
+  const bonus1Key = document.getElementById('cmBonus1')?.value || '';
   const stats = { ...baseStats };
-  if (stats[bonus2Key] !== undefined) stats[bonus2Key] += 2;
-  if (stats[bonus1Key] !== undefined && bonus1Key !== bonus2Key) stats[bonus1Key] += 1;
+  if (bonus2Key && stats[bonus2Key] !== undefined) stats[bonus2Key] += 2;
+  if (bonus1Key && stats[bonus1Key] !== undefined && bonus1Key !== bonus2Key) stats[bonus1Key] += 1;
 
   const modStr = (stat) => { const m = Math.floor((stats[stat]-10)/2); return (m>=0?'+':'')+m; };
   document.getElementById('wizSummary').innerHTML = `
@@ -1838,7 +1892,7 @@ function _wizBuildSummary() {
         </div>`;
       }).join('')}
     </div>
-    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">★ Bonos de Origen (D&D 2024): <strong style="color:var(--gold-light);">${_STAT_LABELS_WIZ[bonus2Key]} +2 · ${_STAT_LABELS_WIZ[bonus1Key]} +1</strong></div>
+    ${(bonus2Key && bonus1Key) ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">★ Bonos de Trasfondo (D&D 2024): <strong style="color:var(--gold-light);">${_STAT_LABELS_WIZ[bonus2Key]||bonus2Key} +2 · ${_STAT_LABELS_WIZ[bonus1Key]||bonus1Key} +1</strong></div>` : ''}
     ${allSkills.length ? `<div style="margin-bottom:8px;"><span style="color:var(--text-dim);font-size:11px;">PROFICIENCIAS:</span><br>${allSkills.map(s=>`<span style="font-size:12px;margin-right:8px;">${SKILL_NAMES[s]||s}</span>`).join('')}</div>` : ''}
     ${trasCfg && trasCfg.feat ? `<div style="margin-bottom:6px;"><span style="color:var(--text-dim);font-size:11px;">FEAT:</span> <span style="color:var(--gold-light);">${trasCfg.feat}</span></div>` : ''}
     ${equip.length ? `<div><span style="color:var(--text-dim);font-size:11px;">EQUIPAMIENTO INICIAL:</span><br>${equip.map(e=>`<span style="font-size:12px;display:block;padding:1px 0;">• ${e}</span>`).join('')}</div>` : ''}
@@ -1961,11 +2015,11 @@ function saveCreateModal() {
     newChar.hp.max     = hitDie + (nivel - 1) * (Math.floor(hitDie / 2) + 1) + conMod * nivel;
     newChar.hp.current = newChar.hp.max;
 
-    // Bonus de stats del Origen (D&D 2024) — siempre se aplica, independiente de la raza
-    const bonus2 = document.getElementById('cmBonus2')?.value || 'for';
-    const bonus1 = document.getElementById('cmBonus1')?.value || 'sab';
-    if (newChar.stats[bonus2] !== undefined) newChar.stats[bonus2] += 2;
-    if (newChar.stats[bonus1] !== undefined && bonus1 !== bonus2) newChar.stats[bonus1] += 1;
+    // Bonus de stats del Origen (D&D 2024) — fijado por el trasfondo
+    const bonus2 = document.getElementById('cmBonus2')?.value;
+    const bonus1 = document.getElementById('cmBonus1')?.value;
+    if (bonus2 && newChar.stats[bonus2] !== undefined) newChar.stats[bonus2] += 2;
+    if (bonus1 && newChar.stats[bonus1] !== undefined && bonus1 !== bonus2) newChar.stats[bonus1] += 1;
 
     // Raza — solo rasgos, sin bonus de stat (ya aplicados arriba)
     if (_selectedRaza && _selectedRaza !== 'Custom') {
