@@ -7,6 +7,7 @@ const Storage = (() => {
   const CHARS_KEY    = 'dnd_chars_v1';
   const ACTIVE_KEY   = 'dnd_active_v1';
   const BACKUP_TS    = 'dnd_backup_ts_v1';
+  const DELETED_KEY  = 'dnd_deleted_ids_v1'; // IDs eliminados — persiste en localStorage
   const DATA_VERSION = 13;  // Incrementar al cambiar el esquema
   const LURSEY_ID    = 'lursey-brumaclara'; // personaje de demo — sus features vienen de buildLursey()
 
@@ -98,7 +99,10 @@ const Storage = (() => {
     const missingNonLursey = ids.filter(id => id !== LURSEY_ID).length === 0;
     if (!missingNonLursey) return 0; // ya hay personajes, no tocar
 
-    const [shadow, deletedIds] = await Promise.all([_idbGetAll(), _idbGetDeletedIds()]);
+    const [shadow, idbDeleted] = await Promise.all([_idbGetAll(), _idbGetDeletedIds()]);
+    // Lista negra: combinar IDB + localStorage (localStorage es más rápido y siempre disponible)
+    const lsDeleted = getDeletedIds();
+    const deletedIds = new Set([...idbDeleted, ...lsDeleted]);
     // Filtrar: no restaurar Lursey ni los que fueron eliminados intencionalmente
     const toRestore = shadow.filter(c => c.id !== LURSEY_ID && !deletedIds.has(c.id));
     if (toRestore.length === 0) return 0;
@@ -407,11 +411,31 @@ const Storage = (() => {
     _idbPut(char); // shadow backup en IDB
   }
 
+  /* ── Lista negra de IDs eliminados (persiste en localStorage) ─────────────
+     Cloud.js la usa para no restaurar desde Firestore lo que el usuario borró.
+     También la usa _maybeRestoreFromIDB para el IDB shadow backup.
+  ── */
+  function getDeletedIds() {
+    return new Set(_get(DELETED_KEY) || []);
+  }
+
+  function addDeletedId(id) {
+    const ids = getDeletedIds();
+    ids.add(id);
+    _set(DELETED_KEY, Array.from(ids));
+  }
+
+  function isDeleted(id) {
+    return getDeletedIds().has(id);
+  }
+
   function deleteChar(id) {
     const all = getAllChars();
     delete all[id];
     _set(CHARS_KEY, all);
-    // Registrar en IDB como eliminado para que _maybeRestoreFromIDB no lo restaure
+    // Registrar como eliminado en localStorage (persiste entre recargas)
+    addDeletedId(id);
+    // Registrar también en IDB para _maybeRestoreFromIDB
     _idbMarkDeleted(id);
     // Si era el activo, limpiar
     if (getActiveId() === id) {
@@ -670,5 +694,7 @@ const Storage = (() => {
     isFirstRun,
     migrateChar: _migrate,        // expuesto para cloud.js
     restoreFromIDB: _maybeRestoreFromIDB, // recuperación post-clear
+    getDeletedIds,   // expuesto para cloud.js — lista negra de IDs eliminados
+    isDeleted,       // expuesto para cloud.js
   };
 })();

@@ -238,7 +238,7 @@ const Cloud = (() => {
     });
   }
 
-  // IDs borrados en esta sesión — el listener no los restaura aunque Firestore los tenga
+  // IDs borrados en esta sesión (en memoria, para respuesta inmediata)
   const _deletedIds = new Set();
 
   function markDeleted(id) {
@@ -247,11 +247,13 @@ const Cloud = (() => {
 
   function _applyCloudChars(cloudChars) {
     const local = Storage.getAllChars();
+    // Lista negra persistente en localStorage (sobrevive recargas)
+    const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
     let changed = false;
 
     for (const [id, cloudChar] of Object.entries(cloudChars)) {
-      // No restaurar personajes que el usuario borró en esta sesión
-      if (_deletedIds.has(id)) continue;
+      // No restaurar si fue borrado en esta sesión O en sesiones anteriores
+      if (_deletedIds.has(id) || persistedDeleted.has(id)) continue;
       // Aplicar migraciones locales antes de guardar
       local[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
       changed = true;
