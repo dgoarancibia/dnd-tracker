@@ -1567,7 +1567,11 @@ function _updateTrasfondoBonusUI(t, name) {
   _renderStatBonusChips(t.statOptions);
 }
 
+// Guardamos las options en variable global para evitar pasar JSON en onclick (rompe con comillas dobles)
+let _currentStatOptions = [];
+
 function _renderStatBonusChips(options) {
+  _currentStatOptions = options;
   const container = document.getElementById('statBonusChips');
   if (!container) return;
   container.innerHTML = options.map(stat => {
@@ -1576,35 +1580,30 @@ function _renderStatBonusChips(options) {
     let cls = 'stat-bonus-chip';
     if (stat === _bonusSelected2) { badge = '+2'; cls += ' selected-2'; }
     else if (stat === _bonusSelected1) { badge = '+1'; cls += ' selected-1'; }
-    return `<button type="button" class="${cls}" onclick="_toggleStatBonusChip('${stat}',${JSON.stringify(options)})">
+    return `<button type="button" class="${cls}" onclick="_toggleStatBonusChip('${stat}')">
       <span class="sbc-label">${label}</span>
       ${badge ? `<span class="sbc-badge">${badge}</span>` : ''}
     </button>`;
   }).join('');
 }
 
-function _toggleStatBonusChip(stat, options) {
+function _toggleStatBonusChip(stat) {
   if (stat === _bonusSelected2) {
-    // Deseleccionar +2
     _bonusSelected2 = '';
   } else if (stat === _bonusSelected1) {
-    // Deseleccionar +1
     _bonusSelected1 = '';
   } else if (!_bonusSelected2) {
-    // Asignar +2 primero
     _bonusSelected2 = stat;
   } else if (!_bonusSelected1) {
-    // Asignar +1
-    if (stat === _bonusSelected2) return; // no puede ser el mismo
+    if (stat === _bonusSelected2) return;
     _bonusSelected1 = stat;
   } else {
-    // Ambos asignados — reasignar +2 al nuevo, limpiar +1 si conflicto
     _bonusSelected2 = stat;
     if (_bonusSelected1 === stat) _bonusSelected1 = '';
   }
   document.getElementById('cmBonus2').value = _bonusSelected2;
   document.getElementById('cmBonus1').value = _bonusSelected1;
-  _renderStatBonusChips(options);
+  _renderStatBonusChips(_currentStatOptions);
 }
 
 function _syncBonusFromFree() {
