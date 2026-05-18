@@ -1018,7 +1018,9 @@ const App = (() => {
     const classFeats = features.filter(f => !isSubclaseFeat(f));
     const subclassFeats = features.filter(f => isSubclaseFeat(f));
 
+    const _hidden = new Set(c.hiddenFeatures || []);
     const _renderFeatCard = (f) => {
+      if (_hidden.has(f.id)) return '';
       const badge = f.type === 'passive'
         ? `<span class="feat-badge feat-passive">Pasiva</span>`
         : `<span class="feat-badge feat-active">Activa</span>`;
@@ -1040,8 +1042,9 @@ const App = (() => {
           choiceBtn = `<button class="btn-choice-inline" onclick="event.stopPropagation();App._promptChoice('${linkedChoice.id}')">Elegir</button>`;
         }
       }
+      const hideBtn = `<button class="feat-hide-btn" title="Ocultar" onclick="event.stopPropagation();App.toggleHideFeature('${f.id}')">👁</button>`;
       return `<div class="feat-card" onclick="App.openFeatureDetail('${f.id}')">
-        <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}${choiceBtn}</div>
+        <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}${choiceBtn}${hideBtn}</div>
         <div class="feat-source">${f.source}</div>
         <div class="feat-desc">${displayDesc}</div>
       </div>`;
@@ -1115,14 +1118,18 @@ const App = (() => {
         }
       });
     }
+    const combatHidden = new Set(c.hiddenFeatures || []);
     const allFeats = [...featFeatures, ...asiFeats];
     if (allFeats.length > 0) {
       html += `<div class="section-hd" style="margin-top:16px;">🏅 Feats</div>`;
       allFeats.forEach(f => {
+        if (combatHidden.has(f.id || f.name)) return;
+        const hideId = f.id || f.name;
         html += `<div class="feat-card">
           <div class="feat-top">
             <span class="feat-name">${f.name}</span>
             <span class="feat-badge feat-passive" style="background:rgba(80,60,140,0.25);color:#b8a0e8;border-color:rgba(120,90,200,0.3);">Feat</span>
+            <button class="feat-hide-btn" title="Ocultar" onclick="App.toggleHideFeature('${hideId}')">👁</button>
           </div>
           <div class="feat-source">${f.source || ''}</div>
           <div class="feat-desc">${f.desc || ''}</div>
@@ -1139,12 +1146,23 @@ const App = (() => {
           const parts = t.split(' — ');
           const name = parts[0];
           const desc = parts.slice(1).join(' — ');
+          const hideId = 'raza-' + name.toLowerCase().replace(/[^a-z0-9]/g,'-');
+          if (combatHidden.has(hideId)) return;
           html += `<div class="feat-card">
-            <div class="feat-top"><span class="feat-name">${name}</span></div>
+            <div class="feat-top">
+              <span class="feat-name">${name}</span>
+              <button class="feat-hide-btn" title="Ocultar" onclick="App.toggleHideFeature('${hideId}')">👁</button>
+            </div>
             ${desc ? `<div class="feat-desc">${desc}</div>` : ''}
           </div>`;
         });
       }
+    }
+
+    // Botón "Mostrar ocultos" si hay features escondidas
+    const totalHidden = (c.hiddenFeatures || []).length;
+    if (totalHidden > 0) {
+      html += `<button class="feat-show-hidden-btn" onclick="App.showAllHiddenFeatures()">👁 Mostrar ocultos (${totalHidden})</button>`;
     }
 
     // Tips de combate
@@ -5596,6 +5614,28 @@ const App = (() => {
     document.getElementById('featureDetailModal').classList.remove('show');
   }
 
+  function toggleHideFeature(featId) {
+    if (!_char) return;
+    if (!Array.isArray(_char.hiddenFeatures)) _char.hiddenFeatures = [];
+    const idx = _char.hiddenFeatures.indexOf(featId);
+    if (idx === -1) {
+      _char.hiddenFeatures.push(featId);
+      showToast('Feature oculta — tocá "Mostrar ocultos" para restaurarla');
+    } else {
+      _char.hiddenFeatures.splice(idx, 1);
+    }
+    Storage.saveChar(_char);
+    _renderActiveTab();
+  }
+
+  function showAllHiddenFeatures() {
+    if (!_char) return;
+    _char.hiddenFeatures = [];
+    Storage.saveChar(_char);
+    _renderActiveTab();
+    showToast('Todas las features visibles');
+  }
+
   function _renderIftttBody() {
     const ifttt = _char.ifttt || [];
     const sections = [...new Set(ifttt.map(i => i.section))];
@@ -5883,6 +5923,7 @@ const App = (() => {
     // Detalle spell
     openSpellDetail, closeSpellDetail,
     openFeatureDetail, closeFeatureDetail,
+    toggleHideFeature, showAllHiddenFeatures,
 
     // Monedas
     addCoin, consolidateCurrency,

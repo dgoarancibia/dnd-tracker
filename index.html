@@ -2531,8 +2531,6 @@ function saveCreateModal() {
     const trasEquipList = trasEquipOpts ? (trasEquipOpts[_selectedTrasEquipOpt] || trasEquipOpts['A']) : [];
     _applyEquipList(trasEquipList, 'trasfondo');
 
-    console.log('[CREATE] consumables antes de guardar:', JSON.stringify(newChar.consumables));
-    console.log('[CREATE] currency:', JSON.stringify(newChar.currency));
     Storage.saveChar(newChar);
     Storage.setActiveId(newChar.id);
     const clasesLabel = allClasses.map(c => `${c.name} ${c.level}`).join(' / ');

@@ -1664,6 +1664,34 @@ input[type=number] { -moz-appearance: textfield; }
 }
 .feat-active  { background: rgba(201,151,58,0.15); color: var(--gold); border: 1px solid var(--gold-dim); }
 .feat-passive { background: rgba(100,100,120,0.2); color: var(--text-dim); border: 1px solid var(--bg5); }
+.feat-hide-btn {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0.35;
+  line-height: 1;
+  transition: opacity 0.15s;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.feat-hide-btn:hover { opacity: 0.9; }
+.feat-show-hidden-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 7px 12px;
+  background: var(--bg3);
+  border: 1px dashed var(--bg5);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+.feat-show-hidden-btn:hover { border-color: var(--gold-dim); color: var(--gold-light); }
 .feat-source {
   font-size: 10px;
   color: var(--text-dim);
