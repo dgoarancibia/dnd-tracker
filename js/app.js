@@ -843,7 +843,7 @@ const App = (() => {
 
       // Panel del Echo — solo si está activo
       const echoPanel = isEchoKnight ? (() => {
-        const ca = Characters.calcCA(c);
+        const echoCA = 14 + Characters.calcProfBonus(c.nivel);
         const active = !!c.echoActive;
         return `
         <div class="ability-card${active ? ' echo-active-card' : ''}" style="margin-bottom:8px;">
@@ -853,7 +853,7 @@ const App = (() => {
                 <span class="ability-card-name">👻 Manifest Echo</span>
                 <span class="ability-action-tag">Acción bonus</span>
               </div>
-              <div class="ability-card-desc">Invocás/descartás una copia fantasmal. Mientras activo: CA ${ca} · HP 1 · alcance 9 m.</div>
+              <div class="ability-card-desc">Invocás/descartás una copia fantasmal. Mientras activo: CA ${echoCA} · HP 1 · alcance 9 m.</div>
             </div>
             <button class="ability-use-btn${active ? ' echo-btn-active' : ''}" onclick="App.toggleEcho()">
               ${active ? `Activo<br><span style="font-size:10px;">Descartar</span>` : `Invocar`}
@@ -861,7 +861,7 @@ const App = (() => {
           </div>
           ${active ? `
           <div class="echo-panel-stats" style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(160,120,240,0.2);">
-            <div class="echo-stat-block"><div class="echo-stat-val">${ca}</div><div class="echo-stat-label">CA</div></div>
+            <div class="echo-stat-block"><div class="echo-stat-val">${echoCA}</div><div class="echo-stat-label">CA</div></div>
             <div class="echo-stat-block"><div class="echo-stat-val">1</div><div class="echo-stat-label">HP</div></div>
             <div style="flex:2;padding-left:10px;font-size:10px;color:var(--text-dim);line-height:1.6;">
               Acción bonus → mover 9 m<br>
