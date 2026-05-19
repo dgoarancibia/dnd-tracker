@@ -2141,6 +2141,9 @@ const App = (() => {
     <!-- RASGOS RACIALES -->
     ${_renderRacialTraitsHTML(c)}
 
+    <!-- ELECCIONES DE NIVEL -->
+    ${_renderChoicesHistoryHTML(c)}
+
     <!-- XP TRACKER -->
     <div class="xp-block">
       <div class="rc-header">
@@ -2332,6 +2335,80 @@ const App = (() => {
     _char.companion.hp = Math.max(0, Math.min(maxHp, val));
     _saveChar();
     _renderCombateDer();
+  }
+
+  function _renderChoicesHistoryHTML(c) {
+    const claseCfg = Characters.CHOICES_CONFIG[c.clase] || [];
+    const existing = c.choices || {};
+
+    // Filtrar choices que ya fueron respondidas (excluir spellPick / cantripPick que son hechizos)
+    const done = claseCfg.filter(ch => {
+      if (!existing[ch.id]) return false;
+      if (ch.type === 'spellPick' || ch.type === 'cantripPick') return false;
+      return true;
+    });
+
+    // También incluir spellPicks del sistema de known casters (claves spellPick-N)
+    // No las listamos aquí — solo ASI, pick1, pickSkills, pickMultiple
+
+    if (done.length === 0) return '';
+
+    const STAT_LABELS = { for:'FUE', des:'DES', con:'CON', int:'INT', sab:'SAB', car:'CAR' };
+
+    const rows = done.map(ch => {
+      const val = existing[ch.id];
+      let displayVal = '';
+
+      if (ch.type === 'asi') {
+        if (val.mode === 'feat') {
+          const featDef = Characters.GENERAL_FEATS && Characters.GENERAL_FEATS.find(f => f.id === val.featId);
+          displayVal = `🎓 Feat: ${featDef ? featDef.name : val.featId}`;
+        } else if (val.mode === 'single') {
+          displayVal = `+2 ${STAT_LABELS[val.stat] || val.stat}`;
+        } else if (val.mode === 'split') {
+          displayVal = `+1 ${STAT_LABELS[val.stat1] || val.stat1} / +1 ${STAT_LABELS[val.stat2] || val.stat2}`;
+        }
+      } else if (ch.type === 'pick1' || ch.type === 'pickMultiple') {
+        // val puede ser string (pick1) o array (pickMultiple)
+        const ids = Array.isArray(val) ? val : [val];
+        const opts = ch.options || [];
+        const names = ids.map(id => {
+          const opt = opts.find(o => o.id === id || o.name === id);
+          return opt ? opt.name : id;
+        });
+        displayVal = names.join(', ');
+        // Para subclase: mostrar el nombre directamente si appliesSubclass
+        if (ch.appliesSubclass) displayVal = c.subclase || displayVal;
+      } else if (ch.type === 'pickSkills') {
+        const skillNames = (Array.isArray(val) ? val : [val]).map(id => {
+          const sk = Characters.SKILLS_DEF && Characters.SKILLS_DEF.find(s => s.id === id);
+          return sk ? sk.name : id;
+        });
+        displayVal = skillNames.join(', ');
+      }
+
+      // Label legible del nivel
+      const lvlLabel = ch.level ? `Nv${ch.level}` : '';
+      const typeLabel = ch.type === 'asi' ? 'ASI' : ch.type === 'pick1' || ch.type === 'pickMultiple' ? 'Elección' : 'Skills';
+
+      return `
+      <div class="choice-history-row">
+        <div class="choice-history-info">
+          <span class="choice-history-label">${ch.label}</span>
+          <span class="choice-history-meta">${lvlLabel}${lvlLabel && typeLabel ? ' · ' : ''}${typeLabel}</span>
+          <span class="choice-history-val">${displayVal}</span>
+        </div>
+        <button class="choice-history-btn" onclick="App.reopenChoice('${ch.id}')" title="Cambiar esta elección">Cambiar</button>
+      </div>`;
+    }).join('');
+
+    return `
+    <div class="equip-section" style="margin-top:12px;">
+      <div class="rc-header" style="margin-bottom:6px;">
+        <span class="rc-name">📋 Elecciones de Nivel</span>
+      </div>
+      ${rows}
+    </div>`;
   }
 
   function _renderRacialTraitsHTML(c) {
@@ -4767,6 +4844,65 @@ const App = (() => {
     });
   }
 
+  // Reabre una elección ya tomada para cambiarla (revierte el efecto anterior primero)
+  function reopenChoice(choiceId) {
+    if (!_char) return;
+    const claseCfg = Characters.CHOICES_CONFIG[_char.clase] || [];
+    const choice = claseCfg.find(c => c.id === choiceId);
+    if (!choice) return;
+
+    const prev = _char.choices && _char.choices[choiceId];
+
+    // Revertir el efecto anterior antes de reabrir
+    if (prev) {
+      if (choice.type === 'asi') {
+        // Revertir bonus de stat o feat
+        if (prev.mode === 'single' && prev.stat && _char.stats[prev.stat] !== undefined) {
+          _char.stats[prev.stat] = Math.max(1, _char.stats[prev.stat] - 2);
+        } else if (prev.mode === 'split') {
+          if (prev.stat1 && _char.stats[prev.stat1] !== undefined) _char.stats[prev.stat1] = Math.max(1, _char.stats[prev.stat1] - 1);
+          if (prev.stat2 && _char.stats[prev.stat2] !== undefined) _char.stats[prev.stat2] = Math.max(1, _char.stats[prev.stat2] - 1);
+        } else if (prev.mode === 'feat' && prev.featId) {
+          // Quitar el feat de features
+          if (_char.features) {
+            _char.features = _char.features.filter(f => f.id !== prev.featId && f.id !== prev.featId + '-' + choiceId);
+          }
+        }
+      } else if (choice.type === 'pickSkills') {
+        // Quitar las skills elegidas
+        const ids = Array.isArray(prev) ? prev : [prev];
+        if (_char.skillProfs) {
+          _char.skillProfs = _char.skillProfs.filter(s => !ids.includes(s));
+        }
+      } else if (choice.appliesSubclass) {
+        // Revertir subclase: limpiar subclase y features de esa subclase
+        const oldSub = _char.subclase;
+        _char.subclase = '';
+        if (oldSub && _char.features) {
+          _char.features = _char.features.filter(f => !f.source || !f.source.toLowerCase().includes(oldSub.toLowerCase()));
+        }
+        if (_char.resources) {
+          _char.resources = _char.resources.filter(r => {
+            const subCfg = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[oldSub];
+            if (!subCfg) return true;
+            const subResIds = (subCfg.resources(_char.nivel) || []).map(sr => sr.id);
+            return !subResIds.includes(r.id);
+          });
+        }
+      }
+
+      // Borrar la elección guardada
+      delete _char.choices[choiceId];
+      _saveChar();
+    }
+
+    // Reabrir el modal de elección
+    openChoicesQueue([choice], () => {
+      _renderCombateTab();
+      _renderHabilidadesTab();
+    });
+  }
+
   function setXP(val) {
     const newXP = Math.max(0, val);
     _char.xp = newXP;
@@ -5917,7 +6053,7 @@ const App = (() => {
     openSubclaseModal, _selectSubclaseChip, _toggleManeuver, saveSubclase, closeSubclaseModal,
 
     // Elecciones de personaje
-    openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice,
+    openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice, reopenChoice,
     _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _onPickSkillChange, _onPickMultipleChange, _renderPickMultiple,
     _filterSpellPickList, _onSpellPickChange,
 
