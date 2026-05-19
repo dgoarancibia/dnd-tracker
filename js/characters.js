@@ -1421,7 +1421,14 @@ const Characters = (() => {
           note:`Recupera 1d10+${nivel} HP · acción bonus`,
           action:'Acción bonus', range:'Personal',
           desc:`Recuperás 1d10+${nivel} HP. ${nivel>=10?4:nivel>=4?3:2} usos por descanso corto/largo.`,
-          fullDesc:`Tenés una reserva de resistencia que podés usar para protegerte del daño.\n\nComo acción adicional, recuperás puntos de golpe iguales a 1d10 + tu nivel de Guerrero (${nivel}).\n\nUsos según nivel:\nNv1-3 → 2 usos · Nv4-9 → 3 usos · Nv10+ → 4 usos\n\nRecargás todos los usos con descanso corto o largo.` },
+          fullDesc:`Tenés una reserva de resistencia que podés usar para protegerte del daño.\n\nComo acción adicional, recuperás puntos de golpe iguales a 1d10 + tu nivel de Guerrero (${nivel}).\n\nUsos según nivel:\nNv1-3 → 2 usos · Nv4-9 → 3 usos · Nv10+ → 4 usos\n\nRecargás todos los usos con descanso corto o largo.\n\n✦ Mente Táctica (Nv2): podés gastar 1 uso para sumar 1d10 a una prueba de característica fallida en lugar de recuperar HP. Si seguís fallando, el uso no se gasta.\n✦ Desplazamiento Táctico (Nv5): al usar Second Wind, podés moverte hasta la mitad de tu velocidad sin provocar ataques de oportunidad.` },
+        ...(nivel >= 9 ? [{
+          id:'indomitable-resource', name:`Indomitable`,
+          current: nivel>=17?3:nivel>=13?2:1, max: nivel>=17?3:nivel>=13?2:1,
+          recharge:'long',
+          action:'Ninguna (al fallar save)', range:'Personal',
+          desc:`Repetís una tirada de salvación fallida. ${nivel>=17?3:nivel>=13?2:1} uso${nivel>=13?'s':''} por Long Rest. Debés usar el nuevo resultado.`,
+          fullDesc:`A partir del nivel 9, cuando fallás una tirada de salvación podés volver a tirarla. Debés usar el nuevo resultado.\n\n1 uso (nv9) · 2 usos (nv13) · 3 usos (nv17). Se recarga con Long Rest.` }] : []),
       ],
       features: (nivel) => [
         {
