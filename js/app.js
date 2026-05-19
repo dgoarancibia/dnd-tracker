@@ -887,8 +887,10 @@ const App = (() => {
     }
     html += `<div class="resource-card full-width-card"><div class="rc-top"><span class="rc-name">Dados de Golpe (d${c.hitDie})</span><span class="rc-recharge">↺ Largo (mitad)</span></div><div class="slot-dots" id="hd-dots">${hdDotsHtml}</div></div>`;
 
-    // 3. RECURSOS sin acción (dots simples) — grilla 2 columnas
-    (c.resources || []).filter(r => !r.action && !r.desc).forEach(r => {
+    // 3. RECURSOS con max > 0 (dots/slots que el jugador rastrea) — grilla 2 columnas
+    // Incluye tanto recursos simples como los que tienen action/desc (Second Wind, Action Surge, etc.)
+    // Solo se excluyen recursos con max === 0 (referencia pura, ej. Mente Táctica) que van a la derecha
+    (c.resources || []).filter(r => r.max > 0).forEach(r => {
       const rechargeLabel = { short: '↺ Corto', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
       const isCustom = !['channel-divinity','bond','guiding-bolt-mi'].includes(r.id);
       let dotsHtml = '';
@@ -896,7 +898,11 @@ const App = (() => {
         const used = d >= r.current;
         dotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
       }
-      html += `<div class="resource-card"><div class="rc-top"><span class="rc-name">${r.name}</span><span class="rc-recharge">${rechargeLabel}</span>${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}</div><div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div></div>`;
+      // Si tiene acción/desc, el nombre es tappable para ver el detalle
+      const nameEl = (r.action || r.desc)
+        ? `<span class="rc-name" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;" onclick="App.openAbilityDetail('${r.id}')">${r.name} ℹ</span>`
+        : `<span class="rc-name">${r.name}</span>`;
+      html += `<div class="resource-card"><div class="rc-top">${nameEl}<span class="rc-recharge">${rechargeLabel}</span>${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}</div><div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div></div>`;
     });
 
     html += `</div>`; // cierra resources-grid
@@ -1084,8 +1090,10 @@ const App = (() => {
       html += _renderCompanionHTML(c);
     }
 
-    // ── HABILIDADES ACTIVABLES (recursos con acción/desc) ───────────────────
-    const activables = (c.resources || []).filter(r => r.action || r.desc);
+    // ── HABILIDADES ACTIVABLES (referencia pura: max === 0, sin dots propios) ───
+    // Recursos con max > 0 se muestran como dot-counters en la columna izquierda.
+    // Solo llegan aquí los que no tienen usos propios (ej. Mente Táctica usa slots de SW).
+    const activables = (c.resources || []).filter(r => (r.action || r.desc) && r.max === 0);
     const isEchoKnight = c.subclase === 'Echo Knight';
     if (activables.length || isEchoKnight) {
       const rechargeLabel = rc => ({ short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[rc] || rc || '');
