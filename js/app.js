@@ -1130,7 +1130,6 @@ const App = (() => {
               ${btnLabel}
             </button>
           </div>
-          ${hasUses ? `<div class="slot-dots" id="rc-dots-${r.id}" style="margin-top:6px;">${dots}</div>` : ''}
         </div>`;
       }).join('');
 
