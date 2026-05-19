@@ -1110,21 +1110,16 @@ const App = (() => {
           ? `App.adjustResource('${r.id}',-1)`
           : linkedId ? `App.adjustResource('${linkedId}',-1)` : '';
 
-        // Label del botón según tipo de habilidad
+        // Label del botón según tipo de habilidad — sin contador, solo la palabra
         const btnLabel = (() => {
-          if (!hasUses && linkedRes) {
-            // Muestra usos del recurso vinculado
-            return linkedUsable
-              ? `Usar<br><span style="font-size:10px;">↳ SW ${linkedRes.current}/${linkedRes.max}</span>`
-              : `<span style="font-size:10px;">SW Agotado</span>`;
-          }
+          if (!hasUses && linkedRes) return linkedUsable ? 'Usar' : '<span style="font-size:10px;">SW Agotado</span>';
           if (!hasUses) return '<span style="font-size:10px;">↳ SW</span>';
           if (!usable) return '<span style="font-size:10px;">Agotado</span>';
           const id = r.id || '';
           const name = (r.name || '').toLowerCase();
-          if (id.includes('echo') || name.includes('echo')) return `Invocar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
-          if (r.action && r.action.toLowerCase().includes('lanzar')) return `Lanzar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
-          return `Usar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
+          if (id.includes('echo') || name.includes('echo')) return 'Invocar';
+          if (r.action && r.action.toLowerCase().includes('lanzar')) return 'Lanzar';
+          return 'Usar';
         })();
         const btnDisabled = !canUse;
         const btnStyle = !canUse ? ' style="opacity:0.45;cursor:default;"' : '';
