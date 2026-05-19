@@ -117,51 +117,65 @@ const App = (() => {
       }
     }
 
-    // 2b. Re-sync recursos de clase — agrega nuevos y actualiza action/desc en existentes
+    // Helper: sincroniza un resource existente con la definición maestra.
+    // action/desc/fullDesc/note siempre se sobreescriben desde characters.js
+    // (son la fuente de verdad). current/max se ajustan respetando el uso actual.
+    const _syncResource = (existing, newR) => {
+      if (existing.max !== newR.max) {
+        const gained = newR.max - existing.max;
+        existing.max = newR.max;
+        if (gained > 0) existing.current = Math.min((existing.current || 0) + gained, newR.max);
+        else if ((existing.current || 0) > newR.max) existing.current = newR.max;
+        changed = true;
+      }
+      // Siempre sobreescribir textos — characters.js es la fuente de verdad
+      if (newR.action   !== undefined && existing.action   !== newR.action)   { existing.action   = newR.action;   changed = true; }
+      if (newR.desc     !== undefined && existing.desc     !== newR.desc)     { existing.desc     = newR.desc;     changed = true; }
+      if (newR.fullDesc !== undefined && existing.fullDesc !== newR.fullDesc) { existing.fullDesc = newR.fullDesc; changed = true; }
+      if (newR.note     !== undefined && existing.note     !== newR.note)     { existing.note     = newR.note;     changed = true; }
+      if (newR.recharge !== undefined && existing.recharge !== newR.recharge) { existing.recharge = newR.recharge; changed = true; }
+    };
+
+    // 2b. Re-sync recursos de clase — agrega nuevos y actualiza textos en existentes
     const claseFeatSync = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[c.clase];
     if (claseFeatSync && typeof claseFeatSync.resources === 'function') {
+      if (!c.resources) c.resources = [];
       const nivel = c.nivel || 1;
       const claseResrcs = claseFeatSync.resources(nivel, c.subclase || '');
       claseResrcs.forEach(newR => {
         if (!newR.action && !newR.desc) return; // solo ability-card resources
-        const existing = (c.resources || []).find(r => r.id === newR.id);
-        if (!existing) {
-          if (!c.resources) c.resources = [];
-          c.resources.push({ ...newR });
-          changed = true;
-        } else {
-          // Siempre sincronizar max, action, desc, fullDesc (puede faltar en personajes viejos)
-          if (existing.max !== newR.max) {
-            const gained = newR.max - existing.max;
-            existing.max = newR.max;
-            if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
-            else if (existing.current > newR.max) existing.current = newR.max;
-            changed = true;
-          }
-          if (!existing.action  && newR.action)   { existing.action   = newR.action;   changed = true; }
-          if (!existing.desc    && newR.desc)      { existing.desc     = newR.desc;     changed = true; }
-          if (!existing.fullDesc && newR.fullDesc) { existing.fullDesc = newR.fullDesc; changed = true; }
-          if (newR.note && existing.note !== newR.note) { existing.note = newR.note; changed = true; }
-        }
+        const existing = c.resources.find(r => r.id === newR.id);
+        if (!existing) { c.resources.push({ ...newR }); changed = true; }
+        else _syncResource(existing, newR);
       });
     }
 
-    // 3. Re-sync recursos de subclase que dependen de stats (ej. Echo Knight Unleash → CON mod)
+    // 3. Re-sync recursos de subclase (dependen de stats: CON mod, Prof Bonus, etc.)
     if (c.subclase) {
       const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[c.subclase];
       if (subConf && typeof subConf.resources === 'function') {
+        if (!c.resources) c.resources = [];
         const nivel = c.nivel || 1;
         const subResrcs = subConf.resources(nivel, c);
         subResrcs.forEach(newR => {
-          const existing = (c.resources || []).find(r => r.id === newR.id);
-          if (existing && existing.max !== newR.max) {
-            const gained = newR.max - existing.max;
-            existing.max = newR.max;
-            if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
-            else if (existing.current > newR.max) existing.current = newR.max;
-            if (newR.note) existing.note = newR.note;
-            changed = true;
-          }
+          const existing = c.resources.find(r => r.id === newR.id);
+          if (!existing) { c.resources.push({ ...newR }); changed = true; }
+          else _syncResource(existing, newR);
+        });
+      }
+    }
+
+    // 3b. Re-sync recursos de raza (ej. Shadar-Kai Blessing of the Raven Queen)
+    if (c.raza) {
+      const razaConf = Characters.RAZAS_CONFIG && Characters.RAZAS_CONFIG[c.raza];
+      if (razaConf && typeof razaConf.resources === 'function') {
+        if (!c.resources) c.resources = [];
+        const nivel = c.nivel || 1;
+        const razaResrcs = razaConf.resources(nivel);
+        razaResrcs.forEach(newR => {
+          const existing = c.resources.find(r => r.id === newR.id);
+          if (!existing) { c.resources.push({ ...newR }); changed = true; }
+          else _syncResource(existing, newR);
         });
       }
     }
@@ -261,6 +275,42 @@ const App = (() => {
      INICIALIZACIÓN
   ══════════════════════════════════════════════════════ */
 
+  // Espera hasta 12 s a que Firebase traiga personajes cuando localStorage quedó vacío.
+  // Muestra un spinner para que el usuario sepa que se está restaurando.
+  async function _waitForCloudRestore() {
+    if (!window.FirebaseApp && !window.Cloud) return false;
+
+    const spinnerEl = document.getElementById('cloudRestoreSpinner');
+
+    // Esperar hasta 4 s a que Cloud inicialice y detecte si hay usuario
+    const AUTH_WAIT = 4000;
+    const POLL_MS   = 200;
+    const authStart = Date.now();
+    while (Date.now() - authStart < AUTH_WAIT) {
+      await new Promise(r => setTimeout(r, POLL_MS));
+      if (window.Cloud && Cloud.isLoggedIn()) break;
+    }
+
+    // Si no hay usuario logueado, no hay nada que esperar
+    if (!window.Cloud || !Cloud.isLoggedIn()) return false;
+
+    // Hay usuario — mostrar spinner y esperar hasta 12 s a que lleguen los chars
+    if (spinnerEl) spinnerEl.style.display = 'flex';
+    const MAX_WAIT = 12000;
+    const start = Date.now();
+    while (Date.now() - start < MAX_WAIT) {
+      await new Promise(r => setTimeout(r, 400));
+      const all = Storage.getAllChars();
+      const ids = Object.keys(all).filter(id => id !== 'lursey-brumaclara');
+      if (ids.length > 0) {
+        if (spinnerEl) spinnerEl.style.display = 'none';
+        return true;
+      }
+    }
+    if (spinnerEl) spinnerEl.style.display = 'none';
+    return false;
+  }
+
   async function init() {
     // Limpiar del localStorage chars que están en la lista negra (eliminados)
     // Corre antes de todo para que Firebase no los restaure silenciosamente
@@ -288,12 +338,31 @@ const App = (() => {
       }
     }
     if (!_char) {
-      window.location.href = 'index.html';
-      return;
+      // Antes de redirigir: si hay un usuario logueado en Firebase, esperar
+      // hasta 12 s a que _syncOnLogin traiga los personajes de la nube.
+      // Esto cubre el caso de iOS borrando localStorage/IDB con "Clear site data".
+      const waited = await _waitForCloudRestore();
+      if (waited) {
+        _char = Storage.getActiveChar();
+        if (!_char) {
+          const all = Storage.getAllChars();
+          const ids = Object.keys(all);
+          if (ids.length > 0) { Storage.setActiveId(ids[0]); _char = Storage.getActiveChar(); }
+        }
+      }
+      if (!_char) {
+        window.location.href = 'index.html';
+        return;
+      }
     }
 
     // ── Migración y sync de datos del personaje ─────────────────────────────
-    if (_syncCharData(_char)) Storage.saveChar(_char);
+    const _initSyncChanged = _syncCharData(_char);
+    if (_initSyncChanged) {
+      Storage.saveChar(_char);
+      // Propagar a Firebase para que otros dispositivos reciban los campos nuevos
+      if (window.Cloud && Cloud.isLoggedIn()) Cloud.scheduleSave(_char);
+    }
 
     // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
     if (_cleanSpells(_char)) Storage.saveChar(_char);
@@ -354,26 +423,7 @@ const App = (() => {
       }
       Storage.saveChar(_char);
 
-      // Sync de recursos por clase: actualizar max/note si el nivel escaló
-      const claseFeat = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[_char.clase];
-      if (claseFeat) {
-        const freshResrcs = claseFeat.resources(_char.nivel || 1, _char.subclase || '');
-        freshResrcs.forEach(fresh => {
-          const saved = (_char.resources || []).find(r => r.id === fresh.id);
-          if (saved) {
-            if (fresh.max !== saved.max) {
-              const gained = fresh.max - saved.max;
-              saved.max = fresh.max;
-              if (gained > 0) saved.current = Math.min(saved.current + gained, saved.max);
-              if (fresh.note) saved.note = fresh.note;
-            }
-          } else {
-            if (!_char.resources) _char.resources = [];
-            _char.resources.push({ ...fresh });
-          }
-        });
-
-      }
+      // _syncCharData ya se encargó del sync de recursos (clase + subclase + raza)
       _refreshCharFeatures(_char);
     }
 
@@ -809,72 +859,6 @@ const App = (() => {
       <div class="conc-btns" id="concBtns">${_buildConcBtns(c)}</div>
     </div>
 
-    <!-- HABILIDADES ACTIVABLES (recursos con acción/desc) -->
-    ${(() => {
-      const activables = c.resources.filter(r => r.action || r.desc);
-      const isEchoKnight = c.subclase === 'Echo Knight';
-      if (!activables.length && !isEchoKnight) return '';
-      const rechargeLabel = rc => ({ short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[rc] || rc || '');
-
-      const cards = activables.map(r => {
-        const usable = r.current > 0;
-        const dots = Array.from({length: r.max}, (_, d) => {
-          const used = d >= r.current;
-          return `<div class="slot-dot${used?' used':''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
-        }).join('');
-        return `
-        <div class="ability-card${usable ? '' : ' ability-card--spent'}">
-          <div class="ability-card-top">
-            <div class="ability-card-info" onclick="App.openAbilityDetail('${r.id}')">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
-                <span class="ability-card-name">${r.name}</span>
-                ${r.action ? `<span class="ability-action-tag">${r.action}</span>` : ''}
-                ${r.recharge ? `<span class="ability-recharge-tag">${rechargeLabel(r.recharge)}</span>` : ''}
-              </div>
-              ${r.desc ? `<div class="ability-card-desc">${r.desc}</div>` : ''}
-            </div>
-            <button class="ability-use-btn${usable ? '' : ' disabled'}" ${usable ? `onclick="App.adjustResource('${r.id}',-1)"` : 'disabled'}>
-              ${usable ? `Usar<br><span style="font-size:10px;">${r.current}/${r.max}</span>` : `<span style="font-size:10px;">Agotado</span>`}
-            </button>
-          </div>
-          <div class="slot-dots" id="rc-dots-${r.id}" style="margin-top:6px;">${dots}</div>
-        </div>`;
-      }).join('');
-
-      // Panel del Echo — solo si está activo
-      const echoPanel = isEchoKnight ? (() => {
-        const echoCA = 14 + Characters.calcProfBonus(c.nivel);
-        const active = !!c.echoActive;
-        return `
-        <div class="ability-card${active ? ' echo-active-card' : ''}" style="margin-bottom:8px;">
-          <div class="ability-card-top">
-            <div class="ability-card-info">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
-                <span class="ability-card-name">👻 Manifest Echo</span>
-                <span class="ability-action-tag">Acción bonus</span>
-              </div>
-              <div class="ability-card-desc">Invocás/descartás una copia fantasmal. Mientras activo: CA ${echoCA} · HP 1 · alcance 9 m.</div>
-            </div>
-            <button class="ability-use-btn${active ? ' echo-btn-active' : ''}" onclick="App.toggleEcho()">
-              ${active ? `Activo<br><span style="font-size:10px;">Descartar</span>` : `Invocar`}
-            </button>
-          </div>
-          ${active ? `
-          <div class="echo-panel-stats" style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(160,120,240,0.2);">
-            <div class="echo-stat-block"><div class="echo-stat-val">${echoCA}</div><div class="echo-stat-label">CA</div></div>
-            <div class="echo-stat-block"><div class="echo-stat-val">1</div><div class="echo-stat-label">HP</div></div>
-            <div style="flex:2;padding-left:10px;font-size:10px;color:var(--text-dim);line-height:1.6;">
-              Acción bonus → mover 9 m<br>
-              Acción bonus → teleportarse al Echo<br>
-              Atacar desde su posición
-            </div>
-          </div>` : ''}
-        </div>`;
-      })() : '';
-
-      return `<div class="section-hd" style="margin-top:12px;">⚡ Habilidades</div>${echoPanel}${cards}`;
-    })()}
-
     <!-- RECURSOS CON CONTADORES -->
     <div class="section-hd" style="margin-top:12px;">Recursos</div>`;
 
@@ -904,7 +888,7 @@ const App = (() => {
     html += `<div class="resource-card full-width-card"><div class="rc-top"><span class="rc-name">Dados de Golpe (d${c.hitDie})</span><span class="rc-recharge">↺ Largo (mitad)</span></div><div class="slot-dots" id="hd-dots">${hdDotsHtml}</div></div>`;
 
     // 3. RECURSOS sin acción (dots simples) — grilla 2 columnas
-    c.resources.filter(r => !r.action && !r.desc).forEach(r => {
+    (c.resources || []).filter(r => !r.action && !r.desc).forEach(r => {
       const rechargeLabel = { short: '↺ Corto', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
       const isCustom = !['channel-divinity','bond','guiding-bolt-mi'].includes(r.id);
       let dotsHtml = '';
@@ -1056,9 +1040,20 @@ const App = (() => {
   }
 
   function _renderCombateDer() {
+    try {
     const c = _char;
     const colDer = document.getElementById('col-combate-der');
     if (!c || !colDer) return;
+
+    // Asegurar que los recursos tienen action/desc antes de renderizar
+    // (pueden faltar si el personaje llegó de Firebase antes del sync)
+    if (c.id !== 'lursey-brumaclara') {
+      const didSync = _syncCharData(c);
+      if (didSync) {
+        Storage.saveChar(c);
+        if (window.Cloud && Cloud.isLoggedIn()) Cloud.scheduleSave(c);
+      }
+    }
 
     // Conjuros clave referencia:
     // - Cantrips conocidos: TODOS los que el jugador eligió (combat:false se ignora — si lo eligió, lo quiere ver)
@@ -1087,6 +1082,86 @@ const App = (() => {
     // Primal Companion (Beast Master) — arriba del todo, debajo de Guía de Combate
     if (c.subclase === 'Beast Master') {
       html += _renderCompanionHTML(c);
+    }
+
+    // ── HABILIDADES ACTIVABLES (recursos con acción/desc) ───────────────────
+    const activables = (c.resources || []).filter(r => r.action || r.desc);
+    const isEchoKnight = c.subclase === 'Echo Knight';
+    if (activables.length || isEchoKnight) {
+      const rechargeLabel = rc => ({ short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[rc] || rc || '');
+
+      const abilityCards = activables.map(r => {
+        const hasUses = r.max > 0;
+        const usable = hasUses && r.current > 0;
+        const dots = hasUses ? Array.from({length: r.max}, (_, d) => {
+          const used = d >= r.current;
+          return `<div class="slot-dot${used?' used':''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
+        }).join('') : '';
+
+        // Label del botón según tipo de habilidad
+        const btnLabel = (() => {
+          if (!hasUses) return '<span style="font-size:10px;">↳ SW</span>'; // usa recurso ajeno (ej. Mente Táctica)
+          if (!usable) return '<span style="font-size:10px;">Agotado</span>';
+          const id = r.id || '';
+          const name = (r.name || '').toLowerCase();
+          if (id.includes('echo') || name.includes('echo') || name.includes('echo')) return `Invocar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
+          if (r.action && r.action.toLowerCase().includes('lanzar')) return `Lanzar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
+          return `Usar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
+        })();
+        const btnDisabled = !hasUses || !usable;
+        const btnStyle = !hasUses ? ' style="background:rgba(100,80,180,0.15);color:var(--text-dim);cursor:default;"' : '';
+
+        return `
+        <div class="ability-card${usable ? '' : (hasUses ? ' ability-card--spent' : '')}">
+          <div class="ability-card-top">
+            <div class="ability-card-info" onclick="App.openAbilityDetail('${r.id}')">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                <span class="ability-card-name">${r.name}</span>
+                ${r.action ? `<span class="ability-action-tag">${r.action}</span>` : ''}
+                ${r.recharge ? `<span class="ability-recharge-tag">${rechargeLabel(r.recharge)}</span>` : ''}
+              </div>
+              ${r.desc ? `<div class="ability-card-desc">${r.desc}</div>` : ''}
+            </div>
+            <button class="ability-use-btn${!hasUses || !usable ? ' disabled' : ''}"${btnStyle} ${usable && hasUses ? `onclick="App.adjustResource('${r.id}',-1)"` : 'disabled'}>
+              ${btnLabel}
+            </button>
+          </div>
+          ${hasUses ? `<div class="slot-dots" id="rc-dots-${r.id}" style="margin-top:6px;">${dots}</div>` : ''}
+        </div>`;
+      }).join('');
+
+      // Panel del Echo — solo para Echo Knight
+      const echoPanel = isEchoKnight ? (() => {
+        const echoCA = 14 + Characters.calcProfBonus(c.nivel);
+        const active = !!c.echoActive;
+        return `
+        <div class="ability-card${active ? ' echo-active-card' : ''}" style="margin-bottom:8px;">
+          <div class="ability-card-top">
+            <div class="ability-card-info">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                <span class="ability-card-name">👻 Manifest Echo</span>
+                <span class="ability-action-tag">Acción bonus</span>
+              </div>
+              <div class="ability-card-desc">Invocás/descartas una copia fantasmal. Mientras activo: CA ${echoCA} · HP 1 · alcance 9 m.</div>
+            </div>
+            <button class="ability-use-btn${active ? ' echo-btn-active' : ''}" onclick="App.toggleEcho()">
+              ${active ? `Activo<br><span style="font-size:10px;">Descartar</span>` : `Invocar`}
+            </button>
+          </div>
+          ${active ? `
+          <div class="echo-panel-stats" style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(160,120,240,0.2);">
+            <div class="echo-stat-block"><div class="echo-stat-val">${echoCA}</div><div class="echo-stat-label">CA</div></div>
+            <div class="echo-stat-block"><div class="echo-stat-val">1</div><div class="echo-stat-label">HP</div></div>
+            <div style="flex:2;padding-left:10px;font-size:10px;color:var(--text-dim);line-height:1.6;">
+              Acción bonus → mover 9 m<br>
+              Acción bonus → teleportarse al Echo<br>
+              Atacar desde su posición
+            </div>
+          </div>` : ''}
+        </div>`;
+      })() : '';
+
+      html += `<div class="section-hd" style="margin-top:14px;">⚡ Habilidades</div>${echoPanel}${abilityCards}`;
     }
 
     html += `<div class="section-hd" style="margin-top:14px;">✨ Conjuros de Referencia</div>`;
@@ -1305,6 +1380,11 @@ const App = (() => {
 
     colDer.innerHTML = html;
     _renderInitTracker();
+    } catch(e) {
+      console.error('[_renderCombateDer] Error:', e);
+      const colDer = document.getElementById('col-combate-der');
+      if (colDer) colDer.innerHTML = `<div style="color:red;padding:12px;font-size:11px;">Error render: ${e.message}</div>`;
+    }
   }
 
   function _buildTagsHTML(sp) {
@@ -1609,11 +1689,11 @@ const App = (() => {
       // El checkbox ★ actúa como "quitar de conocidos" al hacer click
       const knownList = (c.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi);
       const sectionTitle = knownOver
-        ? `Conjuros conocidos <span style="color:#e07070;font-size:11px;font-family:sans-serif;font-weight:400;">— tenés ${knownCount}, máximo ${spellsMax} · click ★ para quitar</span>`
+        ? `Conjuros conocidos <span style="color:#e07070;font-size:11px;font-family:sans-serif;font-weight:400;">— tienes ${knownCount}, máximo ${spellsMax} · click ★ para quitar</span>`
         : `Conjuros conocidos <span style="font-size:11px;color:var(--text-dim);font-family:sans-serif;font-weight:400;">— click ★ para quitar</span>`;
       htmlDer += `<div class="section-hd" style="margin-top:14px;">${sectionTitle}</div>`;
       if (knownList.length === 0) {
-        htmlDer += `<div style="font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;">Aún no tenés conjuros. Agrupalos desde la lista de la izquierda.</div>`;
+        htmlDer += `<div style="font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;">Aún no tienes conjuros. Agrupalos desde la lista de la izquierda.</div>`;
       } else {
         knownList.forEach(sp => {
           htmlDer += `
@@ -2552,7 +2632,7 @@ const App = (() => {
       ? (() => { const s = razaCfg.subraces.find(sr => sr.name === c.subraza); return (s && s.darkvision) || razaCfg.darkvision || 0; })()
       : razaCfg.darkvision || 0;
     if (dv > 0) {
-      traits.push({ name: 'Visión en Penumbra', source: c.raza, desc: `Podés ver en penumbra hasta ${dv} m como si fuera luz tenue, y en oscuridad total como si fuera penumbra.` });
+      traits.push({ name: 'Visión en Penumbra', source: c.raza, desc: `Puedes ver en penumbra hasta ${dv} m como si fuera luz tenue, y en oscuridad total como si fuera penumbra.` });
     }
 
     // Traits base de la raza
@@ -3708,7 +3788,7 @@ const App = (() => {
   function clearAllKnownSpells() {
     if (!_char) return;
     const count = (_char.spells || []).filter(s => s.level > 0 && !s.domain && !s.mi).length;
-    if (count === 0) { showToast('No tenés conjuros conocidos para limpiar.'); return; }
+    if (count === 0) { showToast('No tienes conjuros conocidos para limpiar.'); return; }
     _confirm(
       `¿Seguro que querés limpiar los ${count} conjuros conocidos? Los cantrips y conjuros de dominio/MI no se borran.`,
       () => {
@@ -4206,7 +4286,7 @@ const App = (() => {
 
     const limitNote = maxKnown !== null
       ? `<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">
-          Podés conocer <strong style="color:var(--text);">${maxKnown}</strong> cantrips según tu nivel.
+          Puedes conocer <strong style="color:var(--text);">${maxKnown}</strong> cantrips según tu nivel.
           ${freeIds.size > 0 ? `Los de subclase (🎁) son <em>adicionales</em> y no cuentan.` : ''}
          </div>`
       : `<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Sin límite fijo. Marcá los que querés usar.</div>`;
@@ -4557,11 +4637,15 @@ const App = (() => {
   // Cola de elecciones pendientes
   let _choiceQueue = [];
   let _choiceQueueCallback = null;
+  // Snapshot del personaje antes de revertir una elección (para restaurar si el usuario omite)
+  let _reopenSnapshot = null;
 
   // Punto de entrada: recibe lista de choices pendientes y un callback final
   function openChoicesQueue(pendingChoices, onComplete) {
     _choiceQueue = [...pendingChoices];
     _choiceQueueCallback = onComplete || null;
+    // Si no viene de reopenChoice (snapshot null), asegurarse de no restaurar nada
+    // reopenChoice lo setea antes de llamar a openChoicesQueue
     _processNextChoice();
   }
 
@@ -4663,7 +4747,7 @@ const App = (() => {
     }).join('');
 
     bodyEl.innerHTML = `
-      <p class="choice-prompt">Ganás +2 a un atributo, +1/+1 a dos, o tomás un <strong>Feat</strong>.<br>
+      <p class="choice-prompt">Ganás +2 a un atributo, +1/+1 a dos, o tomas un <strong>Feat</strong>.<br>
       <span style="font-size:11px;color:var(--text-dim);">Máximo 20 por atributo.</span></p>
       <div class="asi-mode-toggle">
         <button class="asi-mode-btn active" id="asiMode-single" onclick="App._setASIMode('single')">+2 a uno</button>
@@ -4740,7 +4824,7 @@ const App = (() => {
                    onchange="App._onPickSkillChange(this, ${count})">
             <div class="choice-opt-content">
               <strong>${sk.name}</strong>
-              ${isExpert ? '<span class="choice-opt-desc">Ya tenés Expertise</span>' : ''}
+              ${isExpert ? '<span class="choice-opt-desc">Ya tienes Expertise</span>' : ''}
             </div>
           </label>`;
         }).join('')}
@@ -4878,7 +4962,7 @@ const App = (() => {
     const checked = document.querySelectorAll('[name="asiSplit"]:checked');
     if (checked.length > 2) {
       checkbox.checked = false;
-      showToast('Solo podés elegir 2 atributos');
+      showToast('Solo puedes elegir 2 atributos');
       return;
     }
     checkbox.closest('.choice-option').classList.toggle('selected', checkbox.checked);
@@ -4888,7 +4972,7 @@ const App = (() => {
     const checked = document.querySelectorAll('[name="pickSkill"]:checked:not(:disabled)');
     if (checked.length > max) {
       checkbox.checked = false;
-      showToast(`Solo podés elegir ${max} skills`);
+      showToast(`Solo puedes elegir ${max} skills`);
       return;
     }
     checkbox.closest('.choice-option').classList.toggle('selected', checkbox.checked);
@@ -4898,7 +4982,7 @@ const App = (() => {
     const checked = document.querySelectorAll('[name="pickMultiple"]:checked:not(:disabled)');
     if (checked.length > max) {
       checkbox.checked = false;
-      showToast(`Solo podés elegir ${max} opciones`);
+      showToast(`Solo puedes elegir ${max} opciones`);
       return;
     }
     checkbox.closest('.choice-option').classList.toggle('selected', checkbox.checked);
@@ -4961,6 +5045,21 @@ const App = (() => {
 
   function _skipChoice() {
     document.getElementById('choiceModalOverlay').style.display = 'none';
+    // Si el usuario omite después de un "Cambiar", restaurar el estado previo
+    if (_reopenSnapshot) {
+      // Restaurar stats, choices, features, resources, subclase
+      const snap = _reopenSnapshot;
+      _reopenSnapshot = null;
+      _char.stats     = JSON.parse(JSON.stringify(snap.stats));
+      _char.choices   = JSON.parse(JSON.stringify(snap.choices));
+      _char.features  = JSON.parse(JSON.stringify(snap.features));
+      _char.resources = JSON.parse(JSON.stringify(snap.resources));
+      _char.subclase  = snap.subclase;
+      _char.skillProfs = JSON.parse(JSON.stringify(snap.skillProfs));
+      _saveChar();
+      _renderCombateTab();
+      _renderHabilidadesTab();
+    }
     _processNextChoice();
   }
 
@@ -4985,29 +5084,35 @@ const App = (() => {
 
     const prev = _char.choices && _char.choices[choiceId];
 
+    // Guardar snapshot ANTES de revertir — para restaurar si el usuario omite
+    _reopenSnapshot = {
+      stats:     JSON.parse(JSON.stringify(_char.stats)),
+      choices:   JSON.parse(JSON.stringify(_char.choices || {})),
+      features:  JSON.parse(JSON.stringify(_char.features || [])),
+      resources: JSON.parse(JSON.stringify(_char.resources || [])),
+      subclase:  _char.subclase || '',
+      skillProfs: JSON.parse(JSON.stringify(_char.skillProfs || [])),
+    };
+
     // Revertir el efecto anterior antes de reabrir
     if (prev) {
       if (choice.type === 'asi') {
-        // Revertir bonus de stat o feat
         if (prev.mode === 'single' && prev.stat && _char.stats[prev.stat] !== undefined) {
           _char.stats[prev.stat] = Math.max(1, _char.stats[prev.stat] - 2);
         } else if (prev.mode === 'split') {
           if (prev.stat1 && _char.stats[prev.stat1] !== undefined) _char.stats[prev.stat1] = Math.max(1, _char.stats[prev.stat1] - 1);
           if (prev.stat2 && _char.stats[prev.stat2] !== undefined) _char.stats[prev.stat2] = Math.max(1, _char.stats[prev.stat2] - 1);
         } else if (prev.mode === 'feat' && prev.featId) {
-          // Quitar el feat de features
           if (_char.features) {
             _char.features = _char.features.filter(f => f.id !== prev.featId && f.id !== prev.featId + '-' + choiceId);
           }
         }
       } else if (choice.type === 'pickSkills') {
-        // Quitar las skills elegidas
         const ids = Array.isArray(prev) ? prev : [prev];
         if (_char.skillProfs) {
           _char.skillProfs = _char.skillProfs.filter(s => !ids.includes(s));
         }
       } else if (choice.appliesSubclass) {
-        // Revertir subclase: limpiar subclase y features de esa subclase
         const oldSub = _char.subclase;
         _char.subclase = '';
         if (oldSub && _char.features) {
@@ -5017,7 +5122,7 @@ const App = (() => {
           _char.resources = _char.resources.filter(r => {
             const subCfg = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[oldSub];
             if (!subCfg) return true;
-            const subResIds = (subCfg.resources(_char.nivel) || []).map(sr => sr.id);
+            const subResIds = (subCfg.resources(_char.nivel, _char) || []).map(sr => sr.id);
             return !subResIds.includes(r.id);
           });
         }
@@ -5025,11 +5130,11 @@ const App = (() => {
 
       // Borrar la elección guardada
       delete _char.choices[choiceId];
-      _saveChar();
     }
 
-    // Reabrir el modal de elección
+    // Reabrir el modal — al confirmar, limpiar el snapshot
     openChoicesQueue([choice], () => {
+      _reopenSnapshot = null; // elección confirmada, ya no hay que restaurar
       _renderCombateTab();
       _renderHabilidadesTab();
     });
@@ -5226,7 +5331,7 @@ const App = (() => {
     }
 
     // Apply rest
-    c.resources.forEach(r => { r.current = r.max; });
+    (c.resources || []).forEach(r => { r.current = r.max; });
     for (let i = 1; i <= 9; i++) {
       if (c.spellSlots[i]) c.spellSlots[i].current = c.spellSlots[i].max;
     }
@@ -5937,7 +6042,7 @@ const App = (() => {
     const idx = _char.hiddenFeatures.indexOf(featId);
     if (idx === -1) {
       _char.hiddenFeatures.push(featId);
-      showToast('Feature oculta — tocá "Mostrar ocultos" para restaurarla');
+      showToast('Feature oculta — toca "Mostrar ocultos" para restaurarla');
     } else {
       _char.hiddenFeatures.splice(idx, 1);
     }

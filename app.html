@@ -5,22 +5,86 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>D&D Tracker</title>
 <script>
-// Auto-actualización del Service Worker — fuerza reload cuando hay nueva versión
-const _APP_VERSION = 205;
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistration().then(reg => {
-    if (!reg) return;
-    reg.update().then(() => {
-      if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+// ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
+// _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
+const _SW_EXPECTED = 240;
+
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+
+  function _forceUpdate(regs) {
+    // Desregistrar todos los SW y limpiar caches — fuerza descarga limpia
+    Promise.all(regs.map(r => r.unregister()))
+      .then(() => caches.keys())
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .finally(() => {
+        localStorage.setItem('dnd_sw_ver', _SW_EXPECTED);
+        window.location.reload(true);
+      });
+  }
+
+  function _setupListeners(regs) {
+    // Si hay un SW esperando, activarlo ya
+    regs.forEach(reg => {
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      reg.update(); // forzar chequeo de sw.js en cada carga (crítico en iOS PWA)
+      reg.addEventListener('updatefound', () => {
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed') nw.postMessage({ type: 'SKIP_WAITING' });
+        });
+      });
     });
+    // Recargar cuando el SW nuevo toma el control
+    var _refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!sessionStorage.getItem('sw_reloaded_' + _APP_VERSION)) {
-        sessionStorage.setItem('sw_reloaded_' + _APP_VERSION, '1');
-        window.location.reload();
-      }
+      if (_refreshing) return;
+      _refreshing = true;
+      localStorage.setItem('dnd_sw_ver', _SW_EXPECTED);
+      window.location.reload();
     });
+  }
+
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    var controller = navigator.serviceWorker.controller;
+
+    // Caso 1: hay SW activo — preguntarle su versión
+    if (controller) {
+      var versionReceived = false;
+      var msgTimeout = setTimeout(() => {
+        // SW viejo que no responde GET_VERSION → forzar update
+        if (!versionReceived) {
+          var swVer = parseInt(localStorage.getItem('dnd_sw_ver') || '0', 10);
+          if (swVer < _SW_EXPECTED) {
+            _forceUpdate(regs);
+          } else {
+            _setupListeners(regs);
+          }
+        }
+      }, 800);
+
+      navigator.serviceWorker.addEventListener('message', function onMsg(e) {
+        if (e.data && e.data.type === 'SW_VERSION') {
+          versionReceived = true;
+          clearTimeout(msgTimeout);
+          navigator.serviceWorker.removeEventListener('message', onMsg);
+          if (e.data.version < _SW_EXPECTED) {
+            _forceUpdate(regs);
+          } else {
+            localStorage.setItem('dnd_sw_ver', _SW_EXPECTED);
+            _setupListeners(regs);
+          }
+        }
+      });
+      controller.postMessage({ type: 'GET_VERSION' });
+
+    } else {
+      // Caso 2: sin SW activo aún — solo configurar listeners
+      _setupListeners(regs);
+    }
   });
-}
+})();
 </script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icons/favicon.png">
@@ -37,6 +101,14 @@ if ('serviceWorker' in navigator) {
 <link rel="stylesheet" href="css/style.css?v=57">
 </head>
 <body>
+
+<!-- CLOUD RESTORE SPINNER — visible solo cuando localStorage quedó vacío y se espera a Firebase -->
+<div id="cloudRestoreSpinner" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(13,11,20,0.96);flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div style="width:48px;height:48px;border:4px solid rgba(201,151,58,0.3);border-top-color:#c9973a;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+  <div style="color:#c9973a;font-family:'Cinzel',serif;font-size:15px;letter-spacing:0.05em;">Restaurando desde la nube…</div>
+  <div style="color:rgba(255,255,255,0.45);font-size:12px;">Esto puede tardar unos segundos</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <!-- PORTRAIT WARNING -->
 <div class="portrait-warning">
@@ -925,9 +997,9 @@ if ('serviceWorker' in navigator) {
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=51"></script>
-<script src="js/characters.js?v=82"></script>
+<script src="js/characters.js?v=85"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=128"></script>
+<script src="js/app.js?v=135"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>
@@ -1001,12 +1073,8 @@ if ('serviceWorker' in navigator) {
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
-      // Forzar chequeo de actualizaciones en cada carga de página
+      // Forzar chequeo de actualización en cada carga
       reg.update();
-      // Cuando llega un nuevo SW esperando, activarlo de inmediato sin esperar a que cierren las tabs
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
     });
   }
 </script>

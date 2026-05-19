@@ -2732,15 +2732,60 @@ function toggleIndexTheme() {
     if (changed) localStorage.setItem(CHARS_KEY, JSON.stringify(all));
   } catch(e) {}
 })();
-// Desregistrar SW viejo si hay nueva versión disponible
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
+// ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
+var _SW_EXPECTED_IDX = 240;
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+  function _forceUpdate(regs) {
+    Promise.all(regs.map(function(r) { return r.unregister(); }))
+      .then(function() { return caches.keys(); })
+      .then(function(keys) { return Promise.all(keys.map(function(k) { return caches.delete(k); })); })
+      .finally(function() {
+        localStorage.setItem('dnd_sw_ver', _SW_EXPECTED_IDX);
+        window.location.reload(true);
+      });
+  }
+  function _setup(regs) {
     regs.forEach(function(r) {
-      r.update(); // fuerza chequeo de sw.js
+      r.update();
       if (r.waiting) r.waiting.postMessage({ type: 'SKIP_WAITING' });
+      r.addEventListener('updatefound', function() {
+        var nw = r.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function() {
+          if (nw.state === 'installed') nw.postMessage({ type: 'SKIP_WAITING' });
+        });
+      });
     });
+    var _ref = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      if (_ref) return; _ref = true;
+      localStorage.setItem('dnd_sw_ver', _SW_EXPECTED_IDX);
+      window.location.reload();
+    });
+  }
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    var ctrl = navigator.serviceWorker.controller;
+    if (ctrl) {
+      var done = false;
+      var t = setTimeout(function() {
+        if (!done) { done = true;
+          var v = parseInt(localStorage.getItem('dnd_sw_ver') || '0', 10);
+          if (v < _SW_EXPECTED_IDX) _forceUpdate(regs); else _setup(regs);
+        }
+      }, 800);
+      navigator.serviceWorker.addEventListener('message', function h(e) {
+        if (e.data && e.data.type === 'SW_VERSION') {
+          done = true; clearTimeout(t);
+          navigator.serviceWorker.removeEventListener('message', h);
+          if (e.data.version < _SW_EXPECTED_IDX) _forceUpdate(regs);
+          else { localStorage.setItem('dnd_sw_ver', _SW_EXPECTED_IDX); _setup(regs); }
+        }
+      });
+      ctrl.postMessage({ type: 'GET_VERSION' });
+    } else { _setup(regs); }
   });
-}
+})();
 </script>
 </body>
 </html>

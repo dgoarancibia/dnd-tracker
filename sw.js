@@ -1,10 +1,11 @@
-const CACHE = 'dnd-tracker-v230';
+const CACHE = 'dnd-tracker-v240';
 
+// IMPORTANTE: app.html e index.html NO se cachean aquí intencionalmente.
+// Si se cachean, el SW viejo puede servir el HTML viejo y el nuevo SW nunca
+// llega a detectarse. El HTML siempre va a red → el SW nuevo se instala → reload.
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll([
-      './index.html',
-      './app.html',
       './manifest.json',
       './css/style.css',
       './js/app.js',
@@ -25,12 +26,22 @@ self.addEventListener('activate', e => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => {
+        // Notificar a todos los clientes que el SW nuevo está activo
+        self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 240 }));
+        });
+      })
   );
 });
 
 // Permite activación inmediata desde el cliente
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+  // Cliente pregunta la versión del SW activo
+  if (e.data && e.data.type === 'GET_VERSION') {
+    e.source.postMessage({ type: 'SW_VERSION', version: 240 });
+  }
 });
 
 self.addEventListener('fetch', e => {
@@ -41,8 +52,18 @@ self.addEventListener('fetch', e => {
     url.hostname.includes('firestore.googleapis.com') ||
     url.hostname.includes('firebase') ||
     url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('gstatic.com') && url.pathname.includes('firebasejs')
+    (url.hostname.includes('gstatic.com') && url.pathname.includes('firebasejs'))
   ) return;
+
+  // NUNCA cachear los HTML principales — siempre van a red para detectar SW nuevo
+  if (url.pathname.endsWith('/') ||
+      url.pathname.endsWith('/app.html') ||
+      url.pathname.endsWith('/index.html')) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
+    return;
+  }
 
   // pdf.js CDN — cache-first (necesario para Biblioteca offline)
   if (url.hostname.includes('cdnjs.cloudflare.com') && url.pathname.includes('pdf')) {
@@ -76,8 +97,7 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
 
-  // Archivos JS/CSS con ?v= — network-first SIEMPRE (el ?v= garantiza que cada versión es única)
-  // Esto asegura que cambios de versión se propaguen sin necesidad de actualizar el SW.
+  // Archivos JS/CSS con ?v= — network-first SIEMPRE
   if (url.search && url.search.startsWith('?v=')) {
     e.respondWith(
       fetch(e.request).then(res => {
