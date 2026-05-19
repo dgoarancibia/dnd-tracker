@@ -473,16 +473,20 @@ const App = (() => {
       const isCmdShiftSpace = e.metaKey && e.shiftKey && !e.altKey && e.code === 'Space';
       const isOptionN      = e.altKey && !e.metaKey && !e.shiftKey && e.code === 'KeyN';
       if (!isAltSpace && !isCmdShiftSpace && !isOptionN) return;
-      e.preventDefault();
-      // Si el modal ya está abierto → cerrar
+      // Si el modal ya está abierto → cerrar siempre (incluso con foco en textarea)
       const qnModal = document.getElementById('quickNoteModal');
-      if (qnModal && qnModal.classList.contains('show')) { closeQuickNote(); return; }
-      // No abrir si el foco está en un input/textarea
+      if (qnModal && qnModal.classList.contains('show')) {
+        e.preventDefault();
+        closeQuickNote();
+        return;
+      }
+      // No abrir si el foco está en un input/textarea de otra parte de la app
       const tag = document.activeElement && document.activeElement.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       // No abrir si hay otro modal abierto
-      const anyModal = document.querySelector('.modal.show, [id$="Modal"].show, [id$="Overlay"][style*="flex"]');
-      if (anyModal && anyModal.id !== 'quickNoteModal') return;
+      const anyModal = document.querySelector('.modal.show, [id$="Modal"].show');
+      if (anyModal) return;
+      e.preventDefault();
       openQuickNote();
     });
 
