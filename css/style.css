@@ -1272,6 +1272,16 @@ input[type=number] { -moz-appearance: textfield; }
   cursor: default;
 }
 
+/* Echo Knight */
+.echo-active-card {
+  border-color: rgba(160,120,240,0.5) !important;
+  background: rgba(120,90,200,0.06);
+}
+.echo-btn-active {
+  background: rgba(120,90,200,0.25) !important;
+  border-color: rgba(160,120,240,0.6) !important;
+  color: #c49bff !important;
+}
 /* Echo Knight — panel del Echo */
 .echo-panel {
   background: rgba(120,90,200,0.08);

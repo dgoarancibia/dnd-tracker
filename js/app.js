@@ -117,7 +117,7 @@ const App = (() => {
       }
     }
 
-    // 2b. Re-sync recursos de clase — agrega recursos nuevos que no existían (ej. Indomitable)
+    // 2b. Re-sync recursos de clase — agrega nuevos y actualiza action/desc en existentes
     const claseFeatSync = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[c.clase];
     if (claseFeatSync && typeof claseFeatSync.resources === 'function') {
       const nivel = c.nivel || 1;
@@ -129,15 +129,19 @@ const App = (() => {
           if (!c.resources) c.resources = [];
           c.resources.push({ ...newR });
           changed = true;
-        } else if (existing.max !== newR.max) {
-          const gained = newR.max - existing.max;
-          existing.max = newR.max;
-          if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
-          else if (existing.current > newR.max) existing.current = newR.max;
-          if (newR.note) existing.note = newR.note;
-          if (newR.desc) existing.desc = newR.desc;
-          if (newR.fullDesc) existing.fullDesc = newR.fullDesc;
-          changed = true;
+        } else {
+          // Siempre sincronizar max, action, desc, fullDesc (puede faltar en personajes viejos)
+          if (existing.max !== newR.max) {
+            const gained = newR.max - existing.max;
+            existing.max = newR.max;
+            if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
+            else if (existing.current > newR.max) existing.current = newR.max;
+            changed = true;
+          }
+          if (!existing.action  && newR.action)   { existing.action   = newR.action;   changed = true; }
+          if (!existing.desc    && newR.desc)      { existing.desc     = newR.desc;     changed = true; }
+          if (!existing.fullDesc && newR.fullDesc) { existing.fullDesc = newR.fullDesc; changed = true; }
+          if (newR.note && existing.note !== newR.note) { existing.note = newR.note; changed = true; }
         }
       });
     }
@@ -837,29 +841,34 @@ const App = (() => {
         </div>`;
       }).join('');
 
-      // Panel del Echo (solo Echo Knight)
+      // Panel del Echo — solo si está activo
       const echoPanel = isEchoKnight ? (() => {
         const ca = Characters.calcCA(c);
+        const active = !!c.echoActive;
         return `
-        <div class="echo-panel">
-          <div class="echo-panel-title">👻 El Echo</div>
-          <div class="echo-panel-stats">
-            <div class="echo-stat-block">
-              <div class="echo-stat-val">${ca}</div>
-              <div class="echo-stat-label">CA</div>
-            </div>
-            <div class="echo-stat-block">
-              <div class="echo-stat-val">1</div>
-              <div class="echo-stat-label">HP</div>
-            </div>
-            <div class="echo-stat-block" style="flex:2;text-align:left;padding-left:8px;">
-              <div style="font-size:10px;color:var(--text-dim);line-height:1.5;">
-                Mismo turno · 9 m alcance<br>
-                Acción bonus → mover 9 m<br>
-                Acción bonus → teleportarse al Echo
+        <div class="ability-card${active ? ' echo-active-card' : ''}" style="margin-bottom:8px;">
+          <div class="ability-card-top">
+            <div class="ability-card-info">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                <span class="ability-card-name">👻 Manifest Echo</span>
+                <span class="ability-action-tag">Acción bonus</span>
               </div>
+              <div class="ability-card-desc">Invocás/descartás una copia fantasmal. Mientras activo: CA ${ca} · HP 1 · alcance 9 m.</div>
             </div>
+            <button class="ability-use-btn${active ? ' echo-btn-active' : ''}" onclick="App.toggleEcho()">
+              ${active ? `Activo<br><span style="font-size:10px;">Descartar</span>` : `Invocar`}
+            </button>
           </div>
+          ${active ? `
+          <div class="echo-panel-stats" style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(160,120,240,0.2);">
+            <div class="echo-stat-block"><div class="echo-stat-val">${ca}</div><div class="echo-stat-label">CA</div></div>
+            <div class="echo-stat-block"><div class="echo-stat-val">1</div><div class="echo-stat-label">HP</div></div>
+            <div style="flex:2;padding-left:10px;font-size:10px;color:var(--text-dim);line-height:1.6;">
+              Acción bonus → mover 9 m<br>
+              Acción bonus → teleportarse al Echo<br>
+              Atacar desde su posición
+            </div>
+          </div>` : ''}
         </div>`;
       })() : '';
 
@@ -5852,6 +5861,14 @@ const App = (() => {
   }
 
   /* ── Feature Detail Modal ── */
+  function toggleEcho() {
+    if (!_char) return;
+    _char.echoActive = !_char.echoActive;
+    _saveChar();
+    _renderCombateTab();
+    showToast(_char.echoActive ? '👻 Echo invocado' : '👻 Echo descartado');
+  }
+
   // Abre el detalle de un recurso activable (Second Wind, Action Surge, Unleash, etc.)
   function openAbilityDetail(resourceId) {
     const r = (_char.resources || []).find(r => r.id === resourceId);
@@ -6222,7 +6239,7 @@ const App = (() => {
 
     // Detalle spell
     openSpellDetail, closeSpellDetail,
-    openAbilityDetail,
+    openAbilityDetail, toggleEcho,
     openFeatureDetail, closeFeatureDetail,
     toggleHideFeature, showAllHiddenFeatures,
 
