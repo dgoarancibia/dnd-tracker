@@ -1437,6 +1437,11 @@ const Characters = (() => {
           fullDesc: 'Tenés una reserva de resistencia que podés usar para protegerte del daño.\n\nComo acción adicional, recuperás puntos de golpe iguales a 1d10 + tu nivel de Guerrero.\n\nUna vez que usás esta habilidad, debés terminar un descanso corto o largo para poder usarla de nuevo.',
         },
         ...(nivel >= 2 ? [{
+          id: 'tactical-mind', name: 'Mente Táctica',
+          source: 'Guerrero · Nivel 2', type: 'active', action: 'Ninguna (al fallar prueba)', range: 'Personal', recharge: null,
+          desc: 'Cuando fallás una prueba de característica, podés gastar 1 uso de Second Wind para tirar 1d10 y sumarlo al resultado. Si aun así falla, el uso de Second Wind no se gasta.',
+          fullDesc: 'Tenés facilidad para la estrategia dentro y fuera del campo de batalla.\n\nCuando fallás una prueba de característica, podés gastar un uso de tu rasgo Second Wind (Tomar aliento) para esforzarte por superarla. En vez de recuperar puntos de golpe, tirás 1d10 y sumás el resultado a la prueba de característica, lo que podría convertir el fallo en un éxito.\n\nSi seguís sin superar la prueba, este uso de Second Wind no se gasta.',
+        }, {
           id: 'action-surge', name: `Action Surge${nivel >= 17 ? ' (×2)' : ''}`,
           source: `Guerrero · Nivel 2`, type: 'active', action: 'Sin acción', range: 'Personal', recharge: 'short',
           desc: `Tomás una acción adicional completa en tu turno. ${nivel >= 17 ? '2 usos por descanso.' : '1 uso por descanso corto/largo.'}`,
