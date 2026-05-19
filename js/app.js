@@ -898,11 +898,7 @@ const App = (() => {
         const used = d >= r.current;
         dotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
       }
-      // Si tiene acción/desc, el nombre es tappable para ver el detalle
-      const nameEl = (r.action || r.desc)
-        ? `<span class="rc-name" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;" onclick="App.openAbilityDetail('${r.id}')">${r.name} ℹ</span>`
-        : `<span class="rc-name">${r.name}</span>`;
-      html += `<div class="resource-card"><div class="rc-top">${nameEl}<span class="rc-recharge">${rechargeLabel}</span>${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}</div><div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div></div>`;
+      html += `<div class="resource-card"><div class="rc-top"><span class="rc-name">${r.name}</span><span class="rc-recharge">${rechargeLabel}</span>${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}</div><div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div></div>`;
     });
 
     html += `</div>`; // cierra resources-grid
@@ -1090,10 +1086,10 @@ const App = (() => {
       html += _renderCompanionHTML(c);
     }
 
-    // ── HABILIDADES ACTIVABLES (referencia pura: max === 0, sin dots propios) ───
-    // Recursos con max > 0 se muestran como dot-counters en la columna izquierda.
-    // Solo llegan aquí los que no tienen usos propios (ej. Mente Táctica usa slots de SW).
-    const activables = (c.resources || []).filter(r => (r.action || r.desc) && r.max === 0);
+    // ── HABILIDADES ACTIVABLES (todos los recursos con action o desc) ───────────
+    // Los recursos con max>0 TAMBIÉN aparecen como dots en la columna izquierda.
+    // Aquí se muestran como tarjetas activables en la derecha para poder usarlos.
+    const activables = (c.resources || []).filter(r => r.action || r.desc);
     const isEchoKnight = c.subclase === 'Echo Knight';
     if (activables.length || isEchoKnight) {
       const rechargeLabel = rc => ({ short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[rc] || rc || '');
