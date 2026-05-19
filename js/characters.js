@@ -1867,13 +1867,27 @@ const Characters = (() => {
           : 1;
         return [
           { id:'echo-unleash', name:'Unleash Incarnation',
-            current: conMod,
-            max:     conMod,
+            current: conMod, max: conMod,
             recharge:'long',
-            note:`${conMod} uso${conMod !== 1 ? 's' : ''} (CON mod) · ataque extra desde el Echo · alcance 9 m`,
             action:'Ninguna (en tu turno)', range:'9 m (Echo)',
             desc:`Cuando usas Extra Attack, el Echo hace un ataque cuerpo a cuerpo adicional desde su posición. ${conMod} uso${conMod!==1?'s':''} (CON mod) por Long Rest.`,
-            fullDesc:`Cuando usas la función de Ataque múltiple, puedes hacer uno de eeres ataques desde la posición de tu eco en lugar de la tuya.\n\nPuedes usar esta habilidad un número de veces igual a tu modificador de Constitución (mínimo 1). Recuperas todos los ueres después de un descanso largo.\n\nUeres actuales: ${conMod} (CON mod).` },
+            fullDesc:`Cuando usas la función de Ataque múltiple, puedes hacer uno de tus ataques desde la posición de tu Echo en lugar de la tuya.\n\nUsos: ${conMod} (CON mod). Se recargan con Long Rest.` },
+          ...(nivel >= 10 ? [{
+            id:'echo-shadow-martyr', name:'Shadow Martyr',
+            current: 1, max: 1,
+            recharge:'short',
+            action:'Reacción', range:'Ilimitado (Echo)',
+            desc:`Cuando una criatura que puedes ver ataca a alguien que no seas tú, teletransportas el Echo junto a ese aliado. El ataque impacta al Echo en su lugar. 1 uso por Short Rest.`,
+            fullDesc:`A nivel 10, puedes hacer que tu Echo se interponga entre un atacante y un aliado.\n\nCuando una criatura que puedes ver ataca a otra criatura (que no seas tú), puedes usar tu Reacción para teletransportar tu Echo a un espacio desocupado a 1,5 m del objetivo. El ataque es contra el Echo en lugar del aliado.\n\nSi el ataque impacta, el Echo recibe el daño (y probablemente es destruido).\n\n1 uso por Short o Long Rest.`
+          }] : []),
+          ...(nivel >= 15 ? [{
+            id:'echo-reclaim-potential', name:'Reclaim Potential',
+            current: conMod, max: conMod,
+            recharge:'long',
+            action:'Sin acción (al destruir el Echo)', range:'Personal',
+            desc:`Cuando tu Echo es destruido por daño, ganas 2d6+${conMod} HP temporales (si no tienes ya THP). ${conMod} uso${conMod!==1?'s':''} (CON mod) por Long Rest.`,
+            fullDesc:`A nivel 15, has aprendido a absorber la energía de tu Echo cuando es destruido.\n\nCuando tu Echo es destruido por recibir daño, puedes ganar puntos de golpe temporales iguales a 2d6 + tu modificador de Constitución (${conMod}), siempre que no tengas ya HP temporales.\n\nUsos: ${conMod} (CON mod). Se recargan con Long Rest.`
+          }] : []),
         ];
       },
       features: (nivel) => {
