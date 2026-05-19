@@ -134,6 +134,7 @@ const App = (() => {
       if (newR.fullDesc !== undefined && existing.fullDesc !== newR.fullDesc) { existing.fullDesc = newR.fullDesc; changed = true; }
       if (newR.note     !== undefined && existing.note     !== newR.note)     { existing.note     = newR.note;     changed = true; }
       if (newR.recharge !== undefined && existing.recharge !== newR.recharge) { existing.recharge = newR.recharge; changed = true; }
+      if (newR.linksTo  !== undefined && existing.linksTo  !== newR.linksTo)  { existing.linksTo  = newR.linksTo;  changed = true; }
     };
 
     // 2b. Re-sync recursos de clase — agrega nuevos y actualiza textos en existentes
@@ -1097,26 +1098,39 @@ const App = (() => {
       const abilityCards = activables.map(r => {
         const hasUses = r.max > 0;
         const usable = hasUses && r.current > 0;
-        const dots = hasUses ? Array.from({length: r.max}, (_, d) => {
-          const used = d >= r.current;
-          return `<div class="slot-dot${used?' used':''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
-        }).join('') : '';
+
+        // Recurso que usa slots de otro (ej. Mente Táctica → second-wind)
+        const linkedId = r.linksTo || null;
+        const linkedRes = linkedId ? (_char.resources || []).find(lr => lr.id === linkedId) : null;
+        const linkedUsable = linkedRes ? linkedRes.current > 0 : false;
+
+        // Determinar si el botón es operable y qué acción ejecuta
+        const canUse = hasUses ? usable : linkedUsable;
+        const onclickAction = hasUses
+          ? `App.adjustResource('${r.id}',-1)`
+          : linkedId ? `App.adjustResource('${linkedId}',-1)` : '';
 
         // Label del botón según tipo de habilidad
         const btnLabel = (() => {
-          if (!hasUses) return '<span style="font-size:10px;">↳ SW</span>'; // usa recurso ajeno (ej. Mente Táctica)
+          if (!hasUses && linkedRes) {
+            // Muestra usos del recurso vinculado
+            return linkedUsable
+              ? `Usar<br><span style="font-size:10px;">↳ SW ${linkedRes.current}/${linkedRes.max}</span>`
+              : `<span style="font-size:10px;">SW Agotado</span>`;
+          }
+          if (!hasUses) return '<span style="font-size:10px;">↳ SW</span>';
           if (!usable) return '<span style="font-size:10px;">Agotado</span>';
           const id = r.id || '';
           const name = (r.name || '').toLowerCase();
-          if (id.includes('echo') || name.includes('echo') || name.includes('echo')) return `Invocar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
+          if (id.includes('echo') || name.includes('echo')) return `Invocar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
           if (r.action && r.action.toLowerCase().includes('lanzar')) return `Lanzar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
           return `Usar<br><span style="font-size:10px;">${r.current}/${r.max}</span>`;
         })();
-        const btnDisabled = !hasUses || !usable;
-        const btnStyle = !hasUses ? ' style="background:rgba(100,80,180,0.15);color:var(--text-dim);cursor:default;"' : '';
+        const btnDisabled = !canUse;
+        const btnStyle = !canUse ? ' style="opacity:0.45;cursor:default;"' : '';
 
         return `
-        <div class="ability-card${usable ? '' : (hasUses ? ' ability-card--spent' : '')}">
+        <div class="ability-card${canUse ? '' : ' ability-card--spent'}">
           <div class="ability-card-top">
             <div class="ability-card-info" onclick="App.openAbilityDetail('${r.id}')">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
@@ -1126,7 +1140,7 @@ const App = (() => {
               </div>
               ${r.desc ? `<div class="ability-card-desc">${r.desc}</div>` : ''}
             </div>
-            <button class="ability-use-btn${!hasUses || !usable ? ' disabled' : ''}"${btnStyle} ${usable && hasUses ? `onclick="App.adjustResource('${r.id}',-1)"` : 'disabled'}>
+            <button class="ability-use-btn${btnDisabled ? ' disabled' : ''}"${btnStyle} ${canUse && onclickAction ? `onclick="${onclickAction}"` : 'disabled'}>
               ${btnLabel}
             </button>
           </div>

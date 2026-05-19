@@ -1436,10 +1436,11 @@ const Characters = (() => {
         ...(nivel >= 2 ? [{
           id:'tactical-mind', name:'Mente Táctica',
           current: 0, max: 0,
+          linksTo: 'second-wind',
           recharge: null,
           action:'Ninguna (al fallar prueba)', range:'Personal',
-          desc:`Gastás 1 uso de Second Wind para sumar 1d10 a una prueba de característica fallida. Si aun así fallas, el uso no se gasta.`,
-          fullDesc:`Tienes facilidad para la estrategia dentro y fuera del campo de batalla.\n\nCuando fallas una prueba de característica, puedes gastar un uso de tu rasgo Second Wind para esforzarte por superarla.\n\nEn vez de recuperar puntos de golpe, tiras 1d10 y sumas el resultado a la prueba de característica, lo que podría convertir el fallo en un éxito.\n\nSi seguís sin superar la prueba, este uso de Second Wind no se gasta.` }] : []),
+          desc:`Gasta 1 uso de Second Wind para sumar 1d10 a una prueba de característica fallida. Si aun así fallas, el uso no se gasta.`,
+          fullDesc:`Tienes facilidad para la estrategia dentro y fuera del campo de batalla.\n\nCuando fallas una prueba de característica, puedes gastar un uso de tu rasgo Second Wind para esforzarte por superarla.\n\nEn vez de recuperar puntos de golpe, tiras 1d10 y sumas el resultado a la prueba de característica, lo que podría convertir el fallo en un éxito.\n\nSi aun así no superas la prueba, este uso de Second Wind no se gasta.` }] : []),
         ...(nivel >= 9 ? [{
           id:'indomitable-resource', name:`Indomitable`,
           current: nivel>=17?3:nivel>=13?2:1, max: nivel>=17?3:nivel>=13?2:1,
