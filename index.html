@@ -1527,14 +1527,11 @@ waitForFirebase(() => {
             FirebaseApp.loadAllCharsCloud(user.uid),
             new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))
           ]);
-          console.log('[index] cloudChars recibidos:', Object.keys(cloudChars || {}));
           // Guardar en localStorage — usar doc ID como fallback si char.id falta
           Object.entries(cloudChars || {}).forEach(([docId, c]) => {
             if (!c.id) c.id = docId;
-            console.log('[index] guardando:', c.id, c.name);
             Storage.saveCharRaw(c);
           });
-          console.log('[index] localStorage después del sync:', Object.keys(Storage.getAllChars()));
         } catch(e) {
           console.warn('[index] sync timeout/error:', e.message);
         }
@@ -1562,7 +1559,6 @@ function renderGrid() {
   // (puede haber vuelto desde Firebase antes del fix)
   Storage.purgeDeletedFromLocal();
   const chars = Storage.getAllCharsList();
-  console.log('[renderGrid] chars:', chars.map(c => c.id + '/' + c.name));
   const grid  = document.getElementById('charGrid');
   const label = document.getElementById('charCountLabel');
   label.textContent = chars.length === 1 ? '1 Personaje' : chars.length + ' Personajes';
@@ -2765,7 +2761,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 252;
+var _SW_EXPECTED_IDX = 253;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
