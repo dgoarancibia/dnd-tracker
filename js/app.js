@@ -474,6 +474,9 @@ const App = (() => {
       const isOptionN      = e.altKey && !e.metaKey && !e.shiftKey && e.code === 'KeyN';
       if (!isAltSpace && !isCmdShiftSpace && !isOptionN) return;
       e.preventDefault();
+      // Si el modal ya está abierto → cerrar
+      const qnModal = document.getElementById('quickNoteModal');
+      if (qnModal && qnModal.classList.contains('show')) { closeQuickNote(); return; }
       // No abrir si el foco está en un input/textarea
       const tag = document.activeElement && document.activeElement.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
