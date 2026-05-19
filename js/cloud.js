@@ -140,7 +140,21 @@ const Cloud = (() => {
 
   let _syncing = false;
   async function _syncOnLogin(uid) {
-    if (!navigator.onLine || _syncing) return;
+    if (_syncing) {
+      // Si ya está sincronizando, esperar hasta 12s a que termine y luego renderizar
+      const waited = Date.now();
+      while (_syncing && Date.now() - waited < 12000) {
+        await new Promise(r => setTimeout(r, 300));
+      }
+      if (typeof renderGrid === 'function') renderGrid();
+      return;
+    }
+    if (!navigator.onLine) {
+      // Sin conexión — renderizar lo que haya en local (puede ser vacío)
+      if (typeof renderGrid === 'function') renderGrid();
+      if (window.App && typeof App.init === 'function') App.init();
+      return;
+    }
     _syncing = true;
     _setSyncState(SyncState.SAVING);
     try {

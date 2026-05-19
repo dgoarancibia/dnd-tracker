@@ -1457,11 +1457,18 @@ function initCharsScreen() {
   if (_currentUser && chars.length === 0) {
     document.getElementById('charCountLabel').textContent = 'Sincronizando…';
     document.getElementById('charGrid').innerHTML = `
-      <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 20px;opacity:0.7;">
+      <div id="syncSpinner" style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 20px;opacity:0.7;">
         <div style="width:36px;height:36px;border:3px solid rgba(201,151,58,0.3);border-top-color:#c9973a;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
         <div style="font-family:'Cinzel',serif;font-size:13px;color:#c9973a;letter-spacing:0.05em;">Cargando personajes…</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.35);">Conectando con la nube</div>
       </div>`;
+    // Timeout de seguridad: si en 12s no llegaron datos, renderizar igual
+    setTimeout(() => {
+      if (document.getElementById('syncSpinner')) {
+        document.getElementById('charCountLabel').textContent = 'Personajes';
+        renderGrid();
+      }
+    }, 12000);
     return; // renderGrid() se llama desde cloud.js cuando lleguen los datos
   }
 
@@ -2747,7 +2754,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 249;
+var _SW_EXPECTED_IDX = 250;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
