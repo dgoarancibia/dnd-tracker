@@ -1800,6 +1800,52 @@ const Characters = (() => {
       ],
     },
 
+    'Echo Knight': {
+      clase: 'Guerrero',
+      resources: (nivel) => [
+        { id:'echo-unleash', name:'Unleash Incarnation',
+          current: nivel >= 15 ? Math.floor((nivel - 11) / 4) + 3 : nivel >= 11 ? 3 : nivel >= 7 ? 3 : nivel >= 3 ? 3 : 3,
+          max:     nivel >= 15 ? Math.floor((nivel - 11) / 4) + 3 : 3,
+          recharge:'long',
+          note:`CON mod usos · ataque extra desde el Echo · alcance 9 m` },
+      ],
+      features: (nivel) => {
+        const conModNote = '(igual a tu modificador de CON, mínimo 1)';
+        return [
+          { id:'ek-manifest-echo', name:'Manifest Echo',
+            source:'Echo Knight · Nv3', type:'active', action:'Acción bonus', range:'Personal',
+            recharge:null,
+            desc:'Invocás una copia fantasmal de vos mismo en un espacio desocupado a 4,5 m. El Echo tiene 1 HP + tu CA y usa tu tirada de iniciativa. Podés moverlo 9 m (acción bonus). Podés atacar desde su posición. Si el Echo es destruido o te apartás más de 9 m de él, desaparece.',
+            fullDesc:'Como acción adicional, puedes crear un echo mágico de ti mismo en un espacio desocupado que puedas ver a 4,5 metros de ti. Este echo es una criatura mágica con 1 punto de golpe, CA igual a la tuya, inmune a conditions y tiene tu velocidad.\n\nEn tu turno, como acción adicional, puedes moverlo hasta 9 metros hacia cualquier espacio desocupado que puedas ver.\n\nSi el eco está a 9 metros o menos de ti, puedes atacar desde su posición en lugar de la tuya. Puedes hacer que tus ataques de oportunidad surjan desde la posición del eco.\n\nEl eco desaparece si es destruido, si usas esta habilidad de nuevo, o si quedás incapacitado.\n\nPuedes teleportarte al espacio del eco como acción bonus.' },
+          { id:'ek-unleash-incarnation', name:'Unleash Incarnation',
+            source:'Echo Knight · Nv3', type:'active', action:'Ninguna (en tu turno)',
+            range:'9 m (Echo)', recharge:'Long Rest',
+            desc:`CON mod usos/Long Rest ${conModNote}. Cuando usás Extra Attack, el Echo puede hacer un ataque cuerpo a cuerpo adicional desde su posición.`,
+            fullDesc:'Cuando usas la función de Ataque múltiple, puedes hacer uno de esos ataques desde la posición de tu eco en lugar de la tuya. Puedes usar esta habilidad un número de veces igual a tu modificador de Constitución (mínimo 1). Recuperas todos los usos después de un descanso largo.' },
+          ...(nivel >= 7 ? [{ id:'ek-echo-avatar', name:'Echo Avatar',
+            source:'Echo Knight · Nv7', type:'active', action:'Acción',
+            range:'Personal', recharge:null,
+            desc:'Podés extender tu consciencia al Echo durante 10 min. Ves/oís desde su posición en lugar de la tuya (no percibes con tus sentidos propios). El Echo puede moverse contigo en la distancia.',
+            fullDesc:'A nivel 7, puedes proyectarte a través de tu eco. Como acción, puedes ver y oír a través de los sentidos de tu eco en lugar de los tuyos propios. Duran hasta 10 minutos, mientras estés concentrado. Durante este tiempo, eres sordo y ciego. El eco puede estar a cualquier distancia de ti sin desaparecer.' }] : []),
+          ...(nivel >= 10 ? [{ id:'ek-shadow-martyr', name:'Shadow Martyr',
+            source:'Echo Knight · Nv10', type:'active', action:'Reacción',
+            range:'Ilimitado (Echo)', recharge:'Short Rest',
+            desc:'1/Short Rest — cuando una criatura que podés ver ataca a alguien que no seas vos, podés teletransportar el Echo a ese espacio y hacer que el Echo sea el objetivo del ataque.',
+            fullDesc:'A nivel 10, puedes hacer que tu eco se interponga entre un ataque y otro. Cuando una criatura ataca a una criatura que no eres tú dentro del alcance de tu eco, puedes usar tu reacción para hacer que el eco sea el objetivo del ataque en su lugar. El eco se teletransporta al espacio de la criatura objetivo. Se considera que el eco es alcanzado por el ataque si el ataque impacta, destruyendo el eco si el ataque tiene éxito. Puedes usar esta característica una vez y recuperas su uso tras un descanso corto o largo.' }] : []),
+          ...(nivel >= 15 ? [{ id:'ek-reclaim-potential', name:'Reclaim Potential',
+            source:'Echo Knight · Nv15', type:'active', action:'Ninguna (cuando destruyen el Echo)',
+            range:'Personal', recharge:'Long Rest',
+            desc:`${conModNote} usos/Long Rest — cuando el Echo es destruido podés ganar ${nivel >= 15 ? '2d6 + CON mod' : '2d6'} HP temporales.`,
+            fullDesc:'A nivel 15, has aprendido a absorber la energía de tu eco cuando es destruido. Cuando tu eco es destruido por recibir daño, puedes ganar puntos de golpe temporales iguales a 2d6 + tu modificador de Constitución. Puedes usar esta característica un número de veces igual a tu modificador de Constitución (mínimo 1). Recuperas todos los usos tras un descanso largo.' }] : []),
+          ...(nivel >= 18 ? [{ id:'ek-legion-of-one', name:'Legion of One',
+            source:'Echo Knight · Nv18', type:'active', action:'Acción bonus',
+            range:'Personal', recharge:'Short Rest',
+            desc:'Podés crear 2 Ecos simultáneamente. Unleash Incarnation se recarga con Short Rest. Cada Echo puede hacer su propio ataque de Unleash Incarnation.',
+            fullDesc:'A nivel 18, puedes usar Manifest Echo dos veces, creando dos ecos en lugar de uno. Cada uno puede tener una posición diferente. Si debes elegir cuál eco usar para una habilidad, usas el que prefieras.\nAdemás, Unleash Incarnation ahora se recarga con descanso corto o largo.' }] : []),
+        ];
+      },
+    },
+
     // ── EXPLORADOR ────────────────────────────────────────────────────────────
     'Hunter': {
       clase: 'Explorador',
@@ -4597,6 +4643,8 @@ const Characters = (() => {
     // Tasha's
     { id:'sub-psi-warrior',      name:'Psi Warrior',           desc:'Psionic Energy Dice (d6→d12), telekinesis, escudo psiónico.' },
     { id:'sub-rune-knight',      name:'Rune Knight',           desc:'Runas mágicas + crecer a tamaño Large. Fuerza bruta mágica.' },
+    // Explorer's Guide to Wildemount
+    { id:'sub-echo-knight',      name:'Echo Knight',           desc:'Crea un Echo fantasmal para atacar desde lejos, intercambiar posición y sacrificarlo por aliados.' },
     // 2024 PHB
     { id:'sub-brawler',          name:'Brawler',               desc:'Combate sin armas potenciado: Unarmed Strike d6+, Grapple-and-strike, improvisación.' },
   ];
