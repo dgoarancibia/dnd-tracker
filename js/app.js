@@ -117,6 +117,31 @@ const App = (() => {
       }
     }
 
+    // 2b. Re-sync recursos de clase — agrega recursos nuevos que no existían (ej. Indomitable)
+    const claseFeatSync = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[c.clase];
+    if (claseFeatSync && typeof claseFeatSync.resources === 'function') {
+      const nivel = c.nivel || 1;
+      const claseResrcs = claseFeatSync.resources(nivel, c.subclase || '');
+      claseResrcs.forEach(newR => {
+        if (!newR.action && !newR.desc) return; // solo ability-card resources
+        const existing = (c.resources || []).find(r => r.id === newR.id);
+        if (!existing) {
+          if (!c.resources) c.resources = [];
+          c.resources.push({ ...newR });
+          changed = true;
+        } else if (existing.max !== newR.max) {
+          const gained = newR.max - existing.max;
+          existing.max = newR.max;
+          if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
+          else if (existing.current > newR.max) existing.current = newR.max;
+          if (newR.note) existing.note = newR.note;
+          if (newR.desc) existing.desc = newR.desc;
+          if (newR.fullDesc) existing.fullDesc = newR.fullDesc;
+          changed = true;
+        }
+      });
+    }
+
     // 3. Re-sync recursos de subclase que dependen de stats (ej. Echo Knight Unleash → CON mod)
     if (c.subclase) {
       const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[c.subclase];
@@ -783,8 +808,10 @@ const App = (() => {
     <!-- HABILIDADES ACTIVABLES (recursos con acción/desc) -->
     ${(() => {
       const activables = c.resources.filter(r => r.action || r.desc);
-      if (!activables.length) return '';
+      const isEchoKnight = c.subclase === 'Echo Knight';
+      if (!activables.length && !isEchoKnight) return '';
       const rechargeLabel = rc => ({ short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[rc] || rc || '');
+
       const cards = activables.map(r => {
         const usable = r.current > 0;
         const dots = Array.from({length: r.max}, (_, d) => {
@@ -809,7 +836,34 @@ const App = (() => {
           <div class="slot-dots" id="rc-dots-${r.id}" style="margin-top:6px;">${dots}</div>
         </div>`;
       }).join('');
-      return `<div class="section-hd" style="margin-top:12px;">⚡ Habilidades</div>${cards}`;
+
+      // Panel del Echo (solo Echo Knight)
+      const echoPanel = isEchoKnight ? (() => {
+        const ca = Characters.calcCA(c);
+        return `
+        <div class="echo-panel">
+          <div class="echo-panel-title">👻 El Echo</div>
+          <div class="echo-panel-stats">
+            <div class="echo-stat-block">
+              <div class="echo-stat-val">${ca}</div>
+              <div class="echo-stat-label">CA</div>
+            </div>
+            <div class="echo-stat-block">
+              <div class="echo-stat-val">1</div>
+              <div class="echo-stat-label">HP</div>
+            </div>
+            <div class="echo-stat-block" style="flex:2;text-align:left;padding-left:8px;">
+              <div style="font-size:10px;color:var(--text-dim);line-height:1.5;">
+                Mismo turno · 9 m alcance<br>
+                Acción bonus → mover 9 m<br>
+                Acción bonus → teleportarse al Echo
+              </div>
+            </div>
+          </div>
+        </div>`;
+      })() : '';
+
+      return `<div class="section-hd" style="margin-top:12px;">⚡ Habilidades</div>${echoPanel}${cards}`;
     })()}
 
     <!-- RECURSOS CON CONTADORES -->

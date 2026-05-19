@@ -1272,6 +1272,49 @@ input[type=number] { -moz-appearance: textfield; }
   cursor: default;
 }
 
+/* Echo Knight — panel del Echo */
+.echo-panel {
+  background: rgba(120,90,200,0.08);
+  border: 1px solid rgba(160,120,240,0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.echo-panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c49bff;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.echo-panel-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.echo-stat-block {
+  text-align: center;
+  background: rgba(120,90,200,0.15);
+  border-radius: 6px;
+  padding: 4px 10px;
+  min-width: 44px;
+}
+.echo-stat-val {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #c49bff;
+  line-height: 1;
+}
+.echo-stat-label {
+  font-size: 9px;
+  color: rgba(196,155,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
 .rc-top {
   display: flex;
   align-items: center;
