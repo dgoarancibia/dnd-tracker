@@ -1021,6 +1021,19 @@ const App = (() => {
     const _hidden = new Set(c.hiddenFeatures || []);
     const _renderFeatCard = (f) => {
       if (_hidden.has(f.id)) return '';
+
+      // Placeholder de subclase no elegida → mostrar card especial con botón directo
+      if (f.id.endsWith('-subclass') && !c.subclase) {
+        return `<div class="feat-card feat-card--pending" onclick="App.openSubclaseModal()">
+          <div class="feat-top">
+            <span class="feat-name">${f.name}</span>
+            <span class="feat-badge feat-active" style="background:rgba(201,151,58,0.2);color:var(--gold);">Pendiente</span>
+          </div>
+          <div class="feat-source">${f.source}</div>
+          <div class="feat-desc" style="color:var(--gold-dim);">Tocá para elegir tu subclase →</div>
+        </div>`;
+      }
+
       const badge = f.type === 'passive'
         ? `<span class="feat-badge feat-passive">Pasiva</span>`
         : `<span class="feat-badge feat-active">Activa</span>`;
@@ -5581,6 +5594,13 @@ const App = (() => {
 
   /* ── Feature Detail Modal ── */
   function openFeatureDetail(featId) {
+    // Si es el placeholder de subclase (aún no elegida), abrir directo el modal de subclase
+    if (featId === 'fighter-subclass' || featId === 'ranger-subclass' || featId === 'rogue-subclass' ||
+        (_char && _char.features && (_char.features.find(f => f.id === featId && f.id.endsWith('-subclass'))))) {
+      closeFeatureDetail();
+      openSubclaseModal();
+      return;
+    }
     const f = (_char.features || []).find(f => f.id === featId);
     if (!f) return;
 
