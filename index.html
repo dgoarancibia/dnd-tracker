@@ -1383,7 +1383,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=51"></script>
-<script src="js/characters.js?v=82"></script>
+<script src="js/characters.js?v=89"></script>
 <script type="module" src="js/firebase.js?v=36"></script>
 <script>
 // ═══════════════════════════════════════════════════
@@ -1451,27 +1451,6 @@ function initCharsScreen() {
     Storage.setActiveId(lursey.id);
   }
 
-  // Si hay usuario logueado pero localStorage vacío → mostrar spinner mientras
-  // _syncOnLogin trae los personajes de Firebase (puede tardar 2-8 s en iOS)
-  const chars = Storage.getAllCharsList().filter(c => c.id !== 'lursey-brumaclara');
-  if (_currentUser && chars.length === 0) {
-    document.getElementById('charCountLabel').textContent = 'Sincronizando…';
-    document.getElementById('charGrid').innerHTML = `
-      <div id="syncSpinner" style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 20px;opacity:0.7;">
-        <div style="width:36px;height:36px;border:3px solid rgba(201,151,58,0.3);border-top-color:#c9973a;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
-        <div style="font-family:'Cinzel',serif;font-size:13px;color:#c9973a;letter-spacing:0.05em;">Cargando personajes…</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.35);">Conectando con la nube</div>
-      </div>`;
-    // Timeout de seguridad: si en 12s no llegaron datos, renderizar igual
-    setTimeout(() => {
-      if (document.getElementById('syncSpinner')) {
-        document.getElementById('charCountLabel').textContent = 'Personajes';
-        renderGrid();
-      }
-    }, 12000);
-    return; // renderGrid() se llama desde cloud.js cuando lleguen los datos
-  }
-
   renderGrid();
 
   // ?new=1 desde app.html → abrir modal
@@ -1519,7 +1498,7 @@ function doLogout() {
 // INICIALIZACIÓN — esperar Firebase y observar auth
 // ═══════════════════════════════════════════════════
 waitForFirebase(() => {
-  FirebaseApp.onAuthChange(user => {
+  FirebaseApp.onAuthChange(async user => {
     document.getElementById('homeLoading').style.display = 'none';
 
     if (user) {
@@ -1530,6 +1509,31 @@ waitForFirebase(() => {
         window.location.replace(redirect);
         return;
       }
+
+      // Si localStorage está vacío, traer personajes de Firebase antes de mostrar la grilla
+      const localChars = Storage.getAllCharsList().filter(c => c.id !== 'lursey-brumaclara');
+      if (localChars.length === 0) {
+        // Mostrar spinner
+        document.getElementById('homeScreen').style.display = 'none';
+        document.getElementById('charsScreen').style.display = 'flex';
+        document.getElementById('charCountLabel').textContent = 'Cargando…';
+        document.getElementById('charGrid').innerHTML = `
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 20px;">
+            <div style="width:36px;height:36px;border:3px solid rgba(201,151,58,0.3);border-top-color:#c9973a;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+            <div style="font-family:'Cinzel',serif;font-size:13px;color:#c9973a;letter-spacing:0.05em;">Cargando personajes…</div>
+          </div>`;
+        try {
+          const cloudChars = await Promise.race([
+            FirebaseApp.loadAllCharsCloud(user.uid),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))
+          ]);
+          // Guardar en localStorage
+          Object.values(cloudChars || {}).forEach(c => Storage.saveCharRaw(c));
+        } catch(e) {
+          console.warn('[index] sync timeout/error:', e.message);
+        }
+      }
+
       showCharsScreen(user);
     } else {
       // Solo mostrar login si la pantalla de chars no está visible (no logout)
@@ -2754,7 +2758,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 250;
+var _SW_EXPECTED_IDX = 251;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
