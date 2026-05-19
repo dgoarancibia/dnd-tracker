@@ -1802,13 +1802,18 @@ const Characters = (() => {
 
     'Echo Knight': {
       clase: 'Guerrero',
-      resources: (nivel) => [
-        { id:'echo-unleash', name:'Unleash Incarnation',
-          current: nivel >= 15 ? Math.floor((nivel - 11) / 4) + 3 : nivel >= 11 ? 3 : nivel >= 7 ? 3 : nivel >= 3 ? 3 : 3,
-          max:     nivel >= 15 ? Math.floor((nivel - 11) / 4) + 3 : 3,
-          recharge:'long',
-          note:`CON mod usos · ataque extra desde el Echo · alcance 9 m` },
-      ],
+      resources: (nivel, char) => {
+        const conMod = char && char.stats && char.stats.con !== undefined
+          ? Math.max(1, Math.floor((char.stats.con - 10) / 2))
+          : 1;
+        return [
+          { id:'echo-unleash', name:'Unleash Incarnation',
+            current: conMod,
+            max:     conMod,
+            recharge:'long',
+            note:`${conMod} uso${conMod !== 1 ? 's' : ''} (CON mod) · ataque extra desde el Echo · alcance 9 m` },
+        ];
+      },
       features: (nivel) => {
         const conModNote = '(igual a tu modificador de CON, mínimo 1)';
         return [
@@ -4292,7 +4297,7 @@ const Characters = (() => {
 
     // Aplicar recursos de subclase (merge: actualizar existentes, agregar nuevos)
     const nivel = char.nivel || 1;
-    const newResrcs = sub.resources(nivel);
+    const newResrcs = sub.resources(nivel, char);
     newResrcs.forEach(r => {
       const existing = (char.resources || []).find(e => e.id === r.id);
       if (existing) {
@@ -4562,6 +4567,23 @@ const Characters = (() => {
           char.features.push({ ...f });
         }
       });
+    }
+
+    // Actualizar recursos de subclase al subir de nivel (re-evalúan con nivel y stats actualizados)
+    if (char.subclase) {
+      const sub = SUBCLASES_CONFIG[char.subclase];
+      if (sub && typeof sub.resources === 'function') {
+        const subResrcs = sub.resources(newLevel, char);
+        subResrcs.forEach(newR => {
+          const existing = (char.resources || []).find(r => r.id === newR.id);
+          if (existing) {
+            const gained = newR.max - existing.max;
+            existing.max = newR.max;
+            if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
+            if (newR.note) existing.note = newR.note;
+          }
+        });
+      }
     }
 
     // Actualizar subclassSpells al subir de nivel (ej. Aberrant Mind desbloquea por nivel)

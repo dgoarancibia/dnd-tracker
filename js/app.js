@@ -117,7 +117,27 @@ const App = (() => {
       }
     }
 
-    // 3. Re-sync subclassSpells (spells de dominio/juramento/psiónicos)
+    // 3. Re-sync recursos de subclase que dependen de stats (ej. Echo Knight Unleash → CON mod)
+    if (c.subclase) {
+      const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[c.subclase];
+      if (subConf && typeof subConf.resources === 'function') {
+        const nivel = c.nivel || 1;
+        const subResrcs = subConf.resources(nivel, c);
+        subResrcs.forEach(newR => {
+          const existing = (c.resources || []).find(r => r.id === newR.id);
+          if (existing && existing.max !== newR.max) {
+            const gained = newR.max - existing.max;
+            existing.max = newR.max;
+            if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
+            else if (existing.current > newR.max) existing.current = newR.max;
+            if (newR.note) existing.note = newR.note;
+            changed = true;
+          }
+        });
+      }
+    }
+
+    // 4. Re-sync subclassSpells (spells de dominio/juramento/psiónicos)
     if (c.subclase) {
       const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[c.subclase];
       if (subConf && typeof subConf.subclassSpells === 'function') {
@@ -4224,6 +4244,23 @@ const App = (() => {
     document.getElementById('editStatsModal').classList.remove('show');
 
     if (changed) {
+      // Re-sincronizar recursos de subclase que dependen de stats (ej. Echo Knight CON mod)
+      if (_char.subclase) {
+        const sub = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
+        if (sub && typeof sub.resources === 'function') {
+          const updatedResrcs = sub.resources(_char.nivel, _char);
+          updatedResrcs.forEach(newR => {
+            const existing = (_char.resources || []).find(r => r.id === newR.id);
+            if (existing) {
+              const gained = newR.max - existing.max;
+              existing.max = newR.max;
+              if (gained > 0) existing.current = Math.min(existing.current + gained, newR.max);
+              else if (existing.current > newR.max) existing.current = newR.max;
+              if (newR.note) existing.note = newR.note;
+            }
+          });
+        }
+      }
       _saveChar();
       _renderHeader();
       _renderHabilidadesTab();
