@@ -1410,10 +1410,18 @@ const Characters = (() => {
       resources: (nivel) => [
         { id:'action-surge', name:'Action Surge',
           current: nivel >= 17 ? 2 : 1, max: nivel >= 17 ? 2 : 1,
-          recharge:'short', note:'Turno extra de acciones' },
+          recharge:'short', note:'Turno extra de acciones',
+          action:'Sin acción', range:'Personal',
+          desc:`Tomás una acción adicional completa este turno.${nivel>=17?' 2 usos por descanso.':' 1 uso por descanso corto/largo.'}`,
+          fullDesc:'Podés tomar una acción adicional en tu turno ademas de tu acción normal y de tu posible acción adicional. Una vez que usas esta habilidad, debés terminar un descanso corto o largo para poder usarla de nuevo (2 usos desde nivel 17).' },
         { id:'second-wind', name:'Second Wind',
-          current: 1, max: 1, recharge:'short',
-          note:`Recupera 1d10+${nivel} HP como acción bonus` },
+          current: nivel >= 10 ? 4 : nivel >= 4 ? 3 : 2,
+          max:     nivel >= 10 ? 4 : nivel >= 4 ? 3 : 2,
+          recharge:'short',
+          note:`Recupera 1d10+${nivel} HP · acción bonus`,
+          action:'Acción bonus', range:'Personal',
+          desc:`Recuperás 1d10+${nivel} HP. ${nivel>=10?4:nivel>=4?3:2} usos por descanso corto/largo.`,
+          fullDesc:`Tenés una reserva de resistencia que podés usar para protegerte del daño.\n\nComo acción adicional, recuperás puntos de golpe iguales a 1d10 + tu nivel de Guerrero (${nivel}).\n\nUsos según nivel:\nNv1-3 → 2 usos · Nv4-9 → 3 usos · Nv10+ → 4 usos\n\nRecargás todos los usos con descanso corto o largo.` },
       ],
       features: (nivel) => [
         {

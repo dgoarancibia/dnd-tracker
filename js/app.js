@@ -780,6 +780,38 @@ const App = (() => {
       <div class="conc-btns" id="concBtns">${_buildConcBtns(c)}</div>
     </div>
 
+    <!-- HABILIDADES ACTIVABLES (recursos con acción/desc) -->
+    ${(() => {
+      const activables = c.resources.filter(r => r.action || r.desc);
+      if (!activables.length) return '';
+      const rechargeLabel = rc => ({ short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[rc] || rc || '');
+      const cards = activables.map(r => {
+        const usable = r.current > 0;
+        const dots = Array.from({length: r.max}, (_, d) => {
+          const used = d >= r.current;
+          return `<div class="slot-dot${used?' used':''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
+        }).join('');
+        return `
+        <div class="ability-card${usable ? '' : ' ability-card--spent'}">
+          <div class="ability-card-top">
+            <div class="ability-card-info" onclick="App.openAbilityDetail('${r.id}')">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                <span class="ability-card-name">${r.name}</span>
+                ${r.action ? `<span class="ability-action-tag">${r.action}</span>` : ''}
+                ${r.recharge ? `<span class="ability-recharge-tag">${rechargeLabel(r.recharge)}</span>` : ''}
+              </div>
+              ${r.desc ? `<div class="ability-card-desc">${r.desc}</div>` : ''}
+            </div>
+            <button class="ability-use-btn${usable ? '' : ' disabled'}" ${usable ? `onclick="App.adjustResource('${r.id}',-1)"` : 'disabled'}>
+              ${usable ? `Usar<br><span style="font-size:10px;">${r.current}/${r.max}</span>` : `<span style="font-size:10px;">Agotado</span>`}
+            </button>
+          </div>
+          <div class="slot-dots" id="rc-dots-${r.id}" style="margin-top:6px;">${dots}</div>
+        </div>`;
+      }).join('');
+      return `<div class="section-hd" style="margin-top:12px;">⚡ Habilidades</div>${cards}`;
+    })()}
+
     <!-- RECURSOS CON CONTADORES -->
     <div class="section-hd" style="margin-top:12px;">Recursos</div>`;
 
@@ -808,8 +840,8 @@ const App = (() => {
     }
     html += `<div class="resource-card full-width-card"><div class="rc-top"><span class="rc-name">Dados de Golpe (d${c.hitDie})</span><span class="rc-recharge">↺ Largo (mitad)</span></div><div class="slot-dots" id="hd-dots">${hdDotsHtml}</div></div>`;
 
-    // 3. RECURSOS — grilla 2 columnas, al final
-    c.resources.forEach(r => {
+    // 3. RECURSOS sin acción (dots simples) — grilla 2 columnas
+    c.resources.filter(r => !r.action && !r.desc).forEach(r => {
       const rechargeLabel = { short: '↺ Corto', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
       const isCustom = !['channel-divinity','bond','guiding-bolt-mi'].includes(r.id);
       let dotsHtml = '';
@@ -5766,6 +5798,27 @@ const App = (() => {
   }
 
   /* ── Feature Detail Modal ── */
+  // Abre el detalle de un recurso activable (Second Wind, Action Surge, Unleash, etc.)
+  function openAbilityDetail(resourceId) {
+    const r = (_char.resources || []).find(r => r.id === resourceId);
+    if (!r) return;
+    const rechargeLabel = { short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[r.recharge] || r.recharge || '';
+    const badge = `<span class="feat-badge feat-active" style="font-size:11px;padding:2px 8px;">Activa</span>`;
+    document.getElementById('fdmBadge').innerHTML = badge;
+    document.getElementById('fdmName').textContent = r.name;
+    document.getElementById('fdmSource').textContent = `${r.current}/${r.max} usos · ${rechargeLabel}`;
+    let statsHtml = '';
+    if (r.action)   statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Acción</div><div class="fdm-stat-val">${r.action}</div></div>`;
+    if (r.range)    statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${r.range}</div></div>`;
+    if (rechargeLabel) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Recarga</div><div class="fdm-stat-val">${rechargeLabel}</div></div>`;
+    document.getElementById('fdmStatsRow').innerHTML = statsHtml;
+    document.getElementById('fdmSummary').textContent = r.desc || r.note || '';
+    document.getElementById('fdmFull').innerHTML = r.fullDesc
+      ? '<p>' + r.fullDesc.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>') + '</p>'
+      : '';
+    document.getElementById('featureDetailModal').classList.add('show');
+  }
+
   function openFeatureDetail(featId) {
     // Si es el placeholder de subclase (aún no elegida), abrir directo el modal de subclase
     if (featId === 'fighter-subclass' || featId === 'ranger-subclass' || featId === 'rogue-subclass' ||
@@ -6115,6 +6168,7 @@ const App = (() => {
 
     // Detalle spell
     openSpellDetail, closeSpellDetail,
+    openAbilityDetail,
     openFeatureDetail, closeFeatureDetail,
     toggleHideFeature, showAllHiddenFeatures,
 
