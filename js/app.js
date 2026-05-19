@@ -464,6 +464,19 @@ const App = (() => {
       }
     });
 
+    // Alt+Space (Option+Space en Mac/iPad con teclado) → abrir nota rápida
+    document.addEventListener('keydown', e => {
+      if (e.altKey && e.code === 'Space') {
+        e.preventDefault();
+        // No abrir si hay otro modal abierto o si el foco está en un input/textarea
+        const tag = document.activeElement && document.activeElement.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        const anyModal = document.querySelector('.modal.show, [id$="Modal"].show, [id$="Overlay"][style*="flex"]');
+        if (anyModal && anyModal.id !== 'quickNoteModal') return;
+        openQuickNote();
+      }
+    });
+
     // Cloud.init() se llama desde cloud.js al cargarse (después del módulo ESM)
 
     // Auto-backup y cloud save al salir
