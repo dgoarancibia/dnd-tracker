@@ -215,6 +215,11 @@ const Cloud = (() => {
       }
 
       // Notificar a app para re-render
+      // index.html: re-renderizar la grilla de personajes (sync llegó después del primer render)
+      if (typeof renderGrid === 'function') {
+        renderGrid();
+      }
+      // app.html: re-inicializar la app
       if (window.App && typeof App.init === 'function') {
         App.init();
       }
