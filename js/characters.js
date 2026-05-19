@@ -1431,8 +1431,8 @@ const Characters = (() => {
           recharge:'short',
           note:`Recupera 1d10+${nivel} HP · acción bonus`,
           action:'Acción bonus', range:'Personal',
-          desc:`Recuperás 1d10+${nivel} HP. ${nivel>=10?4:nivel>=4?3:2} usos por descanso corto/largo.`,
-          fullDesc:`Tienes una reserva de resistencia que puedes usar para protegerte del daño.\n\nComo acción adicional, recuperas puntos de golpe iguales a 1d10 + tu nivel de Guerrero (${nivel}).\n\nUsos según nivel:\nNv1-3 → 2 usos · Nv4-9 → 3 usos · Nv10+ → 4 usos\n\nRecargás todos los usos con descanso corto o largo.\n\n✦ Mente Táctica (Nv2): puedes gastar 1 uso para sumar 1d10 a una prueba de característica fallida en lugar de recuperar HP. Si seguís fallando, el uso no se gasta.\n✦ Desplazamiento Táctico (Nv5): al usar Second Wind, puedes moverte hasta la mitad de tu velocidad sin provocar ataques de oportunidad.` },
+          desc:`Recuperas 1d10+${nivel} HP. ${nivel>=10?4:nivel>=4?3:2} usos por descanso corto/largo.`,
+          fullDesc:`Tienes una reserva de resistencia que puedes usar para protegerte del daño.\n\nComo acción adicional, recuperas puntos de golpe iguales a 1d10 + tu nivel de Guerrero (${nivel}).\n\nUsos según nivel:\nNv1-3 → 2 usos · Nv4-9 → 3 usos · Nv10+ → 4 usos\n\nRecargas todos los usos con descanso corto o largo.\n\n✦ Mente Táctica (Nv2): puedes gastar 1 uso para sumar 1d10 a una prueba de característica fallida en lugar de recuperar HP. Si aun así fallas, el uso no se gasta.\n✦ Desplazamiento Táctico (Nv5): al usar Second Wind, puedes moverte hasta la mitad de tu velocidad sin provocar ataques de oportunidad.` },
         ...(nivel >= 2 ? [{
           id:'tactical-mind', name:'Mente Táctica',
           current: 0, max: 0,
