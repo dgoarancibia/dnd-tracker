@@ -464,17 +464,23 @@ const App = (() => {
       }
     });
 
-    // Alt+Space (Option+Space en Mac/iPad con teclado) → abrir nota rápida
+    // Shortcuts para abrir nota rápida:
+    // - Alt+Space (Option+Space) → Mac
+    // - Cmd+Shift+Space → Mac/iPad
+    // - Option+N (Alt+N) → Mac/iPad
     document.addEventListener('keydown', e => {
-      if (e.altKey && e.code === 'Space') {
-        e.preventDefault();
-        // No abrir si hay otro modal abierto o si el foco está en un input/textarea
-        const tag = document.activeElement && document.activeElement.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-        const anyModal = document.querySelector('.modal.show, [id$="Modal"].show, [id$="Overlay"][style*="flex"]');
-        if (anyModal && anyModal.id !== 'quickNoteModal') return;
-        openQuickNote();
-      }
+      const isAltSpace     = e.altKey && !e.metaKey && !e.shiftKey && e.code === 'Space';
+      const isCmdShiftSpace = e.metaKey && e.shiftKey && !e.altKey && e.code === 'Space';
+      const isOptionN      = e.altKey && !e.metaKey && !e.shiftKey && e.code === 'KeyN';
+      if (!isAltSpace && !isCmdShiftSpace && !isOptionN) return;
+      e.preventDefault();
+      // No abrir si el foco está en un input/textarea
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      // No abrir si hay otro modal abierto
+      const anyModal = document.querySelector('.modal.show, [id$="Modal"].show, [id$="Overlay"][style*="flex"]');
+      if (anyModal && anyModal.id !== 'quickNoteModal') return;
+      openQuickNote();
     });
 
     // Cloud.init() se llama desde cloud.js al cargarse (después del módulo ESM)
