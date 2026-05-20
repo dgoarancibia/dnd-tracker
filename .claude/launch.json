@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "dnd-tracker",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", ".", "-p", "3000", "--no-clipboard"],
-      "port": 3000
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/diego.arancibia/dnd-tracker/serve.js"],
+      "port": 5500
     }
   ]
 }
