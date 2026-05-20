@@ -4216,6 +4216,14 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .toast.show { transform: translateX(-50%) translateY(0); }
+.toast-combat {
+  white-space: normal;
+  text-align: center;
+  max-width: min(90vw, 420px);
+  font-size: 10px;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+}
 
 /* ═══ FAB NOTA RÁPIDA ═══ */
 .fab-note {

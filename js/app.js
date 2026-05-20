@@ -2975,7 +2975,23 @@ const App = (() => {
     _updateCombatHUD();
     _renderCombateDer();
     _logCombat('⚔ Combate iniciado', 'info');
-    showToast('⚔ Combate iniciado — Ronda 1');
+
+    // Toast con resumen de recursos disponibles
+    const readyParts = [];
+    (_char.resources || []).filter(r => r.max > 0).forEach(r => {
+      const pct = r.current / r.max;
+      const color = pct === 1 ? 'var(--gold)' : pct === 0 ? 'var(--red-light)' : 'var(--text-mid)';
+      const icon  = pct === 1 ? '✓' : pct === 0 ? '✗' : `${r.current}/${r.max}`;
+      readyParts.push(`<span style="color:${color}">${icon} ${r.name}</span>`);
+    });
+    if (_char.subclase === 'Echo Knight') {
+      const echoColor = _char.echoActive ? 'rgba(160,120,240,0.9)' : 'var(--text-mid)';
+      readyParts.unshift(`<span style="color:${echoColor}">👻 Echo ${_char.echoActive ? 'activo' : 'listo'}</span>`);
+    }
+    const resourceSummary = readyParts.length
+      ? `<br><span style="opacity:0.7;font-size:9px;">${readyParts.join(' &nbsp;·&nbsp; ')}</span>`
+      : '';
+    showToast(`⚔ Combate iniciado — Ronda 1${resourceSummary}`, 'combat', 5000);
   }
 
   function nextCombatTurn() {
@@ -6288,12 +6304,14 @@ const App = (() => {
      TOAST
   ══════════════════════════════════════════════════════ */
 
-  function showToast(msg) {
+  function showToast(msg, type, duration) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
+    t.className = 'toast show' + (type ? ' toast-' + type : '');
+    // toast-combat admite HTML; el resto usa textContent por seguridad
+    if (type === 'combat') t.innerHTML = msg;
+    else t.textContent = msg;
     clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), duration || 2400);
   }
 
   /* ══════════════════════════════════════════════════════
