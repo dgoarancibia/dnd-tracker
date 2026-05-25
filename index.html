@@ -1664,8 +1664,9 @@ function renderGrid() {
     const hpPct = c.hp.max > 0 ? (c.hp.current / c.hp.max) * 100 : 0;
     const hpCls = hpPct > 50 ? 'hp-ok' : hpPct > 25 ? 'hp-low' : 'hp-crit';
     const sub   = [c.raza, c.subclase].filter(Boolean).join(' · ');
-    const avatarHtml = c.avatar
-      ? `<div class="card-avatar"><img src="${c.avatar}" alt=""></div>`
+    const avatarSrc = c.avatar || localStorage.getItem('dnd_avatar_' + c.id) || '';
+    const avatarHtml = avatarSrc
+      ? `<div class="card-avatar"><img src="${avatarSrc}" alt=""></div>`
       : `<div class="card-avatar">${(c.name||'?')[0].toUpperCase()}</div>`;
     html += `
     <div class="char-card">
@@ -2860,7 +2861,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 265;
+var _SW_EXPECTED_IDX = 266;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {

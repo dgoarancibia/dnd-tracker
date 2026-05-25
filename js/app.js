@@ -714,14 +714,17 @@ const App = (() => {
     const img      = document.getElementById('charAvatarImg');
     const initials = document.getElementById('charAvatarInitials');
     if (!img || !initials || !_char) return;
-    if (_char.avatar) {
-      img.src = _char.avatar;
+    // Usar avatar del char o fallback al guardado en localStorage
+    const src = _char.avatar || (localStorage.getItem('dnd_avatar_' + _char.id) || '');
+    // Si el char no tenía avatar pero hay uno local, restaurarlo
+    if (!_char.avatar && src) { _char.avatar = src; Storage.saveChar(_char); }
+    if (src) {
+      img.src = src;
       img.style.display = 'block';
       initials.style.display = 'none';
     } else {
       img.style.display = 'none';
       initials.style.display = '';
-      // Iniciales: primera letra del nombre
       initials.textContent = (_char.name || '?')[0].toUpperCase();
     }
   }
@@ -868,6 +871,8 @@ const App = (() => {
 
     const dataUrl = out.toDataURL('image/jpeg', 0.82);
     _char.avatar  = dataUrl;
+    // Guardar en localStorage independiente de Firestore (persiste aunque cloud pise el char)
+    try { localStorage.setItem('dnd_avatar_' + _char.id, dataUrl); } catch(e) {}
     Storage.saveChar(_char);
     Cloud.scheduleSave(_char);
     _renderAvatar();
