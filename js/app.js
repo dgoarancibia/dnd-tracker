@@ -4137,30 +4137,30 @@ const App = (() => {
 
   // Buscador autocomplete
   let _awmSugIdx = -1;
+  let _awmHits = [];
+
   function awmSearch(q) {
     const sg = document.getElementById('awmSuggestions');
     _awmSugIdx = -1;
-    if (!q || q.length < 2) { sg.style.display = 'none'; return; }
+    if (!q || q.length < 2) { sg.style.display = 'none'; _awmHits = []; return; }
     const lq = q.toLowerCase();
-    const hits = (Characters.WEAPONS_DB || [])
+    _awmHits = (Characters.WEAPONS_DB || [])
       .filter(w => w.name.toLowerCase().includes(lq))
       .slice(0, 8);
-    if (!hits.length) { sg.style.display = 'none'; return; }
-    sg.innerHTML = hits.map((w,i) =>
+    if (!_awmHits.length) { sg.style.display = 'none'; return; }
+    sg.innerHTML = _awmHits.map((w,i) =>
       `<div class="awm-sug-item" data-idx="${i}" onmousedown="App.awmPick(${i})" ontouchstart="App.awmPick(${i})">
         <span class="awm-sug-name">${w.name}</span>
         <span class="awm-sug-meta">${w.die} · ${w.type==='melee'?'Melé':'Distancia'}${w.mastery?' · '+w.mastery:''}${w.extraDie?' · +'+w.extraDie+' '+w.extraType:''}</span>
        </div>`
     ).join('');
-    sg._hits = hits;
     sg.style.display = 'block';
   }
 
   function awmPick(i) {
-    const sg = document.getElementById('awmSuggestions');
-    const hits = sg._hits || [];
-    if (!hits[i]) return;
-    _awmFill(hits[i]);
+    if (!_awmHits[i]) return;
+    _awmFill(_awmHits[i]);
+    _awmHits = [];
     _awmClearSearch();
     document.getElementById('awmName').focus();
   }
