@@ -5447,6 +5447,74 @@ const Characters = (() => {
     { id:'custom',     name:'Personalizada',    type:'custom', base_ca:10, add_dex:true,  max_dex:null, stealth_dis:false, emoji:'✏️' },
   ];
 
+  /* ── WEAPONS_DB: PHB 2024 + armas mágicas comunes ────────────────────────── */
+  // Campos: id, name, die, type(melee/ranged), properties[], mastery, statUsed(str/dex/choice)
+  // extraDie + extraType: daño adicional mágico (ej: '1d6','fire')
+  const WEAPONS_DB = [
+    // ── ARMAS SIMPLES CUERPO A CUERPO ─────────────────────────────────────────
+    { id:'club',          name:'Club',              die:'1d4',  type:'melee',   properties:['Light'],              mastery:'Slow',   statUsed:'str' },
+    { id:'dagger',        name:'Dagger',            die:'1d4',  type:'melee',   properties:['Finesse','Light','Thrown (20/60)'], mastery:'Nick', statUsed:'choice' },
+    { id:'greatclub',     name:'Greatclub',         die:'1d8',  type:'melee',   properties:['Two-Handed'],         mastery:'Push',   statUsed:'str' },
+    { id:'handaxe',       name:'Handaxe',           die:'1d6',  type:'melee',   properties:['Light','Thrown (20/60)'], mastery:'Vex', statUsed:'str' },
+    { id:'javelin',       name:'Javelin',           die:'1d6',  type:'melee',   properties:['Thrown (30/120)'],    mastery:'Slow',   statUsed:'str' },
+    { id:'light-hammer',  name:'Light Hammer',      die:'1d4',  type:'melee',   properties:['Light','Thrown (20/60)'], mastery:'Nick', statUsed:'str' },
+    { id:'mace',          name:'Mace',              die:'1d6',  type:'melee',   properties:[],                     mastery:'Sap',    statUsed:'str' },
+    { id:'quarterstaff',  name:'Quarterstaff',      die:'1d6',  type:'melee',   properties:['Versatile (1d8)'],    mastery:'Topple', statUsed:'str' },
+    { id:'sickle',        name:'Sickle',            die:'1d4',  type:'melee',   properties:['Light'],              mastery:'Nick',   statUsed:'str' },
+    { id:'spear',         name:'Spear',             die:'1d6',  type:'melee',   properties:['Thrown (20/60)','Versatile (1d8)'], mastery:'Sap', statUsed:'str' },
+    { id:'unarmed',       name:'Unarmed Strike',    die:'1+STR', type:'melee',  properties:[],                     mastery:null,     statUsed:'str' },
+    // ── ARMAS SIMPLES DISTANCIA ───────────────────────────────────────────────
+    { id:'light-crossbow',name:'Light Crossbow',    die:'1d8',  type:'ranged',  properties:['Ammunition (80/320)','Loading','Two-Handed'], mastery:'Slow', statUsed:'dex' },
+    { id:'dart',          name:'Dart',              die:'1d4',  type:'ranged',  properties:['Finesse','Thrown (20/60)'], mastery:'Vex', statUsed:'choice' },
+    { id:'shortbow',      name:'Shortbow',          die:'1d6',  type:'ranged',  properties:['Ammunition (80/320)','Two-Handed'], mastery:'Vex', statUsed:'dex' },
+    { id:'sling',         name:'Sling',             die:'1d4',  type:'ranged',  properties:['Ammunition (30/120)'], mastery:'Slow', statUsed:'dex' },
+    // ── ARMAS MARCIALES CUERPO A CUERPO ──────────────────────────────────────
+    { id:'battleaxe',     name:'Battleaxe',         die:'1d8',  type:'melee',   properties:['Versatile (1d10)'],   mastery:'Topple', statUsed:'str' },
+    { id:'flail',         name:'Flail',             die:'1d8',  type:'melee',   properties:[],                     mastery:'Sap',    statUsed:'str' },
+    { id:'glaive',        name:'Glaive',            die:'1d10', type:'melee',   properties:['Heavy','Reach','Two-Handed'], mastery:'Graze', statUsed:'str' },
+    { id:'greataxe',      name:'Greataxe',          die:'1d12', type:'melee',   properties:['Heavy','Two-Handed'], mastery:'Cleave', statUsed:'str' },
+    { id:'greatsword',    name:'Greatsword',        die:'2d6',  type:'melee',   properties:['Heavy','Two-Handed'], mastery:'Graze',  statUsed:'str' },
+    { id:'halberd',       name:'Halberd',           die:'1d10', type:'melee',   properties:['Heavy','Reach','Two-Handed'], mastery:'Cleave', statUsed:'str' },
+    { id:'lance',         name:'Lance',             die:'1d10', type:'melee',   properties:['Heavy','Reach','Special'], mastery:'Topple', statUsed:'str' },
+    { id:'longsword',     name:'Longsword',         die:'1d8',  type:'melee',   properties:['Versatile (1d10)'],   mastery:'Sap',    statUsed:'str' },
+    { id:'maul',          name:'Maul',              die:'2d6',  type:'melee',   properties:['Heavy','Two-Handed'], mastery:'Topple', statUsed:'str' },
+    { id:'morningstar',   name:'Morningstar',       die:'1d8',  type:'melee',   properties:[],                     mastery:'Sap',    statUsed:'str' },
+    { id:'pike',          name:'Pike',              die:'1d10', type:'melee',   properties:['Heavy','Reach','Two-Handed'], mastery:'Push', statUsed:'str' },
+    { id:'rapier',        name:'Rapier',            die:'1d8',  type:'melee',   properties:['Finesse'],            mastery:'Vex',    statUsed:'choice' },
+    { id:'scimitar',      name:'Scimitar',          die:'1d6',  type:'melee',   properties:['Finesse','Light'],    mastery:'Nick',   statUsed:'choice' },
+    { id:'shortsword',    name:'Shortsword',        die:'1d6',  type:'melee',   properties:['Finesse','Light'],    mastery:'Vex',    statUsed:'choice' },
+    { id:'trident',       name:'Trident',           die:'1d8',  type:'melee',   properties:['Thrown (20/60)','Versatile (1d10)'], mastery:'Topple', statUsed:'str' },
+    { id:'war-pick',      name:'War Pick',          die:'1d8',  type:'melee',   properties:['Versatile (1d10)'],   mastery:'Sap',    statUsed:'str' },
+    { id:'warhammer',     name:'Warhammer',         die:'1d8',  type:'melee',   properties:['Versatile (1d10)'],   mastery:'Push',   statUsed:'str' },
+    { id:'whip',          name:'Whip',              die:'1d4',  type:'melee',   properties:['Finesse','Reach'],    mastery:'Slow',   statUsed:'choice' },
+    // ── ARMAS MARCIALES DISTANCIA ─────────────────────────────────────────────
+    { id:'blowgun',       name:'Blowgun',           die:'1',    type:'ranged',  properties:['Ammunition (25/100)','Loading'], mastery:'Vex', statUsed:'dex' },
+    { id:'hand-crossbow', name:'Hand Crossbow',     die:'1d6',  type:'ranged',  properties:['Ammunition (30/120)','Light','Loading'], mastery:'Vex', statUsed:'dex' },
+    { id:'heavy-crossbow',name:'Heavy Crossbow',    die:'1d10', type:'ranged',  properties:['Ammunition (100/400)','Heavy','Loading','Two-Handed'], mastery:'Push', statUsed:'dex' },
+    { id:'longbow',       name:'Longbow',           die:'1d8',  type:'ranged',  properties:['Ammunition (150/600)','Heavy','Two-Handed'], mastery:'Slow', statUsed:'dex' },
+    { id:'musket',        name:'Musket',            die:'1d12', type:'ranged',  properties:['Ammunition (40/120)','Loading','Two-Handed'], mastery:'Slow', statUsed:'dex' },
+    { id:'pistol',        name:'Pistol',            die:'1d10', type:'ranged',  properties:['Ammunition (30/90)','Loading'], mastery:'Vex', statUsed:'dex' },
+    // ── ARMAS MÁGICAS COMUNES / NOTABLES ──────────────────────────────────────
+    { id:'dragons-wrath-longsword', name:"Dragon's Wrath Weapon (Espada Larga)", die:'1d8', type:'melee',
+      properties:['Versatile (1d10)','Mágica +1'], mastery:'Sap', statUsed:'str',
+      extraDie:'1d6', extraType:'fire',
+      notes:'Mágica +1. +1d6 daño de fuego al golpear. A nv3: +2d6 daño y +2 al golpe. (Adaptar según tipo de dragón)' },
+    { id:'dragons-wrath-greatsword', name:"Dragon's Wrath Weapon (Mandoble)", die:'2d6', type:'melee',
+      properties:['Heavy','Two-Handed','Mágica +1'], mastery:'Graze', statUsed:'str',
+      extraDie:'1d6', extraType:'fire',
+      notes:'Mágica +1. +1d6 daño de fuego al golpear. Adaptar tipo de daño según dragón.' },
+    { id:'flametongue',   name:'Flametongue',       die:'1d8',  type:'melee',   properties:['Versatile (1d10)','Mágica'], mastery:'Sap', statUsed:'str', extraDie:'2d6', extraType:'fire', notes:'Activa (BA): +2d6 fuego mientras arda.' },
+    { id:'frost-brand',   name:'Frost Brand',       die:'1d8',  type:'melee',   properties:['Versatile (1d10)','Mágica'], mastery:'Sap', statUsed:'str', extraDie:'1d6', extraType:'cold', notes:'+1d6 frío. Resistencia al fuego mientras está sostenida.' },
+    { id:'sunblade',      name:'Sun Blade',         die:'1d8',  type:'melee',   properties:['Finesse','Mágica +2'],        mastery:'Sap', statUsed:'choice', extraDie:'1d8', extraType:'radiant', notes:'Mágica +2. +1d8 radiante. Brilla como antorcha. +1d8 extra vs Undead.' },
+    { id:'vorpal-sword',  name:'Vorpal Sword',      die:'1d8',  type:'melee',   properties:['Mágica +3','Heavy'],          mastery:'Sap', statUsed:'str', notes:'Mágica +3. Crítico: decapita criaturas sin inmunidad.' },
+    { id:'holy-avenger',  name:'Holy Avenger',      die:'1d8',  type:'melee',   properties:['Mágica +3','Versatile (1d10)'], mastery:'Sap', statUsed:'str', extraDie:'2d10', extraType:'radiant', notes:'Mágica +3. +2d10 radiante vs Fiends/Undead. Aura 3 m: ventaja en saves mágicos para aliados.' },
+    { id:'nine-lives-stealer', name:'Nine Lives Stealer', die:'1d8', type:'melee', properties:['Mágica +2','Versatile (1d10)'], mastery:'Sap', statUsed:'str', notes:'Mágica +2. Al golpear criatura con ≤100 HP máx: Save CON CD15 o muere (9 usos).' },
+    { id:'sword-sharpness', name:'Sword of Sharpness', die:'1d8', type:'melee', properties:['Mágica +3','Versatile (1d10)'], mastery:'Sap', statUsed:'str', notes:'Mágica +3. Crítico con 20 natural: corta extremidad. Siempre máximo en un dado de daño.' },
+    { id:'trident-fish-command', name:'Trident of Fish Command', die:'1d8', type:'melee', properties:['Mágica +2','Thrown (20/60)','Versatile (1d10)'], mastery:'Topple', statUsed:'str', notes:'Mágica +2. 3 cargas: Dominate Beast (bestias acuáticas). Recarga 1d3/día.' },
+    { id:'dagger-venom',  name:'Dagger of Venom',   die:'1d4',  type:'melee',   properties:['Finesse','Light','Thrown (20/60)','Mágica +1'], mastery:'Nick', statUsed:'choice', notes:'Mágica +1. 1/día: aplica veneno (save CON CD15 o 2d10 veneno y Envenenado 1 min).' },
+    { id:'hand-crossbow-speed', name:'Hand Crossbow of Speed', die:'1d6', type:'ranged', properties:['Ammunition','Light','Mágica +2'], mastery:'Vex', statUsed:'dex', notes:'Mágica +2. 1 ataque adicional como Bonus Action (sin slot).' },
+  ];
+
   /* ── EXPORTS PÚBLICOS ── */
 
   return {
@@ -5459,6 +5527,7 @@ const Characters = (() => {
     CHOICES_CONFIG,
     RAZAS_CONFIG,
     TRASFONDOS_CONFIG,
+    WEAPONS_DB,
     SKILLS_DEF,
     STAT_NAMES,
     LURSEY_IFTTT,

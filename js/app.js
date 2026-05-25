@@ -2044,6 +2044,9 @@ const App = (() => {
         const isFocus = w.type === 'focus';
         const hitStr = w.bonus && w.bonus !== '+0' ? w.bonus : '';
         const dmgStr = w.die !== '—' ? w.die : '—';
+        const extraStr = w.extraDie ? `+${w.extraDie}${w.extraType ? ' ' + w.extraType : ''}` : '';
+        const masteryBadge = w.mastery ? `<span class="item-mastery-badge">${w.mastery}</span>` : '';
+        const statLabel = w.statUsed === 'dex' ? 'DES' : w.statUsed === 'choice' ? 'FUE/DES' : '';
         htmlIzq += `
         <div class="item-row">
           <div class="item-row-left">
@@ -2051,8 +2054,10 @@ const App = (() => {
             ${w.notes ? `<span class="item-desc">${w.notes}</span>` : ''}
           </div>
           <div class="item-row-right">
-            ${!isFocus && hitStr ? `<span class="item-stat hit-badge">${hitStr} al golpe</span>` : ''}
-            ${!isFocus ? `<span class="item-stat">${dmgStr}</span>` : ''}
+            ${masteryBadge}
+            ${!isFocus && statLabel ? `<span class="item-stat item-stat-dim">${statLabel}</span>` : ''}
+            ${!isFocus && hitStr ? `<span class="item-stat hit-badge">${hitStr} golpe</span>` : ''}
+            ${!isFocus ? `<span class="item-stat">${dmgStr}${extraStr ? ' <span class="item-extra-dmg">'+extraStr+'</span>' : ''}</span>` : ''}
             <button class="item-edit" onclick="App.openEditWeapon(${i})" title="Editar">✎</button>
             <button class="item-del" onclick="App.deleteWeapon(${i})">✕</button>
           </div>
@@ -4087,15 +4092,32 @@ const App = (() => {
      EQUIPO
   ══════════════════════════════════════════════════════ */
 
+  function _awmClearSearch() {
+    const el = document.getElementById('awmSearch');
+    const sg = document.getElementById('awmSuggestions');
+    if (el) el.value = '';
+    if (sg) { sg.innerHTML = ''; sg.style.display = 'none'; }
+  }
+
+  function _awmFill(w) {
+    document.getElementById('awmName').value     = w.name      || '';
+    document.getElementById('awmDie').value      = w.die       || '1d6';
+    document.getElementById('awmBonus').value    = w.bonus     || '';
+    document.getElementById('awmType').value     = w.type      || 'melee';
+    document.getElementById('awmStatUsed').value = w.statUsed  || 'str';
+    document.getElementById('awmMastery').value  = w.mastery   || '';
+    document.getElementById('awmExtraDie').value = w.extraDie  || '';
+    document.getElementById('awmExtraType').value= w.extraType || '';
+    document.getElementById('awmDesc').value     = w.notes     || (w.properties ? w.properties.join(', ') : '');
+  }
+
   function openAddWeapon() {
     _editWeaponIdx = null;
     document.getElementById('awmModalTitle').textContent = '+ Agregar Arma';
-    document.getElementById('awmName').value = '';
-    document.getElementById('awmDie').value = '1d6';
-    document.getElementById('awmBonus').value = '';
-    document.getElementById('awmType').value = 'melee';
-    document.getElementById('awmDesc').value = '';
+    _awmFill({ die:'1d6', type:'melee', statUsed:'str' });
+    _awmClearSearch();
     document.getElementById('addWeaponModal').classList.add('show');
+    setTimeout(() => document.getElementById('awmSearch')?.focus(), 80);
   }
 
   function openEditWeapon(idx) {
@@ -4103,32 +4125,75 @@ const App = (() => {
     if (!w) return;
     _editWeaponIdx = idx;
     document.getElementById('awmModalTitle').textContent = '✎ Editar Arma';
-    document.getElementById('awmName').value = w.name || '';
-    document.getElementById('awmDie').value = w.die || '1d6';
-    document.getElementById('awmBonus').value = w.bonus || '';
-    document.getElementById('awmType').value = w.type || 'melee';
-    document.getElementById('awmDesc').value = w.notes || '';
+    _awmFill(w);
+    _awmClearSearch();
     document.getElementById('addWeaponModal').classList.add('show');
   }
 
   function closeAddWeapon() {
+    document.getElementById('awmSuggestions').style.display = 'none';
     document.getElementById('addWeaponModal').classList.remove('show');
+  }
+
+  // Buscador autocomplete
+  let _awmSugIdx = -1;
+  function awmSearch(q) {
+    const sg = document.getElementById('awmSuggestions');
+    _awmSugIdx = -1;
+    if (!q || q.length < 2) { sg.style.display = 'none'; return; }
+    const lq = q.toLowerCase();
+    const hits = (Characters.WEAPONS_DB || [])
+      .filter(w => w.name.toLowerCase().includes(lq))
+      .slice(0, 8);
+    if (!hits.length) { sg.style.display = 'none'; return; }
+    sg.innerHTML = hits.map((w,i) =>
+      `<div class="awm-sug-item" data-idx="${i}" onmousedown="App.awmPick(${i})" ontouchstart="App.awmPick(${i})">
+        <span class="awm-sug-name">${w.name}</span>
+        <span class="awm-sug-meta">${w.die} · ${w.type==='melee'?'Melé':'Distancia'}${w.mastery?' · '+w.mastery:''}${w.extraDie?' · +'+w.extraDie+' '+w.extraType:''}</span>
+       </div>`
+    ).join('');
+    sg._hits = hits;
+    sg.style.display = 'block';
+  }
+
+  function awmPick(i) {
+    const sg = document.getElementById('awmSuggestions');
+    const hits = sg._hits || [];
+    if (!hits[i]) return;
+    _awmFill(hits[i]);
+    _awmClearSearch();
+    document.getElementById('awmName').focus();
+  }
+
+  function awmSearchKey(e) {
+    const sg = document.getElementById('awmSuggestions');
+    if (sg.style.display === 'none') return;
+    const items = sg.querySelectorAll('.awm-sug-item');
+    if (e.key === 'ArrowDown') { _awmSugIdx = Math.min(_awmSugIdx+1, items.length-1); }
+    else if (e.key === 'ArrowUp') { _awmSugIdx = Math.max(_awmSugIdx-1, 0); }
+    else if (e.key === 'Enter' && _awmSugIdx >= 0) { e.preventDefault(); awmPick(_awmSugIdx); return; }
+    else if (e.key === 'Escape') { sg.style.display = 'none'; return; }
+    items.forEach((el,i) => el.classList.toggle('awm-sug-active', i === _awmSugIdx));
   }
 
   function saveAddWeapon() {
     const name = document.getElementById('awmName').value.trim();
     if (!name) return;
-    const die      = document.getElementById('awmDie').value.trim() || '1d6';
-    const bonusRaw = document.getElementById('awmBonus').value.trim();
-    const bonus    = bonusRaw ? (bonusRaw.startsWith('+') || bonusRaw.startsWith('-') ? bonusRaw : '+' + bonusRaw) : '';
-    const type     = document.getElementById('awmType').value || 'melee';
-    const notes    = document.getElementById('awmDesc').value.trim();
+    const die       = document.getElementById('awmDie').value.trim()       || '1d6';
+    const bonusRaw  = document.getElementById('awmBonus').value.trim();
+    const bonus     = bonusRaw ? (bonusRaw.startsWith('+') || bonusRaw.startsWith('-') ? bonusRaw : '+' + bonusRaw) : '';
+    const type      = document.getElementById('awmType').value     || 'melee';
+    const statUsed  = document.getElementById('awmStatUsed').value || 'str';
+    const mastery   = document.getElementById('awmMastery').value  || '';
+    const extraDie  = document.getElementById('awmExtraDie').value.trim();
+    const extraType = document.getElementById('awmExtraType').value.trim();
+    const notes     = document.getElementById('awmDesc').value.trim();
+    const data = { name, die, bonus, type, statUsed, mastery, extraDie, extraType, notes };
     if (!Array.isArray(_char.weapons)) _char.weapons = [];
     if (_editWeaponIdx !== null) {
-      const w = _char.weapons[_editWeaponIdx];
-      Object.assign(w, { name, die, bonus, type, notes });
+      Object.assign(_char.weapons[_editWeaponIdx], data);
     } else {
-      _char.weapons.push({ id:'w-'+Date.now(), name, die, bonus, type, notes });
+      _char.weapons.push({ id:'w-'+Date.now(), ...data });
     }
     _saveChar();
     closeAddWeapon();
@@ -6536,6 +6601,7 @@ const App = (() => {
 
     // Equipo
     addWeapon, openAddWeapon, openEditWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
+    awmSearch, awmPick, awmSearchKey,
     openAddItem, openEditItem, closeAddItem, saveAddItem, toggleContainerBtn,
     adjustConsumable, deleteConsumable, addConsumable, refillContainer,
     setCurrency, setAttunement,

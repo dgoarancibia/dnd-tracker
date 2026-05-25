@@ -7,7 +7,7 @@
 <script>
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 271;
+const _SW_EXPECTED = 272;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -98,7 +98,7 @@ const _SW_EXPECTED = 271;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=64">
+<link rel="stylesheet" href="css/style.css?v=65">
 </head>
 <body>
 
@@ -797,8 +797,17 @@ const _SW_EXPECTED = 271;
 
 <!-- MODAL AGREGAR ARMA -->
 <div class="modal-overlay" id="addWeaponModal">
-  <div class="modal">
+  <div class="modal" style="max-width:480px;">
     <div class="modal-title" id="awmModalTitle">+ Agregar Arma</div>
+
+    <!-- Buscador -->
+    <div class="modal-field" style="margin-bottom:10px;position:relative;">
+      <label>Buscar en base de datos</label>
+      <input type="text" id="awmSearch" placeholder="ej: Longsword, Greatsword, Dragon…" autocomplete="off"
+             oninput="App.awmSearch(this.value)" onkeydown="App.awmSearchKey(event)">
+      <div id="awmSuggestions" class="awm-suggestions" style="display:none;"></div>
+    </div>
+
     <div class="modal-grid-2">
       <div class="modal-field" style="grid-column:1/-1;">
         <label>Nombre</label>
@@ -809,8 +818,8 @@ const _SW_EXPECTED = 271;
         <input type="text" id="awmDie" value="1d6" placeholder="1d8">
       </div>
       <div class="modal-field">
-        <label>Bonus al golpe (ej: +5, +8)</label>
-        <input type="text" id="awmBonus" value="" placeholder="+5">
+        <label>Bonus al golpe</label>
+        <input type="text" id="awmBonus" placeholder="+5">
       </div>
       <div class="modal-field">
         <label>Tipo</label>
@@ -820,14 +829,44 @@ const _SW_EXPECTED = 271;
           <option value="focus">Foco / símbolo</option>
         </select>
       </div>
+      <div class="modal-field">
+        <label>Stat usado</label>
+        <select id="awmStatUsed">
+          <option value="str">FUE</option>
+          <option value="dex">DES</option>
+          <option value="choice">Elegir (Finesse)</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Mastery property</label>
+        <select id="awmMastery">
+          <option value="">— Ninguna —</option>
+          <option value="Cleave">Cleave</option>
+          <option value="Graze">Graze</option>
+          <option value="Nick">Nick</option>
+          <option value="Push">Push</option>
+          <option value="Sap">Sap</option>
+          <option value="Slow">Slow</option>
+          <option value="Topple">Topple</option>
+          <option value="Vex">Vex</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Daño extra (dado)</label>
+        <input type="text" id="awmExtraDie" placeholder="ej: 1d6">
+      </div>
+      <div class="modal-field">
+        <label>Tipo de daño extra</label>
+        <input type="text" id="awmExtraType" placeholder="ej: fire, cold, radiant">
+      </div>
       <div class="modal-field" style="grid-column:1/-1;">
-        <label>Descripción (opcional)</label>
-        <input type="text" id="awmDesc" placeholder="ej: Alcance 3 m, versátil 1d10">
+        <label>Propiedades / notas</label>
+        <input type="text" id="awmDesc" placeholder="ej: Versatile 1d10, Reach, Finesse…">
       </div>
     </div>
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="App.closeAddWeapon()">Cancelar</button>
-      <button class="btn btn-gold" onclick="App.saveAddWeapon()">Agregar</button>
+      <button class="btn btn-gold" onclick="App.saveAddWeapon()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1009,9 +1048,9 @@ const _SW_EXPECTED = 271;
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=51"></script>
-<script src="js/characters.js?v=93"></script>
+<script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=149"></script>
+<script src="js/app.js?v=150"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

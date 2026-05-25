@@ -2481,6 +2481,49 @@ input[type=number] { -moz-appearance: textfield; }
 }
 .item-stat.gold { color: var(--gold-light); }
 .item-stat.hit-badge { color: var(--green-light); border-color: rgba(74,138,90,0.4); background: rgba(74,138,90,0.08); }
+.item-stat-dim { color: var(--text-dim) !important; font-size: 10px !important; border: none; background: none; padding: 0 2px; }
+.item-mastery-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--gold);
+  background: rgba(201,151,58,0.1);
+  border: 1px solid rgba(201,151,58,0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+.item-extra-dmg {
+  color: var(--orange);
+  font-size: 11px;
+}
+
+/* ── Weapon search autocomplete ── */
+.awm-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  z-index: 200;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-top: 2px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+.awm-sug-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.awm-sug-item:last-child { border-bottom: none; }
+.awm-sug-item:hover, .awm-sug-item.awm-sug-active { background: rgba(201,151,58,0.12); }
+.awm-sug-name { font-size: 14px; color: var(--text); font-weight: 500; }
+.awm-sug-meta { font-size: 11px; color: var(--text-dim); }
 
 .item-cat-badge {
   font-family: 'Cinzel', serif;
