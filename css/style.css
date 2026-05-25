@@ -334,7 +334,7 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 72px;
+  min-height: 92px;
 }
 
 .app-header-left { flex: 0 1 auto; min-width: 0; max-width: 160px; }
@@ -344,12 +344,12 @@ input[type=number] { -moz-appearance: textfield; }
   position: relative;
   flex-shrink: 0;
   cursor: pointer;
-  width: 64px;
-  height: 64px;
+  width: 84px;
+  height: 84px;
 }
 .char-avatar-circle {
-  width: 64px;
-  height: 64px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   background: rgba(255,255,255,0.05);
   border: 2px solid var(--gold-dim);
@@ -370,7 +370,7 @@ input[type=number] { -moz-appearance: textfield; }
 }
 .char-avatar-initials {
   font-family: 'Cinzel', serif;
-  font-size: 18px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--gold-dim);
   line-height: 1;
