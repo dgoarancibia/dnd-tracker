@@ -206,7 +206,10 @@ const Cloud = (() => {
           const cloudTs = new Date(cloudChar.updatedAt  || 0).getTime();
           const localTs = new Date(localChar.updatedAt  || 0).getTime();
           if (cloudTs >= localTs) {
-            merged[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
+            const winner = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
+            // Preservar avatar local si la nube no lo tiene (puede que aún no se haya subido)
+            if (!winner.avatar && localChar.avatar) winner.avatar = localChar.avatar;
+            merged[id] = winner;
           } else {
             toUpload.push(localChar);
           }
