@@ -1227,10 +1227,9 @@ const App = (() => {
 
   function _buildConcBtns(c) {
     const active = c.concentration;
-    const spellsConc = (c.spells || []).filter(s => s.concentration && s.level > 0 && s.domain);
-    const prepared = (c.preparedToday || []);
-    const allConc = (c.spells || []).filter(s => s.concentration && s.level > 0 &&
-      (s.domain || prepared.includes(s.id)));
+    // Incluir todos los hechizos con concentración que el personaje conoce/tiene
+    // (dominio, preparados hoy, o simplemente conocidos — ej. Brujo, Bardo, Hechicero)
+    const allConc = (c.spells || []).filter(s => s.concentration && s.level > 0);
 
     let html = active
       ? `<button class="conc-btn none conc-romper" onclick="App.setConc(null)">✕ Romper</button>`
@@ -3322,8 +3321,8 @@ const App = (() => {
         <div class="it-row-main">
           ${isActive ? '<span class="it-turn-arrow">▶</span>' : '<span class="it-turn-spacer"></span>'}
           <span class="it-drag-handle">⠿</span>
-          <input type="number" class="it-inline-num" value="${c.init ?? ''}" min="1" max="99"
-                 placeholder="?" title="Orden de turno"
+          <input type="number" class="it-inline-num${c.init === null ? ' it-init-missing' : ''}" value="${c.init ?? ''}" min="1" max="99"
+                 placeholder="?" title="${c.init === null ? 'Sin iniciativa — ingresa un número' : 'Orden de turno'}"
                  onchange="App.setCombatantInit('${c.id}',this.value)"
                  onclick="this.select()">
           <span class="it-name ${c.isPlayer ? 'it-player' : ''}">${c.name}</span>
@@ -3351,9 +3350,10 @@ const App = (() => {
   }
 
   const _COND_ICON = {
-    'Poisoned':'🤢','Blinded':'🙈','Frightened':'😨','Paralyzed':'⚡',
-    'Restrained':'🕸','Stunned':'💫','Prone':'⬇','Invisible':'👻',
-    'Charmed':'💜','Exhaustion':'😴',
+    'Envenenado':'🤢','Cegado':'🙈','Asustado':'😨','Paralizado':'⚡',
+    'Restringido':'🕸','Aturdido':'💫','Derribado':'⬇','Invisible':'👻',
+    'Encantado':'💜','Agotado':'😴','Incapacitado':'🚫','Sordo':'🔇',
+    'Petrificado':'🗿','Agarrado':'🤝',
   };
 
   function addCombatant() {
