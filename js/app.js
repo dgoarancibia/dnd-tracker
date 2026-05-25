@@ -1104,13 +1104,15 @@ const App = (() => {
     // DESCANSOS — en header, no duplicar aquí
 
     // AGOTAMIENTO (Exhaustion)
+    // D&D 2024: cada nivel agrega -2 acumulativo a todos los d20 tests (ataques, saves, checks)
+    // Nivel 6 = muerte
     const EXHAUSTION_EFFECTS = [
-      null, // nivel 0 = sin efecto
-      'Desventaja en pruebas de habilidad (D20 Tests)',
-      'Velocidad reducida a la mitad',
-      'Desventaja en tiradas de ataque y salvación',
-      'Máximo de HP reducido a la mitad',
-      'Velocidad reducida a 0',
+      null,
+      '-2 a todos los d20 tests (ataques, checks, saves)',
+      '-4 a todos los d20 tests · Velocidad reducida a la mitad',
+      '-6 a todos los d20 tests · Velocidad reducida a la mitad',
+      '-8 a todos los d20 tests · Velocidad reducida a la mitad · HP máx reducido a la mitad',
+      '-10 a todos los d20 tests · Velocidad 0 · HP máx reducido a la mitad',
       'Muerte',
     ];
     const exhaustion = c.exhaustion || 0;
@@ -2946,6 +2948,10 @@ const App = (() => {
     }
 
 
+    // Al recuperar HP desde 0 → limpiar death saves
+    if (prev === 0 && _char.hp.current > 0) {
+      _char.deathSaves = { successes: 0, failures: 0 };
+    }
     if ((prev === 0) !== (_char.hp.current === 0)) _renderCombateIzq();
   }
 
@@ -3271,9 +3277,9 @@ const App = (() => {
     // Orden ascendente: 1 = primero, 2 = segundo, etc.
     // Combatientes sin orden (init=0 o null) van al final
     _combatants.sort((a, b) => {
-      const oa = a.init || 99;
-      const ob = b.init || 99;
-      return oa - ob;
+      const oa = a.init ?? -99;
+      const ob = b.init ?? -99;
+      return ob - oa; // mayor iniciativa primero (D&D estándar)
     });
   }
 
