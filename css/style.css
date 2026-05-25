@@ -329,27 +329,27 @@ input[type=number] { -moz-appearance: textfield; }
   background: linear-gradient(135deg, #181508, #201c10);
   border-bottom: 1px solid var(--gold-dim);
   transition: border-bottom-color 0.3s;
-  padding: 8px 16px;
+  padding: 4px 12px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 72px;
 }
 
-.app-header-left { flex: 1 1 0; min-width: 0; max-width: 180px; }
+.app-header-left { flex: 0 1 auto; min-width: 0; max-width: 160px; }
 
 /* ═══ AVATAR CIRCULAR ═══ */
 .char-avatar-wrap {
   position: relative;
   flex-shrink: 0;
   cursor: pointer;
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
 }
 .char-avatar-circle {
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: rgba(255,255,255,0.05);
   border: 2px solid var(--gold-dim);
@@ -720,7 +720,7 @@ input[type=number] { -moz-appearance: textfield; }
 .hp-hdr-free:focus { outline: none; border-color: var(--gold-dim); }
 
 /* STAT BOXES HEADER */
-.stats-strip { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.stats-strip { display: flex; gap: 6px; align-items: center; flex-shrink: 1; }
 
 .stat-divider {
   width: 1px;
