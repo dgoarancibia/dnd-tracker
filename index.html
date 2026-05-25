@@ -395,6 +395,50 @@
     text-transform: uppercase;
   }
 
+  /* TOOLBAR GRID */
+  .idx-grid-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+  .idx-sort-wrap { display: flex; align-items: center; gap: 8px; }
+  .idx-sort-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px; }
+  .idx-sort-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--bg3);
+    color: var(--gold);
+    cursor: pointer;
+    transition: border-color 0.15s;
+    white-space: nowrap;
+  }
+  .idx-sort-btn:hover { border-color: var(--gold-dim); }
+
+  /* AVATAR EN CARD */
+  .card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 2px solid var(--gold-dim);
+    background: rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold-dim);
+  }
+  .card-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
   /* BOTONES */
   .btn {
     font-family: 'Cinzel', serif;
@@ -1131,7 +1175,13 @@
   </header>
 
   <main class="idx-main">
-    <div class="idx-section-title" id="charCountLabel">Personajes</div>
+    <div class="idx-grid-toolbar">
+      <div class="idx-section-title" id="charCountLabel">Personajes</div>
+      <div class="idx-sort-wrap">
+        <span class="idx-sort-label">Ordenar</span>
+        <button class="idx-sort-btn" id="sortBtn" onclick="cycleSort()">Reciente ↓</button>
+      </div>
+    </div>
     <div class="char-grid" id="charGrid"></div>
   </main>
 </div>
@@ -1565,14 +1615,48 @@ function _esc(str) {
   return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ─── Sort ────────────────────────────────────────────
+const _SORT_MODES = [
+  { key: 'recent', label: 'Reciente ↓' },
+  { key: 'name',   label: 'Nombre A-Z' },
+  { key: 'level',  label: 'Nivel ↓' },
+];
+let _sortMode = localStorage.getItem('idx_sort') || 'recent';
+
+function cycleSort() {
+  const idx = _SORT_MODES.findIndex(m => m.key === _sortMode);
+  _sortMode = _SORT_MODES[(idx + 1) % _SORT_MODES.length].key;
+  localStorage.setItem('idx_sort', _sortMode);
+  renderGrid();
+}
+
+function _sortChars(chars) {
+  const list = chars.filter(c => c.id !== 'lursey-brumaclara');
+  const lursey = chars.find(c => c.id === 'lursey-brumaclara');
+  if (_sortMode === 'name') {
+    list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
+  } else if (_sortMode === 'level') {
+    list.sort((a, b) => (b.nivel || 1) - (a.nivel || 1));
+  } else {
+    // recent: más reciente primero por updatedAt
+    list.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+  }
+  return lursey ? [...list, lursey] : list;
+}
+
 function renderGrid() {
   // Limpiar del localStorage cualquier char que esté en la lista negra
   // (puede haber vuelto desde Firebase antes del fix)
   Storage.purgeDeletedFromLocal();
-  const chars = Storage.getAllCharsList();
+  const raw   = Storage.getAllCharsList();
+  const chars = _sortChars(raw);
   const grid  = document.getElementById('charGrid');
   const label = document.getElementById('charCountLabel');
   label.textContent = chars.length === 1 ? '1 Personaje' : chars.length + ' Personajes';
+
+  // Actualizar etiqueta del botón sort
+  const sortBtn = document.getElementById('sortBtn');
+  if (sortBtn) sortBtn.textContent = _SORT_MODES.find(m => m.key === _sortMode)?.label || 'Reciente ↓';
 
   let html = '';
 
@@ -1580,10 +1664,14 @@ function renderGrid() {
     const hpPct = c.hp.max > 0 ? (c.hp.current / c.hp.max) * 100 : 0;
     const hpCls = hpPct > 50 ? 'hp-ok' : hpPct > 25 ? 'hp-low' : 'hp-crit';
     const sub   = [c.raza, c.subclase].filter(Boolean).join(' · ');
+    const avatarHtml = c.avatar
+      ? `<div class="card-avatar"><img src="${c.avatar}" alt=""></div>`
+      : `<div class="card-avatar">${(c.name||'?')[0].toUpperCase()}</div>`;
     html += `
     <div class="char-card">
       <div class="char-card-header">
-        <div class="char-card-name">${_esc(c.name)}</div>
+        ${avatarHtml}
+        <div class="char-card-name" style="flex:1;min-width:0;">${_esc(c.name)}</div>
         <div class="char-card-actions">
           <button class="char-action-btn" onclick="openEditModal('${c.id}')" title="Editar">✎</button>
           <button class="char-action-btn del" onclick="confirmDelete('${c.id}')" title="Eliminar">✕</button>
@@ -2772,7 +2860,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 264;
+var _SW_EXPECTED_IDX = 265;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
