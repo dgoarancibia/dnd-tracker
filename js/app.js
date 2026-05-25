@@ -707,6 +707,172 @@ const App = (() => {
     _updateHPDisplay();
     _updateTempHPDisplay();
     _updateHeaderStatus();
+    _renderAvatar();
+  }
+
+  function _renderAvatar() {
+    const img      = document.getElementById('charAvatarImg');
+    const initials = document.getElementById('charAvatarInitials');
+    if (!img || !initials || !_char) return;
+    if (_char.avatar) {
+      img.src = _char.avatar;
+      img.style.display = 'block';
+      initials.style.display = 'none';
+    } else {
+      img.style.display = 'none';
+      initials.style.display = '';
+      // Iniciales: primera letra del nombre
+      initials.textContent = (_char.name || '?')[0].toUpperCase();
+    }
+  }
+
+  // ─── Avatar crop modal ───────────────────────────────────────────────────
+  let _cropState = null;  // { img, scale, offsetX, offsetY, size, canvas, ctx }
+
+  function uploadAvatar(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    input.value = '';
+    const reader = new FileReader();
+    reader.onload = e => _openAvatarCrop(e.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function _openAvatarCrop(dataUrl) {
+    // Cerrar si ya existe
+    const existing = document.getElementById('avatarCropModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'avatarCropModal';
+    modal.className = 'avatar-crop-modal';
+
+    const SIZE = Math.min(280, window.innerWidth * 0.8);
+
+    modal.innerHTML = `
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:14px;letter-spacing:1px;">Ajustar foto</div>
+      <canvas id="avatarCropCanvas" class="avatar-crop-canvas" width="${SIZE}" height="${SIZE}"></canvas>
+      <input type="range" class="avatar-crop-slider" id="avatarCropZoom" min="0.5" max="3" step="0.01" value="1">
+      <div class="avatar-crop-hint">Arrastra para reencuadrar · Desliza para hacer zoom</div>
+      <div class="avatar-crop-actions">
+        <button class="btn-secondary" onclick="App.cancelAvatarCrop()">Cancelar</button>
+        <button class="btn-primary"   onclick="App.confirmAvatarCrop()">Guardar</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const canvas = document.getElementById('avatarCropCanvas');
+    const ctx    = canvas.getContext('2d');
+    const zoom   = document.getElementById('avatarCropZoom');
+
+    const image  = new Image();
+    image.onload = () => {
+      _cropState = {
+        img: image, scale: 1,
+        offsetX: 0, offsetY: 0,
+        size: SIZE, canvas, ctx,
+        dragging: false, lastX: 0, lastY: 0,
+      };
+      // Ajuste inicial: centrar y escalar para cubrir el círculo
+      const fit = Math.max(SIZE / image.naturalWidth, SIZE / image.naturalHeight);
+      _cropState.scale = fit;
+      _cropState.offsetX = (SIZE - image.naturalWidth  * fit) / 2;
+      _cropState.offsetY = (SIZE - image.naturalHeight * fit) / 2;
+      zoom.value = fit;
+      zoom.min   = fit * 0.5;
+      zoom.max   = fit * 4;
+      zoom.step  = fit * 0.01;
+      _drawCrop();
+
+      // Zoom slider
+      zoom.addEventListener('input', () => {
+        const prev = _cropState.scale;
+        const next = parseFloat(zoom.value);
+        // Escalar centrado en el canvas
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+        _cropState.offsetX = cx - (cx - _cropState.offsetX) * (next / prev);
+        _cropState.offsetY = cy - (cy - _cropState.offsetY) * (next / prev);
+        _cropState.scale   = next;
+        _drawCrop();
+      });
+
+      // Drag — mouse
+      canvas.addEventListener('mousedown',  e => { _cropState.dragging = true; _cropState.lastX = e.clientX; _cropState.lastY = e.clientY; });
+      canvas.addEventListener('mousemove',  e => {
+        if (!_cropState.dragging) return;
+        _cropState.offsetX += e.clientX - _cropState.lastX;
+        _cropState.offsetY += e.clientY - _cropState.lastY;
+        _cropState.lastX    = e.clientX;
+        _cropState.lastY    = e.clientY;
+        _drawCrop();
+      });
+      canvas.addEventListener('mouseup',   () => _cropState.dragging = false);
+      canvas.addEventListener('mouseleave',() => _cropState.dragging = false);
+
+      // Drag — touch
+      canvas.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) return;
+        _cropState.dragging = true;
+        _cropState.lastX = e.touches[0].clientX;
+        _cropState.lastY = e.touches[0].clientY;
+      }, { passive: true });
+      canvas.addEventListener('touchmove', e => {
+        if (!_cropState.dragging || e.touches.length !== 1) return;
+        e.preventDefault();
+        _cropState.offsetX += e.touches[0].clientX - _cropState.lastX;
+        _cropState.offsetY += e.touches[0].clientY - _cropState.lastY;
+        _cropState.lastX    = e.touches[0].clientX;
+        _cropState.lastY    = e.touches[0].clientY;
+        _drawCrop();
+      }, { passive: false });
+      canvas.addEventListener('touchend', () => _cropState.dragging = false);
+    };
+    image.src = dataUrl;
+  }
+
+  function _drawCrop() {
+    const { img, scale, offsetX, offsetY, size, ctx } = _cropState;
+    ctx.clearRect(0, 0, size, size);
+    ctx.save();
+    // clip circular
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(img, offsetX, offsetY, img.naturalWidth * scale, img.naturalHeight * scale);
+    ctx.restore();
+  }
+
+  function cancelAvatarCrop() {
+    const modal = document.getElementById('avatarCropModal');
+    if (modal) modal.remove();
+    _cropState = null;
+  }
+
+  function confirmAvatarCrop() {
+    if (!_cropState) return;
+    const { canvas, size } = _cropState;
+
+    // Exportar a JPEG comprimido (max ~80KB para no inflar Firestore)
+    const out = document.createElement('canvas');
+    const EXPORT_SIZE = 200;
+    out.width  = EXPORT_SIZE;
+    out.height = EXPORT_SIZE;
+    const octx = out.getContext('2d');
+    octx.save();
+    octx.beginPath();
+    octx.arc(EXPORT_SIZE/2, EXPORT_SIZE/2, EXPORT_SIZE/2, 0, Math.PI*2);
+    octx.clip();
+    octx.drawImage(canvas, 0, 0, size, size, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
+    octx.restore();
+
+    const dataUrl = out.toDataURL('image/jpeg', 0.82);
+    _char.avatar  = dataUrl;
+    Storage.saveChar(_char);
+    Cloud.scheduleSave(_char);
+    _renderAvatar();
+    cancelAvatarCrop();
+    showToast('Foto guardada');
   }
 
   function _updateHeaderStatus() {
@@ -6409,6 +6575,9 @@ const App = (() => {
 
     // Backup / Export
     doBackup, importBackup, exportCharForPDF,
+
+    // Avatar
+    uploadAvatar, cancelAvatarCrop, confirmAvatarCrop,
 
     // Toast
     showToast,

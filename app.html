@@ -7,7 +7,7 @@
 <script>
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 259;
+const _SW_EXPECTED = 260;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -98,7 +98,7 @@ const _SW_EXPECTED = 259;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=58">
+<link rel="stylesheet" href="css/style.css?v=59">
 </head>
 <body>
 
@@ -118,10 +118,25 @@ const _SW_EXPECTED = 259;
 
 <!-- HEADER -->
 <header class="app-header" id="appHeader">
+  <!-- Avatar circular con upload -->
+  <div class="char-avatar-wrap" onclick="document.getElementById('avatarFileInput').click()" title="Cambiar foto">
+    <div class="char-avatar-circle" id="charAvatarCircle">
+      <img class="char-avatar-img" id="charAvatarImg" src="" alt="" style="display:none;">
+      <span class="char-avatar-initials" id="charAvatarInitials">?</span>
+    </div>
+    <div class="char-avatar-overlay">📷</div>
+    <input type="file" id="avatarFileInput" accept="image/*" style="display:none;"
+           onchange="App.uploadAvatar(this)">
+  </div>
+
+  <!-- Nombre y subtítulo -->
   <div class="app-header-left">
     <div class="app-char-name" id="headerCharName">Cargando...</div>
     <div class="app-char-subtitle" id="headerCharSubtitle"></div>
   </div>
+
+  <!-- Spacer — empuja stats-strip a la derecha -->
+  <div style="flex:1;min-width:8px;"></div>
 
   <div class="stats-strip">
     <div class="stat-box key"><div class="sl">CA</div><div class="sv" id="hdrCA">—</div></div>
@@ -999,7 +1014,7 @@ const _SW_EXPECTED = 259;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=89"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=145"></script>
+<script src="js/app.js?v=146"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>
