@@ -7,7 +7,7 @@
 <script>
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 260;
+const _SW_EXPECTED = 261;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -98,7 +98,7 @@ const _SW_EXPECTED = 260;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=59">
+<link rel="stylesheet" href="css/style.css?v=60">
 </head>
 <body>
 
@@ -134,9 +134,6 @@ const _SW_EXPECTED = 260;
     <div class="app-char-name" id="headerCharName">Cargando...</div>
     <div class="app-char-subtitle" id="headerCharSubtitle"></div>
   </div>
-
-  <!-- Spacer — empuja stats-strip a la derecha -->
-  <div style="flex:1;min-width:8px;"></div>
 
   <div class="stats-strip">
     <div class="stat-box key"><div class="sl">CA</div><div class="sv" id="hdrCA">—</div></div>

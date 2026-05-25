@@ -337,19 +337,19 @@ input[type=number] { -moz-appearance: textfield; }
   min-height: 72px;
 }
 
-.app-header-left { flex: 0 1 auto; min-width: 0; max-width: 200px; }
+.app-header-left { flex: 1 1 0; min-width: 0; max-width: 180px; }
 
 /* ═══ AVATAR CIRCULAR ═══ */
 .char-avatar-wrap {
   position: relative;
   flex-shrink: 0;
   cursor: pointer;
-  width: 52px;
-  height: 52px;
+  width: 60px;
+  height: 60px;
 }
 .char-avatar-circle {
-  width: 52px;
-  height: 52px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: rgba(255,255,255,0.05);
   border: 2px solid var(--gold-dim);
@@ -385,7 +385,7 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   opacity: 0;
   transition: opacity 0.2s;
   pointer-events: none;
