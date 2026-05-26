@@ -245,35 +245,59 @@ const Cloud = (() => {
     } catch (e) {
       console.error('Sync on login error:', e);
       _setSyncState(SyncState.ERROR, e.message === 'timeout' ? 'tiempo de espera agotado' : e.message);
+      // En timeout: reintentar después de 15s (máx 3 veces)
+      if (e.message === 'timeout' && (_syncRetries || 0) < 3) {
+        _syncRetries = (_syncRetries || 0) + 1;
+        setTimeout(() => _syncOnLogin(uid), 15000);
+      }
     } finally {
       _syncing = false;
+      // Aplicar snapshot pendiente que llegó mientras _syncOnLogin corría
+      if (_pendingCloudState) {
+        const pending = _pendingCloudState;
+        _pendingCloudState = null;
+        _applyCloudChars(pending);
+      }
     }
   }
+
+  let _syncRetries = 0;
 
   /* ══════════════════════════════════════════════════════
      LISTENER EN TIEMPO REAL
   ══════════════════════════════════════════════════════ */
 
   let _listenerReady = false;
+  let _pendingCloudState = null;  // snapshot recibido mientras _syncing estaba activo
+  let _listenerRetries = 0;
 
   function _startListener(uid) {
     _stopListener();
     _listenerReady = false;
+    _pendingCloudState = null;
 
     _unsubListen = FirebaseApp.listenCharsCloud(uid, cloudChars => {
-      // Primer disparo: es el estado inicial de Firestore — úsalo directamente
-      // igual que _syncOnLogin pero sin bloquear por _syncing
       if (!_listenerReady) {
         _listenerReady = true;
-        // Si _syncing aún corre, dejar que _syncOnLogin maneje este primer estado
-        if (_syncing) return;
-        // Si _syncOnLogin ya terminó, aplicar estado de nube directo
+        if (_syncing) {
+          // _syncOnLogin todavía corre — guardar snapshot para aplicar cuando termine
+          _pendingCloudState = cloudChars;
+          return;
+        }
         _applyCloudChars(cloudChars);
         return;
       }
-
       // Disparos posteriores: cambio real desde otro dispositivo
       _applyCloudChars(cloudChars);
+    }, err => {
+      // onSnapshot murió (iOS background, cambio de red, etc.) — reintentar
+      console.warn('[Cloud] listener caído, reintentando…', err);
+      _listenerReady = false;
+      _listenerRetries++;
+      const delay = Math.min(5000 * _listenerRetries, 30000);
+      setTimeout(() => {
+        if (_uid) _startListener(_uid);
+      }, delay);
     });
   }
 
@@ -312,8 +336,11 @@ const Cloud = (() => {
         const lsAvatar = localStorage.getItem('dnd_avatar_' + id);
         if (lsAvatar) migrated.avatar = lsAvatar;
       }
-      local[id] = migrated;
-      changed = true;
+      // Solo marcar changed si el contenido realmente cambió (evita re-render de echo)
+      if (JSON.stringify(migrated) !== JSON.stringify(local[id])) {
+        local[id] = migrated;
+        changed = true;
+      }
     }
 
     if (changed) {
@@ -399,11 +426,9 @@ const Cloud = (() => {
       }
     }
     _setSyncState(SyncState.SAVING);
-    if (window.App?.showToast) App.showToast('Sincronizando desde nube…', 'info', 4000);
+    if (window.App?.showToast) App.showToast('Sincronizando desde nube…', 'info', 2000);
     try {
-      if (window.App?.showToast) App.showToast(`UID: ${_uid.slice(0,8)}… cargando…`, 'info', 4000);
       const cloudChars = await FirebaseApp.loadAllCharsCloud(_uid);
-      if (window.App?.showToast) App.showToast(`Nube: ${Object.keys(cloudChars).length} chars — ${Object.keys(cloudChars).join(', ').slice(0,40)}`, 'info', 6000);
       const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
       const isBlocked = id => _deletedIds.has(id) || persistedDeleted.has(id);
 
@@ -422,7 +447,6 @@ const Cloud = (() => {
       const activeId = Storage.getActiveId();
       const rawFresh = activeId ? cloudChars[activeId] : null;
       const freshChar = rawFresh ? (Storage.migrateChar ? Storage.migrateChar(rawFresh) : rawFresh) : null;
-      if (window.App?.showToast) App.showToast(`activeId: ${activeId} — en nube: ${!!rawFresh}`, 'info', 6000);
       if (window.App && freshChar) {
         App.reloadChar(freshChar);
         if (window.App.showToast) App.showToast(`✓ Sincronizado (${count} chars)`, 'success', 4000);

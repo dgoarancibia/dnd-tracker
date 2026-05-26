@@ -147,7 +147,7 @@ async function deleteCharCloud(uid, charId) {
   await deleteDoc(_charRef(uid, charId));
 }
 
-function listenCharsCloud(uid, onChange) {
+function listenCharsCloud(uid, onChange, onError) {
   return onSnapshot(_charsCol(uid), snap => {
     const result = {};
     snap.forEach(d => {
@@ -160,6 +160,7 @@ function listenCharsCloud(uid, onChange) {
     onChange(result);
   }, err => {
     console.error('[firebase] onSnapshot error:', err);
+    if (onError) onError(err);
   });
 }
 
