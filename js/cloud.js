@@ -399,9 +399,11 @@ const Cloud = (() => {
       }
     }
     _setSyncState(SyncState.SAVING);
-    if (window.App?.showToast) App.showToast('Sincronizando desde nube…', 'info', 2000);
+    if (window.App?.showToast) App.showToast('Sincronizando desde nube…', 'info', 4000);
     try {
+      if (window.App?.showToast) App.showToast(`UID: ${_uid.slice(0,8)}… cargando…`, 'info', 4000);
       const cloudChars = await FirebaseApp.loadAllCharsCloud(_uid);
+      if (window.App?.showToast) App.showToast(`Nube: ${Object.keys(cloudChars).length} chars — ${Object.keys(cloudChars).join(', ').slice(0,40)}`, 'info', 6000);
       const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
       const isBlocked = id => _deletedIds.has(id) || persistedDeleted.has(id);
 
@@ -420,13 +422,15 @@ const Cloud = (() => {
       const activeId = Storage.getActiveId();
       const rawFresh = activeId ? cloudChars[activeId] : null;
       const freshChar = rawFresh ? (Storage.migrateChar ? Storage.migrateChar(rawFresh) : rawFresh) : null;
+      if (window.App?.showToast) App.showToast(`activeId: ${activeId} — en nube: ${!!rawFresh}`, 'info', 6000);
       if (window.App && freshChar) {
         App.reloadChar(freshChar);
-        if (window.App.showToast) App.showToast(`✓ Sincronizado desde nube (${count} personaje${count!==1?'s':''})`, 'success', 3000);
+        if (window.App.showToast) App.showToast(`✓ Sincronizado (${count} chars)`, 'success', 4000);
       } else if (count > 0) {
-        // Personaje activo no estaba en la nube — recargar página completa
-        if (window.App && window.App.showToast) App.showToast(`✓ ${count} personaje${count!==1?'s':''} actualizados. Recargando…`, 'success', 2000);
+        if (window.App && window.App.showToast) App.showToast(`✓ ${count} chars guardados. Recargando…`, 'success', 2000);
         setTimeout(() => window.location.reload(), 2000);
+      } else {
+        if (window.App?.showToast) App.showToast('⚠ Nube vacía — no hay datos', 'error', 5000);
       }
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
