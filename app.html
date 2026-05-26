@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 275;
+  var _V = 276;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 275;
+const _SW_EXPECTED = 276;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;

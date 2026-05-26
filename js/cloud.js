@@ -305,7 +305,14 @@ const Cloud = (() => {
     // Merge de chars de Firebase, filtrando los bloqueados
     for (const [id, cloudChar] of Object.entries(cloudChars)) {
       if (isBlocked(id)) continue;
-      local[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
+      const migrated = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
+      // Preservar avatar local si la nube no lo tiene
+      if (!migrated.avatar && local[id]?.avatar) migrated.avatar = local[id].avatar;
+      if (!migrated.avatar) {
+        const lsAvatar = localStorage.getItem('dnd_avatar_' + id);
+        if (lsAvatar) migrated.avatar = lsAvatar;
+      }
+      local[id] = migrated;
       changed = true;
     }
 
@@ -387,14 +394,21 @@ const Cloud = (() => {
           delete cloudChars[id];
         }
       }
+      const count = Object.keys(cloudChars).length;
       for (const char of Object.values(cloudChars)) {
         const migrated = Storage.migrateChar ? Storage.migrateChar(char) : char;
         Storage.saveCharRaw(migrated);
       }
       const activeId = Storage.getActiveId();
-      const freshChar = activeId ? (Storage.migrateChar ? Storage.migrateChar(cloudChars[activeId]) : cloudChars[activeId]) : null;
+      const rawFresh = activeId ? cloudChars[activeId] : null;
+      const freshChar = rawFresh ? (Storage.migrateChar ? Storage.migrateChar(rawFresh) : rawFresh) : null;
       if (window.App && freshChar) {
         App.reloadChar(freshChar);
+        if (window.App.showToast) App.showToast(`✓ Sincronizado desde nube (${count} personaje${count!==1?'s':''})`, 'success', 3000);
+      } else if (count > 0) {
+        // Personaje activo no estaba en la nube — recargar página completa
+        if (window.App && window.App.showToast) App.showToast(`✓ ${count} personaje${count!==1?'s':''} actualizados. Recargando…`, 'success', 2000);
+        setTimeout(() => window.location.reload(), 2000);
       }
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
