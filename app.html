@@ -7,7 +7,7 @@
 <script>
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 273;
+const _SW_EXPECTED = 274;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -19,7 +19,10 @@ const _SW_EXPECTED = 273;
       .then(keys => Promise.all(keys.map(k => caches.delete(k))))
       .finally(() => {
         localStorage.setItem('dnd_sw_ver', _SW_EXPECTED);
-        window.location.reload(true);
+        // En iOS PWA reload(true) no rompe la caché del sistema.
+        // Navegar a una URL con ?t= fuerza una petición HTTP real.
+        var base = window.location.pathname;
+        window.location.replace(base + '?t=' + Date.now());
       });
   }
 
@@ -247,6 +250,14 @@ const _SW_EXPECTED = 273;
 
       <!-- Tema -->
       <button class="hm-btn" id="themeToggleBtn" onclick="App.toggleTheme();App.closeHeaderMenu()">☀ Modo claro</button>
+
+      <div class="hm-divider"></div>
+
+      <!-- Forzar actualización — útil en iOS PWA -->
+      <button class="hm-btn" onclick="App.forceAppUpdate()" title="Borra caché y descarga la versión más reciente">
+        🔄 Forzar actualización
+        <span style="font-size:9px;color:var(--text-dim);">v<span id="appVersionLabel">—</span></span>
+      </button>
 
     </div>
   </div>
@@ -1050,7 +1061,7 @@ const _SW_EXPECTED = 273;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=151"></script>
+<script src="js/app.js?v=152"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

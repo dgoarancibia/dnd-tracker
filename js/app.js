@@ -986,12 +986,36 @@ const App = (() => {
     _headerMenuOpen = !_headerMenuOpen;
     const dd = document.getElementById('headerMenuDropdown');
     if (dd) dd.classList.toggle('open', _headerMenuOpen);
+    // Mostrar versión del SW activo
+    if (_headerMenuOpen && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      const lbl = document.getElementById('appVersionLabel');
+      if (lbl) {
+        const cached = localStorage.getItem('dnd_sw_ver');
+        lbl.textContent = cached || '?';
+        navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
+        const h = e => { if (e.data?.type === 'SW_VERSION') { lbl.textContent = e.data.version; navigator.serviceWorker.removeEventListener('message', h); } };
+        navigator.serviceWorker.addEventListener('message', h);
+      }
+    }
   }
 
   function closeHeaderMenu() {
     _headerMenuOpen = false;
     const dd = document.getElementById('headerMenuDropdown');
     if (dd) dd.classList.remove('open');
+  }
+
+  function forceAppUpdate() {
+    closeHeaderMenu();
+    if (!('serviceWorker' in navigator)) { window.location.replace(window.location.pathname + '?t=' + Date.now()); return; }
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      Promise.all(regs.map(r => r.unregister()))
+        .then(() => caches.keys())
+        .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+        .finally(() => {
+          window.location.replace(window.location.pathname + '?t=' + Date.now());
+        });
+    });
   }
 
   /* ══════════════════════════════════════════════════════
@@ -6660,7 +6684,7 @@ const App = (() => {
     showToast,
 
     // Header menu
-    toggleHeaderMenu, closeHeaderMenu,
+    toggleHeaderMenu, closeHeaderMenu, forceAppUpdate,
 
     // Cloud / Undo
     undoLastChange, toggleTheme,
