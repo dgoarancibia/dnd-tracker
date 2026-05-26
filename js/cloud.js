@@ -377,11 +377,29 @@ const Cloud = (() => {
   ══════════════════════════════════════════════════════ */
 
   async function forcePullFromCloud() {
-    if (!_uid || !navigator.onLine) {
-      _setSyncState(SyncState.ERROR, 'sin conexión');
-      return;
+    // Si _uid aún no está listo (Firebase tardó en restaurar sesión), esperar hasta 5s
+    if (!_uid) {
+      if (!navigator.onLine) {
+        if (window.App?.showToast) App.showToast('Sin conexión', 'error', 3000);
+        _setSyncState(SyncState.ERROR, 'sin conexión');
+        return;
+      }
+      if (window.App?.showToast) App.showToast('Esperando sesión…', 'info', 2000);
+      await new Promise(resolve => {
+        let tries = 0;
+        const iv = setInterval(() => {
+          tries++;
+          if (_uid || tries >= 25) { clearInterval(iv); resolve(); }
+        }, 200);
+      });
+      if (!_uid) {
+        if (window.App?.showToast) App.showToast('No hay sesión activa — iniciá sesión primero', 'error', 4000);
+        _setSyncState(SyncState.ERROR, 'sin sesión');
+        return;
+      }
     }
     _setSyncState(SyncState.SAVING);
+    if (window.App?.showToast) App.showToast('Sincronizando desde nube…', 'info', 2000);
     try {
       const cloudChars = await FirebaseApp.loadAllCharsCloud(_uid);
       const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
