@@ -5,9 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>D&D Tracker</title>
 <script>
+// ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
+// Cambia este número junto con _SW_EXPECTED cada deploy.
+;(function(){
+  var _V = 275;
+  var sp = new URLSearchParams(window.location.search);
+  if (parseInt(sp.get('v')||'0',10) !== _V) {
+    window.location.replace(window.location.pathname + '?v=' + _V);
+  }
+})();
+
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 274;
+const _SW_EXPECTED = 275;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -20,9 +30,8 @@ const _SW_EXPECTED = 274;
       .finally(() => {
         localStorage.setItem('dnd_sw_ver', _SW_EXPECTED);
         // En iOS PWA reload(true) no rompe la caché del sistema.
-        // Navegar a una URL con ?t= fuerza una petición HTTP real.
-        var base = window.location.pathname;
-        window.location.replace(base + '?t=' + Date.now());
+        // Navegar a ?v= con la versión esperada fuerza petición HTTP real.
+        window.location.replace(window.location.pathname + '?v=' + _SW_EXPECTED);
       });
   }
 
@@ -1061,7 +1070,7 @@ const _SW_EXPECTED = 274;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=152"></script>
+<script src="js/app.js?v=153"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

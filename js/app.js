@@ -1007,13 +1007,14 @@ const App = (() => {
 
   function forceAppUpdate() {
     closeHeaderMenu();
-    if (!('serviceWorker' in navigator)) { window.location.replace(window.location.pathname + '?t=' + Date.now()); return; }
+    const _V = typeof _SW_EXPECTED !== 'undefined' ? _SW_EXPECTED : Date.now();
+    if (!('serviceWorker' in navigator)) { window.location.replace(window.location.pathname + '?v=' + _V); return; }
     navigator.serviceWorker.getRegistrations().then(regs => {
       Promise.all(regs.map(r => r.unregister()))
         .then(() => caches.keys())
         .then(keys => Promise.all(keys.map(k => caches.delete(k))))
         .finally(() => {
-          window.location.replace(window.location.pathname + '?t=' + Date.now());
+          window.location.replace(window.location.pathname + '?v=' + _V);
         });
     });
   }
