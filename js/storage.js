@@ -36,7 +36,10 @@ const Storage = (() => {
         }
       };
       req.onsuccess  = e => { _idb = e.target.result; resolve(_idb); };
-      req.onerror    = ()  => resolve(null); // fallo silencioso
+      req.onerror    = (e) => {
+        console.warn('[Storage] IDB no disponible:', e.target?.error?.message || 'error desconocido');
+        resolve(null);
+      };
     });
   }
 
@@ -101,6 +104,12 @@ const Storage = (() => {
     if (!missingNonLursey) return 0; // ya hay personajes, no tocar
 
     const [shadow, idbDeleted] = await Promise.all([_idbGetAll(), _idbGetDeletedIds()]);
+
+    // Si IDB también está vacío, disparar evento para sugerir restore desde cloud
+    if (shadow.length === 0) {
+      document.dispatchEvent(new CustomEvent('storage:idb-empty-on-restore'));
+      return 0;
+    }
     // Lista negra: combinar IDB + localStorage (localStorage es más rápido y siempre disponible)
     const lsDeleted = getDeletedIds();
     const deletedIds = new Set([...idbDeleted, ...lsDeleted]);

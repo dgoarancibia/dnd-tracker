@@ -321,6 +321,14 @@ const App = (() => {
     // (pasa después de "Clear site data" para actualizar el SW)
     await Storage.restoreFromIDB();
 
+    // Si IDB y localStorage están ambos vacíos → sugerir restore desde cloud
+    document.addEventListener('storage:idb-empty-on-restore', () => {
+      // Pequeño delay para que Cloud.forcePullFromCloud esté disponible
+      setTimeout(() => {
+        showToast('Sin datos locales — podés restaurar desde la nube con el botón 🔄', 'warn', 5000);
+      }, 2000);
+    }, { once: true });
+
     // Primer run: cargar Lursey
     if (Storage.isFirstRun()) {
       const lursey = Characters.buildLursey();
