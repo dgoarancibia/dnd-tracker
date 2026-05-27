@@ -3109,18 +3109,28 @@ input[type=number] { -moz-appearance: textfield; }
   color: var(--gold);
 }
 
-.diary-close {
+.diary-close,
+.diary-close-btn {
   background: none;
   border: none;
   color: var(--text-dim);
   font-size: 18px;
   cursor: pointer;
   padding: 4px 8px;
-  transition: color 0.15s;
+  transition: color 0.15s, font-size 0.15s;
   min-height: 36px;
 }
 
-.diary-close:hover { color: var(--gold); }
+.diary-close:hover,
+.diary-close-btn:hover { color: var(--gold); }
+
+/* Al escribir: icono de categorías se oculta, botón cerrar más grande */
+.diary-panel.diary-composing .diary-new-cat-row { display: none; }
+.diary-panel.diary-composing .diary-close-btn {
+  font-size: 26px;
+  color: var(--text);
+  padding: 4px 12px;
+}
 
 .diary-entries {
   flex: 1;

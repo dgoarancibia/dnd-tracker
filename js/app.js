@@ -6015,6 +6015,9 @@ const App = (() => {
     if (hint) hint.style.display = 'none';
     _newDiaryCat = '';
     document.querySelectorAll('.diary-new-cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === ''));
+    // Quitar modo composing al enviar
+    document.getElementById('notebookPanel')?.classList.remove('diary-composing');
+    document.getElementById('notebookFab').style.display = '';
     _renderDiaryEntries();
   }
 
