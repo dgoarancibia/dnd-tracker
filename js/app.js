@@ -1669,7 +1669,7 @@ const App = (() => {
         razaCfg.traits.forEach(t => {
           const parts = t.split(' — ');
           const name = parts[0];
-          const desc = parts.slice(1).join(' — ');
+          const desc = fmtDesc(parts.slice(1).join(' — '));
           const hideId = 'raza-' + name.toLowerCase().replace(/[^a-z0-9]/g,'-');
           if (combatHidden.has(hideId)) {
             if (!_showingHidden) return;
@@ -2971,7 +2971,7 @@ const App = (() => {
       ? (() => { const s = razaCfg.subraces.find(sr => sr.name === c.subraza); return (s && s.darkvision) || razaCfg.darkvision || 0; })()
       : razaCfg.darkvision || 0;
     if (dv > 0) {
-      traits.push({ name: 'Visión en Penumbra', source: c.raza, desc: `Puedes ver en penumbra hasta ${dv} m como si fuera luz tenue, y en oscuridad total como si fuera penumbra.` });
+      traits.push({ name: 'Visión en Penumbra', source: c.raza, desc: fmtDesc(`Puedes ver en penumbra hasta ${dv} m como si fuera luz tenue, y en oscuridad total como si fuera penumbra.`) });
     }
 
     // Traits base de la raza
@@ -3003,7 +3003,7 @@ const App = (() => {
         <div style="margin-bottom:10px;padding:8px 10px;background:var(--surface2,rgba(255,255,255,0.04));border-radius:8px;border-left:3px solid var(--accent2,#7eb8c9);">
           <div style="font-weight:700;font-size:13px;margin-bottom:2px;">${t.name}</div>
           <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">${t.source}</div>
-          ${t.desc ? `<div style="font-size:12px;line-height:1.5;color:var(--text-muted,var(--text));">${t.desc}</div>` : ''}
+          ${t.desc ? `<div style="font-size:12px;line-height:1.5;color:var(--text-muted,var(--text));">${fmtDesc(t.desc)}</div>` : ''}
         </div>
       `).join('')}
     </div>`;
