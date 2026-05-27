@@ -239,6 +239,7 @@ const App = (() => {
   }
 
   let _activeTab = 'combate';
+  let _showingHidden = false; // muestra features ocultas sin desocultarlas permanentemente
   let _toastTimer = null;
   let _concAlertTimer = null;
   let _diaryOpen = false;
@@ -1459,7 +1460,18 @@ const App = (() => {
 
     const _hidden = new Set(c.hiddenFeatures || []);
     const _renderFeatCard = (f) => {
-      if (_hidden.has(f.id)) return '';
+      if (_hidden.has(f.id)) {
+        if (!_showingHidden) return '';
+        // Mostrar tenue con opción de restaurar individualmente
+        return `<div class="feat-card feat-card--hidden-preview" style="opacity:0.45;border-style:dashed;">
+          <div class="feat-top">
+            <span class="feat-name">${f.name}</span>
+            <button class="feat-hide-btn" title="Restaurar" onclick="event.stopPropagation();App.toggleHideFeature('${f.id}')" style="color:var(--gold);">👁 Restaurar</button>
+          </div>
+          <div class="feat-source">${f.source || ''}</div>
+          <div class="feat-desc">${f.desc || ''}</div>
+        </div>`;
+      }
 
       // Placeholder de subclase no elegida → mostrar card especial con botón directo
       if (f.id.endsWith('-subclass') && !c.subclase) {
@@ -1575,8 +1587,19 @@ const App = (() => {
     if (allFeats.length > 0) {
       html += `<div class="section-hd" style="margin-top:16px;">🏅 Feats</div>`;
       allFeats.forEach(f => {
-        if (combatHidden.has(f.id || f.name)) return;
         const hideId = f.id || f.name;
+        if (combatHidden.has(hideId)) {
+          if (!_showingHidden) return;
+          html += `<div class="feat-card feat-card--hidden-preview" style="opacity:0.45;border-style:dashed;">
+            <div class="feat-top">
+              <span class="feat-name">${f.name}</span>
+              <span class="feat-badge feat-passive" style="background:rgba(80,60,140,0.25);color:#b8a0e8;border-color:rgba(120,90,200,0.3);">Feat</span>
+              <button class="feat-hide-btn" title="Restaurar" onclick="App.toggleHideFeature('${hideId}')" style="color:var(--gold);">👁 Restaurar</button>
+            </div>
+            <div class="feat-desc">${f.desc || ''}</div>
+          </div>`;
+          return;
+        }
         html += `<div class="feat-card">
           <div class="feat-top">
             <span class="feat-name">${f.name}</span>
@@ -1599,7 +1622,17 @@ const App = (() => {
           const name = parts[0];
           const desc = parts.slice(1).join(' — ');
           const hideId = 'raza-' + name.toLowerCase().replace(/[^a-z0-9]/g,'-');
-          if (combatHidden.has(hideId)) return;
+          if (combatHidden.has(hideId)) {
+            if (!_showingHidden) return;
+            html += `<div class="feat-card feat-card--hidden-preview" style="opacity:0.45;border-style:dashed;">
+              <div class="feat-top">
+                <span class="feat-name">${name}</span>
+                <button class="feat-hide-btn" title="Restaurar" onclick="App.toggleHideFeature('${hideId}')" style="color:var(--gold);">👁 Restaurar</button>
+              </div>
+              ${desc ? `<div class="feat-desc">${desc}</div>` : ''}
+            </div>`;
+            return;
+          }
           html += `<div class="feat-card">
             <div class="feat-top">
               <span class="feat-name">${name}</span>
@@ -1614,7 +1647,10 @@ const App = (() => {
     // Botón "Mostrar ocultos" si hay features escondidas
     const totalHidden = (c.hiddenFeatures || []).length;
     if (totalHidden > 0) {
-      html += `<button class="feat-show-hidden-btn" onclick="App.showAllHiddenFeatures()">👁 Mostrar ocultos (${totalHidden})</button>`;
+      const showingLabel = _showingHidden
+        ? `🙈 Ocultar ocultos (${totalHidden})`
+        : `👁 Ver ocultos (${totalHidden})`;
+      html += `<button class="feat-show-hidden-btn" onclick="App.toggleShowHidden()">${showingLabel}</button>`;
     }
 
     // Tips de combate
@@ -6417,12 +6453,18 @@ const App = (() => {
     _renderActiveTab();
   }
 
+  function toggleShowHidden() {
+    _showingHidden = !_showingHidden;
+    _renderActiveTab();
+  }
+
   function showAllHiddenFeatures() {
     if (!_char) return;
     _char.hiddenFeatures = [];
+    _showingHidden = false;
     Storage.saveChar(_char);
     _renderActiveTab();
-    showToast('Todas las features visibles');
+    showToast('Todas las features restauradas');
   }
 
   function _renderIftttBody() {
@@ -6607,6 +6649,7 @@ const App = (() => {
     _saveChar();
     Storage.setActiveId(id);
     _char = Storage.getActiveChar();
+    _showingHidden = false;
     _refreshCharFeatures(_char);
     _renderHeader();
     _renderActiveTab();
@@ -6716,7 +6759,7 @@ const App = (() => {
     openSpellDetail, closeSpellDetail,
     openAbilityDetail, toggleEcho,
     openFeatureDetail, closeFeatureDetail,
-    toggleHideFeature, showAllHiddenFeatures,
+    toggleHideFeature, toggleShowHidden, showAllHiddenFeatures,
 
     // Monedas
     addCoin, consolidateCurrency,
