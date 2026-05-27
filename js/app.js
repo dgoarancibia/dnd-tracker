@@ -1381,7 +1381,7 @@ const App = (() => {
 
       // Panel del Echo — solo para Echo Knight
       const echoPanel = isEchoKnight ? (() => {
-        const echoCA = 14 + Characters.calcProfBonus(c.nivel);
+        const echoCA = Characters.calcCA(c);
         const active = !!c.echoActive;
         return `
         <div class="ability-card${active ? ' echo-active-card' : ''}" style="margin-bottom:8px;">
