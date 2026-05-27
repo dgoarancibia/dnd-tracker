@@ -1395,6 +1395,24 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+.larry-roll-btn {
+  margin-left: auto;
+  background: rgba(160,120,240,0.15);
+  border: 1px solid rgba(160,120,240,0.4);
+  border-radius: 6px;
+  color: #c49bff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.larry-roll-btn:hover {
+  background: rgba(160,120,240,0.28);
+  border-color: #c49bff;
 }
 .echo-stat-block {
   text-align: center;
