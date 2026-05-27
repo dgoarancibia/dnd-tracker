@@ -1015,14 +1015,20 @@ const App = (() => {
 
   function forceAppUpdate() {
     closeHeaderMenu();
-    const _V = typeof _SW_EXPECTED !== 'undefined' ? _SW_EXPECTED : Date.now();
-    if (!('serviceWorker' in navigator)) { window.location.replace(window.location.pathname + '?v=' + _V); return; }
+    // Usar timestamp como bust — garantiza HTTP real sin importar qué versión tiene el SW viejo
+    const bust = Date.now();
+    if (!('serviceWorker' in navigator)) {
+      window.location.replace(window.location.pathname + '?v=' + bust);
+      return;
+    }
     navigator.serviceWorker.getRegistrations().then(regs => {
       Promise.all(regs.map(r => r.unregister()))
         .then(() => caches.keys())
         .then(keys => Promise.all(keys.map(k => caches.delete(k))))
         .finally(() => {
-          window.location.replace(window.location.pathname + '?v=' + _V);
+          // El HTML con ?v=timestamp llega siempre fresco desde el servidor
+          // La lógica de redirección en el <head> lo normaliza a ?v=_V correcto
+          window.location.replace(window.location.pathname + '?v=' + bust);
         });
     });
   }
