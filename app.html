@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 281;
+  var _V = 282;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 281;
+const _SW_EXPECTED = 282;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -1048,7 +1048,7 @@ const _SW_EXPECTED = 281;
       <!-- Herramientas -->
       <button class="map-tool-btn active" id="mapBtnPen"    onclick="Maps.setTool('pen')"    title="Lápiz">✏️</button>
       <button class="map-tool-btn"        id="mapBtnText"   onclick="Maps.setTool('text')"   title="Texto">𝐓</button>
-      <button class="map-tool-btn"        id="mapBtnEraser" onclick="Maps.setTool('eraser')" title="Borrador">◻</button>
+      <button class="map-tool-btn"        id="mapBtnEraser" onclick="Maps.setTool('eraser')" title="Goma de borrar">🧹</button>
       <!-- Tamaño -->
       <input type="range" id="mapSizeSlider" min="1" max="24" value="4" class="map-size-slider"
              oninput="Maps.setSize(this.value)" title="Grosor / Tamaño texto">

@@ -5905,7 +5905,7 @@ const App = (() => {
 
       html += `<div class="diary-bubble" data-id="${e.id}" style="${catBg !== 'transparent' ? `border-left:3px solid ${catBg.replace('0.18','0.6')}` : ''}">
         ${catTag}
-        <div class="diary-bubble-text">${textHtml}</div>
+        <div class="diary-bubble-text" ondblclick="App.editDiaryEntry('${e.id}',this)" title="Doble click para editar">${textHtml}</div>
         <div class="diary-bubble-meta">
           <span class="diary-bubble-time">${time}</span>
           <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">✕</button>
@@ -5992,6 +5992,38 @@ const App = (() => {
     _newDiaryCat = cat;
     document.querySelectorAll('.diary-new-cat-btn').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
+  }
+
+  function editDiaryEntry(id, el) {
+    // Si ya hay un textarea editando, no abrir otro
+    if (el.querySelector('textarea')) return;
+    const entry = (_char.diary || []).find(e => e.id === id);
+    if (!entry) return;
+
+    const orig = entry.text;
+    const ta = document.createElement('textarea');
+    ta.className = 'diary-edit-ta';
+    ta.value = orig;
+    ta.rows = Math.max(2, orig.split('\n').length);
+    el.innerHTML = '';
+    el.appendChild(ta);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    const save = () => {
+      const val = ta.value.trim();
+      if (val && val !== orig) {
+        entry.text = val;
+        _saveChar();
+      }
+      _renderDiaryEntries();
+    };
+    ta.addEventListener('blur', save);
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { ta.value = orig; ta.blur(); }
+      // Ctrl/Cmd+Enter para guardar (Enter normal hace salto de línea)
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); ta.blur(); }
+    });
   }
 
   function deleteDiaryEntry(id) {
@@ -6664,7 +6696,7 @@ const App = (() => {
 
     // Notebook (diario + log + stats)
     toggleNotebook, switchNotebookTab,
-    toggleDiary, addDiaryEntry, onDiaryInput, deleteDiaryEntry, filterDiary, exportDiary,
+    toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, deleteDiaryEntry, filterDiary, exportDiary,
     openQuickNote, closeQuickNote, setQNCat, onQNInput, saveQuickNote,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
     toggleCombatLog, clearCombatLog, exportCombatLog,

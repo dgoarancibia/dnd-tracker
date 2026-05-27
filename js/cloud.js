@@ -337,7 +337,9 @@ const Cloud = (() => {
         if (lsAvatar) migrated.avatar = lsAvatar;
       }
       // Solo marcar changed si el contenido realmente cambió (evita re-render de echo)
-      if (JSON.stringify(migrated) !== JSON.stringify(local[id])) {
+      // Excluimos _syncedAt porque siempre varía aunque el contenido sea igual
+      const _strip = o => { if (!o) return o; const c = {...o}; delete c._syncedAt; return c; };
+      if (JSON.stringify(_strip(migrated)) !== JSON.stringify(_strip(local[id]))) {
         local[id] = migrated;
         changed = true;
       }
