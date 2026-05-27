@@ -686,6 +686,12 @@ const App = (() => {
     _renderActiveTab();
   }
 
+  // Convierte todas las distancias dentro de un texto descriptivo
+  function fmtDesc(text) {
+    if (!text) return text;
+    return fmtDist(text);
+  }
+
   // Convierte un string de distancia al sistema activo
   // Acepta: "9 m", "1,5 m", "4,5 m", "30 ft", "60 ft", "Personal", "Toque", etc.
   function fmtDist(val) {
@@ -1414,7 +1420,7 @@ const App = (() => {
                 ${r.action ? `<span class="ability-action-tag">${r.action}</span>` : ''}
                 ${r.recharge ? `<span class="ability-recharge-tag">${rechargeLabel(r.recharge)}</span>` : ''}
               </div>
-              ${r.desc ? `<div class="ability-card-desc">${r.desc}</div>` : ''}
+              ${r.desc ? `<div class="ability-card-desc">${fmtDesc(r.desc)}</div>` : ''}
             </div>
             <button class="ability-use-btn${btnDisabled ? ' disabled' : ''}"${btnStyle} ${canUse && onclickAction ? `onclick="${onclickAction}"` : 'disabled'}>
               ${btnLabel}
@@ -1488,7 +1494,7 @@ const App = (() => {
               <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
               <span class="spell-name">${sp.name}</span>${tags}
             </div>
-            <div class="spell-desc">${sp.desc}</div>
+            <div class="spell-desc">${fmtDesc(sp.desc)}</div>
           </div>
           <button class="cast-btn${castable ? '' : ' cast-btn-disabled'}" onclick="App.castSpell('${sp.id}')" ${castable ? '' : 'disabled'}>${castLabel}</button>
         </div>`;
@@ -1512,7 +1518,7 @@ const App = (() => {
             <button class="feat-hide-btn" title="Restaurar" onclick="event.stopPropagation();App.toggleHideFeature('${f.id}')" style="color:var(--gold);">👁 Restaurar</button>
           </div>
           <div class="feat-source">${f.source || ''}</div>
-          <div class="feat-desc">${f.desc || ''}</div>
+          <div class="feat-desc">${fmtDesc(f.desc) || ''}</div>
         </div>`;
       }
 
@@ -1582,7 +1588,7 @@ const App = (() => {
         if (!mDef) return;
         html += `<div class="feat-card">
           <div class="feat-top"><span class="feat-name">${mDef.name}</span><span class="feat-badge feat-active">1 dado</span></div>
-          <div class="feat-desc">${mDef.desc}</div>
+          <div class="feat-desc">${fmtDesc(mDef.desc)}</div>
         </div>`;
       });
     }
@@ -1639,7 +1645,7 @@ const App = (() => {
               <span class="feat-badge feat-passive" style="background:rgba(80,60,140,0.25);color:#b8a0e8;border-color:rgba(120,90,200,0.3);">Feat</span>
               <button class="feat-hide-btn" title="Restaurar" onclick="App.toggleHideFeature('${hideId}')" style="color:var(--gold);">👁 Restaurar</button>
             </div>
-            <div class="feat-desc">${f.desc || ''}</div>
+            <div class="feat-desc">${fmtDesc(f.desc) || ''}</div>
           </div>`;
           return;
         }
@@ -1650,7 +1656,7 @@ const App = (() => {
             <button class="feat-hide-btn" title="Ocultar" onclick="App.toggleHideFeature('${hideId}')">👁</button>
           </div>
           <div class="feat-source">${f.source || ''}</div>
-          <div class="feat-desc">${f.desc || ''}</div>
+          <div class="feat-desc">${fmtDesc(f.desc) || ''}</div>
         </div>`;
       });
     }
@@ -1867,7 +1873,7 @@ const App = (() => {
                 <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
                 <span class="spell-name">${sp.name}</span>${tags}
               </div>
-              <div class="spell-desc">${sp.desc}</div>
+              <div class="spell-desc">${fmtDesc(sp.desc)}</div>
             </div>
           </div>`;
         });
@@ -2032,7 +2038,7 @@ const App = (() => {
                 <span class="spell-lvl">${sp.level}</span>
                 <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
               </div>
-              <div class="spell-desc">${sp.desc}</div>
+              <div class="spell-desc">${fmtDesc(sp.desc)}</div>
             </div>
           </div>`;
         });
@@ -2064,7 +2070,7 @@ const App = (() => {
                 <span class="spell-lvl">${sp.level}</span>
                 <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
               </div>
-              <div class="spell-desc">${sp.desc}</div>
+              <div class="spell-desc">${fmtDesc(sp.desc)}</div>
             </div>
           </div>`;
         });
@@ -4940,7 +4946,7 @@ const App = (() => {
               <input type="checkbox" value="${m.id}" ${selectedManeuvers.includes(m.id) ? 'checked' : ''}
                      onchange="App._toggleManeuver(this, ${maxManeuvers})" style="display:none;">
               <strong>${m.name}</strong>
-              <span class="maneuver-desc">${m.desc}</span>
+              <span class="maneuver-desc">${fmtDesc(m.desc)}</span>
             </label>
           `).join('')}
         </div>
@@ -6386,7 +6392,7 @@ const App = (() => {
       damageWrap.style.display = 'none';
     }
 
-    document.getElementById('sdmDesc').textContent = sp.fullDesc || sp.desc || '';
+    document.getElementById('sdmDesc').textContent = fmtDesc(sp.fullDesc || sp.desc || '');
 
     const upcastWrap = document.getElementById('sdmUpcastWrap');
     if (sp.upcast) {
@@ -6437,10 +6443,10 @@ const App = (() => {
     if (r.range)    statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${fmtDist(r.range)}</div></div>`;
     if (rechargeLabel) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Recarga</div><div class="fdm-stat-val">${rechargeLabel}</div></div>`;
     document.getElementById('fdmStatsRow').innerHTML = statsHtml;
-    document.getElementById('fdmSummary').textContent = r.desc || r.note || '';
-    document.getElementById('fdmFull').innerHTML = r.fullDesc
+    document.getElementById('fdmSummary').textContent = fmtDesc(r.desc || r.note || '');
+    document.getElementById('fdmFull').innerHTML = fmtDesc(r.fullDesc
       ? '<p>' + r.fullDesc.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>') + '</p>'
-      : '';
+      : '');
     document.getElementById('featureDetailModal').classList.add('show');
   }
 
@@ -6470,11 +6476,11 @@ const App = (() => {
     if (f.recharge) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Recarga</div><div class="fdm-stat-val">↺ ${f.recharge}</div></div>`;
     document.getElementById('fdmStatsRow').innerHTML = statsHtml;
 
-    document.getElementById('fdmSummary').textContent = f.desc;
+    document.getElementById('fdmSummary').textContent = fmtDesc(f.desc);
     // fullDesc with newlines rendered as <br><br>
-    document.getElementById('fdmFull').innerHTML = (f.fullDesc || '')
+    document.getElementById('fdmFull').innerHTML = fmtDesc((f.fullDesc || '')
       .replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+      .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>'));
     document.getElementById('fdmFull').innerHTML =
       '<p>' + document.getElementById('fdmFull').innerHTML + '</p>';
 
