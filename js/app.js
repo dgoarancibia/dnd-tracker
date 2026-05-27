@@ -438,6 +438,7 @@ const App = (() => {
     }
 
     _applyTheme(localStorage.getItem('dnd_theme') || 'dark');
+    _applyDistUnit(localStorage.getItem('dnd_dist_unit') || 'm');
     _renderHeader();
     _populateCharSelector();
     _updateBackupBtn();
@@ -666,6 +667,48 @@ const App = (() => {
   function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
     _applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+
+  /* ══════════════════════════════════════════════════════
+     UNIDADES DE DISTANCIA
+  ══════════════════════════════════════════════════════ */
+  let _distUnit = 'm'; // 'm' | 'ft'
+
+  function _applyDistUnit(unit) {
+    _distUnit = unit;
+    localStorage.setItem('dnd_dist_unit', unit);
+    const lbl = document.getElementById('distUnitLabel');
+    if (lbl) lbl.textContent = unit === 'm' ? 'm' : 'ft';
+  }
+
+  function toggleDistUnit() {
+    _applyDistUnit(_distUnit === 'm' ? 'ft' : 'm');
+    _renderActiveTab();
+  }
+
+  // Convierte un string de distancia al sistema activo
+  // Acepta: "9 m", "1,5 m", "4,5 m", "30 ft", "60 ft", "Personal", "Toque", etc.
+  function fmtDist(val) {
+    if (!val || typeof val !== 'string') return val;
+    if (val === 'Personal' || val === 'Toque' || val === 'Touch' || val === 'Especial' || val === 'Ilimitado') return val;
+
+    if (_distUnit === 'ft') {
+      // metros → pies (1 m = 3.28 ft; D&D usa multiplos de 1.5m = 5ft)
+      return val.replace(/([\d,\.]+)\s*m\b/g, (_, n) => {
+        const meters = parseFloat(n.replace(',', '.'));
+        const feet = Math.round(meters * 3.28084 / 5) * 5; // redondear al múltiplo de 5 más cercano
+        return feet + ' ft';
+      });
+    } else {
+      // pies → metros
+      return val.replace(/([\d,\.]+)\s*ft\b/g, (_, n) => {
+        const feet = parseFloat(n.replace(',', '.'));
+        const meters = feet * 0.3048;
+        // Redondear a .5 más cercano
+        const rounded = Math.round(meters * 2) / 2;
+        return (rounded % 1 === 0 ? rounded : rounded.toFixed(1).replace('.', ',')) + ' m';
+      });
+    }
   }
 
   /* ══════════════════════════════════════════════════════
@@ -1392,7 +1435,7 @@ const App = (() => {
                 <span class="ability-card-name">👻 Manifest Echo</span>
                 <span class="ability-action-tag">Acción bonus</span>
               </div>
-              <div class="ability-card-desc">Invocás/descartas una copia fantasmal. Mientras activo: CA ${echoCA} · HP 1 · alcance 9 m.</div>
+              <div class="ability-card-desc">Invocás/descartas una copia fantasmal. Mientras activo: CA ${echoCA} · HP 1 · alcance ${fmtDist('9 m')}.</div>
             </div>
             <button class="ability-use-btn${active ? ' echo-btn-active' : ''}" onclick="App.toggleEcho()">
               ${active ? `Activo<br><span style="font-size:10px;">Descartar</span>` : `Invocar`}
@@ -5274,7 +5317,7 @@ const App = (() => {
                   <span style="font-size:10px;color:var(--gold);background:rgba(201,168,76,0.12);padding:1px 6px;border-radius:10px;">${s.level === 0 ? 'Cantrip' : `Nv ${s.level}`}</span>
                   ${s.concentration ? `<span style="font-size:10px;color:var(--text-dim);">Conc.</span>` : ''}
                 </div>
-                <span class="choice-opt-desc" style="font-size:11px;">${s.castTime} · ${s.range} · ${s.duration}</span>
+                <span class="choice-opt-desc" style="font-size:11px;">${s.castTime} · ${fmtDist(s.range)} · ${s.duration}</span>
                 <span class="choice-opt-desc" style="font-size:11px;margin-top:2px;">${s.desc}</span>
               </div>
             </label>`).join('')}
@@ -6333,7 +6376,7 @@ const App = (() => {
     document.getElementById('sdmName').textContent = sp.name.replace(/\s*[◆†]/g, '');
     document.getElementById('sdmCastTime').textContent = sp.castTime || '—';
     document.getElementById('sdmDuration').textContent = sp.duration || '—';
-    document.getElementById('sdmRange').textContent = sp.range || '—';
+    document.getElementById('sdmRange').textContent = fmtDist(sp.range) || '—';
 
     const damageWrap = document.getElementById('sdmDamageWrap');
     if (sp.damage) {
@@ -6391,7 +6434,7 @@ const App = (() => {
     document.getElementById('fdmSource').textContent = `${r.current}/${r.max} usos · ${rechargeLabel}`;
     let statsHtml = '';
     if (r.action)   statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Acción</div><div class="fdm-stat-val">${r.action}</div></div>`;
-    if (r.range)    statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${r.range}</div></div>`;
+    if (r.range)    statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${fmtDist(r.range)}</div></div>`;
     if (rechargeLabel) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Recarga</div><div class="fdm-stat-val">${rechargeLabel}</div></div>`;
     document.getElementById('fdmStatsRow').innerHTML = statsHtml;
     document.getElementById('fdmSummary').textContent = r.desc || r.note || '';
@@ -6423,7 +6466,7 @@ const App = (() => {
     // Stats row: Acción + Distancia + Recarga
     let statsHtml = '';
     if (f.action) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Acción</div><div class="fdm-stat-val">${f.action}</div></div>`;
-    if (f.range)  statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${f.range}</div></div>`;
+    if (f.range)  statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${fmtDist(f.range)}</div></div>`;
     if (f.recharge) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Recarga</div><div class="fdm-stat-val">↺ ${f.recharge}</div></div>`;
     document.getElementById('fdmStatsRow').innerHTML = statsHtml;
 
@@ -6780,7 +6823,7 @@ const App = (() => {
     toggleHeaderMenu, closeHeaderMenu, forceAppUpdate,
 
     // Cloud / Undo
-    undoLastChange, toggleTheme,
+    undoLastChange, toggleTheme, toggleDistUnit, fmtDist,
     getActiveChar() { return _char; },
     reloadChar(char) {
       _char = char || Storage.getActiveChar();
