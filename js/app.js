@@ -6499,43 +6499,70 @@ const App = (() => {
     'INEXPLICABLE': { bg: 'rgba(160,80,200,0.15)',  border: '#9a4acc', text: '#cc7eee' },
   };
 
+  // Comportamiento de Larry según el d20 (1–19 + 20 especial)
+  const _LARRY_D20 = [
+    [1,  'Completamente disciplinado', 'Larry permanece completamente inmóvil y disciplinado. Funciona como un eco perfecto. Aztram casi olvida que hay algo diferente en él.'],
+    [2,  'Obediente',                  'Sigue todas las instrucciones de Aztram inmediatamente y sin demora. Movimientos limpios y precisos.'],
+    [3,  'Discreto',                   'Permanece cerca y evita llamar la atención. Solo a veces se queda un segundo extra antes de disiparse.'],
+    [4,  'Silencioso',                 'Solo observa la escena silenciosamente. Larry parece más atento que de costumbre pero sin interferir.'],
+    [5,  'Lento pero obediente',       'Reacciona tarde pero obedece sin problemas. Como si procesara algo que Aztram no puede ver antes de responder.'],
+    [6,  'Distraído',                  'Comienza a distraerse con cosas pequeñas alrededor. Se inclina hacia objetos o sonidos sin razón aparente.'],
+    [7,  'Imitador',                   'Imita discretamente gestos o posturas de otras personas del grupo o NPCs. Como un niño que aprende observando.'],
+    [8,  'Errático leve',              'Se aleja unos pasos de donde Aztram esperaba que estuviera. Nada disruptivo — solo un poco fuera de lugar.'],
+    [9,  'Curioso con objetos',        'Toca o inspecciona objetos sin entender que no debería. Una puerta, una vela, la ropa de alguien.'],
+    [10, 'Mirón',                      'Observa demasiado fijamente a alguien durante una conversación. No entiende que es incómodo.'],
+    [11, 'Entrometido',                'Interrumpe una interacción intentando "ayudar" — aparece entre dos personas que hablan, señala cosas, gesticula.'],
+    [12, 'Selectivamente desobediente','Ignora instrucciones menores si algo le llama la atención. Obedece lo importante pero interpreta los detalles a su manera.'],
+    [13, 'Sin filtro social',          'Invade el espacio personal de alguien como si no entendiera la incomodidad social. No hay malicia — simplemente no lo sabe.'],
+    [14, 'Apariciones inesperadas',    'Aparece detrás de alguien sin avisar, causando sorpresa o incomodidad. Larry no entiende por qué eso molesta.'],
+    [15, 'Expresivo en mal momento',   'Hace mímicas exageradas o reacciones físicas inoportunas — imita el llanto de alguien, celebra cuando no corresponde.'],
+    [16, 'Iniciativa propia',          'Se mueve por cuenta propia antes de que Aztram decida actuar. No espera órdenes — ya decidió dónde quiere estar.'],
+    [17, 'Convicción propia',          'Desobedece una instrucción directa porque cree que sabe algo importante. No es rebeldía — está convencido de que tiene razón.'],
+    [18, 'Alerta ante lo invisible',   'Reacciona agresivamente o defensivamente ante algo que nadie más percibe. Se pone entre Aztram y una amenaza que no existe... o que aún no se ha manifestado.'],
+    [19, 'Explorador',                 'Desaparece brevemente para seguir algo o alguien por iniciativa propia. Cuando vuelve, Aztram no sabe qué vio.'],
+    [20, 'Evento especial',            'Larry hace algo completamente fuera de lo normal. Tirar d100.'],
+  ];
+
   function larryRoll() {
     const d20 = Math.ceil(Math.random() * 20);
+    const [, title, d20text] = _LARRY_D20[d20 - 1];
     if (d20 !== 20) {
-      // Mostrar resultado sin trigger
-      _showLarryModal({ d20, d100: null, cat: null, text: null });
+      _showLarryModal({ d20, title, d20text, d100: null, cat: null, text: null });
       return;
     }
     const d100 = Math.ceil(Math.random() * 100);
     const row = _LARRY_TABLE.find(([lo, hi]) => d100 >= lo && d100 <= hi);
     const [, , cat, text] = row || [0,0,'INEXPLICABLE','Resultado desconocido'];
-    _showLarryModal({ d20, d100, cat, text });
+    _showLarryModal({ d20, title, d20text, d100, cat, text });
   }
 
-  function _showLarryModal({ d20, d100, cat, text }) {
+  function _showLarryModal({ d20, title, d20text, d100, cat, text }) {
     const modal = document.getElementById('larryModal');
     if (!modal) return;
 
     const triggered = d20 === 20;
     const catStyle = cat ? _LARRY_CAT_COLOR[cat] : null;
 
+    // d20 número
     document.getElementById('larryD20Result').textContent = d20;
-    document.getElementById('larryD20Result').style.color = triggered ? '#f0c040' : 'var(--text-dim)';
+    document.getElementById('larryD20Result').style.color = triggered ? '#f0c040' : 'var(--text)';
 
+    // Título y descripción del d20
+    document.getElementById('larryD20Title').textContent = title || '';
+    document.getElementById('larryD20Text').textContent  = d20text || '';
+
+    // Sección d100
     const d100Section = document.getElementById('larryD100Section');
     if (triggered && d100 !== null) {
       d100Section.style.display = '';
       document.getElementById('larryD100Result').textContent = d100;
-      document.getElementById('larryCatLabel').textContent = cat;
-      document.getElementById('larryCatLabel').style.color = catStyle.text;
-      document.getElementById('larryCatLabel').style.borderColor = catStyle.border;
+      document.getElementById('larryCatLabel').textContent      = cat;
+      document.getElementById('larryCatLabel').style.color      = catStyle.text;
+      document.getElementById('larryCatLabel').style.borderColor= catStyle.border;
       document.getElementById('larryCatLabel').style.background = catStyle.bg;
       document.getElementById('larryText').textContent = text;
-      document.getElementById('larryNoTrigger').style.display = 'none';
     } else {
       d100Section.style.display = 'none';
-      document.getElementById('larryNoTrigger').style.display = '';
-      document.getElementById('larryNoTrigger').textContent = `d20 = ${d20} — Larry no reacciona esta vez.`;
     }
     modal.classList.add('show');
   }

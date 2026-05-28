@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 291;
+  var _V = 292;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 291;
+const _SW_EXPECTED = 292;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -667,21 +667,26 @@ const _SW_EXPECTED = 291;
     <button class="modal-close-x" onclick="App.closeLarryModal()">✕</button>
     <div style="font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;color:var(--gold);margin-bottom:16px;">👻 LARRY</div>
 
-    <!-- d20 -->
-    <div style="margin-bottom:12px;">
+    <!-- d20 número grande -->
+    <div style="margin-bottom:4px;">
       <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;">D20</div>
-      <div id="larryD20Result" style="font-size:56px;font-family:'Cinzel',serif;font-weight:700;line-height:1;"></div>
+      <div id="larryD20Result" style="font-size:64px;font-family:'Cinzel',serif;font-weight:700;line-height:1;"></div>
     </div>
 
-    <!-- No trigger -->
-    <div id="larryNoTrigger" style="display:none;font-size:13px;color:var(--text-dim);padding:8px 0;"></div>
+    <!-- Título y descripción del d20 -->
+    <div style="margin-bottom:14px;">
+      <div id="larryD20Title" style="font-size:13px;font-weight:700;color:var(--gold-dim);margin-bottom:6px;letter-spacing:0.5px;"></div>
+      <div id="larryD20Text" style="font-size:13px;line-height:1.6;color:var(--text);background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;text-align:left;"></div>
+    </div>
 
-    <!-- d100 + resultado -->
+    <!-- d100 + resultado (solo si d20=20) -->
     <div id="larryD100Section" style="display:none;">
-      <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;">D100</div>
-      <div id="larryD100Result" style="font-size:36px;font-family:'Cinzel',serif;font-weight:700;color:var(--gold);margin-bottom:12px;"></div>
-      <div id="larryCatLabel" style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:2px;padding:3px 12px;border-radius:4px;border:1px solid;margin-bottom:14px;"></div>
-      <div id="larryText" style="font-size:14px;line-height:1.7;color:var(--text);text-align:left;background:rgba(255,255,255,0.04);border-radius:8px;padding:14px 16px;"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;">D100</div>
+        <div id="larryD100Result" style="font-size:42px;font-family:'Cinzel',serif;font-weight:700;color:var(--gold);margin-bottom:10px;"></div>
+        <div id="larryCatLabel" style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:2px;padding:3px 12px;border-radius:4px;border:1px solid;margin-bottom:12px;"></div>
+        <div id="larryText" style="font-size:14px;line-height:1.7;color:var(--text);text-align:left;background:rgba(255,255,255,0.04);border-radius:8px;padding:14px 16px;"></div>
+      </div>
     </div>
 
     <button class="btn-primary" style="margin-top:18px;width:100%;" onclick="App.larryRoll()">🎲 Tirar de nuevo</button>
