@@ -4,7 +4,7 @@
     {
       "name": "dnd-tracker",
       "runtimeExecutable": "/usr/local/bin/node",
-      "runtimeArgs": ["/Users/diego.arancibia/dnd-tracker/serve.js"],
+      "runtimeArgs": ["/Users/diego.arancibia/Projects/dnd-tracker/serve.js"],
       "port": 5500
     }
   ]

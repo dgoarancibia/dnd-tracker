@@ -6,9 +6,7 @@ import './firebase.js';
 
 const Cloud = (() => {
   let _uid        = null;   // UID del usuario autenticado
-  let _debTimer   = null;   // timer para debounce de autosave
   let _unsubListen = null;  // unsub del onSnapshot listener
-  const DEBOUNCE_MS = 2000;
 
   /* ══════════════════════════════════════════════════════
      ESTADO DE SYNC
@@ -368,18 +366,17 @@ const Cloud = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
-     AUTOSAVE (debounced)
+     AUTOSAVE (inmediato)
   ══════════════════════════════════════════════════════ */
 
   function scheduleSave(char) {
     if (!_uid || !navigator.onLine) return;
 
-    clearTimeout(_debTimer);
+    // Sin debounce: iOS puede suspender la app apenas pasa a background
+    // (bloqueo de pantalla, cambio de app) y un timer pendiente nunca dispara,
+    // perdiendo el guardado a nube por completo. Se guarda de inmediato.
     _setSyncState(SyncState.SAVING);
-
-    _debTimer = setTimeout(async () => {
-      await _doSave(char);
-    }, DEBOUNCE_MS);
+    _doSave(char);
   }
 
   async function _doSave(char) {
@@ -397,7 +394,6 @@ const Cloud = (() => {
   /* Forzar guardado inmediato (para pagehide) */
   async function saveNow(char) {
     if (!_uid || !navigator.onLine) return;
-    clearTimeout(_debTimer);
     await _doSave(char);
   }
 
