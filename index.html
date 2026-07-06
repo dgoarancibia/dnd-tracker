@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>D&D Tracker</title>
-<script>;(function(){var _V=302;var sp=new URLSearchParams(window.location.search);if(parseInt(sp.get('v')||'0',10)!==_V){window.location.replace(window.location.pathname+'?v='+_V);}})();</script>
+<script>;(function(){var _V=303;var sp=new URLSearchParams(window.location.search);if(parseInt(sp.get('v')||'0',10)!==_V){window.location.replace(window.location.pathname+'?v='+_V);}})();</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/favicon.png">
@@ -1707,6 +1707,8 @@ function renderGrid() {
 
 function playChar(id) {
   Storage.setActiveId(id);
+  // Marca de intención: app.html solo carga un PJ si se llegó jugando desde el home.
+  sessionStorage.setItem('dnd_playing', '1');
   window.location.href = 'app.html';
 }
 
@@ -2810,6 +2812,7 @@ function importChars(input) {
       input.value = '';
       showToast('✓ ' + count + ' personaje(s) importado(s)');
       // Redirigir a app con el personaje recién importado activo
+      sessionStorage.setItem('dnd_playing', '1');
       setTimeout(() => { window.location.href = 'app.html'; }, 600);
     },
     err => { showToast('Error: ' + err); input.value = ''; }
@@ -2862,7 +2865,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 302;
+var _SW_EXPECTED_IDX = 303;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {

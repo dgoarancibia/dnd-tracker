@@ -336,6 +336,17 @@ const App = (() => {
   }
 
   async function _initInner() {
+    // ── Guard de entrada: siempre pasar por el home ──────────────────────────
+    // app.html solo debe cargarse cuando el usuario eligió "Jugar" un PJ desde
+    // el home (index.html). Al abrir en frío (marcador, ícono PWA, nueva pestaña)
+    // no hay bandera de intención → redirigir al home. La bandera vive en
+    // sessionStorage, así que sobrevive recargas de ESTA pestaña (seguir jugando)
+    // pero no una apertura nueva. Evita quedar "pegado" en un PJ viejo.
+    if (!sessionStorage.getItem('dnd_playing')) {
+      window.location.replace('index.html');
+      return;
+    }
+
     // Limpiar del localStorage chars que están en la lista negra (eliminados)
     // Corre antes de todo para que Firebase no los restaure silenciosamente
     Storage.purgeDeletedFromLocal();
