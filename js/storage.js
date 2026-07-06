@@ -426,7 +426,20 @@ const Storage = (() => {
 
   function saveChar(char) {
     const all = getAllChars();
-    char.updatedAt = new Date().toISOString();
+    // updatedAt solo avanza si el contenido realmente cambió. Guardados
+    // triviales (pagehide, re-renders) no deben inflar el timestamp: el merge
+    // entre dispositivos decide por updatedAt, y un timestamp inflado hace que
+    // datos viejos "ganen" contra cambios genuinos hechos en otro dispositivo.
+    const prev = all[char.id];
+    const _strip = o => {
+      if (!o) return o;
+      const c = { ...o };
+      delete c.updatedAt; delete c._syncedAt; delete c._dataVersion;
+      return c;
+    };
+    const changed = !prev || JSON.stringify(_strip(char)) !== JSON.stringify(_strip(prev));
+    if (changed) char.updatedAt = new Date().toISOString();
+    else if (prev.updatedAt) char.updatedAt = prev.updatedAt;
     char._dataVersion = DATA_VERSION;
     all[char.id] = char;
     _set(CHARS_KEY, all);
