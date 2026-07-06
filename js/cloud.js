@@ -395,12 +395,24 @@ const Cloud = (() => {
     }
   }
 
-  /* Forzar guardado inmediato (para pagehide) — bloqueado durante un pull:
-     el pagehide dispara con el _char en memoria, que puede seguir siendo
-     la versión vieja si el pull todavía no terminó de actualizarlo,
-     pisando en Firestore los datos recién bajados de otro dispositivo. */
+  /* Forzar guardado inmediato (para pagehide/visibilitychange) — bloqueado
+     durante un pull, y además verifica contra Firestore antes de subir:
+     una pestaña que estuvo mucho tiempo en background (o abierta desde antes
+     de que otro dispositivo guardara) puede tener en memoria una versión más
+     vieja que la que ya hay en la nube. Sin este chequeo, cerrar/ocultar esa
+     pestaña pisa silenciosamente los datos más nuevos de otro dispositivo. */
   async function saveNow(char) {
     if (!_uid || !navigator.onLine || _pulling) return;
+    try {
+      const cloudChar = await FirebaseApp.loadCharCloud(_uid, char.id);
+      if (cloudChar) {
+        const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
+        const localTs = new Date(char.updatedAt || 0).getTime();
+        if (cloudTs > localTs) return; // la nube ya tiene algo más nuevo — no pisar
+      }
+    } catch (e) {
+      // Si falla la verificación (ej. sin red), seguimos con el guardado normal
+    }
     await _doSave(char);
   }
 
