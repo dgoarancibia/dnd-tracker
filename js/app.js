@@ -7068,7 +7068,7 @@ const App = (() => {
 
   /* ── Autoguardado a la nube (cada 10 min, con protecciones) ── */
   let _autoSaveTimer = null;
-  const AUTOSAVE_MS = 10 * 60 * 1000; // 10 minutos
+  const AUTOSAVE_MS = 1 * 60 * 1000; // TEMPORAL: 1 minuto para probar (volver a 10)
 
   function _startAutoSaveCloud() {
     if (_autoSaveTimer) clearInterval(_autoSaveTimer);
