@@ -367,11 +367,13 @@ const App = (() => {
     }
 
     // ── Migración y sync de datos del personaje ─────────────────────────────
+    // Solo se guarda en local: subirlo acá pisaría en Firestore cualquier
+    // versión más nueva que todavía no bajó (el pull/listener corre después
+    // de este punto). La migración llega a la nube en el próximo cambio real
+    // del usuario o la próxima sincronización manual, no automáticamente al cargar.
     const _initSyncChanged = _syncCharData(_char);
     if (_initSyncChanged) {
       Storage.saveChar(_char);
-      // Propagar a Firebase para que otros dispositivos reciban los campos nuevos
-      if (window.Cloud && Cloud.isLoggedIn()) Cloud.scheduleSave(_char);
     }
 
     // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
@@ -1337,11 +1339,12 @@ const App = (() => {
 
     // Asegurar que los recursos tienen action/desc antes de renderizar
     // (pueden faltar si el personaje llegó de Firebase antes del sync)
+    // Solo se guarda en local — ver nota en App.init() sobre por qué esta
+    // migración no debe subirse sola a la nube.
     if (c.id !== 'lursey-brumaclara') {
       const didSync = _syncCharData(c);
       if (didSync) {
         Storage.saveChar(c);
-        if (window.Cloud && Cloud.isLoggedIn()) Cloud.scheduleSave(c);
       }
     }
 
