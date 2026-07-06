@@ -437,6 +437,8 @@ const App = (() => {
     _updateCombatHUD();
     _setupHPSwipe();
 
+    // Estado base del indicador de guardado (se refina en _checkCloudVersionOnOpen).
+    _renderCloudDirty();
     // Al abrir un PJ: si la nube tiene una versión distinta a la local, ofrecer
     // elegir cuál cargar (modelo savepoint). No baja nada solo; solo pregunta.
     _checkCloudVersionOnOpen();
@@ -559,6 +561,7 @@ const App = (() => {
 
   /* ── Indicador de cambios sin subir a la nube ── */
   let _cloudDirty = false;
+  let _lastCloudSaveHm = null; // hora "HH:MM" del último guardado exitoso
 
   function _markCloudDirty() {
     _cloudDirty = true;
@@ -566,6 +569,7 @@ const App = (() => {
   }
   function _markCloudClean() {
     _cloudDirty = false;
+    _lastCloudSaveHm = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
     _renderCloudDirty();
   }
   function _renderCloudDirty() {
@@ -574,6 +578,22 @@ const App = (() => {
     if (btn) btn.classList.toggle('has-unsaved', _cloudDirty);
     // Puntito en el botón ⋯ del header para verlo sin abrir el menú.
     if (toggle) toggle.classList.toggle('has-unsaved-dot', _cloudDirty);
+
+    // Indicador persistente en el header (siempre visible con sesión activa).
+    const el = document.getElementById('syncStatus');
+    if (!el) return;
+    if (!window.Cloud || !Cloud.isLoggedIn()) { el.style.display = 'none'; return; }
+    el.classList.remove('sync-saving', 'sync-error', 'sync-idle');
+    if (_cloudDirty) {
+      el.className = 'sync-status sync-dirty';
+      el.textContent = '● Sin guardar';
+      el.title = 'Tenés cambios que no están en la nube. Usá "Guardar en nube".';
+    } else {
+      el.className = 'sync-status sync-clean';
+      el.textContent = _lastCloudSaveHm ? `☁ Guardado ${_lastCloudSaveHm}` : '☁ Al día';
+      el.title = 'Tu progreso está guardado en la nube.';
+    }
+    el.style.display = 'flex';
   }
 
   function undoLastChange() {
@@ -6892,16 +6912,18 @@ const App = (() => {
   // Modal "Cargar": muestra el autosave de la nube + los checkpoints, para restaurar.
   async function openLoadModal() {
     if (!_char || _char.id === 'lursey-brumaclara') { showToast('No disponible para este personaje', 'info', 2500); return; }
-    if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) {
-      showToast('Necesitás sesión y conexión', 'error', 3000);
+    if (!window.Cloud || !Cloud.isLoggedIn()) {
+      showToast('Necesitás iniciar sesión', 'error', 3000);
       return;
     }
     const modal = document.getElementById('loadPointsModal');
     const list  = document.getElementById('loadPointsList');
     if (!modal || !list) return;
+    const offline = !navigator.onLine;
     list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);">Cargando…</div>';
     modal.classList.add('show');
 
+    // Sin conexión, loadCloudChar devuelve null; listCheckpoints cae al cache local.
     const [cloudChar, checkpoints] = await Promise.all([
       Cloud.loadCloudChar(_char.id),
       Cloud.listCheckpoints(_char.id)
@@ -6910,6 +6932,10 @@ const App = (() => {
     const fmtWhen = ts => ts ? new Date(ts).toLocaleString('es', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
     const hpStr = hp => hp ? `${hp.current}/${hp.max}` : '?';
     let html = '';
+
+    if (offline) {
+      html += '<div style="padding:8px 10px;margin-bottom:6px;background:rgba(232,184,75,0.12);border:1px solid rgba(232,184,75,0.3);border-radius:8px;font-size:11px;color:#e8b84b;">📴 Sin conexión — mostrando checkpoints guardados localmente. El último autosave de la nube no está disponible ahora.</div>';
+    }
 
     // Autosave (documento principal de la nube)
     if (cloudChar) {

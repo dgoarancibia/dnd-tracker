@@ -833,6 +833,9 @@ input[type=number] { -moz-appearance: textfield; }
 .sync-saved   { color: #4aaa6a; border-color: #4aaa6a55; }
 .sync-error   { color: var(--red-light); border-color: rgba(180,60,60,0.4); }
 .sync-offline { color: var(--text-dim); border-color: var(--border); }
+/* Estado persistente del indicador de guardado en nube */
+.sync-dirty   { color: #e8b84b; border-color: #e8b84b55; }
+.sync-clean   { color: #4aaa6a; border-color: #4aaa6a44; }
 
 #undoBtn:disabled { opacity: 0.3; cursor: not-allowed; }
 #undoBtn:not(:disabled) { opacity: 1; color: var(--gold); border-color: var(--gold-dim); }

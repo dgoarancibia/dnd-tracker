@@ -234,20 +234,43 @@ const Cloud = (() => {
 
   const CHECKPOINT_MAX = 15; // por personaje; los más viejos se podan
 
+  // ── Cache local de checkpoints (para verlos/restaurarlos sin conexión) ──
+  const _cpMetaKey = id => 'dnd_cp_meta_' + id;   // lista de metadata por personaje
+  const _cpDataKey = (id, cp) => 'dnd_cp_' + id + '_' + cp; // char completo por checkpoint
+
+  function _cacheCheckpointMeta(charId, list) {
+    try { localStorage.setItem(_cpMetaKey(charId), JSON.stringify(list)); } catch (e) {}
+  }
+  function _getCachedCheckpointMeta(charId) {
+    try { return JSON.parse(localStorage.getItem(_cpMetaKey(charId)) || '[]'); } catch (e) { return []; }
+  }
+  function _cacheCheckpointData(charId, cpId, char) {
+    try { localStorage.setItem(_cpDataKey(charId, cpId), JSON.stringify(char)); } catch (e) {}
+  }
+  function _getCachedCheckpointData(charId, cpId) {
+    try {
+      const raw = localStorage.getItem(_cpDataKey(charId, cpId));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
   // Crea un checkpoint del char dado. cpId = ISO timestamp (ordenable/único).
   // Devuelve 'saved' | 'skipped' | 'error'.
   async function saveCheckpoint(char, label, cpId) {
     if (!_uid || !navigator.onLine) return 'skipped';
     try {
       await FirebaseApp.saveCheckpointCloud(_uid, char.id, cpId, label, char);
+      _cacheCheckpointData(char.id, cpId, char); // cache local para restaurar offline
       // Podar los más viejos si se superó el máximo.
       const list = await FirebaseApp.listCheckpointsCloud(_uid, char.id);
       if (list.length > CHECKPOINT_MAX) {
         const extra = list.slice(CHECKPOINT_MAX); // ya viene ordenado más-nuevo-primero
         for (const cp of extra) {
           FirebaseApp.deleteCheckpointCloud(_uid, char.id, cp.id).catch(() => {});
+          try { localStorage.removeItem(_cpDataKey(char.id, cp.id)); } catch (e) {}
         }
       }
+      _cacheCheckpointMeta(char.id, list.slice(0, CHECKPOINT_MAX));
       return 'saved';
     } catch (e) {
       console.error('saveCheckpoint error:', e);
@@ -255,28 +278,40 @@ const Cloud = (() => {
     }
   }
 
+  // Devuelve la lista de checkpoints. Si no hay conexión, cae al cache local.
   async function listCheckpoints(charId) {
-    if (!_uid || !navigator.onLine) return [];
+    if (!_uid) return [];
+    if (!navigator.onLine) return _getCachedCheckpointMeta(charId);
     try {
-      return await FirebaseApp.listCheckpointsCloud(_uid, charId);
+      const list = await FirebaseApp.listCheckpointsCloud(_uid, charId);
+      _cacheCheckpointMeta(charId, list); // refrescar cache
+      return list;
     } catch (e) {
-      return [];
+      return _getCachedCheckpointMeta(charId); // fallback offline
     }
   }
 
+  // Trae el char completo de un checkpoint. Si no hay conexión, cae al cache.
   async function loadCheckpoint(charId, cpId) {
-    if (!_uid || !navigator.onLine) return null;
+    if (!_uid) return null;
+    if (!navigator.onLine) return _getCachedCheckpointData(charId, cpId);
     try {
-      return await FirebaseApp.loadCheckpointCloud(_uid, charId, cpId);
+      const char = await FirebaseApp.loadCheckpointCloud(_uid, charId, cpId);
+      if (char) _cacheCheckpointData(charId, cpId, char); // cachear al vuelo
+      return char;
     } catch (e) {
-      return null;
+      return _getCachedCheckpointData(charId, cpId); // fallback offline
     }
   }
 
   async function deleteCheckpoint(charId, cpId) {
+    try { localStorage.removeItem(_cpDataKey(charId, cpId)); } catch (e) {}
     if (!_uid || !navigator.onLine) return;
     try {
       await FirebaseApp.deleteCheckpointCloud(_uid, charId, cpId);
+      // Refrescar cache de metadata
+      const list = await FirebaseApp.listCheckpointsCloud(_uid, charId);
+      _cacheCheckpointMeta(charId, list);
     } catch (e) {}
   }
 
