@@ -7,6 +7,9 @@
 const App = (() => {
 
   let _char = null;         // personaje activo en memoria
+  let _initRunning = false; // guard: App.init() se invoca desde DOMContentLoaded
+                            // y desde Cloud._syncOnLogin — evita que dos corridas
+                            // concurrentes se pisen sobre la variable _char.
 
   // Recalcula features de clase según nivel desde CLASE_FEATURES (fuente de verdad).
   // Reemplaza COMPLETAMENTE las features de clase y conserva solo las de subclase.
@@ -314,6 +317,25 @@ const App = (() => {
   }
 
   async function init() {
+    // Guard de concurrencia: si ya hay un init() corriendo, esperar a que
+    // termine en vez de solaparse (evita que dos corridas escriban _char en
+    // paralelo y una pise datos que la otra acaba de traer de la nube).
+    if (_initRunning) {
+      const t0 = Date.now();
+      while (_initRunning && Date.now() - t0 < 8000) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return;
+    }
+    _initRunning = true;
+    try {
+      await _initInner();
+    } finally {
+      _initRunning = false;
+    }
+  }
+
+  async function _initInner() {
     // Limpiar del localStorage chars que están en la lista negra (eliminados)
     // Corre antes de todo para que Firebase no los restaure silenciosamente
     Storage.purgeDeletedFromLocal();
@@ -371,13 +393,16 @@ const App = (() => {
     // versión más nueva que todavía no bajó (el pull/listener corre después
     // de este punto). La migración llega a la nube en el próximo cambio real
     // del usuario o la próxima sincronización manual, no automáticamente al cargar.
+    // saveCharRaw (no saveChar): estas migraciones son datos derivados de
+    // characters.js, no ediciones del usuario — no deben tocar updatedAt, o el
+    // merge entre dispositivos las trata como "cambio nuevo" y pisa datos reales.
     const _initSyncChanged = _syncCharData(_char);
     if (_initSyncChanged) {
-      Storage.saveChar(_char);
+      Storage.saveCharRaw(_char);
     }
 
     // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
-    if (_cleanSpells(_char)) Storage.saveChar(_char);
+    if (_cleanSpells(_char)) Storage.saveCharRaw(_char);
 
     // ── Sincronizar datos maestros desde characters.js ──────────────────────
     // Preserva: spellSlots usados, preparedToday, cantidades de consumables
@@ -415,7 +440,7 @@ const App = (() => {
         }
       });
 
-      Storage.saveChar(_char);
+      Storage.saveCharRaw(_char);
 
     } else {
       // Otros personajes: sync de catálogo de spells por clase
@@ -433,7 +458,7 @@ const App = (() => {
         }
         _char.preparedToday = savedPrepared;
       }
-      Storage.saveChar(_char);
+      Storage.saveCharRaw(_char);
 
       // _syncCharData ya se encargó del sync de recursos (clase + subclase + raza)
       _refreshCharFeatures(_char);
@@ -1344,7 +1369,7 @@ const App = (() => {
     if (c.id !== 'lursey-brumaclara') {
       const didSync = _syncCharData(c);
       if (didSync) {
-        Storage.saveChar(c);
+        Storage.saveCharRaw(c);
       }
     }
 
