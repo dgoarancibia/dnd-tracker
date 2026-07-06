@@ -100,13 +100,12 @@ const Cloud = (() => {
 
     if (!loginBtn) return;
 
-    const forcePullBtn = document.getElementById('forcePullBtn');
-    const cloudSaveBtn = document.getElementById('cloudSaveBtn');
+    const cloudBtns = ['cloudSaveBtn', 'checkpointBtn', 'loadPointBtn']
+      .map(id => document.getElementById(id)).filter(Boolean);
     if (user) {
       loginBtn.style.display  = 'none';
       logoutBtn.style.display = 'inline-flex';
-      if (forcePullBtn) forcePullBtn.style.display = 'inline-flex';
-      if (cloudSaveBtn) cloudSaveBtn.style.display = 'inline-flex';
+      cloudBtns.forEach(b => b.style.display = 'inline-flex');
       if (userLabel) {
         userLabel.textContent = user.displayName || user.email || '';
         userLabel.style.display = 'inline';
@@ -114,8 +113,7 @@ const Cloud = (() => {
     } else {
       loginBtn.style.display  = 'inline-flex';
       logoutBtn.style.display = 'none';
-      if (forcePullBtn) forcePullBtn.style.display = 'none';
-      if (cloudSaveBtn) cloudSaveBtn.style.display = 'none';
+      cloudBtns.forEach(b => b.style.display = 'none');
       if (userLabel) userLabel.style.display = 'none';
       _setSyncState(SyncState.IDLE);
     }
@@ -213,6 +211,58 @@ const Cloud = (() => {
     } catch (e) {
       return null;
     }
+  }
+
+  /* ══════════════════════════════════════════════════════
+     CHECKPOINTS (savepoints manuales con historial)
+  ══════════════════════════════════════════════════════ */
+
+  const CHECKPOINT_MAX = 15; // por personaje; los más viejos se podan
+
+  // Crea un checkpoint del char dado. cpId = ISO timestamp (ordenable/único).
+  // Devuelve 'saved' | 'skipped' | 'error'.
+  async function saveCheckpoint(char, label, cpId) {
+    if (!_uid || !navigator.onLine) return 'skipped';
+    try {
+      await FirebaseApp.saveCheckpointCloud(_uid, char.id, cpId, label, char);
+      // Podar los más viejos si se superó el máximo.
+      const list = await FirebaseApp.listCheckpointsCloud(_uid, char.id);
+      if (list.length > CHECKPOINT_MAX) {
+        const extra = list.slice(CHECKPOINT_MAX); // ya viene ordenado más-nuevo-primero
+        for (const cp of extra) {
+          FirebaseApp.deleteCheckpointCloud(_uid, char.id, cp.id).catch(() => {});
+        }
+      }
+      return 'saved';
+    } catch (e) {
+      console.error('saveCheckpoint error:', e);
+      return 'error';
+    }
+  }
+
+  async function listCheckpoints(charId) {
+    if (!_uid || !navigator.onLine) return [];
+    try {
+      return await FirebaseApp.listCheckpointsCloud(_uid, charId);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function loadCheckpoint(charId, cpId) {
+    if (!_uid || !navigator.onLine) return null;
+    try {
+      return await FirebaseApp.loadCheckpointCloud(_uid, charId, cpId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function deleteCheckpoint(charId, cpId) {
+    if (!_uid || !navigator.onLine) return;
+    try {
+      await FirebaseApp.deleteCheckpointCloud(_uid, charId, cpId);
+    } catch (e) {}
   }
 
   /* ══════════════════════════════════════════════════════
@@ -328,6 +378,10 @@ const Cloud = (() => {
     deleteChar,
     forcePullFromCloud,
     purgeDeletedFromCloud,
+    saveCheckpoint,
+    listCheckpoints,
+    loadCheckpoint,
+    deleteCheckpoint,
   };
 })();
 

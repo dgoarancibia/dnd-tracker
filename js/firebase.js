@@ -147,6 +147,60 @@ async function deleteCharCloud(uid, charId) {
   await deleteDoc(_charRef(uid, charId));
 }
 
+/* ── Checkpoints (savepoints manuales, subcolección por personaje) ── */
+
+function _checkpointsCol(uid, charId) {
+  return collection(_db, 'users', uid, 'characters', charId, 'checkpoints');
+}
+
+function _checkpointRef(uid, charId, cpId) {
+  return doc(_db, 'users', uid, 'characters', charId, 'checkpoints', cpId);
+}
+
+// Guarda un checkpoint. cpId = timestamp ISO (ordenable). Guarda el char completo + label.
+async function saveCheckpointCloud(uid, charId, cpId, label, char) {
+  const ref = _checkpointRef(uid, charId, cpId);
+  const data = {
+    id: cpId,
+    label: label || '',
+    createdAt: cpId,
+    char: _stripUndefined(char),
+    _syncedAt: serverTimestamp()
+  };
+  await setDoc(ref, data);
+}
+
+// Lista los checkpoints (metadata liviana: id, label, createdAt, y hp/nivel para mostrar).
+async function listCheckpointsCloud(uid, charId) {
+  const snap = await getDocs(_checkpointsCol(uid, charId));
+  const result = [];
+  snap.forEach(d => {
+    const data = d.data();
+    const ch = data.char || {};
+    result.push({
+      id: data.id,
+      label: data.label || '',
+      createdAt: data.createdAt,
+      hp: ch.hp || null,
+      nivel: ch.nivel || null
+    });
+  });
+  // Más recientes primero
+  result.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  return result;
+}
+
+// Trae el char completo de un checkpoint.
+async function loadCheckpointCloud(uid, charId, cpId) {
+  const snap = await getDoc(_checkpointRef(uid, charId, cpId));
+  if (!snap.exists()) return null;
+  return snap.data().char || null;
+}
+
+async function deleteCheckpointCloud(uid, charId, cpId) {
+  await deleteDoc(_checkpointRef(uid, charId, cpId));
+}
+
 function listenCharsCloud(uid, onChange, onError) {
   return onSnapshot(_charsCol(uid), snap => {
     const result = {};
@@ -174,5 +228,9 @@ window.FirebaseApp = {
   loadCharCloud,
   loadAllCharsCloud,
   deleteCharCloud,
-  listenCharsCloud
+  listenCharsCloud,
+  saveCheckpointCloud,
+  listCheckpointsCloud,
+  loadCheckpointCloud,
+  deleteCheckpointCloud
 };

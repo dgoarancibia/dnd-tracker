@@ -6868,6 +6868,117 @@ const App = (() => {
     if (ov) ov.style.display = 'flex';
   }
 
+  /* ══════════════════════════════════════════════════════
+     CHECKPOINTS (savepoints manuales con historial)
+  ══════════════════════════════════════════════════════ */
+
+  async function saveCheckpointManual() {
+    if (!_char || _char.id === 'lursey-brumaclara') { showToast('No disponible para este personaje', 'info', 2500); return; }
+    if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) {
+      showToast('Necesitás sesión y conexión para crear un checkpoint', 'error', 3500);
+      return;
+    }
+    const def = `HP ${_char.hp.current}/${_char.hp.max} · Nvl ${_char.nivel || '?'}`;
+    const label = prompt('Nombre del checkpoint (ej: "antes del jefe"):', def);
+    if (label === null) return; // canceló
+    _saveChar();
+    _showCloudSaveOverlay('☁ Creando checkpoint…');
+    // cpId: timestamp ISO local aproximado (único y ordenable). Usamos performance+Date evitando Date.now prohibido en workflows, pero acá es app normal.
+    const cpId = new Date().toISOString();
+    const res = await Cloud.saveCheckpoint(_char, label.trim() || def, cpId);
+    _hideCloudSaveOverlay();
+    if (res === 'saved') showToast('✓ Checkpoint creado', 'success', 3000);
+    else showToast('No se pudo crear el checkpoint', 'error', 3000);
+  }
+
+  // Modal "Cargar": muestra el autosave de la nube + los checkpoints, para restaurar.
+  async function openLoadModal() {
+    if (!_char || _char.id === 'lursey-brumaclara') { showToast('No disponible para este personaje', 'info', 2500); return; }
+    if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) {
+      showToast('Necesitás sesión y conexión', 'error', 3000);
+      return;
+    }
+    const modal = document.getElementById('loadPointsModal');
+    const list  = document.getElementById('loadPointsList');
+    if (!modal || !list) return;
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);">Cargando…</div>';
+    modal.classList.add('show');
+
+    const [cloudChar, checkpoints] = await Promise.all([
+      Cloud.loadCloudChar(_char.id),
+      Cloud.listCheckpoints(_char.id)
+    ]);
+
+    const fmtWhen = ts => ts ? new Date(ts).toLocaleString('es', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+    const hpStr = hp => hp ? `${hp.current}/${hp.max}` : '?';
+    let html = '';
+
+    // Autosave (documento principal de la nube)
+    if (cloudChar) {
+      html += `
+        <div class="lp-item" onclick="App.restoreAutosave()">
+          <div class="lp-item-main">
+            <div class="lp-item-title">☁ Último guardado (autosave)</div>
+            <div class="lp-item-sub">Nvl ${cloudChar.nivel || '?'} · HP ${hpStr(cloudChar.hp)} · ${fmtWhen(cloudChar.updatedAt)}</div>
+          </div>
+          <span class="lp-item-arrow">Cargar ›</span>
+        </div>`;
+    }
+
+    if (checkpoints.length === 0) {
+      html += '<div style="padding:14px;text-align:center;color:var(--text-dim);font-size:12px;">No hay checkpoints guardados.</div>';
+    } else {
+      checkpoints.forEach(cp => {
+        html += `
+          <div class="lp-item">
+            <div class="lp-item-main" onclick="App.restoreCheckpoint('${cp.id}')">
+              <div class="lp-item-title">🏁 ${_esc(cp.label || 'Checkpoint')}</div>
+              <div class="lp-item-sub">Nvl ${cp.nivel || '?'} · HP ${hpStr(cp.hp)} · ${fmtWhen(cp.createdAt)}</div>
+            </div>
+            <button class="lp-item-del" onclick="App.removeCheckpoint('${cp.id}')" title="Eliminar checkpoint">✕</button>
+          </div>`;
+      });
+    }
+    list.innerHTML = html;
+  }
+
+  function closeLoadModal() {
+    const m = document.getElementById('loadPointsModal');
+    if (m) m.classList.remove('show');
+  }
+
+  async function restoreAutosave() {
+    closeLoadModal();
+    _showCloudSaveOverlay('☁ Cargando…');
+    const c = await Cloud.loadCloudChar(_char.id);
+    _hideCloudSaveOverlay();
+    if (!c) { showToast('No se pudo cargar', 'error', 3000); return; }
+    const migrated = Storage.migrateChar ? Storage.migrateChar(c) : c;
+    Storage.saveCharRaw(migrated);
+    App.reloadChar(migrated);
+    showToast('✓ Cargado último guardado', 'success', 3000);
+  }
+
+  async function restoreCheckpoint(cpId) {
+    const id = _char.id;
+    closeLoadModal();
+    _showCloudSaveOverlay('🏁 Restaurando checkpoint…');
+    const c = await Cloud.loadCheckpoint(id, cpId);
+    _hideCloudSaveOverlay();
+    if (!c) { showToast('No se pudo restaurar', 'error', 3000); return; }
+    const migrated = Storage.migrateChar ? Storage.migrateChar(c) : c;
+    Storage.saveCharRaw(migrated);
+    App.reloadChar(migrated);
+    showToast('✓ Checkpoint restaurado (recordá Guardar en nube si querés que sea el actual)', 'success', 5000);
+  }
+
+  function removeCheckpoint(cpId) {
+    _confirm('¿Eliminar este checkpoint? No se puede deshacer.', async () => {
+      await Cloud.deleteCheckpoint(_char.id, cpId);
+      openLoadModal(); // refrescar lista
+    });
+  }
+
   function _hideCloudSaveOverlay() {
     const ov = document.getElementById('cloudSaveOverlay');
     if (ov) ov.style.display = 'none';
@@ -7180,6 +7291,8 @@ const App = (() => {
     // Cloud / Undo
     undoLastChange, toggleTheme, toggleDistUnit, fmtDist,
     saveToCloud,
+    saveCheckpointManual, openLoadModal, closeLoadModal,
+    restoreAutosave, restoreCheckpoint, removeCheckpoint,
     getActiveChar() { return _char; },
     reloadChar(char) {
       _char = char || Storage.getActiveChar();
