@@ -7088,6 +7088,10 @@ const App = (() => {
   async function _autoSaveTick() {
     if (!_char || _char.id === 'lursey-brumaclara') return;
     if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) return;
+    // Solo subir si hay cambios reales pendientes. Sin esto, cada pestaña sube
+    // su copia cada 10 min aunque no haya tocado nada, y dos pestañas del mismo
+    // PJ se pisan entre sí con datos viejos.
+    if (!_cloudDirty) return;
     // No guardar si el usuario está editando algo (input/textarea con foco)
     const ae = document.activeElement;
     if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) {

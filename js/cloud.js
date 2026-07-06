@@ -191,6 +191,12 @@ const Cloud = (() => {
         // Si falla la verificación (ej. sin red), no arriesgar: reportar error.
         return 'error';
       }
+    } else {
+      // Sobreescritura forzada: sellar con timestamp fresco para que esta versión
+      // quede como la MÁS NUEVA en la nube. Sin esto se subiría con el updatedAt
+      // viejo del char local y una futura carga la vería como más antigua.
+      char.updatedAt = new Date().toISOString();
+      if (Storage.saveCharRaw) Storage.saveCharRaw(char); // reflejar el ts nuevo en local
     }
     try {
       await FirebaseApp.saveCharCloud(_uid, char);
