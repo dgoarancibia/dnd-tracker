@@ -6821,12 +6821,14 @@ const App = (() => {
     }
     // Asegurar que lo último está guardado localmente antes de subir
     _saveChar();
-    showToast('Guardando en nube…', 'info', 1500);
+    _showCloudSaveOverlay('☁ Guardando en nube…');
     const res = await Cloud.saveNow(_char);
     if (res === 'saved') {
+      _hideCloudSaveOverlay();
       showToast('✓ Guardado en nube', 'success', 3000);
       _updateCloudSaveBtn();
     } else if (res === 'conflict') {
+      _hideCloudSaveOverlay();
       // La nube tiene una versión más nueva (otro dispositivo). Preguntar.
       const cloudChar = await Cloud.loadCloudChar(_char.id);
       const cloudWhen = cloudChar ? new Date(cloudChar.updatedAt).toLocaleString('es') : 'desconocida';
@@ -6835,14 +6837,29 @@ const App = (() => {
       _confirm(
         `⚠ La nube tiene una versión MÁS NUEVA (Nvl ${cloudNvl}, HP ${cloudHp}, ${cloudWhen}), probablemente de otro dispositivo.\n\n¿Sobreescribirla con esta versión (Nvl ${_char.nivel || '?'}, HP ${_char.hp.current}/${_char.hp.max})?`,
         async () => {
+          _showCloudSaveOverlay('☁ Sobrescribiendo…');
           const forced = await Cloud.saveNow(_char, { force: true });
+          _hideCloudSaveOverlay();
           if (forced === 'saved') { showToast('✓ Sobrescrito en nube', 'success', 3000); _updateCloudSaveBtn(); }
           else showToast('No se pudo guardar', 'error', 3000);
         }
       );
     } else if (res === 'error') {
+      _hideCloudSaveOverlay();
       showToast('Error al guardar en nube', 'error', 3000);
     }
+  }
+
+  function _showCloudSaveOverlay(text) {
+    const ov = document.getElementById('cloudSaveOverlay');
+    const tx = document.getElementById('cloudSaveOverlayText');
+    if (tx && text) tx.textContent = text;
+    if (ov) ov.style.display = 'flex';
+  }
+
+  function _hideCloudSaveOverlay() {
+    const ov = document.getElementById('cloudSaveOverlay');
+    if (ov) ov.style.display = 'none';
   }
 
   function _updateCloudSaveBtn() {

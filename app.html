@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 301;
+  var _V = 302;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 301;
+const _SW_EXPECTED = 302;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -119,6 +119,12 @@ const _SW_EXPECTED = 301;
   <div style="width:48px;height:48px;border:4px solid rgba(201,151,58,0.3);border-top-color:#c9973a;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
   <div style="color:#c9973a;font-family:'Cinzel',serif;font-size:15px;letter-spacing:0.05em;">Restaurando desde la nube…</div>
   <div style="color:rgba(255,255,255,0.45);font-size:12px;">Esto puede tardar unos segundos</div>
+</div>
+<!-- Overlay de guardado a nube — bloquea la pantalla mientras sube -->
+<div id="cloudSaveOverlay" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(13,11,20,0.92);flex-direction:column;align-items:center;justify-content:center;gap:18px;">
+  <div style="width:54px;height:54px;border:4px solid rgba(201,151,58,0.3);border-top-color:#c9973a;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+  <div id="cloudSaveOverlayText" style="color:#c9973a;font-family:'Cinzel',serif;font-size:18px;letter-spacing:0.05em;">☁ Guardando en nube…</div>
+  <div style="color:rgba(255,255,255,0.5);font-size:13px;">No cierres la app</div>
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
@@ -1111,7 +1117,7 @@ const _SW_EXPECTED = 301;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=154"></script>
+<script src="js/app.js?v=155"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>
