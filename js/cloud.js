@@ -101,10 +101,12 @@ const Cloud = (() => {
     if (!loginBtn) return;
 
     const forcePullBtn = document.getElementById('forcePullBtn');
+    const cloudSaveBtn = document.getElementById('cloudSaveBtn');
     if (user) {
       loginBtn.style.display  = 'none';
       logoutBtn.style.display = 'inline-flex';
       if (forcePullBtn) forcePullBtn.style.display = 'inline-flex';
+      if (cloudSaveBtn) cloudSaveBtn.style.display = 'inline-flex';
       if (userLabel) {
         userLabel.textContent = user.displayName || user.email || '';
         userLabel.style.display = 'inline';
@@ -113,6 +115,7 @@ const Cloud = (() => {
       loginBtn.style.display  = 'inline-flex';
       logoutBtn.style.display = 'none';
       if (forcePullBtn) forcePullBtn.style.display = 'none';
+      if (cloudSaveBtn) cloudSaveBtn.style.display = 'none';
       if (userLabel) userLabel.style.display = 'none';
       _setSyncState(SyncState.IDLE);
     }

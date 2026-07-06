@@ -473,6 +473,12 @@ const App = (() => {
     _updateCombatHUD();
     _setupHPSwipe();
 
+    // Al abrir un PJ: si la nube tiene una versión distinta a la local, ofrecer
+    // elegir cuál cargar (modelo savepoint). No baja nada solo; solo pregunta.
+    _checkCloudVersionOnOpen();
+    // Iniciar el autoguardado periódico a la nube (cada 10 min, con protecciones).
+    _startAutoSaveCloud();
+
     // Disparar elecciones pendientes si el personaje tiene elecciones sin resolver
     // (esperar un tick para que el DOM esté listo)
     setTimeout(() => {
@@ -6799,10 +6805,156 @@ const App = (() => {
 
   let _confirmCallback = null;
 
+  /* ══════════════════════════════════════════════════════
+     GUARDAR EN NUBE (explícito — modelo savepoint)
+  ══════════════════════════════════════════════════════ */
+
+  async function saveToCloud() {
+    if (!_char) return;
+    if (!window.Cloud || !Cloud.isLoggedIn()) {
+      showToast('Iniciá sesión primero', 'error', 3000);
+      return;
+    }
+    if (!navigator.onLine) {
+      showToast('Sin conexión — no se puede guardar en la nube', 'error', 3000);
+      return;
+    }
+    // Asegurar que lo último está guardado localmente antes de subir
+    _saveChar();
+    showToast('Guardando en nube…', 'info', 1500);
+    const res = await Cloud.saveNow(_char);
+    if (res === 'saved') {
+      showToast('✓ Guardado en nube', 'success', 3000);
+      _updateCloudSaveBtn();
+    } else if (res === 'conflict') {
+      // La nube tiene una versión más nueva (otro dispositivo). Preguntar.
+      const cloudChar = await Cloud.loadCloudChar(_char.id);
+      const cloudWhen = cloudChar ? new Date(cloudChar.updatedAt).toLocaleString('es') : 'desconocida';
+      const cloudHp = cloudChar && cloudChar.hp ? `${cloudChar.hp.current}/${cloudChar.hp.max}` : '?';
+      const cloudNvl = cloudChar ? (cloudChar.nivel || '?') : '?';
+      _confirm(
+        `⚠ La nube tiene una versión MÁS NUEVA (Nvl ${cloudNvl}, HP ${cloudHp}, ${cloudWhen}), probablemente de otro dispositivo.\n\n¿Sobreescribirla con esta versión (Nvl ${_char.nivel || '?'}, HP ${_char.hp.current}/${_char.hp.max})?`,
+        async () => {
+          const forced = await Cloud.saveNow(_char, { force: true });
+          if (forced === 'saved') { showToast('✓ Sobrescrito en nube', 'success', 3000); _updateCloudSaveBtn(); }
+          else showToast('No se pudo guardar', 'error', 3000);
+        }
+      );
+    } else if (res === 'error') {
+      showToast('Error al guardar en nube', 'error', 3000);
+    }
+  }
+
+  function _updateCloudSaveBtn() {
+    const ts = document.getElementById('cloudSaveTs');
+    if (ts) {
+      const hm = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+      ts.textContent = hm;
+    }
+  }
+
+  // Compara contenido de dos chars ignorando campos derivados/volátiles.
+  function _charContentDiffers(a, b) {
+    if (!a || !b) return true;
+    const strip = o => {
+      const c = { ...o };
+      delete c.updatedAt; delete c._syncedAt; delete c._dataVersion;
+      return JSON.stringify(c);
+    };
+    return strip(a) !== strip(b);
+  }
+
+  // Al abrir un PJ: si la nube difiere de lo local, ofrecer elegir versión.
+  async function _checkCloudVersionOnOpen() {
+    if (!_char || _char.id === 'lursey-brumaclara') return;
+    if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) return;
+    let cloudChar;
+    try {
+      cloudChar = await Cloud.loadCloudChar(_char.id);
+    } catch (e) { return; }
+    if (!cloudChar) return; // no está en la nube todavía
+    if (!_charContentDiffers(_char, cloudChar)) return; // iguales → nada que preguntar
+
+    const fmt = c => {
+      const when = c.updatedAt ? new Date(c.updatedAt).toLocaleString('es', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+      const hp = c.hp ? `${c.hp.current}/${c.hp.max}` : '?';
+      return `Nvl ${c.nivel || '?'} · HP ${hp} · ${when}`;
+    };
+    // Modal de dos opciones (reusa confirm con textos claros).
+    _confirmChoice(
+      'Hay dos versiones de este personaje',
+      `📱 LOCAL (este dispositivo):\n${fmt(_char)}\n\n☁ NUBE (guardado):\n${fmt(cloudChar)}\n\n¿Cuál querés usar?`,
+      'Usar la de la NUBE',
+      'Seguir con la LOCAL',
+      () => {
+        // Cargar la de la nube
+        const migrated = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
+        Storage.saveCharRaw(migrated);
+        App.reloadChar(migrated);
+        showToast('✓ Cargada versión de la nube', 'success', 3000);
+      },
+      () => { /* seguir con local: no hacer nada */ }
+    );
+  }
+
+  /* ── Autoguardado a la nube (cada 10 min, con protecciones) ── */
+  let _autoSaveTimer = null;
+  const AUTOSAVE_MS = 10 * 60 * 1000; // 10 minutos
+
+  function _startAutoSaveCloud() {
+    if (_autoSaveTimer) clearInterval(_autoSaveTimer);
+    _autoSaveTimer = setInterval(_autoSaveTick, AUTOSAVE_MS);
+  }
+
+  async function _autoSaveTick() {
+    if (!_char || _char.id === 'lursey-brumaclara') return;
+    if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) return;
+    // No guardar si el usuario está editando algo (input/textarea con foco)
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) {
+      return; // se reintenta en el próximo tick
+    }
+    _saveChar();
+    const res = await Cloud.saveNow(_char);
+    if (res === 'saved') {
+      _updateCloudSaveBtn();
+    } else if (res === 'conflict') {
+      // Otro dispositivo guardó algo más nuevo. No pisar en silencio: avisar.
+      showToast('⚠ Hay una versión más nueva en la nube. Usá "Guardar en nube" para decidir.', 'info', 6000);
+    }
+  }
+
   function _confirm(msg, onOk) {
     _confirmCallback = onOk;
     document.getElementById('confirmMsg').textContent = msg;
     document.getElementById('confirmOkBtn').onclick = () => { closeConfirm(); onOk(); };
+    document.getElementById('confirmModal').classList.add('show');
+  }
+
+  // Diálogo de dos opciones con etiquetas propias (para elegir versión nube/local).
+  // Restaura título, botones y estilos al cerrar para no afectar los _confirm de borrado.
+  function _confirmChoice(title, msg, okLabel, cancelLabel, onOk, onCancel) {
+    const titleEl  = document.getElementById('confirmTitle');
+    const msgEl    = document.getElementById('confirmMsg');
+    const okBtn    = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.querySelector('#confirmModal .btn-ghost');
+    const _restore = () => {
+      if (titleEl)  titleEl.textContent = '¿Eliminar?';
+      if (msgEl)    msgEl.style.whiteSpace = '';
+      if (okBtn)    { okBtn.textContent = 'Eliminar'; okBtn.classList.add('btn-danger'); }
+      if (cancelBtn) { cancelBtn.textContent = 'Cancelar'; cancelBtn.onclick = () => closeConfirm(); }
+    };
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl)  { msgEl.style.whiteSpace = 'pre-line'; msgEl.textContent = msg; }
+    if (okBtn)  {
+      okBtn.textContent = okLabel;
+      okBtn.classList.remove('btn-danger');
+      okBtn.onclick = () => { closeConfirm(); _restore(); if (onOk) onOk(); };
+    }
+    if (cancelBtn) {
+      cancelBtn.textContent = cancelLabel;
+      cancelBtn.onclick = () => { closeConfirm(); _restore(); if (onCancel) onCancel(); };
+    }
     document.getElementById('confirmModal').classList.add('show');
   }
 
@@ -6999,6 +7151,7 @@ const App = (() => {
 
     // Cloud / Undo
     undoLastChange, toggleTheme, toggleDistUnit, fmtDist,
+    saveToCloud,
     getActiveChar() { return _char; },
     reloadChar(char) {
       _char = char || Storage.getActiveChar();

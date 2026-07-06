@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 300;
+  var _V = 301;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 300;
+const _SW_EXPECTED = 301;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -227,8 +227,12 @@ const _SW_EXPECTED = 300;
         ✕ Cerrar sesión
         <span id="userLabel" style="font-size:9px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px;"></span>
       </button>
-      <button class="hm-btn" id="forcePullBtn" onclick="Cloud.forcePullFromCloud();App.closeHeaderMenu()" style="display:none;" title="Forzar carga desde nube">
-        ↓ Sincronizar desde nube
+      <button class="hm-btn" id="cloudSaveBtn" onclick="App.saveToCloud();App.closeHeaderMenu()" style="display:none;" title="Sube este personaje a la nube ahora">
+        ☁ Guardar en nube
+        <span class="hm-ts" id="cloudSaveTs"></span>
+      </button>
+      <button class="hm-btn" id="forcePullBtn" onclick="Cloud.forcePullFromCloud();App.closeHeaderMenu()" style="display:none;" title="Baja la versión de la nube (descarta cambios locales)">
+        ↓ Cargar desde nube
       </button>
 
       <div class="hm-divider"></div>
@@ -1107,7 +1111,7 @@ const _SW_EXPECTED = 300;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=153"></script>
+<script src="js/app.js?v=154"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>
