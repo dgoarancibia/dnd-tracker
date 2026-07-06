@@ -529,17 +529,16 @@ const App = (() => {
 
     // Cloud.init() se llama desde cloud.js al cargarse (después del módulo ESM)
 
-    // Auto-backup y cloud save al salir
+    // Al salir/ocultar: SOLO guardado local (nunca subir a nube).
+    // Subir acá pisaba silenciosamente datos más nuevos de otro dispositivo
+    // cuando esta pestaña estuvo abierta con una versión vieja en memoria.
+    // La subida a nube es explícita (botón guardar) o por autosave verificado.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        _saveChar();
-        if (window.Cloud && Cloud.isLoggedIn()) Cloud.saveNow(_char);
-      }
+      if (document.visibilityState === 'hidden') _saveChar();
     });
 
     window.addEventListener('pagehide', () => {
       _saveChar();
-      if (window.Cloud && Cloud.isLoggedIn() && _char) Cloud.saveNow(_char);
     });
 
     // Nivel sugerido en modal

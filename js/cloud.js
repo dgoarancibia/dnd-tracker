@@ -1,14 +1,21 @@
 /* ═══════════════════════════════════════════════════════
-   cloud.js — Sincronización Firestore + estado de sync
+   cloud.js — Sincronización Firestore (modelo SAVEPOINT)
    Módulo ESM — importa firebase.js, exporta Cloud global
+
+   MODELO: nada se sube ni baja automáticamente al iniciar sesión, y no hay
+   listener en tiempo real. Esos mecanismos causaban que un dispositivo pisara
+   silenciosamente los datos de otro. Ahora:
+     - El guardado LOCAL es instantáneo en cada cambio (lo hace app.js/storage.js).
+     - La subida a la nube es EXPLÍCITA: saveNow() (guardado manual / autosave
+       controlado), y siempre verifica el timestamp de la nube antes de pisar.
+     - La bajada es EXPLÍCITA: forcePullFromCloud() (botón "Sincronizar desde nube").
    ═══════════════════════════════════════════════════════ */
 import './firebase.js';
 
 const Cloud = (() => {
-  let _uid        = null;   // UID del usuario autenticado
-  let _unsubListen = null;  // unsub del onSnapshot listener
-  let _pulling    = false;  // true mientras un pull desde la nube está en curso —
-                             // bloquea saves que podrían pisarlo con datos en memoria desactualizados
+  let _uid     = null;    // UID del usuario autenticado
+  let _pulling = false;   // true mientras un pull desde la nube está en curso —
+                          // bloquea saves que podrían pisarlo con datos viejos en memoria
 
   /* ══════════════════════════════════════════════════════
      ESTADO DE SYNC
@@ -67,18 +74,16 @@ const Cloud = (() => {
   function init() {
     if (!window.FirebaseApp) return;
 
-    // onAuthStateChanged detecta cambios Y la sesión activa al inicializar
-    // El redirect result ya fue procesado en firebase.js con top-level await
+    // MODELO SAVEPOINT: al iniciar sesión NO se baja ni sube nada automáticamente,
+    // ni se abre un listener en tiempo real. El usuario decide explícitamente
+    // cuándo bajar (Sincronizar desde nube) y cuándo subir (guardado manual /
+    // autosave controlado con verificación de conflicto).
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
       _updateAuthUI(user);
       if (user) {
-        _syncOnLogin(user.uid);
-        _startListener(user.uid);
-        // Limpiar de Firestore los personajes en lista negra que siguen en la nube
+        // Solo limpiar de Firestore los personajes que el usuario eliminó.
         purgeDeletedFromCloud();
-      } else {
-        _stopListener();
       }
     });
 
@@ -134,175 +139,6 @@ const Cloud = (() => {
     return !!_uid;
   }
 
-  /* ══════════════════════════════════════════════════════
-     SYNC AL LOGIN — trae chars de nube más recientes
-  ══════════════════════════════════════════════════════ */
-
-  let _syncing = false;
-  async function _syncOnLogin(uid) {
-    if (_syncing) {
-      // Si ya está sincronizando, esperar hasta 12s a que termine y luego renderizar
-      const waited = Date.now();
-      while (_syncing && Date.now() - waited < 12000) {
-        await new Promise(r => setTimeout(r, 300));
-      }
-      if (typeof renderGrid === 'function') renderGrid();
-      return;
-    }
-    if (!navigator.onLine) {
-      // Sin conexión — renderizar lo que haya en local (puede ser vacío)
-      if (typeof renderGrid === 'function') renderGrid();
-      if (window.App && typeof App.init === 'function') App.init();
-      return;
-    }
-    _syncing = true;
-    _pulling = true;
-    _setSyncState(SyncState.SAVING);
-    try {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 10000));
-      const cloudChars = await Promise.race([
-        FirebaseApp.loadAllCharsCloud(uid),
-        timeout
-      ]);
-
-      // Lista negra: IDs que el usuario eliminó (no restaurar ni subir nunca)
-      const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
-      const isBlocked = id => _deletedIds.has(id) || persistedDeleted.has(id);
-
-      // Borrar de Firestore los bloqueados que siguen en la nube
-      for (const id of Object.keys(cloudChars)) {
-        if (isBlocked(id)) {
-          FirebaseApp.deleteCharCloud(uid, id).catch(() => {});
-          delete cloudChars[id];
-        }
-      }
-
-      // Limpiar también del localStorage cualquier bloqueado que haya vuelto antes del fix
-      const local = Storage.getAllChars();
-      for (const id of Object.keys(local)) {
-        if (isBlocked(id)) delete local[id];
-      }
-
-      if (Object.keys(cloudChars).length === 0) {
-        // Nube vacía — subir todos los locales no bloqueados
-        for (const char of Object.values(local)) {
-          await FirebaseApp.saveCharCloud(uid, char);
-        }
-        return; // finally limpia _syncing
-      }
-
-      // Merge bidireccional: para cada personaje, gana el más reciente (updatedAt)
-      const merged = { ...local };
-      const toUpload = [];
-
-      for (const [id, cloudChar] of Object.entries(cloudChars)) {
-        if (isBlocked(id)) continue;
-        const localChar = local[id];
-        if (!localChar) {
-          // Solo en nube → restaurar a local
-          merged[id] = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
-        } else {
-          // Existe en ambos → gana el más reciente por updatedAt
-          const cloudTs = new Date(cloudChar.updatedAt  || 0).getTime();
-          const localTs = new Date(localChar.updatedAt  || 0).getTime();
-          if (cloudTs >= localTs) {
-            const winner = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
-            // Preservar avatar local si la nube no lo tiene (puede que aún no se haya subido)
-            if (!winner.avatar && localChar.avatar) winner.avatar = localChar.avatar;
-            merged[id] = winner;
-          } else {
-            toUpload.push(localChar);
-          }
-        }
-      }
-
-      // Personajes solo en local (no están en nube) → subir
-      for (const [id, localChar] of Object.entries(local)) {
-        if (!cloudChars[id] && !isBlocked(id)) toUpload.push(localChar);
-      }
-
-      // Guardar merge en localStorage
-      for (const char of Object.values(merged)) {
-        Storage.saveCharRaw(char);
-      }
-
-      // Subir a nube los que hacen falta
-      for (const char of toUpload) {
-        await FirebaseApp.saveCharCloud(uid, char);
-      }
-
-      // Notificar a app para re-render
-      // index.html: re-renderizar la grilla de personajes (sync llegó después del primer render)
-      if (typeof renderGrid === 'function') {
-        renderGrid();
-      }
-      // app.html: re-inicializar la app
-      if (window.App && typeof App.init === 'function') {
-        App.init();
-      }
-
-      _setSyncState(SyncState.SAVED, new Date().toISOString());
-    } catch (e) {
-      console.error('Sync on login error:', e);
-      _setSyncState(SyncState.ERROR, e.message === 'timeout' ? 'tiempo de espera agotado' : e.message);
-      // En timeout: reintentar después de 15s (máx 3 veces)
-      if (e.message === 'timeout' && (_syncRetries || 0) < 3) {
-        _syncRetries = (_syncRetries || 0) + 1;
-        setTimeout(() => _syncOnLogin(uid), 15000);
-      }
-    } finally {
-      _syncing = false;
-      _pulling = false;
-      // Aplicar snapshot pendiente que llegó mientras _syncOnLogin corría
-      if (_pendingCloudState) {
-        const pending = _pendingCloudState;
-        _pendingCloudState = null;
-        _applyCloudChars(pending);
-      }
-    }
-  }
-
-  let _syncRetries = 0;
-
-  /* ══════════════════════════════════════════════════════
-     LISTENER EN TIEMPO REAL
-  ══════════════════════════════════════════════════════ */
-
-  let _listenerReady = false;
-  let _pendingCloudState = null;  // snapshot recibido mientras _syncing estaba activo
-  let _listenerRetries = 0;
-
-  function _startListener(uid) {
-    _stopListener();
-    _listenerReady = false;
-    _pendingCloudState = null;
-
-    _unsubListen = FirebaseApp.listenCharsCloud(uid, cloudChars => {
-      if (!_listenerReady) {
-        _listenerReady = true;
-        if (_syncing) {
-          // _syncOnLogin todavía corre — guardar snapshot para aplicar cuando termine
-          _pendingCloudState = cloudChars;
-          return;
-        }
-        _applyCloudChars(cloudChars);
-        return;
-      }
-      // Disparos posteriores: cambio real desde otro dispositivo
-      _applyCloudChars(cloudChars);
-    }, err => {
-      // onSnapshot murió (iOS background, cambio de red, etc.) — reintentar
-      console.warn('[Cloud] listener caído, reintentando…', err);
-      _listenerReady = false;
-      _listenerRetries++;
-      const delay = Math.min(5000 * _listenerRetries, 30000);
-      setTimeout(() => {
-        if (_uid) _startListener(_uid);
-      }, delay);
-    });
-  }
-
   // IDs borrados en esta sesión (en memoria, para respuesta inmediata)
   const _deletedIds = new Set();
 
@@ -310,78 +146,15 @@ const Cloud = (() => {
     _deletedIds.add(id);
   }
 
-  function _applyCloudChars(cloudChars) {
-    // Lista negra: en memoria (sesión actual) + localStorage (sesiones anteriores)
-    const persistedDeleted = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
-    const isBlocked = id => _deletedIds.has(id) || persistedDeleted.has(id);
-
-    // Partir de localStorage, pero ya eliminando los que están en lista negra
-    // (pueden haber sido restaurados por Firebase en syncs anteriores al fix)
-    const local = Storage.getAllChars();
-    let changed = false;
-
-    // Limpiar del localStorage cualquier char que esté en lista negra
-    for (const id of Object.keys(local)) {
-      if (isBlocked(id)) {
-        delete local[id];
-        changed = true;
-      }
-    }
-
-    // Merge de chars de Firebase, filtrando los bloqueados
-    for (const [id, cloudChar] of Object.entries(cloudChars)) {
-      if (isBlocked(id)) continue;
-      const migrated = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
-      // Preservar avatar local si la nube no lo tiene
-      if (!migrated.avatar && local[id]?.avatar) migrated.avatar = local[id].avatar;
-      if (!migrated.avatar) {
-        const lsAvatar = localStorage.getItem('dnd_avatar_' + id);
-        if (lsAvatar) migrated.avatar = lsAvatar;
-      }
-      // Solo marcar changed si el contenido realmente cambió (evita re-render de echo)
-      // Excluimos _syncedAt porque siempre varía aunque el contenido sea igual
-      const _strip = o => { if (!o) return o; const c = {...o}; delete c._syncedAt; return c; };
-      if (JSON.stringify(_strip(migrated)) !== JSON.stringify(_strip(local[id]))) {
-        local[id] = migrated;
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      // Reescribir localStorage completo con el resultado limpio
-      for (const char of Object.values(local)) {
-        Storage.saveCharRaw(char);
-      }
-      // Recargar el personaje activo directamente con los datos frescos
-      const activeId = Storage.getActiveId();
-      const freshChar = activeId ? local[activeId] : null;
-      if (window.App && freshChar) {
-        App.reloadChar(freshChar);
-      }
-      _setSyncState(SyncState.SAVED, new Date().toISOString());
-    }
-  }
-
-  function _stopListener() {
-    if (_unsubListen) {
-      _unsubListen();
-      _unsubListen = null;
-    }
-  }
-
   /* ══════════════════════════════════════════════════════
-     AUTOSAVE (inmediato)
+     GUARDADO A NUBE (explícito, con verificación de conflicto)
   ══════════════════════════════════════════════════════ */
 
-  function scheduleSave(char) {
-    if (!_uid || !navigator.onLine || _pulling) return;
-
-    // Sin debounce: iOS puede suspender la app apenas pasa a background
-    // (bloqueo de pantalla, cambio de app) y un timer pendiente nunca dispara,
-    // perdiendo el guardado a nube por completo. Se guarda de inmediato.
-    _setSyncState(SyncState.SAVING);
-    _doSave(char);
-  }
+  // scheduleSave ya NO sube a la nube en cada cambio. El guardado local lo hace
+  // app.js/storage.js de forma instantánea. La subida a nube es explícita
+  // (saveNow) o por autosave controlado. Se mantiene la firma para no romper
+  // llamadas existentes, pero es un no-op respecto a la nube.
+  function scheduleSave(char) { /* no-op: modelo savepoint, subida explícita */ }
 
   async function _doSave(char) {
     if (!_uid) return;
@@ -395,25 +168,48 @@ const Cloud = (() => {
     }
   }
 
-  /* Forzar guardado inmediato (para pagehide/visibilitychange) — bloqueado
-     durante un pull, y además verifica contra Firestore antes de subir:
-     una pestaña que estuvo mucho tiempo en background (o abierta desde antes
-     de que otro dispositivo guardara) puede tener en memoria una versión más
-     vieja que la que ya hay en la nube. Sin este chequeo, cerrar/ocultar esa
-     pestaña pisa silenciosamente los datos más nuevos de otro dispositivo. */
-  async function saveNow(char) {
-    if (!_uid || !navigator.onLine || _pulling) return;
-    try {
-      const cloudChar = await FirebaseApp.loadCharCloud(_uid, char.id);
-      if (cloudChar) {
-        const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
-        const localTs = new Date(char.updatedAt || 0).getTime();
-        if (cloudTs > localTs) return; // la nube ya tiene algo más nuevo — no pisar
+  // Resultado de saveNow para que el llamador sepa qué pasó:
+  //   'saved'    → subió correctamente
+  //   'conflict' → la nube tiene algo más nuevo; NO se subió (el llamador decide)
+  //   'skipped'  → sin sesión / sin conexión / pull en curso
+  //   'error'    → falló la subida
+  async function saveNow(char, opts = {}) {
+    if (!_uid || !navigator.onLine || _pulling) return 'skipped';
+    // Verificación de conflicto: si la nube tiene un updatedAt posterior al del
+    // char local, otro dispositivo guardó algo más nuevo. No pisar salvo que
+    // el llamador fuerce (opts.force) tras confirmar con el usuario.
+    if (!opts.force) {
+      try {
+        const cloudChar = await FirebaseApp.loadCharCloud(_uid, char.id);
+        if (cloudChar) {
+          const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
+          const localTs = new Date(char.updatedAt || 0).getTime();
+          if (cloudTs > localTs) return 'conflict';
+        }
+      } catch (e) {
+        // Si falla la verificación (ej. sin red), no arriesgar: reportar error.
+        return 'error';
       }
-    } catch (e) {
-      // Si falla la verificación (ej. sin red), seguimos con el guardado normal
     }
-    await _doSave(char);
+    try {
+      await FirebaseApp.saveCharCloud(_uid, char);
+      _setSyncState(SyncState.SAVED, new Date().toISOString());
+      return 'saved';
+    } catch (e) {
+      console.error('Cloud saveNow error:', e);
+      _setSyncState(SyncState.ERROR, e.code === 'unavailable' ? 'sin conexión' : e.message);
+      return 'error';
+    }
+  }
+
+  // Lee el char de la nube (para comparar versiones antes de abrir/guardar).
+  async function loadCloudChar(id) {
+    if (!_uid || !navigator.onLine) return null;
+    try {
+      return await FirebaseApp.loadCharCloud(_uid, id);
+    } catch (e) {
+      return null;
+    }
   }
 
   /* ══════════════════════════════════════════════════════
@@ -442,10 +238,8 @@ const Cloud = (() => {
         return;
       }
     }
-    // Bloquea saveNow/scheduleSave hasta que el pull termine: si el usuario
-    // cambia de pestaña o la app se recarga mientras esto corre, pagehide/
-    // visibilitychange no deben subir el _char viejo que aún está en memoria
-    // y pisar en Firestore lo que este pull está bajando.
+    // Bloquea saveNow mientras el pull corre, para que ningún guardado suba el
+    // char viejo en memoria y pise lo que este pull está bajando.
     _pulling = true;
     _setSyncState(SyncState.SAVING);
     if (window.App?.showToast) App.showToast('Sincronizando desde nube…', 'info', 2000);
@@ -510,7 +304,6 @@ const Cloud = (() => {
   ══════════════════════════════════════════════════════ */
 
   async function deleteChar(charId) {
-    // Marcar como borrado ANTES del await para que el listener no lo restaure
     _deletedIds.add(charId);
     if (!_uid || !navigator.onLine) return;
     try {
@@ -527,6 +320,8 @@ const Cloud = (() => {
     isLoggedIn,
     scheduleSave,
     saveNow,
+    loadCloudChar,
+    markDeleted,
     deleteChar,
     forcePullFromCloud,
     purgeDeletedFromCloud,
