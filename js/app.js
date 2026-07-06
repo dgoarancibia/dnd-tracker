@@ -7035,7 +7035,17 @@ const App = (() => {
   // Al abrir un PJ: si la nube difiere de lo local, ofrecer elegir versión.
   async function _checkCloudVersionOnOpen() {
     if (!_char || _char.id === 'lursey-brumaclara') return;
-    if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) return;
+    if (!window.Cloud || !navigator.onLine) return;
+    // Firebase puede tardar 1-3 s en restaurar la sesión tras cargar la página.
+    // Esperar a que _uid esté listo (hasta 6 s) antes de comparar; si no, la
+    // comparación se saltaría siempre en la carga inicial y nunca preguntaría.
+    if (!Cloud.isLoggedIn()) {
+      const t0 = Date.now();
+      while (!Cloud.isLoggedIn() && Date.now() - t0 < 6000) {
+        await new Promise(r => setTimeout(r, 250));
+      }
+      if (!Cloud.isLoggedIn()) return; // sigue sin sesión → no hay con qué comparar
+    }
     let cloudChar;
     try {
       cloudChar = await Cloud.loadCloudChar(_char.id);
@@ -7068,7 +7078,7 @@ const App = (() => {
 
   /* ── Autoguardado a la nube (cada 10 min, con protecciones) ── */
   let _autoSaveTimer = null;
-  const AUTOSAVE_MS = 1 * 60 * 1000; // TEMPORAL: 1 minuto para probar (volver a 10)
+  const AUTOSAVE_MS = 10 * 60 * 1000; // 10 minutos
 
   function _startAutoSaveCloud() {
     if (_autoSaveTimer) clearInterval(_autoSaveTimer);
