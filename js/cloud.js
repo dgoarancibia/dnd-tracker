@@ -7,6 +7,8 @@ import './firebase.js';
 const Cloud = (() => {
   let _uid        = null;   // UID del usuario autenticado
   let _unsubListen = null;  // unsub del onSnapshot listener
+  let _pulling    = false;  // true mientras un pull desde la nube está en curso —
+                             // bloquea saves que podrían pisarlo con datos en memoria desactualizados
 
   /* ══════════════════════════════════════════════════════
      ESTADO DE SYNC
@@ -154,6 +156,7 @@ const Cloud = (() => {
       return;
     }
     _syncing = true;
+    _pulling = true;
     _setSyncState(SyncState.SAVING);
     try {
       const timeout = new Promise((_, reject) =>
@@ -250,6 +253,7 @@ const Cloud = (() => {
       }
     } finally {
       _syncing = false;
+      _pulling = false;
       // Aplicar snapshot pendiente que llegó mientras _syncOnLogin corría
       if (_pendingCloudState) {
         const pending = _pendingCloudState;
@@ -370,7 +374,7 @@ const Cloud = (() => {
   ══════════════════════════════════════════════════════ */
 
   function scheduleSave(char) {
-    if (!_uid || !navigator.onLine) return;
+    if (!_uid || !navigator.onLine || _pulling) return;
 
     // Sin debounce: iOS puede suspender la app apenas pasa a background
     // (bloqueo de pantalla, cambio de app) y un timer pendiente nunca dispara,
@@ -391,9 +395,12 @@ const Cloud = (() => {
     }
   }
 
-  /* Forzar guardado inmediato (para pagehide) */
+  /* Forzar guardado inmediato (para pagehide) — bloqueado durante un pull:
+     el pagehide dispara con el _char en memoria, que puede seguir siendo
+     la versión vieja si el pull todavía no terminó de actualizarlo,
+     pisando en Firestore los datos recién bajados de otro dispositivo. */
   async function saveNow(char) {
-    if (!_uid || !navigator.onLine) return;
+    if (!_uid || !navigator.onLine || _pulling) return;
     await _doSave(char);
   }
 
@@ -423,6 +430,11 @@ const Cloud = (() => {
         return;
       }
     }
+    // Bloquea saveNow/scheduleSave hasta que el pull termine: si el usuario
+    // cambia de pestaña o la app se recarga mientras esto corre, pagehide/
+    // visibilitychange no deben subir el _char viejo que aún está en memoria
+    // y pisar en Firestore lo que este pull está bajando.
+    _pulling = true;
     _setSyncState(SyncState.SAVING);
     if (window.App?.showToast) App.showToast('Sincronizando desde nube…', 'info', 2000);
     try {
@@ -457,6 +469,8 @@ const Cloud = (() => {
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
       _setSyncState(SyncState.ERROR, e.message);
+    } finally {
+      _pulling = false;
     }
   }
 
