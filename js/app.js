@@ -579,11 +579,36 @@ const App = (() => {
   function _saveChar(pushUndo = false) {
     if (!_char) return;
     if (pushUndo) _pushUndo();
+    const before = _char.updatedAt;
     Storage.saveChar(_char);
-    // Cloud autosave debounced
+    // Si el guardado local avanzó el updatedAt, hubo un cambio real → marcar
+    // que hay algo pendiente de subir a la nube (indicador en botón Guardar).
+    if (_char.updatedAt !== before && _char.id !== 'lursey-brumaclara') {
+      _markCloudDirty();
+    }
+    // scheduleSave es no-op en modelo savepoint (subida explícita), se deja por compat.
     if (window.Cloud && Cloud.isLoggedIn()) {
       Cloud.scheduleSave(_char);
     }
+  }
+
+  /* ── Indicador de cambios sin subir a la nube ── */
+  let _cloudDirty = false;
+
+  function _markCloudDirty() {
+    _cloudDirty = true;
+    _renderCloudDirty();
+  }
+  function _markCloudClean() {
+    _cloudDirty = false;
+    _renderCloudDirty();
+  }
+  function _renderCloudDirty() {
+    const btn = document.getElementById('cloudSaveBtn');
+    const toggle = document.getElementById('headerMenuToggle');
+    if (btn) btn.classList.toggle('has-unsaved', _cloudDirty);
+    // Puntito en el botón ⋯ del header para verlo sin abrir el menú.
+    if (toggle) toggle.classList.toggle('has-unsaved-dot', _cloudDirty);
   }
 
   function undoLastChange() {
@@ -6956,6 +6981,7 @@ const App = (() => {
     const migrated = Storage.migrateChar ? Storage.migrateChar(c) : c;
     Storage.saveCharRaw(migrated);
     App.reloadChar(migrated);
+    _markCloudClean(); // local == autosave de la nube
     showToast('✓ Cargado último guardado', 'success', 3000);
   }
 
@@ -6969,6 +6995,7 @@ const App = (() => {
     const migrated = Storage.migrateChar ? Storage.migrateChar(c) : c;
     Storage.saveCharRaw(migrated);
     App.reloadChar(migrated);
+    _markCloudDirty(); // el checkpoint puede diferir del autosave → pendiente de subir
     showToast('✓ Checkpoint restaurado (recordá Guardar en nube si querés que sea el actual)', 'success', 5000);
   }
 
@@ -6990,6 +7017,8 @@ const App = (() => {
       const hm = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
       ts.textContent = hm;
     }
+    // Subida exitosa → ya no hay cambios pendientes.
+    _markCloudClean();
   }
 
   // Compara contenido de dos chars ignorando campos derivados/volátiles.
@@ -7011,8 +7040,8 @@ const App = (() => {
     try {
       cloudChar = await Cloud.loadCloudChar(_char.id);
     } catch (e) { return; }
-    if (!cloudChar) return; // no está en la nube todavía
-    if (!_charContentDiffers(_char, cloudChar)) return; // iguales → nada que preguntar
+    if (!cloudChar) { _markCloudDirty(); return; } // no está en la nube → hay que subirlo
+    if (!_charContentDiffers(_char, cloudChar)) { _markCloudClean(); return; } // iguales
 
     const fmt = c => {
       const when = c.updatedAt ? new Date(c.updatedAt).toLocaleString('es', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
@@ -7026,13 +7055,14 @@ const App = (() => {
       'Usar la de la NUBE',
       'Seguir con la LOCAL',
       () => {
-        // Cargar la de la nube
+        // Cargar la de la nube → local == nube
         const migrated = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
         Storage.saveCharRaw(migrated);
         App.reloadChar(migrated);
+        _markCloudClean();
         showToast('✓ Cargada versión de la nube', 'success', 3000);
       },
-      () => { /* seguir con local: no hacer nada */ }
+      () => { _markCloudDirty(); } // sigue con local → hay cambios sin subir
     );
   }
 

@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 304;
+  var _V = 305;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 304;
+const _SW_EXPECTED = 305;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -1062,6 +1062,11 @@ const _SW_EXPECTED = 304;
   .lp-item-arrow{font-size:12px;color:var(--accent2,#c9973a);white-space:nowrap;cursor:pointer;}
   .lp-item-del{background:none;border:none;color:var(--text-dim);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:6px;}
   .lp-item-del:hover{color:#e06c6c;background:rgba(224,108,108,0.1);}
+  /* Indicador de cambios sin subir a la nube */
+  #cloudSaveBtn.has-unsaved{color:#e8b84b;font-weight:700;}
+  #cloudSaveBtn.has-unsaved::after{content:'●';margin-left:6px;color:#e8b84b;font-size:10px;}
+  #headerMenuToggle{position:relative;}
+  #headerMenuToggle.has-unsaved-dot::after{content:'';position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:#e8b84b;box-shadow:0 0 0 2px var(--bg,#0d0b14);}
 </style>
 
 <!-- FAB NOTA RÁPIDA -->
@@ -1141,7 +1146,7 @@ const _SW_EXPECTED = 304;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=157"></script>
+<script src="js/app.js?v=158"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>
