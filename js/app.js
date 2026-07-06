@@ -7,8 +7,8 @@
 const App = (() => {
 
   let _char = null;         // personaje activo en memoria
-  let _initRunning = false; // guard: App.init() se invoca desde DOMContentLoaded
-                            // y desde Cloud._syncOnLogin — evita que dos corridas
+  let _initRunning = false; // guard: App.init() puede invocarse desde DOMContentLoaded
+                            // y desde forcePullFromCloud — evita que dos corridas
                             // concurrentes se pisen sobre la variable _char.
 
   // Recalcula features de clase según nivel desde CLASE_FEATURES (fuente de verdad).
@@ -280,42 +280,6 @@ const App = (() => {
      INICIALIZACIÓN
   ══════════════════════════════════════════════════════ */
 
-  // Espera hasta 12 s a que Firebase traiga personajes cuando localStorage quedó vacío.
-  // Muestra un spinner para que el usuario sepa que se está restaurando.
-  async function _waitForCloudRestore() {
-    if (!window.FirebaseApp && !window.Cloud) return false;
-
-    const spinnerEl = document.getElementById('cloudRestoreSpinner');
-
-    // Esperar hasta 4 s a que Cloud inicialice y detecte si hay usuario
-    const AUTH_WAIT = 4000;
-    const POLL_MS   = 200;
-    const authStart = Date.now();
-    while (Date.now() - authStart < AUTH_WAIT) {
-      await new Promise(r => setTimeout(r, POLL_MS));
-      if (window.Cloud && Cloud.isLoggedIn()) break;
-    }
-
-    // Si no hay usuario logueado, no hay nada que esperar
-    if (!window.Cloud || !Cloud.isLoggedIn()) return false;
-
-    // Hay usuario — mostrar spinner y esperar hasta 12 s a que lleguen los chars
-    if (spinnerEl) spinnerEl.style.display = 'flex';
-    const MAX_WAIT = 12000;
-    const start = Date.now();
-    while (Date.now() - start < MAX_WAIT) {
-      await new Promise(r => setTimeout(r, 400));
-      const all = Storage.getAllChars();
-      const ids = Object.keys(all).filter(id => id !== 'lursey-brumaclara');
-      if (ids.length > 0) {
-        if (spinnerEl) spinnerEl.style.display = 'none';
-        return true;
-      }
-    }
-    if (spinnerEl) spinnerEl.style.display = 'none';
-    return false;
-  }
-
   async function init() {
     // Guard de concurrencia: si ya hay un init() corriendo, esperar a que
     // termine en vez de solaparse (evita que dos corridas escriban _char en
@@ -381,22 +345,11 @@ const App = (() => {
       }
     }
     if (!_char) {
-      // Antes de redirigir: si hay un usuario logueado en Firebase, esperar
-      // hasta 12 s a que _syncOnLogin traiga los personajes de la nube.
-      // Esto cubre el caso de iOS borrando localStorage/IDB con "Clear site data".
-      const waited = await _waitForCloudRestore();
-      if (waited) {
-        _char = Storage.getActiveChar();
-        if (!_char) {
-          const all = Storage.getAllChars();
-          const ids = Object.keys(all);
-          if (ids.length > 0) { Storage.setActiveId(ids[0]); _char = Storage.getActiveChar(); }
-        }
-      }
-      if (!_char) {
-        window.location.href = 'index.html';
-        return;
-      }
+      // Sin personaje local → volver al home. El home (index.html) se encarga
+      // de restaurar desde la nube si el localStorage quedó vacío. app.html ya
+      // no espera un sync propio (el modelo savepoint eliminó el sync-on-login).
+      window.location.replace('index.html');
+      return;
     }
 
     // ── Migración y sync de datos del personaje ─────────────────────────────
@@ -489,6 +442,8 @@ const App = (() => {
     _checkCloudVersionOnOpen();
     // Iniciar el autoguardado periódico a la nube (cada 10 min, con protecciones).
     _startAutoSaveCloud();
+    // Detectar si el mismo personaje ya está abierto en otra pestaña.
+    _setupMultiTabDetection();
 
     // Disparar elecciones pendientes si el personaje tiene elecciones sin resolver
     // (esperar un tick para que el DOM esté listo)
@@ -558,6 +513,16 @@ const App = (() => {
       _saveChar();
     });
 
+    // Aviso al cerrar si hay cambios locales sin subir a la nube.
+    // (En PWA iOS beforeunload es poco confiable, pero en desktop/navegador ayuda.)
+    window.addEventListener('beforeunload', (e) => {
+      if (_cloudDirty && window.Cloud && Cloud.isLoggedIn()) {
+        e.preventDefault();
+        e.returnValue = ''; // el navegador muestra su diálogo estándar
+        return '';
+      }
+    });
+
     // Nivel sugerido en modal
     document.getElementById('luNewLevel').addEventListener('input', _updateLevelUpPreview);
     document.getElementById('luHPGained').addEventListener('input', _updateLevelUpPreview);
@@ -615,8 +580,10 @@ const App = (() => {
     if (_undoStack.length === 0) { showToast('Sin cambios para deshacer'); return; }
     const prev = _undoStack.pop();
     _char = prev;
+    const before = _char.updatedAt;
     Storage.saveChar(_char);
-    if (window.Cloud && Cloud.isLoggedIn()) Cloud.scheduleSave(_char);
+    // Deshacer es un cambio real → marcar pendiente de subir (igual que _saveChar).
+    if (_char.updatedAt !== before && _char.id !== 'lursey-brumaclara') _markCloudDirty();
     _renderHeader();
     _renderActiveTab();
     showToast('Cambio deshecho');
@@ -6882,7 +6849,13 @@ const App = (() => {
       );
     } else if (res === 'error') {
       _hideCloudSaveOverlay();
-      showToast('Error al guardar en nube', 'error', 3000);
+      const msg = !navigator.onLine
+        ? '⚠ Sin conexión. Tus cambios están en el dispositivo; guardá en la nube cuando tengas red.'
+        : '⚠ No se pudo guardar en la nube (esta red podría estar bloqueándola). Tus cambios están seguros en el dispositivo.';
+      showToast(msg, 'error', 6000);
+    } else if (res === 'skipped') {
+      _hideCloudSaveOverlay();
+      showToast('No se guardó (sin sesión o sin conexión)', 'info', 3000);
     }
   }
 
@@ -7085,6 +7058,31 @@ const App = (() => {
     _autoSaveTimer = setInterval(_autoSaveTick, AUTOSAVE_MS);
   }
 
+  /* ── Detección de misma app abierta en otra pestaña ──
+     Dos pestañas del mismo PJ pueden pisarse. Al abrir, esta pestaña anuncia
+     su PJ por BroadcastChannel; si otra pestaña ya lo tenía abierto, responde
+     y mostramos un aviso para que el usuario cierre una. */
+  let _tabChannel = null;
+  function _setupMultiTabDetection() {
+    if (typeof BroadcastChannel === 'undefined' || !_char) return;
+    try {
+      if (_tabChannel) _tabChannel.close();
+      _tabChannel = new BroadcastChannel('dnd-tabs');
+      const myId = _char.id;
+      _tabChannel.onmessage = (ev) => {
+        const d = ev.data || {};
+        if (d.type === 'hello' && d.charId === myId) {
+          // Otra pestaña abrió el mismo PJ → le confirmo que yo también lo tengo
+          _tabChannel.postMessage({ type: 'already-open', charId: myId });
+        } else if (d.type === 'already-open' && d.charId === myId) {
+          showToast('⚠ Este personaje ya está abierto en otra pestaña. Cerrá una para evitar conflictos de guardado.', 'error', 8000);
+        }
+      };
+      // Anunciar mi apertura (las otras pestañas del mismo PJ responderán)
+      _tabChannel.postMessage({ type: 'hello', charId: myId });
+    } catch (e) { /* BroadcastChannel no disponible: ignorar */ }
+  }
+
   async function _autoSaveTick() {
     if (!_char || _char.id === 'lursey-brumaclara') return;
     if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) return;
@@ -7104,6 +7102,10 @@ const App = (() => {
     } else if (res === 'conflict') {
       // Otro dispositivo guardó algo más nuevo. No pisar en silencio: avisar.
       showToast('⚠ Hay una versión más nueva en la nube. Usá "Guardar en nube" para decidir.', 'info', 6000);
+    } else if (res === 'error') {
+      // El guardado automático falló (red que bloquea Firestore, timeout, etc.).
+      // No dejarlo en silencio: el punto ámbar sigue encendido y avisamos.
+      showToast('⚠ No se pudo guardar en la nube (revisá tu conexión). Tus cambios están guardados en el dispositivo.', 'error', 6000);
     }
   }
 

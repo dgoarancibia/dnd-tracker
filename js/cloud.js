@@ -157,14 +157,23 @@ const Cloud = (() => {
   // llamadas existentes, pero es un no-op respecto a la nube.
   function scheduleSave(char) { /* no-op: modelo savepoint, subida explícita */ }
 
+  // Envuelve una promesa con timeout, para que un Firestore colgado no deje
+  // la UI (overlay "Guardando…") pegada indefinidamente.
+  function _withTimeout(promise, ms) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+    ]);
+  }
+
   async function _doSave(char) {
     if (!_uid) return;
     try {
-      await FirebaseApp.saveCharCloud(_uid, char);
+      await _withTimeout(FirebaseApp.saveCharCloud(_uid, char), 12000);
       _setSyncState(SyncState.SAVED, new Date().toISOString());
     } catch (e) {
       console.error('Cloud save error:', e);
-      const msg = e.code === 'unavailable' ? 'sin conexión' : e.message;
+      const msg = e.message === 'timeout' ? 'tiempo agotado' : (e.code === 'unavailable' ? 'sin conexión' : e.message);
       _setSyncState(SyncState.ERROR, msg);
     }
   }
@@ -181,14 +190,14 @@ const Cloud = (() => {
     // el llamador fuerce (opts.force) tras confirmar con el usuario.
     if (!opts.force) {
       try {
-        const cloudChar = await FirebaseApp.loadCharCloud(_uid, char.id);
+        const cloudChar = await _withTimeout(FirebaseApp.loadCharCloud(_uid, char.id), 10000);
         if (cloudChar) {
           const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
           const localTs = new Date(char.updatedAt || 0).getTime();
           if (cloudTs > localTs) return 'conflict';
         }
       } catch (e) {
-        // Si falla la verificación (ej. sin red), no arriesgar: reportar error.
+        // Si falla la verificación (ej. sin red o timeout), no arriesgar: reportar error.
         return 'error';
       }
     } else {
@@ -199,12 +208,12 @@ const Cloud = (() => {
       if (Storage.saveCharRaw) Storage.saveCharRaw(char); // reflejar el ts nuevo en local
     }
     try {
-      await FirebaseApp.saveCharCloud(_uid, char);
+      await _withTimeout(FirebaseApp.saveCharCloud(_uid, char), 12000);
       _setSyncState(SyncState.SAVED, new Date().toISOString());
       return 'saved';
     } catch (e) {
       console.error('Cloud saveNow error:', e);
-      _setSyncState(SyncState.ERROR, e.code === 'unavailable' ? 'sin conexión' : e.message);
+      _setSyncState(SyncState.ERROR, e.message === 'timeout' ? 'tiempo agotado' : (e.code === 'unavailable' ? 'sin conexión' : e.message));
       return 'error';
     }
   }

@@ -23,7 +23,6 @@ import {
   getDocs,
   deleteDoc,
   collection,
-  onSnapshot,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -201,23 +200,6 @@ async function deleteCheckpointCloud(uid, charId, cpId) {
   await deleteDoc(_checkpointRef(uid, charId, cpId));
 }
 
-function listenCharsCloud(uid, onChange, onError) {
-  return onSnapshot(_charsCol(uid), snap => {
-    const result = {};
-    snap.forEach(d => {
-      const data = d.data();
-      if (data._syncedAt && data._syncedAt.toDate) {
-        data._syncedAt = data._syncedAt.toDate().toISOString();
-      }
-      result[data.id] = data;
-    });
-    onChange(result);
-  }, err => {
-    console.error('[firebase] onSnapshot error:', err);
-    if (onError) onError(err);
-  });
-}
-
 /* ── Exportar singleton ── */
 window.FirebaseApp = {
   signIn,
@@ -228,7 +210,6 @@ window.FirebaseApp = {
   loadCharCloud,
   loadAllCharsCloud,
   deleteCharCloud,
-  listenCharsCloud,
   saveCheckpointCloud,
   listCheckpointsCloud,
   loadCheckpointCloud,
