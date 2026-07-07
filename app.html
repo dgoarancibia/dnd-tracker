@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 316;
+  var _V = 317;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 316;
+const _SW_EXPECTED = 317;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -110,7 +110,7 @@ const _SW_EXPECTED = 316;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=72">
+<link rel="stylesheet" href="css/style.css?v=73">
 </head>
 <body>
 
@@ -300,6 +300,10 @@ const _SW_EXPECTED = 316;
   <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
   <button class="tab-btn" data-tab="biblioteca" onclick="App.switchTab('biblioteca')">📚 Biblioteca</button>
 </nav>
+
+<!-- FRANJA DE STATS (FUE/DES/CON/INT/SAB/CAR) — ancho completo, fija, visible en
+     todas las tabs de personaje (oculta en Biblioteca). Solo en layout "sidebar". -->
+<div class="stats-strip-bar" id="statsStripBar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
 
 <!-- CONTENIDO TABS -->
 <div class="app-content app-content-split">
@@ -1167,7 +1171,7 @@ const _SW_EXPECTED = 316;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=167"></script>
+<script src="js/app.js?v=168"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

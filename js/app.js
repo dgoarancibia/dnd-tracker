@@ -1210,10 +1210,12 @@ const App = (() => {
     document.getElementById(`tab-${name}`).classList.add('active');
     _activeTab = name;
 
-    // El sidebar fijo de Stats/Saves/Skills no aplica a Biblioteca (no es del PJ,
-    // y esa tab necesita todo el ancho para el lector de PDF).
+    // El sidebar fijo y la franja de Stats no aplican a Biblioteca (no es del
+    // PJ, y esa tab necesita todo el ancho para el lector de PDF).
     const sidebar = document.getElementById('statsSidebar');
     if (sidebar) sidebar.style.display = name === 'biblioteca' ? 'none' : 'flex';
+    const stripBar = document.getElementById('statsStripBar');
+    if (stripBar) stripBar.style.display = name === 'biblioteca' ? 'none' : '';
     if (name !== 'biblioteca') _renderStatsSidebar();
 
     const renders = {
@@ -2590,15 +2592,20 @@ const App = (() => {
     const c = _char;
     if (!c) return;
     // En modo clásico, Stats/Saves/Skills viven dentro de la tab Habilidades
-    // (col-hab-izq) como antes; en modo sidebar, en la barra fija de siempre.
+    // (col-hab-izq) como antes. En modo sidebar, Stats van en una franja
+    // horizontal de ancho completo (statsStripBar) y Saves/Skills en el
+    // sidebar fijo (statsSidebar) — así Stats queda visible siempre sin
+    // angostar el sidebar.
     const isClassic = document.documentElement.getAttribute('data-layout') === 'classic';
     const el = document.getElementById(isClassic ? 'col-hab-izq' : 'statsSidebar');
+    const stripEl = document.getElementById('statsStripBar');
     if (!el) return;
 
     const STATS = ['for','des','con','int','sab','car'];
     const STAT_LABELS = { for:'FUE',des:'DES',con:'CON',int:'INT',sab:'SAB',car:'CAR' };
 
-    let html = `
+    // ── Stats: franja horizontal (modo sidebar) o grid dentro de la columna (modo clásico) ──
+    let statsHtml = `
     <div class="section-hd" style="display:flex;justify-content:space-between;align-items:center;">
       <span>${isClassic ? '🎲 Habilidades' : '🎲 Estadísticas'}</span>
       <button class="btn-edit-stats" onclick="App.openEditStats()" title="Editar estadísticas">✎ Editar</button>
@@ -2608,7 +2615,7 @@ const App = (() => {
     STATS.forEach(stat => {
       const val = c.stats[stat];
       const mod = Characters.calcMod(val);
-      html += `
+      statsHtml += `
       <div class="stat-block" onclick="App.editStat('${stat}')">
         <div class="stat-block-name">${STAT_LABELS[stat]}</div>
         <div class="stat-block-val" id="statVal-${stat}">${val}</div>
@@ -2616,7 +2623,16 @@ const App = (() => {
       </div>`;
     });
 
-    html += `</div>`;
+    statsHtml += `</div>`;
+
+    let html = '';
+    if (!isClassic && stripEl) {
+      // Modo sidebar: Stats va en la franja de ancho completo, no en el sidebar.
+      stripEl.innerHTML = statsHtml;
+    } else {
+      // Modo clásico: Stats se queda junto con Saves/Skills en la misma columna.
+      html += statsHtml;
+    }
 
     // Saving throws
     const bonusSavesAll = (c.bonuses && c.bonuses.savesAll) || 0;
@@ -2678,10 +2694,11 @@ const App = (() => {
 
     html += `</div>`;
     el.innerHTML = html;
-    // Limpiar el contenedor del otro modo para que no quede contenido viejo
+    // Limpiar los contenedores del otro modo para que no quede contenido viejo
     // cacheado si el usuario alterna entre layout clásico y sidebar.
     const other = document.getElementById(isClassic ? 'statsSidebar' : 'col-hab-izq');
     if (other) other.innerHTML = '';
+    if (isClassic && stripEl) stripEl.innerHTML = '';
   }
 
   function _renderHabilidadesTab() {
