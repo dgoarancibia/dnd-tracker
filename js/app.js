@@ -1252,6 +1252,52 @@ const App = (() => {
     _renderCombateDer();
   }
 
+  const CONDITIONS = [
+    { id:'caido',         label:'Caído',         effect:'Desventaja en ataques · Ataques cuerpo a cuerpo contra ti con ventaja · Vel 0' },
+    { id:'envenenado',    label:'Envenenado',     effect:'Desventaja en ataques y checks de habilidad' },
+    { id:'aturdido',      label:'Aturdido',       effect:'Incapacitado · no puede moverse · falla STR/DEX saves · ataques contra ti con ventaja' },
+    { id:'agarrado',      label:'Agarrado',       effect:'Velocidad 0 · termina si el agarrador queda incapacitado' },
+    { id:'asustado',      label:'Asustado',       effect:'Desventaja en ataques y checks mientras vea la fuente · no puede acercarse a ella' },
+    { id:'incapacitado',  label:'Incapacitado',   effect:'No puede realizar acciones ni reacciones' },
+    { id:'cegado',        label:'Cegado',         effect:'Falla checks que requieran vista · desventaja en ataques · ventaja contra ti' },
+    { id:'encantado',     label:'Encantado',      effect:'No puede atacar al encantador · el encantador tiene ventaja en checks sociales' },
+    { id:'ensordecido',   label:'Ensordecido',    effect:'Falla checks que requieran oído' },
+    { id:'invisible',     label:'Invisible',      effect:'Ventaja en ataques · desventaja en ataques contra ti · no se puede ver sin magia' },
+    { id:'paralizado',    label:'Paralizado',     effect:'Incapacitado · falla STR/DEX saves · ataques con ventaja · golpes a 5ft son críticos' },
+    { id:'apresado',      label:'Apresado',       effect:'Restringido: sin vel, sin reacciones · desventaja en ataques · ventaja contra ti' },
+  ];
+
+  // Condiciones: se movió al sidebar fijo (antes vivía en Combate-izquierda),
+  // así queda visible sin importar la tab activa.
+  function _buildConditionsHTML(c) {
+    let html = `
+    <div class="conditions-block">
+      <div class="rc-header">
+        <span class="rc-name">Condiciones</span>
+        <button class="btn-sm" onclick="App.clearConditions()">Limpiar</button>
+      </div>
+      <div class="conditions-grid">`;
+
+    CONDITIONS.forEach(cond => {
+      const active = c.conditions.includes(cond.id);
+      html += `<button class="cond-btn ${active ? 'active' : ''}" onclick="App.toggleCondition('${cond.id}')" title="${cond.effect}">${cond.label}</button>`;
+    });
+
+    html += `</div>`;
+
+    const activeConditions = CONDITIONS.filter(cond => c.conditions.includes(cond.id));
+    if (activeConditions.length > 0) {
+      html += `<div class="cond-effects">`;
+      activeConditions.forEach(cond => {
+        html += `<div class="cond-effect-row"><span class="cond-effect-name">${cond.label}</span><span class="cond-effect-text">${cond.effect}</span></div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  }
+
   function _renderCombateIzq() {
     const c = _char;
     const prof = Characters.calcProfBonus(c.nivel);
@@ -1345,49 +1391,6 @@ const App = (() => {
       </div>
       ${exEffect ? `<div class="exh-effect">${exEffect}${exhaustion >= 2 ? '<br><span style="opacity:0.7;font-size:10px;">+ efectos anteriores acumulados</span>' : ''}</div>` : '<div class="exh-none">Sin agotamiento</div>'}
     </div>`;
-
-    // CONDICIONES
-    const CONDITIONS = [
-      { id:'caido',         label:'Caído',         effect:'Desventaja en ataques · Ataques cuerpo a cuerpo contra ti con ventaja · Vel 0' },
-      { id:'envenenado',    label:'Envenenado',     effect:'Desventaja en ataques y checks de habilidad' },
-      { id:'aturdido',      label:'Aturdido',       effect:'Incapacitado · no puede moverse · falla STR/DEX saves · ataques contra ti con ventaja' },
-      { id:'agarrado',      label:'Agarrado',       effect:'Velocidad 0 · termina si el agarrador queda incapacitado' },
-      { id:'asustado',      label:'Asustado',       effect:'Desventaja en ataques y checks mientras vea la fuente · no puede acercarse a ella' },
-      { id:'incapacitado',  label:'Incapacitado',   effect:'No puede realizar acciones ni reacciones' },
-      { id:'cegado',        label:'Cegado',         effect:'Falla checks que requieran vista · desventaja en ataques · ventaja contra ti' },
-      { id:'encantado',     label:'Encantado',      effect:'No puede atacar al encantador · el encantador tiene ventaja en checks sociales' },
-      { id:'ensordecido',   label:'Ensordecido',    effect:'Falla checks que requieran oído' },
-      { id:'invisible',     label:'Invisible',      effect:'Ventaja en ataques · desventaja en ataques contra ti · no se puede ver sin magia' },
-      { id:'paralizado',    label:'Paralizado',     effect:'Incapacitado · falla STR/DEX saves · ataques con ventaja · golpes a 5ft son críticos' },
-      { id:'apresado',      label:'Apresado',       effect:'Restringido: sin vel, sin reacciones · desventaja en ataques · ventaja contra ti' },
-    ];
-
-    html += `
-    <div class="conditions-block">
-      <div class="rc-header">
-        <span class="rc-name">Condiciones</span>
-        <button class="btn-sm" onclick="App.clearConditions()">Limpiar</button>
-      </div>
-      <div class="conditions-grid">`;
-
-    CONDITIONS.forEach(cond => {
-      const active = c.conditions.includes(cond.id);
-      html += `<button class="cond-btn ${active ? 'active' : ''}" onclick="App.toggleCondition('${cond.id}')" title="${cond.effect}">${cond.label}</button>`;
-    });
-
-    html += `</div>`;
-
-    // Efectos de condiciones activas
-    const activeConditions = CONDITIONS.filter(cond => c.conditions.includes(cond.id));
-    if (activeConditions.length > 0) {
-      html += `<div class="cond-effects">`;
-      activeConditions.forEach(cond => {
-        html += `<div class="cond-effect-row"><span class="cond-effect-name">${cond.label}</span><span class="cond-effect-text">${cond.effect}</span></div>`;
-      });
-      html += `</div>`;
-    }
-
-    html += `</div>`;
 
     // RECURSOS CUSTOM
     html += `
@@ -2689,6 +2692,11 @@ const App = (() => {
     });
 
     html += `</div></div>`;
+
+    // Condiciones — después de Skills y Saving Throws, siempre visible sin
+    // importar la tab activa (antes vivía solo dentro de Combate).
+    html += `<div style="margin-top:12px;">${_buildConditionsHTML(c)}</div>`;
+
     el.innerHTML = html;
     // Limpiar los contenedores del otro modo para que no quede contenido viejo
     // cacheado si el usuario alterna entre layout clásico y sidebar.
@@ -4216,7 +4224,7 @@ const App = (() => {
       _logCombat(`⚠ Condición: ${id}`, 'cond');
     }
     _saveChar(true);
-    _renderCombateIzq();
+    _renderStatsSidebar(); // Condiciones vive en el sidebar fijo, no en Combate
     _updateHeaderStatus();
   }
 
@@ -4224,7 +4232,7 @@ const App = (() => {
     if (!_char) return;
     _char.conditions = [];
     _saveChar();
-    document.querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active'));
+    _renderStatsSidebar();
     _updateHeaderStatus();
     showToast('Condiciones limpiadas');
   }
