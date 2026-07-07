@@ -1850,10 +1850,14 @@ const App = (() => {
   function _buildTagsHTML(sp) {
     let tags = '';
     if (sp.castTime || sp.range) {
-      const ct = sp.castTime ? sp.castTime.replace('Acción bonus','Bonus').replace('Acción','Acc').replace('Reacción','Reac') : '';
+      const ct = sp.castTime ? sp.castTime.replace('Acción bonus','Bonus').replace('1 acción','Acc').replace('Acción','Acc').replace('Reacción','Reac') : '';
       const rng = sp.range ? fmtDist(sp.range) : '';
       const quick = [ct, rng].filter(Boolean).join(' · ');
       if (quick) tags += `<span class="tag tag-quick">${quick}</span>`;
+    }
+    if (sp.desc) {
+      const dmgMatch = sp.desc.match(/(\d+d\d+(?:[+\-]\w+)?)\s*(radiante|necrótico|fuego|frío|rayo|trueno|ácido|veneno|psíquico|fuerza|HP)?/i);
+      if (dmgMatch) tags += `<span class="tag tag-quick" style="color:var(--gold-light)">${dmgMatch[0].trim()}</span>`;
     }
     if (sp.concentration) tags += '<span class="tag tag-c">Conc</span>';
     if (sp.bonus) tags += '<span class="tag tag-b">Bonus</span>';

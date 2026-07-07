@@ -2300,11 +2300,11 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 /* Spell cards in combat reference panel — compactas */
-#tab-combate .spell-card { padding: 4px 6px; margin-bottom: 3px; }
-#tab-combate .spell-name { font-size: 13px; }
-#tab-combate .spell-desc { font-size: 12px; max-height: 0; overflow: hidden; -webkit-line-clamp: 0; margin-top: 0; transition: max-height 0.2s ease; }
-#tab-combate .spell-desc.expanded { max-height: 120px; -webkit-line-clamp: unset; margin-top: 3px; }
-#tab-combate .cast-btn { padding: 5px 8px; font-size: 11px; min-height: 32px; min-width: 48px; }
+#tab-combate .spell-card { padding: 6px 8px; margin-bottom: 4px; }
+#tab-combate .spell-name { font-size: 15px; }
+#tab-combate .spell-desc { font-size: 13px; max-height: 0; overflow: hidden; -webkit-line-clamp: 0; margin-top: 0; transition: max-height 0.2s ease; }
+#tab-combate .spell-desc.expanded { max-height: 120px; -webkit-line-clamp: unset; margin-top: 4px; }
+#tab-combate .cast-btn { padding: 6px 10px; font-size: 12px; min-height: 36px; min-width: 52px; }
 .spell-desc.expanded {
   display: block;
   max-height: 200px;
