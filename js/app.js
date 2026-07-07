@@ -1611,7 +1611,7 @@ const App = (() => {
           <div class="spell-info">
             <div class="spell-top">
               <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
-              <span class="spell-name">${sp.name}</span>${tags}
+              <span class="spell-name" onclick="event.stopPropagation();App.openSpellDetail('${sp.id}')">${sp.name}</span>${tags}
             </div>
             <div class="spell-desc">${fmtDesc(sp.desc)}</div>
           </div>
