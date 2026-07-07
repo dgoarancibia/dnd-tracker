@@ -2959,7 +2959,9 @@ input[type=number] { -moz-appearance: textfield; }
 
 .resistances-list { margin-top: 6px; }
 .resistance-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: rgba(74,138,90,0.15);
   border: 1px solid rgba(74,138,90,0.3);
   border-radius: 12px;
@@ -2968,6 +2970,33 @@ input[type=number] { -moz-appearance: textfield; }
   color: var(--green-light);
   margin: 3px 3px 0 0;
 }
+.resistance-tag.lang-tag {
+  background: rgba(122,184,201,0.15);
+  border-color: rgba(122,184,201,0.3);
+  color: var(--accent2, #7eb8c9);
+}
+.resistance-tag .tag-x {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 0 0 2px;
+}
+.resistance-tag .tag-x:hover { opacity: 1; }
+.tag-input {
+  margin-top: 6px;
+  width: 100%;
+  background: var(--surface2, rgba(255,255,255,0.04));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 12px;
+  color: var(--text);
+}
+.tag-input::placeholder { color: var(--text-dim); }
 
 /* ═══ DIARIO FAB ═══ */
 .fab {

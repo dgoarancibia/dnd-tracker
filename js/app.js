@@ -2632,10 +2632,31 @@ const App = (() => {
     if (resArr.length === 0) {
       htmlDer += `<span style="font-size:11px;color:var(--text-dim);font-style:italic;">Ninguna</span>`;
     } else {
-      resArr.forEach(r => { htmlDer += `<span class="resistance-tag">${r}</span>`; });
+      resArr.forEach((r, i) => {
+        htmlDer += `<span class="resistance-tag">${_esc(r)}<button class="tag-x" onclick="App.removeResistance(${i})" title="Quitar">×</button></span>`;
+      });
     }
 
     htmlDer += `</div>
+        <input type="text" class="tag-input" placeholder="+ Agregar resistencia (Enter)"
+               onkeydown="if(event.key==='Enter'){App.addResistance(this);}">
+      </div>
+      <div class="passive-row" style="flex-direction:column;align-items:flex-start;gap:4px;margin-top:8px;">
+        <span class="passive-label">Idiomas</span>
+        <div class="resistances-list" id="langList">`;
+
+    const langArr = c.languages && c.languages.length ? c.languages : [];
+    if (langArr.length === 0) {
+      htmlDer += `<span style="font-size:11px;color:var(--text-dim);font-style:italic;">Ninguno</span>`;
+    } else {
+      langArr.forEach((l, i) => {
+        htmlDer += `<span class="resistance-tag lang-tag">${_esc(l)}<button class="tag-x" onclick="App.removeLanguage(${i})" title="Quitar">×</button></span>`;
+      });
+    }
+
+    htmlDer += `</div>
+        <input type="text" class="tag-input" placeholder="+ Agregar idioma (Enter)"
+               onkeydown="if(event.key==='Enter'){App.addLanguage(this);}">
       </div>
     </div>
 
@@ -4618,6 +4639,42 @@ const App = (() => {
   function setSpeciesTraits(val) {
     _char.speciesTraits = val;
     _saveChar();
+  }
+
+  /* ── Resistencias e Idiomas (tags editables) ── */
+  function addResistance(input) {
+    const val = (input.value || '').trim();
+    if (!val) return;
+    if (!Array.isArray(_char.resistances)) _char.resistances = [];
+    if (!_char.resistances.some(r => r.toLowerCase() === val.toLowerCase())) {
+      _char.resistances.push(val);
+      _saveChar();
+    }
+    input.value = '';
+    _renderHabilidadesTab();
+  }
+  function removeResistance(idx) {
+    if (!Array.isArray(_char.resistances)) return;
+    _char.resistances.splice(idx, 1);
+    _saveChar();
+    _renderHabilidadesTab();
+  }
+  function addLanguage(input) {
+    const val = (input.value || '').trim();
+    if (!val) return;
+    if (!Array.isArray(_char.languages)) _char.languages = [];
+    if (!_char.languages.some(l => l.toLowerCase() === val.toLowerCase())) {
+      _char.languages.push(val);
+      _saveChar();
+    }
+    input.value = '';
+    _renderHabilidadesTab();
+  }
+  function removeLanguage(idx) {
+    if (!Array.isArray(_char.languages)) return;
+    _char.languages.splice(idx, 1);
+    _saveChar();
+    _renderHabilidadesTab();
   }
 
   /* ══════════════════════════════════════════════════════
@@ -7305,6 +7362,7 @@ const App = (() => {
     setCurrency, setAttunement,
     addMagicItem, editMagicItem, deleteMagicItem, _closeMagicItemModal, _saveMagicItemModal,
     setNotes, setSpeciesTraits,
+    addResistance, removeResistance, addLanguage, removeLanguage,
 
     // Habilidades
     editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP, addXP,
