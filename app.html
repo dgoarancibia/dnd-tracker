@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 313;
+  var _V = 314;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 313;
+const _SW_EXPECTED = 314;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -110,7 +110,7 @@ const _SW_EXPECTED = 313;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=69">
+<link rel="stylesheet" href="css/style.css?v=70">
 </head>
 <body>
 
@@ -188,6 +188,7 @@ const _SW_EXPECTED = 313;
     <div class="stat-divider"></div>
     <div class="stat-box"><div class="sl">Init</div><div class="sv" id="hdrINIT">—</div></div>
     <div class="stat-box"><div class="sl">Atk</div><div class="sv" id="hdrPROF">—</div></div>
+    <div class="stat-box" title="Percepción Pasiva"><div class="sl">Perc.</div><div class="sv" id="hdrPERC">—</div></div>
     <button class="insp-btn" id="hdrInspBtn" onclick="App.toggleInspiration()" title="Inspiración">✦</button>
 
     <!-- DESCANSOS en header -->
@@ -298,9 +299,16 @@ const _SW_EXPECTED = 313;
 </nav>
 
 <!-- CONTENIDO TABS -->
-<div class="app-content">
+<div class="app-content app-content-split">
 
-  <!-- ══ TAB COMBATE ══ -->
+  <!-- SIDEBAR FIJO: Stats + Saving Throws + Skills — visible en todas las tabs
+       (excepto Biblioteca, que no lo necesita y usa su propio ancho completo) -->
+  <div class="stats-sidebar" id="statsSidebar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
+
+  <div class="app-content-tabs">
+
+  <!-- ══ TAB COMBATE ══ (mantiene sus 2 columnas propias: recursos/condiciones
+       a la izq, habilidades activables/conjuros a la der — no son Stats) -->
   <div class="tab-panel active two-col" id="tab-combate">
     <div class="two-col-left" id="col-combate-izq"><!-- renderizado por app.js --></div>
     <div class="two-col-right" id="col-combate-der"><!-- renderizado por app.js --></div>
@@ -318,13 +326,14 @@ const _SW_EXPECTED = 313;
     <div class="two-col-right" id="col-equipo-der"><!-- renderizado por app.js --></div>
   </div>
 
-  <!-- ══ TAB HABILIDADES ══ -->
-  <div class="tab-panel two-col" id="tab-habilidades">
-    <div class="two-col-left" id="col-hab-izq"><!-- renderizado por app.js --></div>
-    <div class="two-col-right" id="col-hab-der"><!-- renderizado por app.js --></div>
+  <!-- ══ TAB HABILIDADES (resto: passives, rasgos, elecciones, XP) ══ -->
+  <div class="tab-panel one-col" id="tab-habilidades">
+    <div class="one-col-pane" id="col-hab-der"><!-- renderizado por app.js --></div>
   </div>
 
-  <!-- ══ TAB BIBLIOTECA ══ -->
+  </div><!-- /.app-content-tabs -->
+
+  <!-- ══ TAB BIBLIOTECA (fuera del sidebar de stats — usa todo el ancho) ══ -->
   <div class="tab-panel bib-panel" id="tab-biblioteca">
     <!-- Sidebar izquierda: tabs Manuales / Referencia -->
     <div class="bib-sidebar" id="bibSidebar">
@@ -1152,7 +1161,7 @@ const _SW_EXPECTED = 313;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=165"></script>
+<script src="js/app.js?v=166"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

@@ -851,6 +851,8 @@ const App = (() => {
     const dexMod = Characters.calcMod(_char.stats.des);
     const physAtk = Math.max(strMod, dexMod) + prof;
     document.getElementById('hdrPROF').textContent = (physAtk >= 0 ? '+' : '') + physAtk;
+    const percEl = document.getElementById('hdrPERC');
+    if (percEl) percEl.textContent = Characters.calcPercPasiva(_char);
 
     const inspBtn = document.getElementById('hdrInspBtn');
     if (inspBtn) inspBtn.classList.toggle('active', !!_char.inspiration);
@@ -1186,6 +1188,12 @@ const App = (() => {
     document.querySelector(`[data-tab="${name}"]`).classList.add('active');
     document.getElementById(`tab-${name}`).classList.add('active');
     _activeTab = name;
+
+    // El sidebar fijo de Stats/Saves/Skills no aplica a Biblioteca (no es del PJ,
+    // y esa tab necesita todo el ancho para el lector de PDF).
+    const sidebar = document.getElementById('statsSidebar');
+    if (sidebar) sidebar.style.display = name === 'biblioteca' ? 'none' : 'flex';
+    if (name !== 'biblioteca') _renderStatsSidebar();
 
     const renders = {
       combate: _renderCombateTab,
@@ -2553,17 +2561,22 @@ const App = (() => {
      TAB HABILIDADES
   ══════════════════════════════════════════════════════ */
 
-  function _renderHabilidadesTab() {
+  // Sidebar fijo: Stats + Saving Throws + Skills. Vive fuera de las tabs y se
+  // renderiza una sola vez por personaje (no en cada switchTab) — ver
+  // App.init/reloadChar/switchChar. Mismos componentes visuales de siempre
+  // (stat-block, save-row con ★, skill-row con ★/✦) para no perder la estética.
+  function _renderStatsSidebar() {
     const c = _char;
-    const prof = Characters.calcProfBonus(c.nivel);
+    if (!c) return;
+    const el = document.getElementById('statsSidebar');
+    if (!el) return;
 
     const STATS = ['for','des','con','int','sab','car'];
     const STAT_LABELS = { for:'FUE',des:'DES',con:'CON',int:'INT',sab:'SAB',car:'CAR' };
 
-    // ── COLUMNA IZQUIERDA: Stats + Saves (compacto arriba) ──
-    let htmlIzq = `
+    let html = `
     <div class="section-hd" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>🎲 Habilidades</span>
+      <span>🎲 Estadísticas</span>
       <button class="btn-edit-stats" onclick="App.openEditStats()" title="Editar estadísticas">✎ Editar</button>
     </div>
     <div class="stats-grid">`;
@@ -2571,7 +2584,7 @@ const App = (() => {
     STATS.forEach(stat => {
       const val = c.stats[stat];
       const mod = Characters.calcMod(val);
-      htmlIzq += `
+      html += `
       <div class="stat-block" onclick="App.editStat('${stat}')">
         <div class="stat-block-name">${STAT_LABELS[stat]}</div>
         <div class="stat-block-val" id="statVal-${stat}">${val}</div>
@@ -2579,11 +2592,11 @@ const App = (() => {
       </div>`;
     });
 
-    htmlIzq += `</div>`;
+    html += `</div>`;
 
-    // Saving throws — compacto
+    // Saving throws
     const bonusSavesAll = (c.bonuses && c.bonuses.savesAll) || 0;
-    htmlIzq += `
+    html += `
     <div class="equip-section" style="margin-top:8px;">
       <div class="rc-header" style="margin-bottom:4px;">
         <span class="rc-name">Saving Throws</span>
@@ -2600,7 +2613,7 @@ const App = (() => {
       const save = Characters.calcSave(c, stat);
       const hasProf = c.savingThrows && c.savingThrows.includes(stat);
       const bonusStat = (c.bonuses && c.bonuses.saves && c.bonuses.saves[stat]) || 0;
-      htmlIzq += `
+      html += `
       <div class="save-row">
         <button class="save-prof-toggle ${hasProf ? 'active' : ''}"
           onclick="App.toggleSavingThrow('${stat}')" title="${hasProf ? 'Quitar' : 'Agregar'} proficiencia">★</button>
@@ -2612,11 +2625,11 @@ const App = (() => {
       </div>`;
     });
 
-    htmlIzq += `</div></div>`;
+    html += `</div></div>`;
 
-    // ── COLUMNA DERECHA: Skills prominentes arriba ──
-    let htmlDer = `
-    <div class="section-hd">Skills</div>
+    // Skills — mismo ★/✦ de siempre para distinguir proficiencia/expertise
+    html += `
+    <div class="section-hd" style="margin-top:12px;">Skills</div>
     <div class="skills-list">`;
 
     Characters.SKILLS_DEF.forEach(skill => {
@@ -2627,7 +2640,7 @@ const App = (() => {
       const btnClass = hasExp ? 'expertise' : hasProf ? 'active' : '';
       const valClass = hasExp ? 'expertise' : hasProf ? 'prof' : '';
       const title    = hasExp ? 'Expertise (doble prof) — click para quitar' : hasProf ? 'Proficiente — click para Expertise' : 'Sin prof — click para agregar';
-      htmlDer += `
+      html += `
       <div class="skill-row">
         <div class="skill-prof-btn ${btnClass}" onclick="App.toggleSkillProf('${skill.id}')" title="${title}"></div>
         <span class="skill-name">${skill.name}</span>
@@ -2639,7 +2652,19 @@ const App = (() => {
       </div>`;
     });
 
-    htmlDer += `</div>`;
+    html += `</div>`;
+    el.innerHTML = html;
+  }
+
+  function _renderHabilidadesTab() {
+    const c = _char;
+    const prof = Characters.calcProfBonus(c.nivel);
+
+    const STAT_LABELS = { for:'FUE',des:'DES',con:'CON',int:'INT',sab:'SAB',car:'CAR' };
+
+    // Única columna: Passives, Proficiency, Rasgos Raciales, Elecciones, XP.
+    // Stats/Saves/Skills viven en el sidebar fijo (_renderStatsSidebar).
+    let htmlDer = '';
 
     // Info de personaje + XP al final
     const percPasiva = Characters.calcPercPasiva(c);
@@ -2650,13 +2675,9 @@ const App = (() => {
       : 100;
 
     htmlDer += `
-    <!-- INFO PASIVA -->
+    <!-- INFO PASIVA (Percepción pasiva quedó en el header, siempre visible) -->
     <div class="equip-section" style="margin-top:14px;">
       <div class="rc-name" style="margin-bottom:6px;">Info de Personaje</div>
-      <div class="passive-row">
-        <span class="passive-label">Percepción Pasiva</span>
-        <span class="passive-val">${percPasiva}</span>
-      </div>
       <div class="passive-row">
         <span class="passive-label">Velocidad</span>
         <input type="number" class="speed-input" value="${Math.round(c.velocidad * 0.3)}" min="0" step="1.5"
@@ -2822,7 +2843,6 @@ const App = (() => {
       ${c.nivel < 20 ? `<button class="levelup-btn" onclick="App.openLevelUp()">✦ Subir de Nivel</button>` : ''}
     </div>`;
 
-    document.getElementById('col-hab-izq').innerHTML = htmlIzq;
     document.getElementById('col-hab-der').innerHTML = htmlDer;
   }
 

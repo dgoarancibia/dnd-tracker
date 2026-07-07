@@ -903,6 +903,37 @@ input[type=number] { -moz-appearance: textfield; }
   min-height: 0;
 }
 
+/* Layout con sidebar fijo de Stats/Saves/Skills (izquierda) + tabs (derecha).
+   El sidebar es el mismo en las 4 tabs de personaje; Biblioteca vive fuera de
+   .app-content-tabs y usa el ancho completo (el sidebar se oculta para ella). */
+.app-content-split {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.stats-sidebar {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px;
+  border-right: 1px solid var(--border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+}
+.stats-sidebar::-webkit-scrollbar { width: 4px; }
+.stats-sidebar::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+.stats-sidebar::-webkit-scrollbar-track { background: transparent; }
+
+.app-content-tabs {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
 .tab-panel {
   display: none;
   height: 100%;
@@ -911,7 +942,21 @@ input[type=number] { -moz-appearance: textfield; }
 
 .tab-panel.active { display: flex; }
 
-/* 2-col layout para tabs */
+/* 1-col: tabs que ya no necesitan columna propia de stats (Combate, Habilidades) */
+.one-col { overflow: hidden; }
+.one-col-pane {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+}
+.one-col-pane::-webkit-scrollbar { width: 4px; }
+.one-col-pane::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+.one-col-pane::-webkit-scrollbar-track { background: transparent; }
+
+/* 2-col layout para tabs que sí necesitan dos columnas propias (Conjuros, Ítems) */
 .two-col {
   display: none;
   grid-template-columns: 1fr 1fr;
@@ -937,6 +982,9 @@ input[type=number] { -moz-appearance: textfield; }
 .two-col-right::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
 .two-col-left::-webkit-scrollbar-track,
 .two-col-right::-webkit-scrollbar-track { background: transparent; }
+
+/* Biblioteca vive fuera de .app-content-tabs (usa ancho completo) */
+#tab-biblioteca.tab-panel.active { display: flex; }
 
 /* ── SECTION HEADERS ── */
 .section-hd {
