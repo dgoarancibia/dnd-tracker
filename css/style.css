@@ -925,6 +925,17 @@ input[type=number] { -moz-appearance: textfield; }
   grid-template-columns: repeat(6, 1fr);
   margin-bottom: 0;
 }
+/* Stat-block delgado: nombre + valor + modificador en línea horizontal,
+   en vez de apilados — la franja ocupa menos alto. */
+.stats-strip-bar .stat-block {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+}
+.stats-strip-bar .stat-block-name { margin-bottom: 0; }
+.stats-strip-bar .stat-block-mod { margin-top: 0; }
 [data-layout="classic"] .stats-strip-bar { display: none; }
 /* Habilidades: en modo sidebar col-hab-izq queda oculta y col-hab-der debe
    ocupar el ancho completo (si no, el grid de 2 columnas deja un hueco vacío). */

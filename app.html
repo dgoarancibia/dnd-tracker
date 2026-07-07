@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 317;
+  var _V = 318;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 317;
+const _SW_EXPECTED = 318;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -110,7 +110,7 @@ const _SW_EXPECTED = 317;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=73">
+<link rel="stylesheet" href="css/style.css?v=74">
 </head>
 <body>
 
@@ -292,27 +292,29 @@ const _SW_EXPECTED = 317;
   </div>
 </header>
 
-<!-- TABS NAV -->
-<nav class="tab-nav">
-  <button class="tab-btn active" data-tab="combate" onclick="App.switchTab('combate')">⚔️ Combate</button>
-  <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Ítems</button>
-  <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
-  <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
-  <button class="tab-btn" data-tab="biblioteca" onclick="App.switchTab('biblioteca')">📚 Biblioteca</button>
-</nav>
-
-<!-- FRANJA DE STATS (FUE/DES/CON/INT/SAB/CAR) — ancho completo, fija, visible en
-     todas las tabs de personaje (oculta en Biblioteca). Solo en layout "sidebar". -->
-<div class="stats-strip-bar" id="statsStripBar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
-
-<!-- CONTENIDO TABS -->
+<!-- CONTENIDO: sidebar fijo (columna completa) + [tabs nav + franja stats + panel] a la derecha -->
 <div class="app-content app-content-split">
 
-  <!-- SIDEBAR FIJO: Stats + Saving Throws + Skills — visible en todas las tabs
-       (excepto Biblioteca, que no lo necesita y usa su propio ancho completo) -->
+  <!-- SIDEBAR FIJO: Saving Throws + Skills — columna completa desde arriba,
+       visible en todas las tabs (excepto Biblioteca, que usa el ancho completo) -->
   <div class="stats-sidebar" id="statsSidebar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
 
   <div class="app-content-tabs">
+
+    <!-- TABS NAV — dentro del área derecha, no cruza sobre el sidebar.
+         Sigue visible en Biblioteca (Biblioteca vive dentro de este mismo
+         contenedor, solo se le oculta la franja de stats). -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="combate" onclick="App.switchTab('combate')">⚔️ Combate</button>
+      <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Ítems</button>
+      <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
+      <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
+      <button class="tab-btn" data-tab="biblioteca" onclick="App.switchTab('biblioteca')">📚 Biblioteca</button>
+    </nav>
+
+    <!-- FRANJA DE STATS (FUE/DES/CON/INT/SAB/CAR) — ancho del área derecha,
+         debajo de las tabs, oculta en Biblioteca. Solo en layout "sidebar". -->
+    <div class="stats-strip-bar" id="statsStripBar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
 
   <!-- ══ TAB COMBATE ══ (mantiene sus 2 columnas propias: recursos/condiciones
        a la izq, habilidades activables/conjuros a la der — no son Stats) -->
@@ -341,9 +343,8 @@ const _SW_EXPECTED = 317;
     <div class="two-col-right" id="col-hab-der"><!-- renderizado por app.js --></div>
   </div>
 
-  </div><!-- /.app-content-tabs -->
-
-  <!-- ══ TAB BIBLIOTECA (fuera del sidebar de stats — usa todo el ancho) ══ -->
+  <!-- ══ TAB BIBLIOTECA — dentro de .app-content-tabs, al lado del sidebar
+       (que se oculta con JS cuando esta tab está activa) ══ -->
   <div class="tab-panel bib-panel" id="tab-biblioteca">
     <!-- Sidebar izquierda: tabs Manuales / Referencia -->
     <div class="bib-sidebar" id="bibSidebar">
@@ -463,7 +464,9 @@ const _SW_EXPECTED = 317;
     </div>
   </div>
 
-</div>
+  </div><!-- /.app-content-tabs -->
+
+</div><!-- /.app-content-split -->
 
 <!-- FAB UNIFICADO -->
 <button class="fab" id="notebookFab" onclick="App.toggleNotebook()" title="Diario / Log">📓<span class="fab-log-badge" id="combatLogFab" style="display:none"></span></button>
@@ -1171,7 +1174,7 @@ const _SW_EXPECTED = 317;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=168"></script>
+<script src="js/app.js?v=169"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

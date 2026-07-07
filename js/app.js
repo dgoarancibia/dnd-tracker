@@ -2634,10 +2634,37 @@ const App = (() => {
       html += statsHtml;
     }
 
-    // Saving throws
+    // Skills primero — mismo ★/✦ de siempre para distinguir proficiencia/expertise
+    html += `
+    <div class="section-hd">Skills</div>
+    <div class="skills-list">`;
+
+    Characters.SKILLS_DEF.forEach(skill => {
+      const val = Characters.calcSkill(c, skill.id);
+      const hasProf = c.skillProfs && c.skillProfs.includes(skill.id);
+      const hasExp  = c.skillExpertise && c.skillExpertise.includes(skill.id);
+      const bonusSkill = (c.bonuses && c.bonuses.skills && c.bonuses.skills[skill.id]) || 0;
+      const btnClass = hasExp ? 'expertise' : hasProf ? 'active' : '';
+      const valClass = hasExp ? 'expertise' : hasProf ? 'prof' : '';
+      const title    = hasExp ? 'Expertise (doble prof) — click para quitar' : hasProf ? 'Proficiente — click para Expertise' : 'Sin prof — click para agregar';
+      html += `
+      <div class="skill-row">
+        <div class="skill-prof-btn ${btnClass}" onclick="App.toggleSkillProf('${skill.id}')" title="${title}"></div>
+        <span class="skill-name">${skill.name}</span>
+        <span class="skill-stat">(${STAT_LABELS[skill.stat]})</span>
+        <span class="skill-val ${valClass}">${val >= 0 ? '+' : ''}${val}</span>
+        <input type="number" class="bonus-input-sm" value="${bonusSkill}"
+               onchange="App.setBonus('skills.${skill.id}', this.value)" onclick="this.select()"
+               title="Bonus extra a ${skill.name}">
+      </div>`;
+    });
+
+    html += `</div>`;
+
+    // Saving Throws — después de Skills
     const bonusSavesAll = (c.bonuses && c.bonuses.savesAll) || 0;
     html += `
-    <div class="equip-section" style="margin-top:8px;">
+    <div class="equip-section" style="margin-top:12px;">
       <div class="rc-header" style="margin-bottom:4px;">
         <span class="rc-name">Saving Throws</span>
         <div class="bonus-row" style="gap:4px;">
@@ -2666,33 +2693,6 @@ const App = (() => {
     });
 
     html += `</div></div>`;
-
-    // Skills — mismo ★/✦ de siempre para distinguir proficiencia/expertise
-    html += `
-    <div class="section-hd" style="margin-top:12px;">Skills</div>
-    <div class="skills-list">`;
-
-    Characters.SKILLS_DEF.forEach(skill => {
-      const val = Characters.calcSkill(c, skill.id);
-      const hasProf = c.skillProfs && c.skillProfs.includes(skill.id);
-      const hasExp  = c.skillExpertise && c.skillExpertise.includes(skill.id);
-      const bonusSkill = (c.bonuses && c.bonuses.skills && c.bonuses.skills[skill.id]) || 0;
-      const btnClass = hasExp ? 'expertise' : hasProf ? 'active' : '';
-      const valClass = hasExp ? 'expertise' : hasProf ? 'prof' : '';
-      const title    = hasExp ? 'Expertise (doble prof) — click para quitar' : hasProf ? 'Proficiente — click para Expertise' : 'Sin prof — click para agregar';
-      html += `
-      <div class="skill-row">
-        <div class="skill-prof-btn ${btnClass}" onclick="App.toggleSkillProf('${skill.id}')" title="${title}"></div>
-        <span class="skill-name">${skill.name}</span>
-        <span class="skill-stat">(${STAT_LABELS[skill.stat]})</span>
-        <span class="skill-val ${valClass}">${val >= 0 ? '+' : ''}${val}</span>
-        <input type="number" class="bonus-input-sm" value="${bonusSkill}"
-               onchange="App.setBonus('skills.${skill.id}', this.value)" onclick="this.select()"
-               title="Bonus extra a ${skill.name}">
-      </div>`;
-    });
-
-    html += `</div>`;
     el.innerHTML = html;
     // Limpiar los contenedores del otro modo para que no quede contenido viejo
     // cacheado si el usuario alterna entre layout clásico y sidebar.
