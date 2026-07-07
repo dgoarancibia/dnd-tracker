@@ -956,18 +956,22 @@ input[type=number] { -moz-appearance: textfield; }
   margin-bottom: 0;
 }
 /* Stat-block delgado: nombre + valor + modificador en línea horizontal,
-   en vez de apilados — la franja ocupa menos alto. */
+   centrados verticalmente entre sí, con tamaños proporcionados (ninguno
+   domina demasiado) — en vez de apilados con el valor mucho más grande. */
 .stats-strip-bar .stat-block {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 6px;
+  gap: 8px;
+  padding: 10px 6px;
 }
 .stats-strip-bar .stat-block-name {
   margin-bottom: 0;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 1.5px;
+}
+.stats-strip-bar .stat-block-val {
+  font-size: 22px;
 }
 .stats-strip-bar .stat-block-mod {
   margin-top: 0;
