@@ -7084,7 +7084,7 @@ const App = (() => {
   ══════════════════════════════════════════════════════ */
 
   async function saveCheckpointManual() {
-    if (!_char || _char.id === 'lursey-brumaclara') { showToast('No disponible para este personaje', 'info', 2500); return; }
+    if (!_char) return;
     if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) {
       showToast('Necesitás sesión y conexión para crear un checkpoint', 'error', 3500);
       return;
@@ -7104,7 +7104,7 @@ const App = (() => {
 
   // Modal "Cargar": muestra el autosave de la nube + los checkpoints, para restaurar.
   async function openLoadModal() {
-    if (!_char || _char.id === 'lursey-brumaclara') { showToast('No disponible para este personaje', 'info', 2500); return; }
+    if (!_char) return;
     if (!window.Cloud || !Cloud.isLoggedIn()) {
       showToast('Necesitás iniciar sesión', 'error', 3000);
       return;
