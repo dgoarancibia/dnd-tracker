@@ -2,7 +2,7 @@
   "name": "D&D Tracker",
   "short_name": "D&D",
   "description": "Character tracker para D&D 5e",
-  "start_url": "./app.html?v=321",
+  "start_url": "./app.html?v=322",
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#0e0d09",

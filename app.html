@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 321;
+  var _V = 322;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 321;
+const _SW_EXPECTED = 322;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -110,7 +110,7 @@ const _SW_EXPECTED = 321;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=77">
+<link rel="stylesheet" href="css/style.css?v=78">
 </head>
 <body>
 
@@ -292,7 +292,20 @@ const _SW_EXPECTED = 321;
   </div>
 </header>
 
-<!-- CONTENIDO: sidebar fijo (columna completa) + [tabs nav + franja stats + panel] a la derecha -->
+<!-- FRANJA DE STATS (FUE/DES/CON/INT/SAB/CAR) — ancho COMPLETO, entre el header
+     y las pestañas. Oculta en Biblioteca y en layout "clásico". -->
+<div class="stats-strip-bar" id="statsStripBar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
+
+<!-- TABS NAV — ancho completo, arriba de todo (igual que siempre) -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="combate" onclick="App.switchTab('combate')">⚔️ Combate</button>
+  <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Ítems</button>
+  <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
+  <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
+  <button class="tab-btn" data-tab="biblioteca" onclick="App.switchTab('biblioteca')">📚 Biblioteca</button>
+</nav>
+
+<!-- CONTENIDO: sidebar fijo (columna completa) + panel de la tab activa a la derecha -->
 <div class="app-content app-content-split">
 
   <!-- SIDEBAR FIJO: Saving Throws + Skills — columna completa desde arriba,
@@ -300,21 +313,6 @@ const _SW_EXPECTED = 321;
   <div class="stats-sidebar" id="statsSidebar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
 
   <div class="app-content-tabs">
-
-    <!-- TABS NAV — dentro del área derecha, no cruza sobre el sidebar.
-         Sigue visible en Biblioteca (Biblioteca vive dentro de este mismo
-         contenedor, solo se le oculta la franja de stats). -->
-    <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="combate" onclick="App.switchTab('combate')">⚔️ Combate</button>
-      <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Ítems</button>
-      <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
-      <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
-      <button class="tab-btn" data-tab="biblioteca" onclick="App.switchTab('biblioteca')">📚 Biblioteca</button>
-    </nav>
-
-    <!-- FRANJA DE STATS (FUE/DES/CON/INT/SAB/CAR) — ancho del área derecha,
-         debajo de las tabs, oculta en Biblioteca. Solo en layout "sidebar". -->
-    <div class="stats-strip-bar" id="statsStripBar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
 
   <!-- ══ TAB COMBATE ══ (una sola columna con scroll: recursos/condiciones
        arriba, habilidades activables/conjuros abajo — junto al sidebar de
@@ -1177,7 +1175,7 @@ const _SW_EXPECTED = 321;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=171"></script>
+<script src="js/app.js?v=172"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>
