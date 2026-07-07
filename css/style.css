@@ -912,31 +912,6 @@ input[type=number] { -moz-appearance: textfield; }
 [data-layout="classic"] .stats-sidebar { display: none !important; }
 [data-layout="classic"] .classic-only { display: flex; }
 
-/* Franja de Stats (FUE/DES/CON/INT/SAB/CAR) — ancho completo, debajo de las
-   tabs. Solo aplica en modo sidebar; en modo clásico o en Biblioteca se oculta. */
-.stats-strip-bar {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  padding: 10px 16px;
-  flex-shrink: 0;
-}
-.stats-strip-bar .section-hd { margin-bottom: 8px; }
-.stats-strip-bar .stats-grid {
-  grid-template-columns: repeat(6, 1fr);
-  margin-bottom: 0;
-}
-/* Stat-block delgado: nombre + valor + modificador en línea horizontal,
-   en vez de apilados — la franja ocupa menos alto. */
-.stats-strip-bar .stat-block {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 6px;
-}
-.stats-strip-bar .stat-block-name { margin-bottom: 0; }
-.stats-strip-bar .stat-block-mod { margin-top: 0; }
-[data-layout="classic"] .stats-strip-bar { display: none; }
 /* Habilidades: en modo sidebar col-hab-izq queda oculta y col-hab-der debe
    ocupar el ancho completo (si no, el grid de 2 columnas deja un hueco vacío). */
 [data-layout="sidebar"] #tab-habilidades.two-col,
@@ -959,9 +934,10 @@ input[type=number] { -moz-appearance: textfield; }
   overflow-y: auto;
   overflow-x: hidden;
   padding: 14px;
-  /* espacio inferior extra: el FAB de nota rápida (fixed, left:18px) flota
-     sobre esta columna cuando el contenido de Skills llega hasta esa altura */
-  padding-bottom: 70px;
+  /* espacio inferior extra: el FAB de nota rápida (fixed, left:18px, bottom:80px,
+     44px de diámetro) flota sobre esta columna cuando el contenido de Skills
+     llega hasta esa altura. 140px cubre el FAB + margen incluso en iPad. */
+  padding-bottom: 140px;
   border-right: 1px solid var(--border);
   scrollbar-width: thin;
   scrollbar-color: var(--gold-dim) transparent;
