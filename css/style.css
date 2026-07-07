@@ -334,7 +334,7 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 92px;
+  min-height: 76px;
 }
 
 .app-header-left { flex: 0 1 auto; min-width: 0; max-width: 160px; }
@@ -344,12 +344,12 @@ input[type=number] { -moz-appearance: textfield; }
   position: relative;
   flex-shrink: 0;
   cursor: pointer;
-  width: 84px;
-  height: 84px;
+  width: 64px;
+  height: 64px;
 }
 .char-avatar-circle {
-  width: 84px;
-  height: 84px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: rgba(255,255,255,0.05);
   border: 2px solid var(--gold-dim);
@@ -724,7 +724,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 .stat-divider {
   width: 1px;
-  height: 40px;
+  height: 34px;
   background: var(--border);
   flex-shrink: 0;
   opacity: 0.6;
@@ -734,9 +734,9 @@ input[type=number] { -moz-appearance: textfield; }
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 6px 10px;
+  padding: 4px 9px;
   text-align: center;
-  min-width: 52px;
+  min-width: 48px;
 }
 
 .stat-box .sl {
@@ -750,7 +750,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 .stat-box .sv {
   font-family: 'Cinzel', serif;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
