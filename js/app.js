@@ -1298,6 +1298,38 @@ const App = (() => {
     return html;
   }
 
+  // D&D 2024: cada nivel agrega -2 acumulativo a todos los d20 tests. Nivel 6 = muerte.
+  const EXHAUSTION_EFFECTS = [
+    null,
+    '-2 a todos los d20 tests (ataques, checks, saves)',
+    '-4 a todos los d20 tests · Velocidad reducida a la mitad',
+    '-6 a todos los d20 tests · Velocidad reducida a la mitad',
+    '-8 a todos los d20 tests · Velocidad reducida a la mitad · HP máx reducido a la mitad',
+    '-10 a todos los d20 tests · Velocidad 0 · HP máx reducido a la mitad',
+    'Muerte',
+  ];
+
+  // Agotamiento: se movió al sidebar fijo (antes vivía en Combate-izquierda).
+  function _buildExhaustionHTML(c) {
+    const exhaustion = c.exhaustion || 0;
+    const exEffect   = exhaustion > 0 ? EXHAUSTION_EFFECTS[exhaustion] : null;
+    return `
+    <div class="exhaustion-block">
+      <div class="rc-header" style="margin-bottom:8px;">
+        <span class="rc-name">Agotamiento</span>
+        <div class="exh-controls">
+          <button class="exh-btn minus" onclick="App.adjustExhaustion(-1)" ${exhaustion <= 0 ? 'disabled' : ''}>−</button>
+          <span class="exh-level ${exhaustion > 0 ? (exhaustion >= 5 ? 'danger' : exhaustion >= 3 ? 'warning' : 'active') : ''}">${exhaustion}</span>
+          <button class="exh-btn plus" onclick="App.adjustExhaustion(1)" ${exhaustion >= 6 ? 'disabled' : ''}>+</button>
+        </div>
+      </div>
+      <div class="exh-pips">
+        ${[1,2,3,4,5,6].map(n => `<div class="exh-pip ${n <= exhaustion ? (exhaustion >= 6 ? 'dead' : exhaustion >= 5 ? 'danger' : exhaustion >= 3 ? 'warning' : 'filled') : ''}" onclick="App.setExhaustion(${n === exhaustion ? 0 : n})" title="Nivel ${n}: ${EXHAUSTION_EFFECTS[n]}"></div>`).join('')}
+      </div>
+      ${exEffect ? `<div class="exh-effect">${exEffect}${exhaustion >= 2 ? '<br><span style="opacity:0.7;font-size:10px;">+ efectos anteriores acumulados</span>' : ''}</div>` : '<div class="exh-none">Sin agotamiento</div>'}
+    </div>`;
+  }
+
   function _renderCombateIzq() {
     const c = _char;
     const prof = Characters.calcProfBonus(c.nivel);
@@ -1360,37 +1392,6 @@ const App = (() => {
     html += `</div>`; // cierra resources-grid
 
     // DESCANSOS — en header, no duplicar aquí
-
-    // AGOTAMIENTO (Exhaustion)
-    // D&D 2024: cada nivel agrega -2 acumulativo a todos los d20 tests (ataques, saves, checks)
-    // Nivel 6 = muerte
-    const EXHAUSTION_EFFECTS = [
-      null,
-      '-2 a todos los d20 tests (ataques, checks, saves)',
-      '-4 a todos los d20 tests · Velocidad reducida a la mitad',
-      '-6 a todos los d20 tests · Velocidad reducida a la mitad',
-      '-8 a todos los d20 tests · Velocidad reducida a la mitad · HP máx reducido a la mitad',
-      '-10 a todos los d20 tests · Velocidad 0 · HP máx reducido a la mitad',
-      'Muerte',
-    ];
-    const exhaustion = c.exhaustion || 0;
-    const exEffect   = exhaustion > 0 ? EXHAUSTION_EFFECTS[exhaustion] : null;
-
-    html += `
-    <div class="exhaustion-block">
-      <div class="rc-header" style="margin-bottom:8px;">
-        <span class="rc-name">Agotamiento</span>
-        <div class="exh-controls">
-          <button class="exh-btn minus" onclick="App.adjustExhaustion(-1)" ${exhaustion <= 0 ? 'disabled' : ''}>−</button>
-          <span class="exh-level ${exhaustion > 0 ? (exhaustion >= 5 ? 'danger' : exhaustion >= 3 ? 'warning' : 'active') : ''}">${exhaustion}</span>
-          <button class="exh-btn plus" onclick="App.adjustExhaustion(1)" ${exhaustion >= 6 ? 'disabled' : ''}>+</button>
-        </div>
-      </div>
-      <div class="exh-pips">
-        ${[1,2,3,4,5,6].map(n => `<div class="exh-pip ${n <= exhaustion ? (exhaustion >= 6 ? 'dead' : exhaustion >= 5 ? 'danger' : exhaustion >= 3 ? 'warning' : 'filled') : ''}" onclick="App.setExhaustion(${n === exhaustion ? 0 : n})" title="Nivel ${n}: ${EXHAUSTION_EFFECTS[n]}"></div>`).join('')}
-      </div>
-      ${exEffect ? `<div class="exh-effect">${exEffect}${exhaustion >= 2 ? '<br><span style="opacity:0.7;font-size:10px;">+ efectos anteriores acumulados</span>' : ''}</div>` : '<div class="exh-none">Sin agotamiento</div>'}
-    </div>`;
 
     // RECURSOS CUSTOM
     html += `
@@ -2693,9 +2694,10 @@ const App = (() => {
 
     html += `</div></div>`;
 
-    // Condiciones — después de Skills y Saving Throws, siempre visible sin
-    // importar la tab activa (antes vivía solo dentro de Combate).
+    // Condiciones y Agotamiento — después de Skills y Saving Throws, siempre
+    // visibles sin importar la tab activa (antes vivían solo dentro de Combate).
     html += `<div style="margin-top:12px;">${_buildConditionsHTML(c)}</div>`;
+    html += `<div style="margin-top:12px;">${_buildExhaustionHTML(c)}</div>`;
 
     el.innerHTML = html;
     // Limpiar los contenedores del otro modo para que no quede contenido viejo
@@ -4201,7 +4203,7 @@ const App = (() => {
     _logCombat(delta > 0
       ? `⚠ Agotamiento aumenta a ${labels[next]}`
       : `✦ Agotamiento reduce a ${labels[next]}`, 'cond');
-    _renderCombateIzq();
+    _renderStatsSidebar(); // Agotamiento vive en el sidebar fijo, no en Combate
     _updateHeaderStatus();
   }
 
@@ -4209,7 +4211,7 @@ const App = (() => {
     if (!_char) return;
     _char.exhaustion = Math.max(0, Math.min(6, level));
     _saveChar(true);
-    _renderCombateIzq();
+    _renderStatsSidebar();
     _updateHeaderStatus();
   }
 
