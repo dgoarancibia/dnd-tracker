@@ -1353,7 +1353,7 @@ const App = (() => {
     </div>` : ''}
 
     <!-- RECURSOS CON CONTADORES -->
-    <div class="section-hd" style="margin-top:12px;">Recursos</div>`;
+    <div class="section-hd" style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;">Recursos<button class="btn btn-ghost" style="font-size:10px;padding:2px 8px;min-height:0;" onclick="App.openCustomResource()">+ Agregar</button></div>`;
 
     html += `<div class="resources-grid">`;
 
@@ -1380,9 +1380,8 @@ const App = (() => {
     }
     html += `<div class="resource-card full-width-card"><div class="rc-top"><span class="rc-name">Dados de Golpe (d${c.hitDie})</span><span class="rc-recharge">↺ Largo (mitad)</span></div><div class="slot-dots" id="hd-dots">${hdDotsHtml}</div></div>`;
 
-    // 3. RECURSOS con max > 0 (dots/slots que el jugador rastrea) — grilla 2 columnas
-    // Incluye tanto recursos simples como los que tienen action/desc (Second Wind, Action Surge, etc.)
-    // Solo se excluyen recursos con max === 0 (referencia pura, ej. Mente Táctica) que van a la derecha
+    // 3. RECURSOS con max > 0 — grilla 3 columnas
+    html += `</div><div class="resources-grid resources-grid--3col">`;
     (c.resources || []).filter(r => r.max > 0).forEach(r => {
       const rechargeLabel = { short: '↺ Corto', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
       const isCustom = !['channel-divinity','bond','guiding-bolt-mi'].includes(r.id);
@@ -1394,15 +1393,7 @@ const App = (() => {
       html += `<div class="resource-card"><div class="rc-top"><span class="rc-name">${r.name}</span><span class="rc-recharge">${rechargeLabel}</span>${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}</div><div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div></div>`;
     });
 
-    html += `</div>`; // cierra resources-grid
-
-    // DESCANSOS — en header, no duplicar aquí
-
-    // RECURSOS CUSTOM
-    html += `
-    <div style="margin-top:4px;">
-      <button class="btn btn-ghost" style="width:100%;" onclick="App.openCustomResource()">+ Agregar Recurso</button>
-    </div>`;
+    html += `</div>`; // cierra resources-grid--3col
 
     document.getElementById('col-combate-izq').innerHTML = html;
     _updateRoundDisplay();
@@ -1616,15 +1607,15 @@ const App = (() => {
           if (!hasSlot) { castable = false; castLabel = 'Sin slots'; }
         }
         html += `
-        <div class="spell-card">
-          <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')">
+        <div class="spell-card" onclick="this.querySelector('.spell-desc').classList.toggle('expanded')">
+          <div class="spell-info">
             <div class="spell-top">
               <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
               <span class="spell-name">${sp.name}</span>${tags}
             </div>
             <div class="spell-desc">${fmtDesc(sp.desc)}</div>
           </div>
-          <button class="cast-btn${castable ? '' : ' cast-btn-disabled'}" onclick="App.castSpell('${sp.id}')" ${castable ? '' : 'disabled'}>${castLabel}</button>
+          <button class="cast-btn${castable ? '' : ' cast-btn-disabled'}" onclick="event.stopPropagation();App.castSpell('${sp.id}')" ${castable ? '' : 'disabled'}>${castLabel}</button>
         </div>`;
       });
     });

@@ -1406,6 +1406,12 @@ input[type=number] { -moz-appearance: textfield; }
   gap: 4px;
   margin-bottom: 4px;
 }
+.resources-grid--3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
+  margin-bottom: 4px;
+}
 
 .full-width-card {
   grid-column: 1 / -1;
@@ -2293,9 +2299,12 @@ input[type=number] { -moz-appearance: textfield; }
   transition: max-height 0.25s ease, -webkit-line-clamp 0.25s;
 }
 
-/* Spell cards in combat reference panel — larger text */
-#tab-combate .spell-name { font-size: 15px; }
-#tab-combate .spell-desc { font-size: 14px; max-height: 3em; }
+/* Spell cards in combat reference panel — compactas */
+#tab-combate .spell-card { padding: 4px 6px; margin-bottom: 3px; }
+#tab-combate .spell-name { font-size: 13px; }
+#tab-combate .spell-desc { font-size: 12px; max-height: 0; overflow: hidden; -webkit-line-clamp: 0; margin-top: 0; transition: max-height 0.2s ease; }
+#tab-combate .spell-desc.expanded { max-height: 120px; -webkit-line-clamp: unset; margin-top: 3px; }
+#tab-combate .cast-btn { padding: 5px 8px; font-size: 11px; min-height: 32px; min-width: 48px; }
 .spell-desc.expanded {
   display: block;
   max-height: 200px;
