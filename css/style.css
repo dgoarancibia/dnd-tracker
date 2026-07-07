@@ -964,8 +964,15 @@ input[type=number] { -moz-appearance: textfield; }
   gap: 6px;
   padding: 8px 6px;
 }
-.stats-strip-bar .stat-block-name { margin-bottom: 0; }
-.stats-strip-bar .stat-block-mod { margin-top: 0; }
+.stats-strip-bar .stat-block-name {
+  margin-bottom: 0;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+}
+.stats-strip-bar .stat-block-mod {
+  margin-top: 0;
+  font-size: 18px;
+}
 [data-layout="classic"] .stats-strip-bar { display: none; }
 
 .app-content-tabs {
@@ -3209,6 +3216,67 @@ input[type=number] { -moz-appearance: textfield; }
 
 .fab:hover { border-color: var(--gold); transform: scale(1.08); }
 .fab:active { transform: scale(0.95); }
+
+/* COMBAT PANEL — abierto desde el FAB ⚔️, mismo patrón visual que el diario */
+.fab-combat {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2a2010, #382e18);
+  border: 1.5px solid var(--gold-dim);
+  color: var(--gold);
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 199;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: transform 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fab-combat:hover  { border-color: var(--gold); transform: scale(1.08); }
+.fab-combat:active { transform: scale(0.92); }
+
+.combat-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 42%;
+  min-width: 320px;
+  height: 100%;
+  background: var(--bg2);
+  border-right: 1px solid var(--gold-dim);
+  z-index: 700;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  box-shadow: 8px 0 32px rgba(0,0,0,0.5);
+}
+.combat-panel.open { transform: translateX(0); }
+.combat-panel-header {
+  background: linear-gradient(135deg, #181508, #201c10);
+  border-bottom: 1px solid var(--gold-dim);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.combat-panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+.combat-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
 
 /* DIARY PANEL */
 .diary-panel {

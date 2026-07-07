@@ -645,6 +645,17 @@ const App = (() => {
   let _diarySearch    = '';    // texto de búsqueda
   let _newDiaryCat    = '';    // categoría de la próxima entrada
 
+  let _combatPanelOpen = false;
+  function toggleCombatPanel() {
+    _combatPanelOpen = !_combatPanelOpen;
+    const panel = document.getElementById('combatPanelOverlay');
+    if (panel) panel.classList.toggle('open', _combatPanelOpen);
+    if (_combatPanelOpen) {
+      _updateRoundDisplay();
+      _renderInitTracker();
+    }
+  }
+
   function toggleNotebook() {
     _notebookOpen = !_notebookOpen;
     const panel = document.getElementById('notebookPanel');
@@ -1247,28 +1258,16 @@ const App = (() => {
     const conMod = Characters.calcMod(c.stats.con);
 
     let html = `
-    <!-- RONDAS Y TURNO -->
-    <div id="roundDisplay"></div>
-
-    <!-- ACCIONES DEL TURNO -->
-    <div class="turn-block">
-      <div class="turn-actions-grid">
-        <button class="turn-action-btn ${c.turn.action ? 'used' : ''}" id="turnAction" onclick="App.toggleTurn('action')">Acción</button>
-        <button class="turn-action-btn ${c.turn.bonus ? 'used' : ''}" id="turnBonus" onclick="App.toggleTurn('bonus')">Bonus Action</button>
-        <button class="turn-action-btn reaction ${c.turn.reaction ? 'used' : ''}" id="turnReaction" onclick="App.toggleTurn('reaction')">Reacción</button>
-        <button class="turn-action-btn ${c.turn.movement ? 'used' : ''}" id="turnMovement" onclick="App.toggleTurn('movement')">Movimiento</button>
-      </div>
-      <button class="turn-end-btn" onclick="App.endTurn()">↺ Fin de Turno</button>
-    </div>
-
     <!-- TIRADAS DE MUERTE -->
     ${c.hp.current === 0 ? _buildDeathSavesHTML(c) : ''}
 
-    <!-- CONCENTRACIÓN -->
-    <div class="conc-block ${c.concentration ? 'conc-active' : ''}">
-      <span class="conc-label">${c.concentration ? '◆ Concentración activa' : 'Concentración'}</span>
+    <!-- CONCENTRACIÓN: solo se muestra si hay algo activo. Para elegir/cambiar
+         en qué estás concentrado, se abre desde el conjuro correspondiente. -->
+    ${c.concentration ? `
+    <div class="conc-block conc-active">
+      <span class="conc-label">◆ Concentración activa</span>
       <div class="conc-btns" id="concBtns">${_buildConcBtns(c)}</div>
-    </div>
+    </div>` : ''}
 
     <!-- RECURSOS CON CONTADORES -->
     <div class="section-hd" style="margin-top:12px;">Recursos</div>`;
@@ -1483,15 +1482,9 @@ const App = (() => {
       return (c.preparedToday || []).includes(s.id);
     });
 
-    // Initiative tracker — solo visible en combate activo
-    let html = '';
-    if (_combatActive) {
-      html = `<div class="section-hd" style="margin-bottom:6px;">⚔ Iniciativa</div>
-    <div id="initTracker"></div>
-    <div style="margin-bottom:10px;"></div>`;
-    }
-
-    html += `
+    // Iniciar combate / ronda / turno / iniciativa: ahora viven en el panel
+    // flotante (FAB ⚔️), no en el flujo normal de esta columna.
+    let html = `
     <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>`;
 
     // Primal Companion (Beast Master) — arriba del todo, debajo de Guía de Combate
@@ -2617,7 +2610,7 @@ const App = (() => {
       <div class="stat-block" onclick="App.editStat('${stat}')">
         <div class="stat-block-name">${STAT_LABELS[stat]}</div>
         <div class="stat-block-val" id="statVal-${stat}">${val}</div>
-        <div class="stat-block-mod">${mod >= 0 ? '+' : ''}${mod}</div>
+        <div class="stat-block-mod">(${mod >= 0 ? '+' : ''}${mod})</div>
       </div>`;
     });
 
@@ -7512,7 +7505,7 @@ const App = (() => {
     openLevelUp, closeLevelUp, applyLevelUp,
 
     // Notebook (diario + log + stats)
-    toggleNotebook, switchNotebookTab,
+    toggleNotebook, switchNotebookTab, toggleCombatPanel,
     toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, deleteDiaryEntry, togglePinDiary, filterDiary, exportDiary,
     openQuickNote, closeQuickNote, setQNCat, onQNInput, saveQuickNote,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
