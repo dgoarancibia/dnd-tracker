@@ -5,19 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>D&D Tracker</title>
 <script>
-// ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
-// Cambia este número junto con _SW_EXPECTED cada deploy.
-;(function(){
-  var _V = 334;
-  var sp = new URLSearchParams(window.location.search);
-  if (parseInt(sp.get('v')||'0',10) !== _V) {
-    window.location.replace(window.location.pathname + '?v=' + _V);
-  }
-})();
+// Lock de URL eliminado — el SW maneja la actualización sin redirect de versión
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 334;
+const _SW_EXPECTED = 340;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;

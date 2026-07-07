@@ -20,8 +20,7 @@ echo "📦 Bumping v$CURRENT → v$NEW"
 sed -i '' "s/dnd-tracker-v${CURRENT}/dnd-tracker-v${NEW}/g" sw.js
 sed -i '' "s/version: ${CURRENT}/version: ${NEW}/g" sw.js
 
-# app.html (2 ocurrencias: _V y _SW_EXPECTED)
-sed -i '' "s/var _V = ${CURRENT}/var _V = ${NEW}/" app.html
+# app.html (solo _SW_EXPECTED — _V fue eliminado)
 sed -i '' "s/const _SW_EXPECTED = ${CURRENT}/const _SW_EXPECTED = ${NEW}/" app.html
 
 # index.html (2 ocurrencias: _V y _SW_EXPECTED_IDX)
