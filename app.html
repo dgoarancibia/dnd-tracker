@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 340;
+const _SW_EXPECTED = 343;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -199,6 +199,9 @@ const _SW_EXPECTED = 340;
 
     <!-- Sync status — siempre visible -->
     <div class="sync-status" id="syncStatus" style="display:none;"></div>
+
+    <!-- Versión SW — siempre visible -->
+    <span id="appVersionBadge" style="font-size:10px;color:var(--text-dim);opacity:0.6;padding:0 4px;"></span>
 
     <!-- Botón para abrir menú -->
     <button class="header-menu-toggle" id="headerMenuToggle" onclick="App.toggleHeaderMenu()" title="Más opciones">⋯</button>

@@ -316,6 +316,19 @@ const App = (() => {
       return;
     }
 
+    // Mostrar versión SW en el badge del header
+    (function() {
+      const badge = document.getElementById('appVersionBadge');
+      if (!badge) return;
+      const cached = localStorage.getItem('dnd_sw_ver');
+      if (cached) badge.textContent = 'v' + cached;
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
+        const h = e => { if (e.data?.type === 'SW_VERSION') { badge.textContent = 'v' + e.data.version; navigator.serviceWorker.removeEventListener('message', h); } };
+        navigator.serviceWorker.addEventListener('message', h);
+      }
+    })();
+
     // Limpiar del localStorage chars que están en la lista negra (eliminados)
     // Corre antes de todo para que Firebase no los restaure silenciosamente
     Storage.purgeDeletedFromLocal();
