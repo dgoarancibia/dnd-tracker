@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 322;
+  var _V = 323;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 322;
+const _SW_EXPECTED = 323;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -293,19 +293,12 @@ const _SW_EXPECTED = 322;
 </header>
 
 <!-- FRANJA DE STATS (FUE/DES/CON/INT/SAB/CAR) — ancho COMPLETO, entre el header
-     y las pestañas. Oculta en Biblioteca y en layout "clásico". -->
+     y el contenido (izq: sidebar Skills/Saves, der: tabs). Modelo DnDBeyond:
+     stats arriba de TODO, tabs solo dentro de la columna derecha.
+     Oculta en Biblioteca y en layout "clásico". -->
 <div class="stats-strip-bar" id="statsStripBar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
 
-<!-- TABS NAV — ancho completo, arriba de todo (igual que siempre) -->
-<nav class="tab-nav">
-  <button class="tab-btn active" data-tab="combate" onclick="App.switchTab('combate')">⚔️ Combate</button>
-  <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Ítems</button>
-  <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
-  <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
-  <button class="tab-btn" data-tab="biblioteca" onclick="App.switchTab('biblioteca')">📚 Biblioteca</button>
-</nav>
-
-<!-- CONTENIDO: sidebar fijo (columna completa) + panel de la tab activa a la derecha -->
+<!-- CONTENIDO: sidebar fijo (columna completa) + [tabs nav + panel] a la derecha -->
 <div class="app-content app-content-split">
 
   <!-- SIDEBAR FIJO: Saving Throws + Skills — columna completa desde arriba,
@@ -313,6 +306,15 @@ const _SW_EXPECTED = 322;
   <div class="stats-sidebar" id="statsSidebar"><!-- renderizado por app.js: _renderStatsSidebar() --></div>
 
   <div class="app-content-tabs">
+
+    <!-- TABS NAV — dentro del área derecha, no cruza sobre el sidebar -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="combate" onclick="App.switchTab('combate')">⚔️ Combate</button>
+      <button class="tab-btn" data-tab="equipo" onclick="App.switchTab('equipo')">🎒 Ítems</button>
+      <button class="tab-btn" data-tab="habilidades" onclick="App.switchTab('habilidades')">🎲 Habilidades</button>
+      <button class="tab-btn" data-tab="conjuros" onclick="App.switchTab('conjuros')">✨ Conjuros</button>
+      <button class="tab-btn" data-tab="biblioteca" onclick="App.switchTab('biblioteca')">📚 Biblioteca</button>
+    </nav>
 
   <!-- ══ TAB COMBATE ══ (una sola columna con scroll: recursos/condiciones
        arriba, habilidades activables/conjuros abajo — junto al sidebar de
