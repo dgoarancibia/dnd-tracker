@@ -1682,6 +1682,11 @@ const App = (() => {
       </div>`;
     };
 
+    // Bloque colapsable: referencia de solo-lectura (feats, rasgos, clase,
+    // maniobras, prioridad de slots). No compite por espacio con lo accionable
+    // de arriba; cerrado por defecto, se expande con un tap.
+    html += `<details class="combat-ref-accordion"><summary>📖 Referencia (Feats · Rasgos · Clase · Maniobras)</summary>`;
+
     if (classFeats.length) {
       html += `<div class="section-hd" style="margin-top:16px;">⚡ Habilidades de Clase</div>`;
       classFeats.forEach(f => { html += _renderFeatCard(f); });
@@ -1820,6 +1825,8 @@ const App = (() => {
         : `👁 Ver ocultos (${totalHidden})`;
       html += `<button class="feat-show-hidden-btn" onclick="App.toggleShowHidden()">${showingLabel}</button>`;
     }
+
+    html += `</details>`;
 
     // Tips de combate
     const tips = c.combatTips || [];

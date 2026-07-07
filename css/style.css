@@ -1050,6 +1050,27 @@ input[type=number] { -moz-appearance: textfield; }
   border-bottom: 1px solid var(--border);
 }
 
+/* Acordeón de referencia en Combate (Feats/Rasgos/Clase/Maniobras) —
+   colapsado por defecto para no competir por espacio con lo accionable. */
+.combat-ref-accordion {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.combat-ref-accordion > summary {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  cursor: pointer;
+  padding: 4px 0;
+  list-style: none;
+}
+.combat-ref-accordion > summary::-webkit-details-marker { display: none; }
+.combat-ref-accordion > summary::before { content: '▸ '; }
+.combat-ref-accordion[open] > summary::before { content: '▾ '; }
+
 .section-divider {
   font-family: 'Jost', sans-serif;
   font-size: 11px;
