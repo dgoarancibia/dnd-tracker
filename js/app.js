@@ -306,6 +306,11 @@ const App = (() => {
     // no hay bandera de intención → redirigir al home. La bandera vive en
     // sessionStorage, así que sobrevive recargas de ESTA pestaña (seguir jugando)
     // pero no una apertura nueva. Evita quedar "pegado" en un PJ viejo.
+    // Acepta flag de localStorage cuando venimos de un SW update (no hay sessionStorage)
+    if (localStorage.getItem('dnd_sw_update_playing')) {
+      sessionStorage.setItem('dnd_playing', '1');
+      localStorage.removeItem('dnd_sw_update_playing');
+    }
     if (!sessionStorage.getItem('dnd_playing')) {
       window.location.replace('index.html');
       return;
