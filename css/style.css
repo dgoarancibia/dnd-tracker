@@ -934,10 +934,6 @@ input[type=number] { -moz-appearance: textfield; }
   overflow-y: auto;
   overflow-x: hidden;
   padding: 14px;
-  /* espacio inferior extra: el FAB de nota rápida (fixed, left:18px, bottom:80px,
-     44px de diámetro) flota sobre esta columna cuando el contenido de Skills
-     llega hasta esa altura. 140px cubre el FAB + margen incluso en iPad. */
-  padding-bottom: 140px;
   border-right: 1px solid var(--border);
   scrollbar-width: thin;
   scrollbar-color: var(--gold-dim) transparent;
@@ -4567,8 +4563,10 @@ input[type=number] { -moz-appearance: textfield; }
 /* ═══ FAB NOTA RÁPIDA ═══ */
 .fab-note {
   position: fixed;
-  bottom: 80px;
-  left: 18px;
+  /* A la derecha, apilado arriba del FAB de notebook (right:24px/bottom:24px,
+     56px de diámetro) — a la izquierda tapaba Skills en el sidebar. */
+  bottom: 92px;
+  right: 24px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
