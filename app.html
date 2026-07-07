@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 330;
+  var _V = 331;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 330;
+const _SW_EXPECTED = 331;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -333,9 +333,9 @@ const _SW_EXPECTED = 330;
   </div>
 
   <!-- ══ TAB EQUIPO ══ -->
-  <div class="tab-panel two-col" id="tab-equipo">
-    <div class="two-col-left" id="col-equipo-izq"><!-- renderizado por app.js --></div>
-    <div class="two-col-right" id="col-equipo-der"><!-- renderizado por app.js --></div>
+  <div class="tab-panel tab-panel--single" id="tab-equipo">
+    <div id="col-equipo-izq"></div>
+    <div id="col-equipo-der"></div>
   </div>
 
   <!-- ══ TAB HABILIDADES (resto: passives, rasgos, elecciones, XP) ══

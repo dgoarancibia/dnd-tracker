@@ -994,6 +994,16 @@ input[type=number] { -moz-appearance: textfield; }
 
 .tab-panel.active { display: flex; }
 
+/* Tab de una sola columna scrollable (Ítems) */
+.tab-panel--single.active {
+  display: block;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+}
+
 /* 1-col: tabs que ya no necesitan columna propia de stats (Combate, Habilidades) */
 .one-col { overflow: hidden; }
 .one-col-pane {
