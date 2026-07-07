@@ -656,17 +656,55 @@ const App = (() => {
   function switchNotebookTab(tab) {
     _notebookTab = tab;
     document.getElementById('nbTabDiary')?.classList.toggle('active', tab === 'diary');
+    document.getElementById('nbTabCodex')?.classList.toggle('active', tab === 'codex');
     document.getElementById('nbTabLog')?.classList.toggle('active',   tab === 'log');
     document.getElementById('nbTabStats')?.classList.toggle('active', tab === 'stats');
     document.getElementById('nbTabMaps')?.classList.toggle('active',  tab === 'maps');
     document.getElementById('nbPaneDiary').style.display  = tab === 'diary'  ? 'flex' : 'none';
+    const codexPane = document.getElementById('nbPaneCodex');
+    if (codexPane) codexPane.style.display = tab === 'codex' ? 'flex' : 'none';
     document.getElementById('nbPaneLog').style.display    = tab === 'log'    ? 'flex' : 'none';
     document.getElementById('nbPaneStats').style.display  = tab === 'stats'  ? 'flex' : 'none';
     document.getElementById('nbPaneMaps').style.display   = tab === 'maps'   ? 'flex' : 'none';
-    if (tab === 'log')        _renderCombatLog();
+    if (tab === 'codex')      _renderCodex();
+    else if (tab === 'log')   _renderCombatLog();
     else if (tab === 'stats') _renderCampaignStats();
     else if (tab === 'maps')  { if (typeof Maps !== 'undefined' && _char) Maps.init(_char.id); }
     else _renderDiaryEntries();
+  }
+
+  // Vista Codex: agrupa las entradas del diario de tipo npc y quest en fichas
+  // para encontrarlas rápido (quién era X, qué misiones tengo).
+  function _renderCodex() {
+    const cont = document.getElementById('codexBody');
+    if (!cont) return;
+    const entries = (_char.diary || []);
+    const npcs   = entries.filter(e => (e.cat || '') === 'npc');
+    const quests = entries.filter(e => (e.cat || '') === 'quest');
+
+    const card = (e) => {
+      const when = new Date(e.timestamp).toLocaleDateString('es', { day:'2-digit', month:'2-digit' });
+      const txt = e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+      return `<div class="codex-card" data-id="${e.id}">
+        <div class="codex-card-text" ondblclick="App.editDiaryEntry('${e.id}',this)" title="Doble click para editar">${txt}</div>
+        <div class="codex-card-meta">
+          <span>${when}</span>
+          <button class="diary-pin-btn${e.pinned ? ' pinned' : ''}" onclick="App.togglePinDiary('${e.id}')" title="${e.pinned ? 'Desfijar' : 'Fijar'}">📌</button>
+          <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">✕</button>
+        </div>
+      </div>`;
+    };
+
+    let html = '';
+    html += `<div class="codex-section-hd">🧑 NPCs <span class="codex-count">${npcs.length}</span></div>`;
+    html += npcs.length
+      ? `<div class="codex-grid">${npcs.map(card).join('')}</div>`
+      : `<div class="codex-empty">Sin NPCs. Marcá una nota como 🧑 NPC en el diario.</div>`;
+    html += `<div class="codex-section-hd" style="margin-top:14px;">⚔️ Misiones <span class="codex-count">${quests.length}</span></div>`;
+    html += quests.length
+      ? `<div class="codex-grid">${quests.map(card).join('')}</div>`
+      : `<div class="codex-empty">Sin misiones. Marcá una nota como ⚔️ Quest en el diario.</div>`;
+    cont.innerHTML = html;
   }
 
   // Legacy shims (used by closeAllOverlays etc.)
@@ -6084,38 +6122,56 @@ const App = (() => {
       return;
     }
 
-    let html = '';
-    let lastDay = '';
-    entries.forEach(e => {
+    // Render de una burbuja de entrada.
+    const bubble = (e) => {
       const d = new Date(e.timestamp);
-      const day = d.toLocaleDateString('es', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
       const time = d.toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
-      if (day !== lastDay) {
-        html += `<div class="diary-day-sep"><span>${day}</span></div>`;
-        lastDay = day;
-      }
       const cat   = e.cat || '';
       const emoji = _DIARY_CAT_EMOJI[cat] || '📝';
       const catBg = _DIARY_CAT_COLOR[cat]  || 'transparent';
       const catTag = cat
         ? `<span class="diary-cat-tag" style="background:${catBg}">${emoji} ${cat}</span>`
         : '';
-
-      // Highlight búsqueda
       let textHtml = e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
       if (_diarySearch) {
         const re = new RegExp(`(${_diarySearch.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
         textHtml = textHtml.replace(re, '<mark class="diary-highlight">$1</mark>');
       }
-
-      html += `<div class="diary-bubble" data-id="${e.id}" style="${catBg !== 'transparent' ? `border-left:3px solid ${catBg.replace('0.18','0.6')}` : ''}">
+      const pinBtn = `<button class="diary-pin-btn${e.pinned ? ' pinned' : ''}" onclick="App.togglePinDiary('${e.id}')" title="${e.pinned ? 'Desfijar' : 'Fijar arriba'}">📌</button>`;
+      return `<div class="diary-bubble${e.pinned ? ' pinned' : ''}" data-id="${e.id}" style="${catBg !== 'transparent' ? `border-left:3px solid ${catBg.replace('0.18','0.6')}` : ''}">
         ${catTag}
         <div class="diary-bubble-text" ondblclick="App.editDiaryEntry('${e.id}',this)" title="Doble click para editar">${textHtml}</div>
         <div class="diary-bubble-meta">
           <span class="diary-bubble-time">${time}</span>
+          ${pinBtn}
           <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">✕</button>
         </div>
       </div>`;
+    };
+
+    let html = '';
+
+    // Entradas fijadas arriba (solo si no hay búsqueda/filtro activo, para no confundir).
+    const pinned = entries.filter(e => e.pinned);
+    if (pinned.length && !_diaryCatFilter && !_diarySearch) {
+      html += `<div class="diary-day-sep pinned-sep"><span>📌 Fijadas</span></div>`;
+      // Fijadas más recientes primero
+      pinned.slice().sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(e => { html += bubble(e); });
+    }
+
+    // Resto cronológico, agrupado por día. Si hay pinned mostradas arriba, no repetirlas.
+    const rest = (pinned.length && !_diaryCatFilter && !_diarySearch)
+      ? entries.filter(e => !e.pinned)
+      : entries;
+    let lastDay = '';
+    rest.forEach(e => {
+      const d = new Date(e.timestamp);
+      const day = d.toLocaleDateString('es', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+      if (day !== lastDay) {
+        html += `<div class="diary-day-sep"><span>${day}</span></div>`;
+        lastDay = day;
+      }
+      html += bubble(e);
     });
     container.innerHTML = html;
     // Auto-scroll al fondo (más reciente) solo si no hay filtros activos
@@ -6241,6 +6297,15 @@ const App = (() => {
       _saveChar();
       _renderDiaryEntries();
     });
+  }
+
+  function togglePinDiary(id) {
+    if (!_char.diary) return;
+    const e = _char.diary.find(x => x.id === id);
+    if (!e) return;
+    e.pinned = !e.pinned;
+    _saveChar();
+    _renderDiaryEntries();
   }
 
   function filterDiary() { /* no-op, kept for compat */ }
@@ -7387,7 +7452,7 @@ const App = (() => {
 
     // Notebook (diario + log + stats)
     toggleNotebook, switchNotebookTab,
-    toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, deleteDiaryEntry, filterDiary, exportDiary,
+    toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, deleteDiaryEntry, togglePinDiary, filterDiary, exportDiary,
     openQuickNote, closeQuickNote, setQNCat, onQNInput, saveQuickNote,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
     toggleCombatLog, clearCombatLog, exportCombatLog,

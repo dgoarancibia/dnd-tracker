@@ -3282,6 +3282,66 @@ input[type=number] { -moz-appearance: textfield; }
 .diary-bubble:hover .diary-del-btn { opacity: 1; }
 .diary-del-btn:hover { color: var(--red-light); }
 
+/* Pin de entradas de diario */
+.diary-pin-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1;
+  opacity: 0;
+  filter: grayscale(1);
+  transition: all 0.15s;
+}
+.diary-bubble:hover .diary-pin-btn { opacity: 0.55; }
+.diary-pin-btn:hover { opacity: 1; }
+.diary-pin-btn.pinned { opacity: 1; filter: none; }
+.diary-bubble.pinned {
+  background: rgba(201,151,58,0.08);
+  border: 1px solid rgba(201,151,58,0.25);
+}
+.diary-day-sep.pinned-sep span { color: var(--gold, #c9973a); }
+
+/* ═══ CODEX (Gente/Misiones) ═══ */
+.codex-body { flex: 1; overflow-y: auto; padding: 8px 4px; }
+.codex-section-hd {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--gold, #c9973a);
+  letter-spacing: 0.05em;
+  margin: 4px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.codex-count {
+  font-size: 11px;
+  background: rgba(201,151,58,0.18);
+  border-radius: 10px;
+  padding: 1px 8px;
+  color: var(--gold-dim, #c9973a);
+}
+.codex-grid { display: flex; flex-direction: column; gap: 8px; }
+.codex-card {
+  background: var(--surface2, rgba(255,255,255,0.04));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.codex-card-text { font-size: 13px; line-height: 1.5; color: var(--text); white-space: pre-wrap; }
+.codex-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.codex-empty { font-size: 12px; color: var(--text-dim); font-style: italic; padding: 8px 4px; }
+
 .diary-compose {
   padding: 8px 14px 12px;
   border-top: 1px solid var(--border);
