@@ -923,7 +923,11 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .stats-sidebar {
-  flex: 0 0 260px;
+  /* Cerca de 45/50 con el contenido de las tabs — no un ancho fijo en px,
+     así escala con la pantalla en vez de quedar como una franja angosta. */
+  flex: 0 0 45%;
+  max-width: 460px;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -2768,8 +2772,8 @@ input[type=number] { -moz-appearance: textfield; }
 .skills-list {
   margin-top: 6px;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 2px;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 12px;
 }
 
 .skill-row {
@@ -2808,7 +2812,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 .saves-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
   margin-top: 8px;
 }
