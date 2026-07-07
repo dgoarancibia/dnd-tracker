@@ -1415,6 +1415,18 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 /* Ability cards — habilidades activables con recursos */
+/* Grid 2 columnas para las cards de habilidades activables — más compactas,
+   ocupan la mitad de alto que la lista vertical de antes. En pantallas
+   angostas colapsa a 1 columna para no apretar el texto. */
+.ability-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+@media (max-width: 480px) {
+  .ability-cards-grid { grid-template-columns: 1fr; }
+}
+
 .ability-card {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -1423,6 +1435,7 @@ input[type=number] { -moz-appearance: textfield; }
   margin-bottom: 6px;
   transition: border-color 0.15s;
 }
+.ability-cards-grid .ability-card { margin-bottom: 0; }
 .ability-card:hover { border-color: rgba(201,151,58,0.3); }
 .ability-card--spent { opacity: 0.55; }
 .ability-card-top {

@@ -1583,7 +1583,7 @@ const App = (() => {
         </div>`;
       })() : '';
 
-      html += `<div class="section-hd" style="margin-top:14px;">⚡ Habilidades</div>${echoPanel}${abilityCards}`;
+      html += `<div class="section-hd" style="margin-top:14px;">⚡ Habilidades</div>${echoPanel}<div class="ability-cards-grid">${abilityCards}</div>`;
     }
 
     html += `<div class="section-hd" style="margin-top:14px;">✨ Conjuros de Referencia</div>`;
