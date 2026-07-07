@@ -430,6 +430,9 @@ const App = (() => {
 
     _applyTheme(localStorage.getItem('dnd_theme') || 'dark');
     _applyDistUnit(localStorage.getItem('dnd_dist_unit') || 'm');
+    document.documentElement.setAttribute('data-layout', localStorage.getItem('dnd_layout') || 'sidebar');
+    const layoutLabel = document.getElementById('layoutModeLabel');
+    if (layoutLabel) layoutLabel.textContent = (localStorage.getItem('dnd_layout') === 'classic') ? 'Clásica' : 'Barra lateral';
     _renderHeader();
     _populateCharSelector();
     _updateBackupBtn();
@@ -760,6 +763,24 @@ const App = (() => {
   function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
     _applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+
+  /* ══════════════════════════════════════════════════════
+     LAYOUT — barra lateral fija (tipo DnDBeyond) vs. clásico por pestañas
+  ══════════════════════════════════════════════════════ */
+
+  function _applyLayout(mode) {
+    document.documentElement.setAttribute('data-layout', mode);
+    localStorage.setItem('dnd_layout', mode);
+    const label = document.getElementById('layoutModeLabel');
+    if (label) label.textContent = mode === 'classic' ? 'Clásica' : 'Barra lateral';
+    // Re-renderizar para que Stats/Saves/Skills aparezcan en el contenedor correcto.
+    if (_char) _renderStatsSidebar();
+  }
+
+  function toggleLayout() {
+    const current = document.documentElement.getAttribute('data-layout') || 'sidebar';
+    _applyLayout(current === 'sidebar' ? 'classic' : 'sidebar');
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2568,7 +2589,10 @@ const App = (() => {
   function _renderStatsSidebar() {
     const c = _char;
     if (!c) return;
-    const el = document.getElementById('statsSidebar');
+    // En modo clásico, Stats/Saves/Skills viven dentro de la tab Habilidades
+    // (col-hab-izq) como antes; en modo sidebar, en la barra fija de siempre.
+    const isClassic = document.documentElement.getAttribute('data-layout') === 'classic';
+    const el = document.getElementById(isClassic ? 'col-hab-izq' : 'statsSidebar');
     if (!el) return;
 
     const STATS = ['for','des','con','int','sab','car'];
@@ -2576,7 +2600,7 @@ const App = (() => {
 
     let html = `
     <div class="section-hd" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>🎲 Estadísticas</span>
+      <span>${isClassic ? '🎲 Habilidades' : '🎲 Estadísticas'}</span>
       <button class="btn-edit-stats" onclick="App.openEditStats()" title="Editar estadísticas">✎ Editar</button>
     </div>
     <div class="stats-grid">`;
@@ -2654,6 +2678,10 @@ const App = (() => {
 
     html += `</div>`;
     el.innerHTML = html;
+    // Limpiar el contenedor del otro modo para que no quede contenido viejo
+    // cacheado si el usuario alterna entre layout clásico y sidebar.
+    const other = document.getElementById(isClassic ? 'statsSidebar' : 'col-hab-izq');
+    if (other) other.innerHTML = '';
   }
 
   function _renderHabilidadesTab() {
@@ -7504,7 +7532,7 @@ const App = (() => {
     toggleHeaderMenu, closeHeaderMenu, forceAppUpdate,
 
     // Cloud / Undo
-    undoLastChange, toggleTheme, toggleDistUnit, fmtDist,
+    undoLastChange, toggleTheme, toggleDistUnit, toggleLayout, fmtDist,
     saveToCloud,
     saveCheckpointManual, openLoadModal, closeLoadModal,
     restoreAutosave, restoreCheckpoint, removeCheckpoint,

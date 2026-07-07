@@ -8,7 +8,7 @@
 // ── Versión canónica — iOS PWA cachea la URL; si no coincide, redirigimos ─────
 // Cambia este número junto con _SW_EXPECTED cada deploy.
 ;(function(){
-  var _V = 314;
+  var _V = 315;
   var sp = new URLSearchParams(window.location.search);
   if (parseInt(sp.get('v')||'0',10) !== _V) {
     window.location.replace(window.location.pathname + '?v=' + _V);
@@ -17,7 +17,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 314;
+const _SW_EXPECTED = 315;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -110,7 +110,7 @@ const _SW_EXPECTED = 314;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=70">
+<link rel="stylesheet" href="css/style.css?v=71">
 </head>
 <body>
 
@@ -277,6 +277,9 @@ const _SW_EXPECTED = 314;
       <!-- Unidades de distancia -->
       <button class="hm-btn" id="distUnitBtn" onclick="App.toggleDistUnit();App.closeHeaderMenu()" title="Alterna metros / pies en habilidades y conjuros">📏 Unidades: <span id="distUnitLabel">m</span></button>
 
+      <!-- Layout: barra lateral fija vs. clásico por pestañas -->
+      <button class="hm-btn" id="layoutToggleBtn" onclick="App.toggleLayout();App.closeHeaderMenu()" title="Cambia dónde se muestran Stats/Saves/Skills">▤ Vista: <span id="layoutModeLabel">Barra lateral</span></button>
+
       <div class="hm-divider"></div>
 
       <!-- Forzar actualización — útil en iOS PWA -->
@@ -326,9 +329,12 @@ const _SW_EXPECTED = 314;
     <div class="two-col-right" id="col-equipo-der"><!-- renderizado por app.js --></div>
   </div>
 
-  <!-- ══ TAB HABILIDADES (resto: passives, rasgos, elecciones, XP) ══ -->
-  <div class="tab-panel one-col" id="tab-habilidades">
-    <div class="one-col-pane" id="col-hab-der"><!-- renderizado por app.js --></div>
+  <!-- ══ TAB HABILIDADES (resto: passives, rasgos, elecciones, XP) ══
+       col-hab-izq solo se muestra en layout clásico (ver data-layout en <html>);
+       en layout con sidebar fijo queda vacío/oculto por CSS. -->
+  <div class="tab-panel two-col" id="tab-habilidades">
+    <div class="two-col-left classic-only" id="col-hab-izq"><!-- espejo de _renderStatsSidebar en modo clásico --></div>
+    <div class="two-col-right" id="col-hab-der"><!-- renderizado por app.js --></div>
   </div>
 
   </div><!-- /.app-content-tabs -->
@@ -1161,7 +1167,7 @@ const _SW_EXPECTED = 314;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=94"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=166"></script>
+<script src="js/app.js?v=167"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

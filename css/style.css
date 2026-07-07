@@ -905,7 +905,17 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* Layout con sidebar fijo de Stats/Saves/Skills (izquierda) + tabs (derecha).
    El sidebar es el mismo en las 4 tabs de personaje; Biblioteca vive fuera de
-   .app-content-tabs y usa el ancho completo (el sidebar se oculta para ella). */
+   .app-content-tabs y usa el ancho completo (el sidebar se oculta para ella).
+   Alternativa "clásica": data-layout="classic" en <html> oculta el sidebar
+   fijo y muestra .classic-only (col-hab-izq dentro de la tab Habilidades). */
+.classic-only { display: none; }
+[data-layout="classic"] .stats-sidebar { display: none !important; }
+[data-layout="classic"] .classic-only { display: flex; }
+/* Habilidades: en modo sidebar col-hab-izq queda oculta y col-hab-der debe
+   ocupar el ancho completo (si no, el grid de 2 columnas deja un hueco vacío). */
+[data-layout="sidebar"] #tab-habilidades.two-col,
+[data-layout="sidebar"] #tab-habilidades.tab-panel.active.two-col { grid-template-columns: 1fr; }
+
 .app-content-split {
   display: flex;
   height: 100%;
@@ -913,12 +923,15 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .stats-sidebar {
-  flex: 0 0 220px;
+  flex: 0 0 260px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 14px;
+  /* espacio inferior extra: el FAB de nota rápida (fixed, left:18px) flota
+     sobre esta columna cuando el contenido de Skills llega hasta esa altura */
+  padding-bottom: 70px;
   border-right: 1px solid var(--border);
   scrollbar-width: thin;
   scrollbar-color: var(--gold-dim) transparent;
@@ -2755,8 +2768,8 @@ input[type=number] { -moz-appearance: textfield; }
 .skills-list {
   margin-top: 6px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px 12px;
+  grid-template-columns: 1fr;
+  gap: 2px;
 }
 
 .skill-row {
@@ -2795,7 +2808,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 .saves-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 6px;
   margin-top: 8px;
 }
