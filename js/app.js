@@ -1861,7 +1861,6 @@ const App = (() => {
     }
     if (sp.concentration) tags += '<span class="tag tag-c">Conc</span>';
     if (sp.bonus) tags += '<span class="tag tag-b">Bonus</span>';
-    if (sp.domain) tags += '<span class="tag tag-d">Dom</span>';
     if (sp.mi) tags += '<span class="tag tag-mi">MI</span>';
     if (sp.ritual) tags += '<span class="tag tag-r">Ritual</span>';
     return tags;
