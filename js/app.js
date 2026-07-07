@@ -1849,6 +1849,12 @@ const App = (() => {
 
   function _buildTagsHTML(sp) {
     let tags = '';
+    if (sp.castTime || sp.range) {
+      const ct = sp.castTime ? sp.castTime.replace('Acción bonus','Bonus').replace('Acción','Acc').replace('Reacción','Reac') : '';
+      const rng = sp.range ? fmtDist(sp.range) : '';
+      const quick = [ct, rng].filter(Boolean).join(' · ');
+      if (quick) tags += `<span class="tag tag-quick">${quick}</span>`;
+    }
     if (sp.concentration) tags += '<span class="tag tag-c">Conc</span>';
     if (sp.bonus) tags += '<span class="tag tag-b">Bonus</span>';
     if (sp.domain) tags += '<span class="tag tag-d">Dom</span>';
