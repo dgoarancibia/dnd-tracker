@@ -658,10 +658,23 @@ const App = (() => {
 
   // Notebook state
   let _notebookOpen = false;
-  let _notebookTab  = 'diary'; // 'diary' | 'log' | 'stats' | 'maps'
+  let _notebookTab  = 'diary'; // 'diary' | 'codex' | 'log' | 'stats' | 'maps' | 'timeline'
   let _diaryCatFilter = '';    // '' = todas las categorías
   let _diarySearch    = '';    // texto de búsqueda
   let _newDiaryCat    = '';    // categoría de la próxima entrada
+
+  // Menciones (@/npc, /quest) y tags (#tag) del composer de diario
+  let _pendingMentions = []; // [{type,id,name}]
+  let _pendingTags     = []; // [string]
+  let _mentionDropdown = {
+    open: false,
+    kind: null,      // 'mention' | 'tag'
+    entityType: null, // 'npc' | 'quest' (solo para kind='mention')
+    query: '',
+    matchStart: -1,   // índice en el texto donde empieza el patrón matcheado
+    items: [],        // lista actual mostrada (con la opción crear al final)
+    selIdx: 0,
+  };
 
   let _combatPanelOpen = false;
   function toggleCombatPanel() {
@@ -680,7 +693,7 @@ const App = (() => {
     if (panel) panel.classList.toggle('open', _notebookOpen);
     document.getElementById('overlayBackdrop').classList.toggle('show', _notebookOpen || _iftttOpen);
     if (_notebookOpen) {
-      if (_notebookTab === 'diary') _renderDiaryEntries();
+      if (_notebookTab === 'diary') { _renderDiaryEntries(); _renderSessionBar(); }
       else _renderCombatLog();
     }
   }
@@ -692,37 +705,104 @@ const App = (() => {
     document.getElementById('nbTabLog')?.classList.toggle('active',   tab === 'log');
     document.getElementById('nbTabStats')?.classList.toggle('active', tab === 'stats');
     document.getElementById('nbTabMaps')?.classList.toggle('active',  tab === 'maps');
+    document.getElementById('nbTabTimeline')?.classList.toggle('active', tab === 'timeline');
     document.getElementById('nbPaneDiary').style.display  = tab === 'diary'  ? 'flex' : 'none';
     const codexPane = document.getElementById('nbPaneCodex');
     if (codexPane) codexPane.style.display = tab === 'codex' ? 'flex' : 'none';
     document.getElementById('nbPaneLog').style.display    = tab === 'log'    ? 'flex' : 'none';
     document.getElementById('nbPaneStats').style.display  = tab === 'stats'  ? 'flex' : 'none';
     document.getElementById('nbPaneMaps').style.display   = tab === 'maps'   ? 'flex' : 'none';
+    const timelinePane = document.getElementById('nbPaneTimeline');
+    if (timelinePane) timelinePane.style.display = tab === 'timeline' ? 'flex' : 'none';
     if (tab === 'codex')      _renderCodex();
     else if (tab === 'log')   _renderCombatLog();
     else if (tab === 'stats') _renderCampaignStats();
     else if (tab === 'maps')  { if (typeof Maps !== 'undefined' && _char) Maps.init(_char.id); }
-    else _renderDiaryEntries();
+    else if (tab === 'timeline') _renderTimeline();
+    else { _renderDiaryEntries(); _renderSessionBar(); }
   }
 
   // Vista Codex: agrupa las entradas del diario de tipo npc y quest en fichas
   // para encontrarlas rápido (quién era X, qué misiones tengo).
+  // Vista Codex: itera _char.entities (NPCs y quests creados vía menciones /npc /quest)
+  // y muestra por cada uno una tarjeta con backlinks a las notas que lo mencionan.
   function _renderCodex() {
     const cont = document.getElementById('codexBody');
     if (!cont) return;
-    const entries = (_char.diary || []);
-    const npcs   = entries.filter(e => (e.cat || '') === 'npc');
-    const quests = entries.filter(e => (e.cat || '') === 'quest');
+    const entities = (_char.entities || []);
+    const diary = (_char.diary || []);
+    const npcs   = entities.filter(en => en.type === 'npc');
+    const quests = entities.filter(en => en.type === 'quest');
 
-    const card = (e) => {
-      const when = new Date(e.timestamp).toLocaleDateString('es', { day:'2-digit', month:'2-digit' });
-      const txt = e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-      return `<div class="codex-card" data-id="${e.id}">
-        <div class="codex-card-text" ondblclick="App.editDiaryEntry('${e.id}',this)" title="Doble click para editar">${txt}</div>
-        <div class="codex-card-meta">
-          <span>${when}</span>
-          <button class="diary-pin-btn${e.pinned ? ' pinned' : ''}" onclick="App.togglePinDiary('${e.id}')" title="${e.pinned ? 'Desfijar' : 'Fijar'}">📌</button>
-          <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">✕</button>
+    const entityById = (id) => entities.find(en => en.id === id);
+
+    const backlinksFor = (entity) => {
+      return diary
+        .filter(e => (e.mentions || []).some(m => m.id === entity.id))
+        .slice()
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    };
+
+    const sessionLabelFor = (entry) => {
+      if (!entry.sessionId) return 'Sin sesión';
+      const n = _sessionNumber(entry.sessionId);
+      const sess = (_char.sessions || []).find(s => s.id === entry.sessionId);
+      if (!n || !sess) return 'Sin sesión';
+      const d = new Date(sess.startedAt).toLocaleDateString('es', { day: '2-digit', month: '2-digit' });
+      return `Sesión ${n} · ${d}`;
+    };
+
+    const card = (entity) => {
+      const initial = (entity.name || '?').trim().charAt(0).toUpperCase();
+      const links = backlinksFor(entity);
+      const sessionsSet = new Set(links.map(l => l.sessionId).filter(Boolean));
+      const metaText = `${links.length} mención${links.length === 1 ? '' : 'es'} · ${sessionsSet.size} sesión${sessionsSet.size === 1 ? '' : 'es'}`;
+
+      let statusHtml = '';
+      if (entity.type === 'quest') {
+        const resolved = entity.status === 'resolved';
+        statusHtml = `<span class="status-pill${resolved ? ' resolved' : ''}" onclick="App.toggleEntityStatus('${entity.id}')">${resolved ? 'Resuelta' : 'Activa'}</span>`;
+      }
+
+      let relatedHtml = '';
+      if (entity.relatedTo && entity.relatedTo.length) {
+        const chips = entity.relatedTo.map(r => {
+          const other = entityById(r.id);
+          if (!other) return '';
+          const chipCls = r.type === 'npc' ? 'related-chip npc' : 'related-chip';
+          const emoji = r.type === 'npc' ? '🧑' : '⚔️';
+          return `<span class="${chipCls}">${emoji} ${other.name.replace(/</g,'&lt;')}</span>`;
+        }).join('');
+        if (chips) relatedHtml = `<div class="related-row">${chips}</div>`;
+      }
+
+      let backlinksHtml = '';
+      if (links.length) {
+        backlinksHtml = `<div class="backlinks-hd">Backlinks</div>` + links.map(entry => {
+          let txt = entry.text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          const esc = entity.name.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          if (esc) txt = txt.replace(new RegExp(esc, 'gi'), (m) => `<span class="hl">${m}</span>`);
+          return `<div class="backlink-item">
+            <span class="backlink-session">${sessionLabelFor(entry)}</span>
+            <span class="backlink-text">${txt}</span>
+          </div>`;
+        }).join('');
+      } else {
+        backlinksHtml = `<div class="codex-empty">Sin menciones todavía.</div>`;
+      }
+
+      return `<div class="entity-card" data-id="${entity.id}">
+        <div class="entity-hd">
+          <div class="entity-avatar">${initial}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="entity-name">${entity.name.replace(/</g,'&lt;')}</div>
+            <div class="entity-meta">${metaText}</div>
+          </div>
+          ${statusHtml}
+        </div>
+        <div class="entity-body">
+          ${relatedHtml}
+          ${backlinksHtml}
         </div>
       </div>`;
     };
@@ -730,12 +810,93 @@ const App = (() => {
     let html = '';
     html += `<div class="codex-section-hd">🧑 NPCs <span class="codex-count">${npcs.length}</span></div>`;
     html += npcs.length
-      ? `<div class="codex-grid">${npcs.map(card).join('')}</div>`
-      : `<div class="codex-empty">Sin NPCs. Marcá una nota como 🧑 NPC en el diario.</div>`;
+      ? npcs.map(card).join('')
+      : `<div class="codex-empty">Sin NPCs. Usa /npc en una nota del diario para crear uno.</div>`;
     html += `<div class="codex-section-hd" style="margin-top:14px;">⚔️ Misiones <span class="codex-count">${quests.length}</span></div>`;
     html += quests.length
-      ? `<div class="codex-grid">${quests.map(card).join('')}</div>`
-      : `<div class="codex-empty">Sin misiones. Marcá una nota como ⚔️ Quest en el diario.</div>`;
+      ? quests.map(card).join('')
+      : `<div class="codex-empty">Sin misiones. Usa /quest en una nota del diario para crear una.</div>`;
+    cont.innerHTML = html;
+  }
+
+  function toggleEntityStatus(id) {
+    const entity = (_char.entities || []).find(en => en.id === id);
+    if (!entity || entity.type !== 'quest') return;
+    entity.status = entity.status === 'resolved' ? 'active' : 'resolved';
+    _saveChar();
+    _renderCodex();
+  }
+
+  /* ══════════════════════════════════════════════════════
+     TIMELINE DE SESIONES
+  ══════════════════════════════════════════════════════ */
+  function _renderTimeline() {
+    const cont = document.getElementById('timelineBody');
+    if (!cont) return;
+    const sessions = (_char.sessions || []).slice().sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
+    if (!sessions.length) {
+      cont.innerHTML = `<div class="empty-state"><div class="es-icon">📅</div><div class="es-title">Sin sesiones aún</div><div class="es-text">Usa "+ Nueva sesión" en el Diario para empezar a registrar.</div></div>`;
+      return;
+    }
+    const diary = (_char.diary || []);
+    const descSessions = sessions.slice().reverse(); // más reciente primero
+
+    const catLabel = { combate: 'Combates', npc: 'NPCs', quest: 'Misiones', item: 'Ítems', nota: 'Notas', lugar: 'Lugares', historia: 'Historia', '': 'Sueltas' };
+
+    const summaryFor = (session) => {
+      const notes = diary.filter(e => e.sessionId === session.id);
+      const npcMentioned = new Set();
+      notes.forEach(n => (n.mentions || []).forEach(m => { if (m.type === 'npc') npcMentioned.add(m.id); }));
+      const questIds = new Set();
+      notes.forEach(n => (n.mentions || []).forEach(m => { if (m.type === 'quest') questIds.add(m.id); }));
+      let questsActive = 0, questsResolved = 0;
+      questIds.forEach(qid => {
+        const ent = (_char.entities || []).find(e => e.id === qid);
+        if (!ent) return;
+        if (ent.status === 'resolved') questsResolved++; else questsActive++;
+      });
+      const combateCount = notes.filter(n => (n.cat || '') === 'combate').length;
+      const itemCount = notes.filter(n => (n.cat || '') === 'item').length;
+      const sueltasCount = notes.filter(n => !n.cat).length;
+      const stats = [];
+      if (npcMentioned.size) stats.push({ label: 'NPCs', val: npcMentioned.size });
+      if (questsActive) stats.push({ label: 'Misiones activas', val: questsActive });
+      if (questsResolved) stats.push({ label: 'Misiones resueltas', val: questsResolved });
+      if (itemCount) stats.push({ label: 'Ítems', val: itemCount });
+      if (combateCount) stats.push({ label: 'Combates', val: combateCount });
+      if (sueltasCount) stats.push({ label: 'Notas sueltas', val: sueltasCount });
+      return stats;
+    };
+
+    let html = '<div class="timeline">';
+    descSessions.forEach(session => {
+      const n = _sessionNumber(session.id);
+      const isOpen = session.endedAt === null;
+      const startD = new Date(session.startedAt);
+      const startStr = startD.toLocaleString('es', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      let rangeStr;
+      if (isOpen) {
+        rangeStr = `en curso desde ${startD.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        const endStr = new Date(session.endedAt).toLocaleString('es', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        rangeStr = `${startStr} – ${endStr}`;
+      }
+      const stats = summaryFor(session);
+      const statsHtml = stats.length
+        ? `<div class="tl-summary">${stats.map(s => `<span class="tl-stat"><b>${s.val}</b> ${s.label}</span>`).join('')}</div>`
+        : '';
+      html += `<div class="tl-item">
+        <div class="tl-dot${isOpen ? ' open' : ''}"></div>
+        <div class="tl-content">
+          <div class="tl-title-row">
+            <span class="tl-title">${session.label ? session.label.replace(/</g,'&lt;') : `Sesión ${n}`}</span>
+            <span class="tl-range">${rangeStr}</span>
+          </div>
+          ${statsHtml}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
     cont.innerHTML = html;
   }
 
@@ -6186,6 +6347,348 @@ const App = (() => {
     '/mision':   'quest',
   };
 
+  /* ══════════════════════════════════════════════════════
+     FUZZY MATCH — sin dependencias externas.
+     "subsequence + prefix boost": true si `query` aparece como
+     subsecuencia de `target` (letras en orden, no necesariamente
+     contiguas) O si la distancia de Levenshtein acotada es baja.
+     Suficiente para nombres cortos de NPCs/tags/quests.
+  ══════════════════════════════════════════════════════ */
+  function _fuzzyMatch(query, target) {
+    if (!query) return true;
+    query = query.toLowerCase();
+    target = (target || '').toLowerCase();
+    if (target.includes(query)) return true;
+    // Subsequence match: cada char de query aparece en orden dentro de target
+    let qi = 0;
+    for (let ti = 0; ti < target.length && qi < query.length; ti++) {
+      if (target[ti] === query[qi]) qi++;
+    }
+    if (qi === query.length) return true;
+    // Levenshtein acotada (tolera 1-2 typos) para strings cortos
+    if (query.length >= 3) {
+      const dist = _levenshteinBounded(query, target, 2);
+      if (dist <= 2) return true;
+      // También comparar contra la primera palabra de target (nombres compuestos)
+      const firstWord = target.split(/\s+/)[0] || '';
+      if (firstWord && _levenshteinBounded(query, firstWord, 2) <= 2) return true;
+    }
+    return false;
+  }
+
+  function _levenshteinBounded(a, b, maxDist) {
+    const la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > maxDist) return maxDist + 1;
+    let prev = new Array(lb + 1);
+    for (let j = 0; j <= lb; j++) prev[j] = j;
+    for (let i = 1; i <= la; i++) {
+      const cur = new Array(lb + 1);
+      cur[0] = i;
+      let rowMin = cur[0];
+      for (let j = 1; j <= lb; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        if (cur[j] < rowMin) rowMin = cur[j];
+      }
+      if (rowMin > maxDist) return maxDist + 1;
+      prev = cur;
+    }
+    return prev[lb];
+  }
+
+  /* ══════════════════════════════════════════════════════
+     SESIONES DE JUEGO
+  ══════════════════════════════════════════════════════ */
+  function _getOpenSession() {
+    return (_char.sessions || []).find(s => s.endedAt === null) || null;
+  }
+
+  function startNewSession() {
+    if (!_char.sessions) _char.sessions = [];
+    const open = _getOpenSession();
+    if (open) open.endedAt = new Date().toISOString();
+    _char.sessions.push({
+      id: 'sess-' + Date.now(),
+      startedAt: new Date().toISOString(),
+      endedAt: null,
+      label: '',
+    });
+    _saveChar();
+    _renderSessionBar();
+    if (_notebookTab === 'timeline') _renderTimeline();
+    showToast('Nueva sesión iniciada');
+  }
+
+  function closeCurrentSession() {
+    const open = _getOpenSession();
+    if (!open) return;
+    open.endedAt = new Date().toISOString();
+    _saveChar();
+    _renderSessionBar();
+    if (_notebookTab === 'timeline') _renderTimeline();
+    showToast('Sesión cerrada');
+  }
+
+  function _sessionNumber(sessionId) {
+    // Número de sesión = posición cronológica ascendente (1-indexed) por startedAt
+    const sessions = (_char.sessions || []).slice().sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
+    const idx = sessions.findIndex(s => s.id === sessionId);
+    return idx === -1 ? null : idx + 1;
+  }
+
+  function _renderSessionBar() {
+    const bar = document.getElementById('sessionBar');
+    const barClosed = document.getElementById('sessionBarClosed');
+    if (!bar || !barClosed || !_char) return;
+    const open = _getOpenSession();
+    if (open) {
+      const n = _sessionNumber(open.id);
+      const time = new Date(open.startedAt).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('sessionBarLabel').textContent = `Sesión ${n} · desde ${time}`;
+      bar.style.display = 'flex';
+      barClosed.style.display = 'none';
+    } else {
+      bar.style.display = 'none';
+      barClosed.style.display = 'flex';
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════
+     MENCIONES (@/npc, /quest) Y TAGS (#tag) — autocompletado
+     estilo Notion en el composer del diario.
+  ══════════════════════════════════════════════════════ */
+
+  // Detecta si el texto hasta la posición del cursor termina en un patrón
+  // de mención ("/npc algo" o "/quest algo") o de tag ("#algo").
+  function _detectComposerTrigger(text, cursorPos) {
+    const upto = text.slice(0, cursorPos);
+    const mentionRe = /\/(npc|quest)\s+([^\s][\wáéíóúñÁÉÍÓÚÑ\s]{0,30})$/i;
+    const mMatch = upto.match(mentionRe);
+    if (mMatch) {
+      return {
+        kind: 'mention',
+        entityType: mMatch[1].toLowerCase(),
+        query: mMatch[2].trim(),
+        matchStart: mMatch.index,
+      };
+    }
+    // Tag: '#' precedido de inicio de texto o espacio/salto de línea (para no confundir con almohadillas sueltas)
+    const tagRe = /(?:^|[\s])#([^\s#]{0,30})$/;
+    const tMatch = upto.match(tagRe);
+    if (tMatch) {
+      const hashIdx = upto.lastIndexOf('#' + tMatch[1]);
+      return {
+        kind: 'tag',
+        query: tMatch[1].trim(),
+        matchStart: hashIdx,
+      };
+    }
+    return null;
+  }
+
+  function _collectAllTags() {
+    const set = new Set();
+    (_char.diary || []).forEach(e => (e.tags || []).forEach(t => set.add(t)));
+    return Array.from(set);
+  }
+
+  function onDiaryInput(el) {
+    // Auto-resize
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+
+    // Detectar shortcut al inicio del texto
+    const val = el.value;
+    const hint = document.getElementById('diaryShortcutHint');
+    const matched = Object.keys(_DIARY_SHORTCUTS).find(k => val.toLowerCase().startsWith(k + ' ') || val.toLowerCase() === k);
+    if (matched) {
+      const cat = _DIARY_SHORTCUTS[matched];
+      const emoji = _DIARY_CAT_EMOJI[cat] || '📝';
+      // Activar categoría visualmente
+      document.querySelectorAll('.diary-new-cat-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.cat === cat);
+      });
+      _newDiaryCat = cat;
+      if (hint) {
+        hint.textContent = `${emoji} Categoría: ${cat}  —  borra "${matched}" o escribe el resto`;
+        hint.style.display = 'block';
+      }
+    } else {
+      if (hint) hint.style.display = 'none';
+    }
+
+    // Detectar trigger de mención/tag
+    const trigger = _detectComposerTrigger(val, el.selectionStart);
+    if (trigger) {
+      _openMentionDropdown(trigger);
+    } else {
+      _closeMentionDropdown();
+    }
+  }
+
+  function _openMentionDropdown(trigger) {
+    const dd = document.getElementById('mentionDropdown');
+    if (!dd) return;
+    let items = [];
+    if (trigger.kind === 'mention') {
+      const pool = (_char.entities || []).filter(en => en.type === trigger.entityType);
+      items = pool.filter(en => _fuzzyMatch(trigger.query, en.name)).slice(0, 6)
+        .map(en => ({ type: 'existing', entityType: en.type, id: en.id, name: en.name }));
+      items.push({ type: 'create', entityType: trigger.entityType, name: trigger.query });
+    } else {
+      const pool = _collectAllTags();
+      items = pool.filter(t => _fuzzyMatch(trigger.query, t)).slice(0, 6)
+        .map(t => ({ type: 'existing-tag', name: t }));
+      if (trigger.query && !pool.some(t => t.toLowerCase() === trigger.query.toLowerCase())) {
+        items.push({ type: 'create-tag', name: trigger.query });
+      } else if (!trigger.query) {
+        // sin query aún, no forzar opción de crear vacía
+      }
+    }
+    _mentionDropdown = {
+      open: true,
+      kind: trigger.kind,
+      entityType: trigger.entityType || null,
+      query: trigger.query,
+      matchStart: trigger.matchStart,
+      items,
+      selIdx: 0,
+    };
+    _renderMentionDropdown();
+  }
+
+  function _closeMentionDropdown() {
+    if (!_mentionDropdown.open) return;
+    _mentionDropdown.open = false;
+    const dd = document.getElementById('mentionDropdown');
+    if (dd) { dd.style.display = 'none'; dd.innerHTML = ''; }
+  }
+
+  function _renderMentionDropdown() {
+    const dd = document.getElementById('mentionDropdown');
+    if (!dd || !_mentionDropdown.open) return;
+    const st = _mentionDropdown;
+    if (!st.items.length) { dd.style.display = 'none'; dd.innerHTML = ''; return; }
+    const hdText = st.kind === 'mention'
+      ? (st.entityType === 'npc' ? '🧑 NPCs' : '⚔️ Misiones')
+      : '# Tags';
+    let html = `<div class="mention-dropdown"><div class="mention-dropdown-hd">${hdText}</div>`;
+    html += st.items.map((it, i) => {
+      const sel = i === st.selIdx ? ' sel' : '';
+      if (it.type === 'existing') {
+        const dotClass = it.entityType === 'npc' ? 'npc' : 'quest';
+        return `<div class="mention-item${sel}" data-idx="${i}" onmousedown="event.preventDefault();App._pickMentionItem(${i})">
+          <span class="dot ${dotClass}"></span><span class="name">${it.name.replace(/</g,'&lt;')}</span>
+        </div>`;
+      } else if (it.type === 'create') {
+        const label = it.entityType === 'npc' ? 'NPC' : 'quest';
+        return `<div class="mention-item create${sel}" data-idx="${i}" onmousedown="event.preventDefault();App._pickMentionItem(${i})">
+          <span class="name">➕ Crear ${label} "${(it.name||'').replace(/</g,'&lt;')}"</span>
+        </div>`;
+      } else if (it.type === 'existing-tag') {
+        return `<div class="mention-item${sel}" data-idx="${i}" onmousedown="event.preventDefault();App._pickMentionItem(${i})">
+          <span class="name">#${it.name.replace(/</g,'&lt;')}</span>
+        </div>`;
+      } else {
+        return `<div class="mention-item create${sel}" data-idx="${i}" onmousedown="event.preventDefault();App._pickMentionItem(${i})">
+          <span class="name">➕ Crear tag "#${(it.name||'').replace(/</g,'&lt;')}"</span>
+        </div>`;
+      }
+    }).join('');
+    html += '</div>';
+    dd.innerHTML = html;
+    dd.style.display = 'block';
+  }
+
+  // Navegación de teclado en el textarea del diario: flechas, Enter/Tab, Escape,
+  // y el comportamiento normal (Enter = enviar, Shift+Enter = salto de línea)
+  // cuando el dropdown no está abierto.
+  function _onDiaryKeydown(event, el) {
+    if (_mentionDropdown.open && _mentionDropdown.items.length) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        _mentionDropdown.selIdx = (_mentionDropdown.selIdx + 1) % _mentionDropdown.items.length;
+        _renderMentionDropdown();
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        _mentionDropdown.selIdx = (_mentionDropdown.selIdx - 1 + _mentionDropdown.items.length) % _mentionDropdown.items.length;
+        _renderMentionDropdown();
+        return;
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        _pickMentionItem(_mentionDropdown.selIdx);
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        _closeMentionDropdown();
+        return;
+      }
+    }
+    if (event.key === 'Enter' && !event.shiftKey) {
+      addDiaryEntry();
+      event.preventDefault();
+    }
+  }
+
+  function _pickMentionItem(idx) {
+    const st = _mentionDropdown;
+    const item = st.items[idx];
+    if (!item) return;
+    const textarea = document.getElementById('diaryInput');
+
+    if (st.kind === 'mention') {
+      let entity;
+      if (item.type === 'create') {
+        if (!_char.entities) _char.entities = [];
+        entity = {
+          id: 'ent-' + Date.now(),
+          type: item.entityType,
+          name: item.name,
+          createdAt: new Date().toISOString(),
+        };
+        if (item.entityType === 'quest') entity.status = 'active';
+        _char.entities.push(entity);
+      } else {
+        entity = (_char.entities || []).find(en => en.id === item.id);
+      }
+      if (entity && !_pendingMentions.some(m => m.id === entity.id)) {
+        _pendingMentions.push({ type: entity.type, id: entity.id, name: entity.name });
+      }
+    } else {
+      const tagName = item.name;
+      if (tagName && !_pendingTags.includes(tagName)) _pendingTags.push(tagName);
+    }
+
+    _closeMentionDropdown();
+    if (textarea) {
+      textarea.focus();
+      // Reajustar altura por si acaso
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+  }
+
+  // Resalta, dentro de un HTML ya escapado, cualquier substring que coincida
+  // con mentions[].name (case-insensitive), envolviendo en <span class="mtxt-npc|mtxt-quest">.
+  function _highlightMentionsInText(html, mentions) {
+    if (!mentions || !mentions.length) return html;
+    // Ordenar por longitud de nombre descendente para no pisar nombres cortos dentro de largos
+    const sorted = mentions.slice().sort((a, b) => (b.name || '').length - (a.name || '').length);
+    sorted.forEach(m => {
+      if (!m.name) return;
+      const cls = m.type === 'npc' ? 'mtxt-npc' : 'mtxt-quest';
+      const esc = m.name.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const escRe = esc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(escRe, 'gi');
+      html = html.replace(re, (match) => `<span class="${cls}">${match}</span>`);
+    });
+    return html;
+  }
+
   function _renderDiaryEntries() {
     let entries = (_char.diary || []).slice(); // cronológico, más antiguo primero
 
@@ -6193,10 +6696,9 @@ const App = (() => {
     if (_diaryCatFilter) {
       entries = entries.filter(e => (e.cat || '') === _diaryCatFilter);
     }
-    // Filtrar por búsqueda
+    // Filtrar por búsqueda (fuzzy: substring, subsecuencia o Levenshtein acotada)
     if (_diarySearch) {
-      const q = _diarySearch.toLowerCase();
-      entries = entries.filter(e => e.text.toLowerCase().includes(q));
+      entries = entries.filter(e => _fuzzyMatch(_diarySearch, e.text));
     }
 
     const container = document.getElementById('diaryEntries');
@@ -6222,16 +6724,21 @@ const App = (() => {
         ? `<span class="diary-cat-tag" style="background:${catBg}">${emoji} ${cat}</span>`
         : '';
       let textHtml = e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+      textHtml = _highlightMentionsInText(textHtml, e.mentions);
       if (_diarySearch) {
         const re = new RegExp(`(${_diarySearch.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
         textHtml = textHtml.replace(re, '<mark class="diary-highlight">$1</mark>');
       }
       const pinBtn = `<button class="diary-pin-btn${e.pinned ? ' pinned' : ''}" onclick="App.togglePinDiary('${e.id}')" title="${e.pinned ? 'Desfijar' : 'Fijar arriba'}">📌</button>`;
+      const tagsHtml = (e.tags && e.tags.length)
+        ? `<span class="diary-bubble-tags">${e.tags.map(t => `<span class="tag-pill">#${t.replace(/</g,'&lt;')}</span>`).join(' ')}</span>`
+        : '';
       return `<div class="diary-bubble${e.pinned ? ' pinned' : ''}" data-id="${e.id}" style="${catBg !== 'transparent' ? `border-left:3px solid ${catBg.replace('0.18','0.6')}` : ''}">
         ${catTag}
         <div class="diary-bubble-text" ondblclick="App.editDiaryEntry('${e.id}',this)" title="Doble click para editar">${textHtml}</div>
         <div class="diary-bubble-meta">
           <span class="diary-bubble-time">${time}</span>
+          ${tagsHtml}
           ${pinBtn}
           <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">✕</button>
         </div>
@@ -6267,32 +6774,6 @@ const App = (() => {
     if (!_diaryCatFilter && !_diarySearch) container.scrollTop = container.scrollHeight;
   }
 
-  function onDiaryInput(el) {
-    // Auto-resize
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-
-    // Detectar shortcut al inicio del texto
-    const val = el.value;
-    const hint = document.getElementById('diaryShortcutHint');
-    const matched = Object.keys(_DIARY_SHORTCUTS).find(k => val.toLowerCase().startsWith(k + ' ') || val.toLowerCase() === k);
-    if (matched) {
-      const cat = _DIARY_SHORTCUTS[matched];
-      const emoji = _DIARY_CAT_EMOJI[cat] || '📝';
-      // Activar categoría visualmente
-      document.querySelectorAll('.diary-new-cat-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.cat === cat);
-      });
-      _newDiaryCat = cat;
-      if (hint) {
-        hint.textContent = `${emoji} Categoría: ${cat}  —  borra "${matched}" o escribe el resto`;
-        hint.style.display = 'block';
-      }
-    } else {
-      if (hint) hint.style.display = 'none';
-    }
-  }
-
   function addDiaryEntry() {
     const textarea = document.getElementById('diaryInput');
     let text = textarea.value.trim();
@@ -6306,15 +6787,44 @@ const App = (() => {
       if (!text) { showToast('Escribe algo después del shortcut'); return; }
     }
 
+    const openSession = _getOpenSession();
     const entry = {
       id: 'e-' + Date.now(),
       timestamp: new Date().toISOString(),
       text,
       cat: _newDiaryCat || '',
+      mentions: [..._pendingMentions],
+      tags: [..._pendingTags],
+      sessionId: openSession ? openSession.id : null,
     };
+
+    // Vinculación automática: si hay menciones de ambos tipos (npc y quest) en la
+    // misma nota, se relacionan bidireccionalmente (evitando duplicados).
+    const npcMentions = entry.mentions.filter(m => m.type === 'npc');
+    const questMentions = entry.mentions.filter(m => m.type === 'quest');
+    if (npcMentions.length && questMentions.length && _char.entities) {
+      npcMentions.forEach(nm => {
+        const npcEnt = _char.entities.find(en => en.id === nm.id);
+        if (!npcEnt) return;
+        questMentions.forEach(qm => {
+          const questEnt = _char.entities.find(en => en.id === qm.id);
+          if (!questEnt) return;
+          if (!npcEnt.relatedTo) npcEnt.relatedTo = [];
+          if (!npcEnt.relatedTo.some(r => r.type === 'quest' && r.id === questEnt.id)) {
+            npcEnt.relatedTo.push({ type: 'quest', id: questEnt.id });
+          }
+          if (!questEnt.relatedTo) questEnt.relatedTo = [];
+          if (!questEnt.relatedTo.some(r => r.type === 'npc' && r.id === npcEnt.id)) {
+            questEnt.relatedTo.push({ type: 'npc', id: npcEnt.id });
+          }
+        });
+      });
+    }
 
     if (!_char.diary) _char.diary = [];
     _char.diary.push(entry);
+    _pendingMentions = [];
+    _pendingTags = [];
     _saveChar();
     textarea.value = '';
     textarea.style.height = 'auto';
@@ -6322,6 +6832,7 @@ const App = (() => {
     const hint = document.getElementById('diaryShortcutHint');
     if (hint) hint.style.display = 'none';
     _newDiaryCat = '';
+    _closeMentionDropdown();
     document.querySelectorAll('.diary-new-cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === ''));
     // Quitar modo composing al enviar
     document.getElementById('notebookPanel')?.classList.remove('diary-composing');
@@ -7545,6 +8056,15 @@ const App = (() => {
     openQuickNote, closeQuickNote, setQNCat, onQNInput, saveQuickNote,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
     toggleCombatLog, clearCombatLog, exportCombatLog,
+
+    // Sesiones de juego
+    startNewSession, closeCurrentSession,
+
+    // Menciones (@/npc, /quest) y tags (#tag) del composer
+    _onDiaryKeydown, _pickMentionItem,
+
+    // Codex (entidades: NPCs / misiones)
+    toggleEntityStatus,
 
     // IFTTT
     openIfttt, closeIfttt, openIftttForm, closeIftttForm,

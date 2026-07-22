@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 343;
+const _SW_EXPECTED = 344;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -102,7 +102,7 @@ const _SW_EXPECTED = 343;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=82">
+<link rel="stylesheet" href="css/style.css?v=83">
 </head>
 <body>
 
@@ -495,12 +495,26 @@ const _SW_EXPECTED = 343;
       <button class="nb-tab"        id="nbTabLog"    onclick="App.switchNotebookTab('log')">⚔ Log<span class="nb-badge" id="nbLogBadge"></span></button>
       <button class="nb-tab"        id="nbTabStats"  onclick="App.switchNotebookTab('stats')">📊 Stats</button>
       <button class="nb-tab"        id="nbTabMaps"   onclick="App.switchNotebookTab('maps')">🗺 Mapas</button>
+      <button class="nb-tab"        id="nbTabTimeline" onclick="App.switchNotebookTab('timeline')">📅 Sesiones</button>
     </div>
     <button class="diary-close-btn" onclick="App.toggleNotebook()">✕</button>
   </div>
 
   <!-- SUB-TAB: DIARIO -->
   <div class="nb-pane" id="nbPaneDiary">
+    <!-- Barra de sesión activa -->
+    <div class="session-bar" id="sessionBar" style="display:none">
+      <span class="session-live-dot"></span>
+      <div class="session-info">
+        <span class="lbl">Sesión</span>
+        <span class="val" id="sessionBarLabel"></span>
+      </div>
+      <button class="btn-sm" id="sessionCloseBtn" onclick="App.closeCurrentSession()">Cerrar sesión</button>
+      <button class="btn-sm" onclick="App.startNewSession()">+ Nueva sesión</button>
+    </div>
+    <div class="session-bar" id="sessionBarClosed" style="display:none">
+      <button class="btn-sm" onclick="App.startNewSession()">+ Nueva sesión</button>
+    </div>
     <!-- Buscador -->
     <div class="diary-search-bar">
       <input class="diary-search-input" id="diarySearch" type="search"
@@ -519,7 +533,7 @@ const _SW_EXPECTED = 343;
       <button class="diary-cat-chip" data-cat="quest"    onclick="App.selectDiaryCat(this,'quest')">⚔️ Quest</button>
     </div>
     <div class="diary-entries" id="diaryEntries"></div>
-    <div class="diary-compose">
+    <div class="diary-compose" style="position:relative">
       <!-- Selector de categoría de la entrada nueva -->
       <div class="diary-new-cat-row">
         <button class="diary-new-cat-btn active" data-cat="" onclick="App.setNewDiaryCat(this,'')">📝</button>
@@ -533,17 +547,23 @@ const _SW_EXPECTED = 343;
         <span class="diary-shortcut-help" title="/npc · /mapa · /lore · /combate · /nota · /item · /quest">?</span>
       </div>
       <div class="diary-shortcut-hint" id="diaryShortcutHint" style="display:none"></div>
+      <div id="mentionDropdown" style="display:none"></div>
       <textarea class="diary-textarea" id="diaryInput" rows="1"
-                placeholder="Escribe una nota… o usa /npc /mapa /lore /item /quest"
+                placeholder="Escribe una nota… o usa /npc /mapa /lore /item /quest — o @/npc, #tag"
                 oninput="App.onDiaryInput(this)"
                 onfocus="document.getElementById('notebookPanel').classList.add('diary-composing');document.getElementById('notebookFab').style.display='none';"
                 onblur="if(!this.value.trim()){document.getElementById('notebookPanel').classList.remove('diary-composing');document.getElementById('notebookFab').style.display='';}"
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){App.addDiaryEntry();event.preventDefault();}"></textarea>
+                onkeydown="App._onDiaryKeydown(event,this)"></textarea>
       <div class="diary-compose-row">
         <button class="btn-sm" onclick="App.exportDiary()" title="Exportar diario">↓</button>
         <button class="diary-send-btn" onclick="App.addDiaryEntry()">↑ Enviar</button>
       </div>
     </div>
+  </div>
+
+  <!-- SUB-TAB: TIMELINE DE SESIONES -->
+  <div class="nb-pane" id="nbPaneTimeline" style="display:none">
+    <div class="timeline" id="timelineBody"></div>
   </div>
 
   <!-- SUB-TAB: CODEX (Gente/Misiones — agrupa entradas npc y quest) -->
@@ -1186,9 +1206,9 @@ const _SW_EXPECTED = 343;
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=51"></script>
-<script src="js/characters.js?v=94"></script>
+<script src="js/characters.js?v=95"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=178"></script>
+<script src="js/app.js?v=179"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

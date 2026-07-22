@@ -971,6 +971,8 @@ const Characters = (() => {
       },
 
       diary: [],
+      entities: [],
+      sessions: [],
 
       features: [
         {
@@ -1146,6 +1148,8 @@ const Characters = (() => {
 
       diary: [],
       ifttt: [],
+      entities: [],
+      sessions: [],
 
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -4575,6 +4579,8 @@ const Characters = (() => {
 
       diary:            [],
       ifttt:            [],
+      entities:         [],
+      sessions:         [],
       choices:          {},
 
       _dataVersion: 12,
