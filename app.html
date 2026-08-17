@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 345;
+const _SW_EXPECTED = 346;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -94,6 +94,7 @@ const _SW_EXPECTED = 345;
 <link rel="icon" type="image/png" href="icons/favicon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/favicon.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Tracker">
@@ -102,7 +103,7 @@ const _SW_EXPECTED = 345;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=84">
+<link rel="stylesheet" href="css/style.css?v=85">
 </head>
 <body>
 
@@ -509,6 +510,7 @@ const _SW_EXPECTED = 345;
         <span class="lbl">Sesión</span>
         <span class="val" id="sessionBarLabel"></span>
       </div>
+      <button class="btn-sm" id="sessionAIExportBtn" onclick="App.exportSessionForAI(this.dataset.sessionId)" title="Exportar prompt para IA">🤖 IA</button>
       <button class="btn-sm" id="sessionCloseBtn" onclick="App.closeCurrentSession()">Cerrar sesión</button>
       <button class="btn-sm" onclick="App.startNewSession()">+ Nueva sesión</button>
     </div>
@@ -563,6 +565,9 @@ const _SW_EXPECTED = 345;
 
   <!-- SUB-TAB: TIMELINE DE SESIONES -->
   <div class="nb-pane" id="nbPaneTimeline" style="display:none">
+    <div class="timeline-toolbar">
+      <button class="btn-sm" onclick="App.openAIImportModal()">📥 Importar resultado de IA</button>
+    </div>
     <div class="timeline" id="timelineBody"></div>
   </div>
 
@@ -1116,6 +1121,30 @@ const _SW_EXPECTED = 345;
     </div>
   </div>
 </div>
+
+<!-- MODAL IMPORTAR RESULTADO DE IA -->
+<div class="modal-overlay" id="aiImportModal" onclick="if(event.target===this)App.closeAIImportModal()">
+  <div class="modal wide">
+    <div class="modal-title">📥 Importar resultado de IA</div>
+    <p class="modal-note" id="aiImportIntro">Pegá el JSON completo que te devolvió la IA (Gemini, Claude, etc.) tras procesar el prompt exportado.</p>
+    <div id="aiImportStep1">
+      <textarea id="aiImportTextarea" class="diary-textarea" style="width:100%;min-height:220px;font-family:monospace;font-size:12px;" placeholder='{"npcs": [...], "quests": [...], "lugares": [...], "notas": [...]}'></textarea>
+      <div id="aiImportError" class="ai-import-error" style="display:none;"></div>
+      <div class="modal-btns">
+        <button class="btn btn-ghost" onclick="App.closeAIImportModal()">Cancelar</button>
+        <button class="btn btn-gold" onclick="App.analyzeAIImport()">Analizar</button>
+      </div>
+    </div>
+    <div id="aiImportStep2" style="display:none;">
+      <div id="aiImportPreview" class="ai-import-preview"></div>
+      <div class="modal-btns">
+        <button class="btn btn-ghost" onclick="App._aiImportBackToStep1()">← Volver</button>
+        <button class="btn btn-gold" onclick="App.confirmAIImport()">Confirmar importación</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
   .lp-item{display:flex;align-items:center;gap:8px;background:var(--surface2,rgba(255,255,255,0.04));border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;}
   .lp-item-main{flex:1;min-width:0;cursor:pointer;}
@@ -1208,7 +1237,7 @@ const _SW_EXPECTED = 345;
 <script src="js/storage.js?v=51"></script>
 <script src="js/characters.js?v=95"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=180"></script>
+<script src="js/app.js?v=181"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

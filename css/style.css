@@ -8017,3 +8017,38 @@ mark.diary-highlight {
 .tl-summary { display:flex; gap:14px; flex-wrap:wrap; margin-top:6px; }
 .tl-stat { font-size:11.5px; color:var(--text-mid); display:flex; align-items:center; gap:4px; }
 .tl-stat b { color:var(--gold-light); font-weight:600; }
+
+.timeline-toolbar { display:flex; justify-content:flex-end; padding:12px 16px 0; }
+.tl-actions { margin-top:8px; }
+.tl-ai-btn {
+  font-family:'Jost', sans-serif; font-size:11.5px; color:var(--gold-light);
+  background:var(--bg4); border:1px solid var(--border-strong); border-radius:20px;
+  padding:4px 12px; cursor:pointer; transition:background 0.15s, border-color 0.15s;
+}
+.tl-ai-btn:hover { background:var(--bg2); border-color:var(--gold-dim); }
+
+/* ═══ Import de IA (modal) ═══ */
+.ai-import-error {
+  font-size:12.5px; color:#e06c6c; background:rgba(224,108,108,0.1);
+  border:1px solid rgba(224,108,108,0.3); border-radius:var(--radius-sm);
+  padding:8px 12px; margin-top:10px; line-height:1.5;
+}
+.ai-import-preview { max-height:55vh; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--gold-dim) transparent; margin-bottom:6px; }
+.ai-import-section { margin-bottom:16px; }
+.ai-import-section-hd {
+  font-family:'Cinzel', serif; font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--gold); margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border);
+}
+.ai-import-count { color:var(--text-dim); font-family:'Jost', sans-serif; letter-spacing:0; text-transform:none; }
+.ai-import-row {
+  display:flex; align-items:flex-start; gap:10px; padding:8px 6px; border-radius:var(--radius-sm);
+  cursor:pointer; transition:background 0.15s;
+}
+.ai-import-row:hover { background:var(--bg2); }
+.ai-import-row input[type="checkbox"] { margin-top:3px; flex-shrink:0; accent-color:var(--gold-dim); }
+.ai-import-row-main { flex:1; min-width:0; }
+.ai-import-row-name { font-family:'Cinzel', serif; font-size:13px; color:var(--text); }
+.ai-import-row-status { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; }
+.ai-import-row-tag { font-size:10.5px; color:var(--text-dim); font-style:italic; margin-left:6px; }
+.ai-import-row.existing .ai-import-row-tag { color:var(--gold-dim); }
+.ai-import-row-note { font-size:12.5px; color:var(--text-mid); line-height:1.5; margin-top:2px; }

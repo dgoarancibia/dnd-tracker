@@ -893,6 +893,9 @@ const App = (() => {
             <span class="tl-range">${rangeStr}</span>
           </div>
           ${statsHtml}
+          <div class="tl-actions">
+            <button class="tl-ai-btn" onclick="App.exportSessionForAI('${session.id}')">🤖 Exportar para IA</button>
+          </div>
         </div>
       </div>`;
     });
@@ -6446,12 +6449,346 @@ const App = (() => {
       const n = _sessionNumber(open.id);
       const time = new Date(open.startedAt).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
       document.getElementById('sessionBarLabel').textContent = `Sesión ${n} · desde ${time}`;
+      const aiBtn = document.getElementById('sessionAIExportBtn');
+      if (aiBtn) aiBtn.dataset.sessionId = open.id;
       bar.style.display = 'flex';
       barClosed.style.display = 'none';
     } else {
       bar.style.display = 'none';
       barClosed.style.display = 'flex';
     }
+  }
+
+  /* ══════════════════════════════════════════════════════
+     EXPORTAR SESIÓN PARA IA / IMPORTAR RESULTADO ESTRUCTURADO
+  ══════════════════════════════════════════════════════ */
+
+  // Copia texto al portapapeles con fallback a textarea+execCommand
+  // si la Clipboard API no está disponible o falla (ej. http sin TLS).
+  function _copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(() => _copyToClipboardFallback(text));
+    }
+    return _copyToClipboardFallback(text);
+  }
+
+  function _copyToClipboardFallback(text) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Promise.resolve();
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  const _AI_IMPORT_CAT_LABEL = { combate: 'Combate', lugar: 'Lugar', historia: 'Historia', item: 'Ítem', nota: 'Nota' };
+
+  function _buildAIExportText(sessionId) {
+    const session = (_char.sessions || []).find(s => s.id === sessionId);
+    if (!session) return '';
+    const n = _sessionNumber(sessionId);
+    const startStr = new Date(session.startedAt).toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const endStr = session.endedAt
+      ? new Date(session.endedAt).toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : 'en curso';
+    const notes = (_char.diary || [])
+      .filter(e => e.sessionId === sessionId)
+      .slice()
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const notesText = notes
+      .map(e => e.cat ? `[${e.cat}] ${e.text}` : e.text)
+      .join('\n');
+
+    return `Sos un asistente que organiza notas de una sesión de D&D. Te paso las notas crudas que un jugador escribió durante su sesión de juego. Tu tarea es reorganizarlas y devolver ÚNICAMENTE un JSON válido (sin texto antes ni después, sin bloques de código markdown) con esta forma exacta:
+
+{
+  "npcs": [{"name": "string", "note": "breve descripción de quién es o qué se supo de él en esta sesión"}],
+  "quests": [{"name": "string", "status": "active" o "resolved", "note": "breve descripción del objetivo o resultado"}],
+  "lugares": [{"name": "string", "note": "breve descripción"}],
+  "notas": [{"text": "string", "cat": "combate"|"lugar"|"historia"|"item"|"nota"}]
+}
+
+Reglas:
+- Si una nota cruda no encaja en npcs/quests/lugares, va en "notas" con la categoría que más se ajuste.
+- No inventes información que no esté en las notas originales.
+- Los nombres de NPCs/quests deben ser cortos (2-4 palabras), aptos para usar como título.
+- Si dos notas hablan del mismo NPC o la misma quest, consolidalas en una sola entrada con toda la info relevante en "note".
+
+Notas crudas de la sesión (Sesión ${n}, ${startStr} – ${endStr}):
+
+${notesText}`;
+  }
+
+  function exportSessionForAI(sessionId) {
+    if (!sessionId) return;
+    const text = _buildAIExportText(sessionId);
+    if (!text) { showToast('No se pudo generar el export'); return; }
+    _copyToClipboard(text)
+      .then(() => showToast('Prompt copiado — pegalo en Gemini o Claude', 'success'))
+      .catch(() => showToast('No se pudo copiar al portapapeles'));
+  }
+
+  // Estado temporal del modal de importación de IA (parsed + selección de filas)
+  let _aiImportParsed = null;
+  let _aiImportSessionId = null;
+
+  function openAIImportModal() {
+    _aiImportParsed = null;
+    _aiImportSessionId = (_getOpenSession() || {}).id || null;
+    const ta = document.getElementById('aiImportTextarea');
+    if (ta) ta.value = '';
+    const err = document.getElementById('aiImportError');
+    if (err) { err.style.display = 'none'; err.textContent = ''; }
+    document.getElementById('aiImportStep1').style.display = '';
+    document.getElementById('aiImportStep2').style.display = 'none';
+    document.getElementById('aiImportModal').classList.add('show');
+  }
+
+  function closeAIImportModal() {
+    document.getElementById('aiImportModal').classList.remove('show');
+    _aiImportParsed = null;
+  }
+
+  function _aiImportBackToStep1() {
+    document.getElementById('aiImportStep1').style.display = '';
+    document.getElementById('aiImportStep2').style.display = 'none';
+  }
+
+  function _aiImportShowError(msg) {
+    const err = document.getElementById('aiImportError');
+    if (!err) return;
+    err.textContent = msg;
+    err.style.display = 'block';
+  }
+
+  function analyzeAIImport() {
+    const ta = document.getElementById('aiImportTextarea');
+    const raw = (ta ? ta.value : '').trim();
+    const err = document.getElementById('aiImportError');
+    if (err) { err.style.display = 'none'; err.textContent = ''; }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      _aiImportShowError('El texto pegado no es JSON válido. Verificá que copiaste solo la respuesta de la IA, sin texto extra.');
+      return;
+    }
+
+    const keys = ['npcs', 'quests', 'lugares', 'notas'];
+    const hasValidKey = keys.some(k => Array.isArray(parsed[k]));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !hasValidKey) {
+      _aiImportShowError('El JSON no tiene el formato esperado (faltan npcs/quests/lugares/notas).');
+      return;
+    }
+
+    _aiImportParsed = parsed;
+    _renderAIImportPreview(parsed);
+    document.getElementById('aiImportStep1').style.display = 'none';
+    document.getElementById('aiImportStep2').style.display = '';
+  }
+
+  function _aiImportFindExisting(name, type) {
+    const nameLc = (name || '').trim().toLowerCase();
+    if (!nameLc) return null;
+    return (_char.entities || []).find(en => en.type === type && (en.name || '').trim().toLowerCase() === nameLc) || null;
+  }
+
+  function _renderAIImportPreview(parsed) {
+    const cont = document.getElementById('aiImportPreview');
+    if (!cont) return;
+    cont.innerHTML = _buildAIImportPreviewHtml(parsed);
+  }
+
+  function _buildAIImportPreviewHtml(parsed) {
+    const escapeHtml = (s) => (s || '').toString().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let html = '';
+
+    const npcs = parsed.npcs || [];
+    const quests = parsed.quests || [];
+    const lugares = parsed.lugares || [];
+    const notas = parsed.notas || [];
+
+    if (npcs.length) {
+      html += `<div class="ai-import-section"><div class="ai-import-section-hd">🧑 NPCs nuevos <span class="ai-import-count">${npcs.length}</span></div>`;
+      npcs.forEach((item, i) => {
+        const existing = _aiImportFindExisting(item.name, 'npc');
+        const statusTxt = existing ? 'ya existe — se actualizará la nota' : 'se creará';
+        html += `<label class="ai-import-row${existing ? ' existing' : ''}">
+          <input type="checkbox" checked data-kind="npcs" data-idx="${i}">
+          <div class="ai-import-row-main">
+            <span class="ai-import-row-name">${escapeHtml(item.name)}</span>
+            <span class="ai-import-row-tag">${statusTxt}</span>
+            <div class="ai-import-row-note">${escapeHtml(item.note)}</div>
+          </div>
+        </label>`;
+      });
+      html += `</div>`;
+    }
+
+    if (quests.length) {
+      html += `<div class="ai-import-section"><div class="ai-import-section-hd">📜 Misiones <span class="ai-import-count">${quests.length}</span></div>`;
+      quests.forEach((item, i) => {
+        const existing = _aiImportFindExisting(item.name, 'quest');
+        const statusTxt = existing ? 'ya existe — se actualizará la nota' : 'se creará';
+        const statusLbl = item.status === 'resolved' ? 'Resuelta' : 'Activa';
+        html += `<label class="ai-import-row${existing ? ' existing' : ''}">
+          <input type="checkbox" checked data-kind="quests" data-idx="${i}">
+          <div class="ai-import-row-main">
+            <span class="ai-import-row-name">${escapeHtml(item.name)} <span class="ai-import-row-status">${statusLbl}</span></span>
+            <span class="ai-import-row-tag">${statusTxt}</span>
+            <div class="ai-import-row-note">${escapeHtml(item.note)}</div>
+          </div>
+        </label>`;
+      });
+      html += `</div>`;
+    }
+
+    if (lugares.length) {
+      html += `<div class="ai-import-section"><div class="ai-import-section-hd">📍 Lugares <span class="ai-import-count">${lugares.length}</span></div>`;
+      lugares.forEach((item, i) => {
+        html += `<label class="ai-import-row">
+          <input type="checkbox" checked data-kind="lugares" data-idx="${i}">
+          <div class="ai-import-row-main">
+            <span class="ai-import-row-name">${escapeHtml(item.name)}</span>
+            <div class="ai-import-row-note">${escapeHtml(item.note)}</div>
+          </div>
+        </label>`;
+      });
+      html += `</div>`;
+    }
+
+    if (notas.length) {
+      html += `<div class="ai-import-section"><div class="ai-import-section-hd">💡 Notas <span class="ai-import-count">${notas.length}</span></div>`;
+      notas.forEach((item, i) => {
+        const catLbl = _AI_IMPORT_CAT_LABEL[item.cat] || 'Nota';
+        html += `<label class="ai-import-row">
+          <input type="checkbox" checked data-kind="notas" data-idx="${i}">
+          <div class="ai-import-row-main">
+            <span class="ai-import-row-tag">${catLbl}</span>
+            <div class="ai-import-row-note">${escapeHtml(item.text)}</div>
+          </div>
+        </label>`;
+      });
+      html += `</div>`;
+    }
+
+    if (!html) html = `<div class="codex-empty">Nada para importar.</div>`;
+    return html;
+  }
+
+  function _aiImportNewId() {
+    return 'ent-' + Date.now() + Math.random().toString(36).slice(2, 6);
+  }
+
+  function confirmAIImport() {
+    if (!_aiImportParsed) return;
+    const cont = document.getElementById('aiImportPreview');
+    const checked = (kind) => {
+      const idxs = [];
+      cont.querySelectorAll(`input[data-kind="${kind}"]:checked`).forEach(cb => idxs.push(parseInt(cb.dataset.idx, 10)));
+      return idxs;
+    };
+
+    if (!_char.entities) _char.entities = [];
+    if (!_char.diary) _char.diary = [];
+
+    let npcCount = 0, questCount = 0, noteCount = 0;
+    const nowIso = () => new Date().toISOString();
+    const newDiaryId = () => 'e-' + Date.now() + Math.random().toString(36).slice(2, 6);
+
+    // NPCs
+    (checked('npcs')).forEach(i => {
+      const item = (_aiImportParsed.npcs || [])[i];
+      if (!item || !item.name) return;
+      let entity = _aiImportFindExisting(item.name, 'npc');
+      if (!entity) {
+        entity = { id: _aiImportNewId(), type: 'npc', name: item.name, createdAt: nowIso() };
+        _char.entities.push(entity);
+      }
+      _char.diary.push({
+        id: newDiaryId(),
+        timestamp: nowIso(),
+        text: item.note || item.name,
+        cat: 'npc',
+        mentions: [{ type: 'npc', id: entity.id, name: entity.name }],
+        tags: [],
+        sessionId: _aiImportSessionId,
+      });
+      npcCount++;
+    });
+
+    // Quests
+    (checked('quests')).forEach(i => {
+      const item = (_aiImportParsed.quests || [])[i];
+      if (!item || !item.name) return;
+      let entity = _aiImportFindExisting(item.name, 'quest');
+      if (!entity) {
+        entity = { id: _aiImportNewId(), type: 'quest', name: item.name, status: item.status || 'active', createdAt: nowIso() };
+        _char.entities.push(entity);
+      } else if (item.status) {
+        entity.status = item.status;
+      }
+      _char.diary.push({
+        id: newDiaryId(),
+        timestamp: nowIso(),
+        text: item.note || item.name,
+        cat: 'quest',
+        mentions: [{ type: 'quest', id: entity.id, name: entity.name }],
+        tags: [],
+        sessionId: _aiImportSessionId,
+      });
+      questCount++;
+    });
+
+    // Lugares — no son entidades tipadas en _char.entities (solo npc/quest existen como tipo),
+    // así que se agregan como notas de diario con cat 'lugar'.
+    (checked('lugares')).forEach(i => {
+      const item = (_aiImportParsed.lugares || [])[i];
+      if (!item || !item.name) return;
+      _char.diary.push({
+        id: newDiaryId(),
+        timestamp: nowIso(),
+        text: item.note ? `${item.name}: ${item.note}` : item.name,
+        cat: 'lugar',
+        mentions: [],
+        tags: [],
+        sessionId: _aiImportSessionId,
+      });
+      noteCount++;
+    });
+
+    // Notas sueltas
+    (checked('notas')).forEach(i => {
+      const item = (_aiImportParsed.notas || [])[i];
+      if (!item || !item.text) return;
+      _char.diary.push({
+        id: newDiaryId(),
+        timestamp: nowIso(),
+        text: item.text,
+        cat: item.cat || '',
+        mentions: [],
+        tags: [],
+        sessionId: _aiImportSessionId,
+      });
+      noteCount++;
+    });
+
+    _saveChar();
+    closeAIImportModal();
+    showToast(`✓ Importado: ${npcCount} NPCs, ${questCount} misiones, ${noteCount} notas`, 'success', 4000);
+
+    if (_notebookTab === 'codex') _renderCodex();
+    else if (_notebookTab === 'diary') { _renderDiaryEntries(); _renderSessionBar(); }
+    else if (_notebookTab === 'timeline') _renderTimeline();
   }
 
   /* ══════════════════════════════════════════════════════
@@ -8060,6 +8397,10 @@ const App = (() => {
 
     // Sesiones de juego
     startNewSession, closeCurrentSession,
+
+    // Exportar sesión para IA / importar resultado estructurado
+    exportSessionForAI, openAIImportModal, closeAIImportModal,
+    analyzeAIImport, confirmAIImport, _aiImportBackToStep1,
 
     // Menciones (@/npc, /quest) y tags (#tag) del composer
     _onDiaryKeydown, _pickMentionItem,
