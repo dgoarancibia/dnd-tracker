@@ -576,37 +576,95 @@ const Characters = (() => {
     return char.hitDie + (char.nivel - 1) * (Math.floor(char.hitDie / 2) + 1) + conMod * char.nivel;
   }
 
+  // Suma los value de un array de buffs [{id,label,stat,value,source}], filtrando por stat si se pasa.
+  function _sumBuffs(buffs, stat) {
+    if (!Array.isArray(buffs)) return 0;
+    return buffs.reduce((acc, b) => (stat && b.stat !== stat) ? acc : acc + (Number(b.value) || 0), 0);
+  }
+
+  // Un slot equipado "cuenta" para bonuses/buffs solo si no requiere attunement,
+  // o si lo requiere y está atunado.
+  function _slotActive(item) {
+    if (!item) return false;
+    return !item.requiresAttunement || !!item.attuned;
+  }
+
+  // Devuelve item.bonuses[stat] (0 si no aplica o el slot no está activo).
+  function _itemStatBonus(item, stat) {
+    if (!_slotActive(item)) return 0;
+    return (item.bonuses && Number(item.bonuses[stat])) || 0;
+  }
+
+  // Buffs puntuales de TODOS los slots equipados (activos) para un stat dado.
+  function _equipmentBuffsTotal(equipment, stat) {
+    if (!equipment) return 0;
+    return Object.values(equipment).reduce((acc, item) => {
+      if (!_slotActive(item)) return acc;
+      return acc + _sumBuffs(item.buffs, stat);
+    }, 0);
+  }
+
   function calcCA(char) {
-    const { armor } = char;
+    const eq = char.equipment || {};
+    const armor = eq.armor;
+    const offHand = eq.offHand;
     const desMod = calcMod(char.stats.des);
     const conMod = calcMod(char.stats.con);
     const sabMod = calcMod(char.stats.sab);
-    const bonus  = (char.bonuses && char.bonuses.ca) || 0;
+    const manualBonus = (char.bonuses && char.bonuses.ca) || 0;
+    const statBuffsBonus = _sumBuffs(char.statBuffs && char.statBuffs.ca);
+    const itemBuffsBonus = _equipmentBuffsTotal(eq, 'ac');
+    const shieldBonus = (offHand && offHand.kind === 'shield' && _slotActive(offHand))
+      ? _itemStatBonus(offHand, 'ac') + (offHand.shield_bonus != null ? offHand.shield_bonus : 2)
+      : 0;
+    const bonus = manualBonus + statBuffsBonus + itemBuffsBonus + shieldBonus;
 
-    // Unarmored Defense: solo aplica cuando el personaje no lleva armadura
-    // (armor.base_ca == 10 y add_dex == true → sin armadura real)
-    const isUnarmored = !armor || (armor.base_ca === 10 && armor.add_dex && !armor.name);
+    // Unarmored Defense: solo aplica cuando el personaje no lleva armadura equipada
+    const isUnarmored = !armor || (!armor.name && (armor.base_ca == null || armor.base_ca === 10) && armor.add_dex !== false);
 
     if (isUnarmored) {
       if (char.clase === 'Bárbaro') {
-        // Bárbaro: 10 + DES + CON (sin escudo cambia la fórmula, pero escudo sí suma)
-        const shield = (armor && armor.shield) ? (armor.shield_bonus || 2) : 0;
-        return 10 + desMod + conMod + shield + bonus;
+        // Bárbaro: 10 + DES + CON (el escudo sí suma)
+        return 10 + desMod + conMod + bonus;
       }
       if (char.clase === 'Monje') {
-        // Monje: 10 + DES + SAB (sin escudo — Monje no puede usar escudo)
+        // Monje: 10 + DES + SAB (Monje no puede usar escudo, pero no lo forzamos acá)
         return 10 + desMod + sabMod + bonus;
       }
     }
 
     // Armadura normal (o clase sin Unarmored Defense)
     if (!armor) return 10 + bonus;
-    let ca = armor.base_ca || 10;
+    let ca = armor.base_ca != null ? armor.base_ca : 10;
     if (armor.add_dex) ca += desMod;
-    if (armor.shield)  ca += armor.shield_bonus || 2;
+    ca += _itemStatBonus(armor, 'ac');
     ca += bonus;
     return ca;
   }
+
+  // Bonus de ataque con el arma en mainHand (prof + stat + bonuses del arma + buffs).
+  // Retorna null si no hay arma equipada.
+  function calcWeaponAttackBonus(char) {
+    const eq = char.equipment || {};
+    const w = eq.mainHand;
+    if (!w) return null;
+    const prof = calcProfBonus(char.nivel);
+    const statKey = w.statUsed === 'dex' ? 'des'
+      : w.statUsed === 'choice' ? (calcMod(char.stats.des) > calcMod(char.stats.for) ? 'des' : 'for')
+      : 'for';
+    const mod = calcMod(char.stats[statKey]);
+    const itemBonus = _itemStatBonus(w, 'attack') + (parseInt(w.bonus) || 0);
+    const buffBonus = _sumBuffs(w.buffs, 'attack');
+    return prof + mod + itemBonus + buffBonus;
+  }
+
+  // Cuenta ítems atunados en equipment (máx 3, regla estándar 5e).
+  function calcAttunementCount(equipment) {
+    if (!equipment) return 0;
+    return Object.values(equipment).filter(item => item && item.attuned).length;
+  }
+
+  const ATTUNEMENT_MAX = 3;
 
   function getSlotsForLevel(char, targetLevel) {
     const cfg = CLASES_CONFIG[char.clase];
@@ -940,19 +998,15 @@ const Characters = (() => {
         'spirit-guard', 'mass-heal-w', 'revivify'
       ],
 
-      weapons: [
-        { id:'maza', name:'Maza de Guerra +1', die:'1d8', bonus:'+5', type:'melee', notes:'Arma mágica · +1 ataque y daño' },
-        { id:'simbolo', name:'Símbolo Sagrado', die:'—', bonus:'—', type:'focus', notes:'Foco arcano para conjuros' }
-      ],
-      armor: {
-        name: 'Cota de Malla',
-        base_ca: 16,
-        add_dex: false,
-        shield: true,
-        shield_bonus: 2
+      equipment: {
+        mainHand: { id:'maza', name:'Maza de Guerra +1', kind:'weapon', die:'1d8', bonus:'+1', type:'melee', statUsed:'str', notes:'Arma mágica', bonuses:{ac:0,attack:1,damage:1,save:0}, buffs:[] },
+        offHand:  { id:'escudo', name:'Escudo', kind:'shield', shield_bonus:2, bonuses:{ac:0,attack:0,damage:0,save:0}, buffs:[] },
+        armor:    { id:'cota-malla', name:'Cota de Malla', kind:'armor', base_ca:16, add_dex:false, bonuses:{ac:0,attack:0,damage:0,save:0}, buffs:[] },
+        ring:     null,
+        neck:     null,
+        misc:     { id:'simbolo', name:'Símbolo Sagrado', kind:'wondrous', requiresAttunement:false, attuned:false, bonuses:{ac:0,attack:0,damage:0,save:0}, buffs:[], notes:'Foco arcano para conjuros' },
       },
-      attunement: ['', '', ''],
-      magicItems: [],
+      statBuffs: { ca: [], attack: [], save: [], spellDc: [] },
       consumables: [
         { id:'pocion-cur', name:'Poción de Curación', qty: 2, category:'Potion', desc:'2d4+2 HP' }
       ],
@@ -1134,10 +1188,8 @@ const Characters = (() => {
       spells: [],
       preparedToday: [],
 
-      weapons: [],
-      armor: { name: '', base_ca: 10, add_dex: true, shield: false, shield_bonus: 2 },
-      attunement: ['', '', ''],
-      magicItems: [],
+      equipment: { mainHand: null, offHand: null, armor: null, ring: null, neck: null, misc: null },
+      statBuffs: { ca: [], attack: [], save: [], spellDc: [] },
       consumables: [],
       currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
       notes: '',
@@ -4567,10 +4619,8 @@ const Characters = (() => {
       spells,
       preparedToday:    [],
 
-      weapons:          [],
-      armor:            { name: '', base_ca: 10, add_dex: true, shield: false, shield_bonus: 2 },
-      attunement:       ['', '', ''],
-      magicItems:       [],
+      equipment:        { mainHand: null, offHand: null, armor: null, ring: null, neck: null, misc: null },
+      statBuffs:        { ca: [], attack: [], save: [], spellDc: [] },
       consumables:      [],
       currency:         { pp: 0, gp: 0, sp: 0, cp: 0 },
       notes:            '',
@@ -5554,6 +5604,9 @@ const Characters = (() => {
     calcSave,
     calcHPMaxSuggested,
     calcCA,
+    calcWeaponAttackBonus,
+    calcAttunementCount,
+    ATTUNEMENT_MAX,
     getSlotsForClass,
     calcMulticlassSlots,
     getPreparedMax,

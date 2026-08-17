@@ -9,7 +9,7 @@ const Storage = (() => {
   const BACKUP_TS    = 'dnd_backup_ts_v1';
   const DELETED_KEY  = 'dnd_deleted_ids_v1'; // IDs eliminados — persiste en localStorage
   const TRASH_KEY    = 'dnd_trash_v1';        // Papelera — personajes borrados recuperables
-  const DATA_VERSION = 13;  // Incrementar al cambiar el esquema
+  const DATA_VERSION = 14;  // Incrementar al cambiar el esquema
   const LURSEY_ID    = 'lursey-brumaclara'; // personaje de demo — sus features vienen de buildLursey()
 
   // ── IndexedDB shadow backup ──────────────────────────────────────────────
@@ -360,6 +360,129 @@ const Storage = (() => {
       // Las choices ahora se manejan en _ensureChoicesFilled() que corre siempre.
       char._dataVersion = 13;
     }
+    if (char._dataVersion < 14) {
+      // v13 → v14: unificar weapons[]/armor{}/attunement[]/magicItems[] en un
+      // sistema de slots equipables (equipment{}). Ver diseño en README del cambio.
+      if (!char.equipment) {
+        const oldWeapons  = Array.isArray(char.weapons) ? char.weapons : [];
+        const oldArmor    = char.armor || null;
+        const oldAttune   = Array.isArray(char.attunement) ? char.attunement : [];
+        const oldMagic    = Array.isArray(char.magicItems) ? char.magicItems : [];
+
+        const equipment = { mainHand: null, offHand: null, armor: null, ring: null, neck: null, misc: null };
+
+        // weapons[0] → mainHand
+        if (oldWeapons[0]) {
+          const w = oldWeapons[0];
+          equipment.mainHand = {
+            id: w.id || ('w-' + Math.random().toString(36).slice(2, 7)),
+            name: w.name || 'Arma',
+            kind: 'weapon',
+            die: w.die || '1d6',
+            bonus: w.bonus || '',
+            type: w.type || 'melee',
+            statUsed: w.statUsed || 'str',
+            mastery: w.mastery || '',
+            extraDie: w.extraDie || '',
+            extraType: w.extraType || '',
+            notes: w.notes || '',
+            bonuses: { ac: 0, attack: 0, damage: 0, save: 0 },
+            buffs: [],
+          };
+        }
+
+        // armor viejo → equipment.armor (+ shield viejo → offHand tipo shield).
+        // El escudo tiene prioridad sobre weapons[1] para el slot offHand: un
+        // personaje no puede llevar escudo Y un arma en la mano secundaria a la
+        // vez, y el escudo es más relevante para el cálculo de CA.
+        if (oldArmor) {
+          equipment.armor = {
+            id: 'armor-' + Math.random().toString(36).slice(2, 7),
+            name: oldArmor.name || '',
+            kind: 'armor',
+            base_ca: oldArmor.base_ca != null ? oldArmor.base_ca : 10,
+            add_dex: oldArmor.add_dex !== false,
+            bonuses: { ac: 0, attack: 0, damage: 0, save: 0 },
+            buffs: [],
+          };
+          if (oldArmor.shield) {
+            equipment.offHand = {
+              id: 'shield-' + Math.random().toString(36).slice(2, 7),
+              name: 'Escudo',
+              kind: 'shield',
+              shield_bonus: oldArmor.shield_bonus || 2,
+              bonuses: { ac: 0, attack: 0, damage: 0, save: 0 },
+              buffs: [],
+            };
+          }
+        }
+
+        // weapons[1] → offHand si es razonable (arma liviana/foco) y el slot
+        // sigue libre (el escudo, si había, ya lo ocupó arriba); si no, queda
+        // como ítem no equipado en la mochila (consumables) para no perder el dato.
+        if (oldWeapons[1]) {
+          const w = oldWeapons[1];
+          const asOffHand = w.type === 'focus' || w.die === '—';
+          if (asOffHand && !equipment.offHand) {
+            equipment.offHand = {
+              id: w.id || ('w-' + Math.random().toString(36).slice(2, 7)),
+              name: w.name || 'Arma',
+              kind: 'weapon',
+              die: w.die || '—',
+              bonus: w.bonus || '',
+              type: w.type || 'melee',
+              notes: w.notes || '',
+              bonuses: { ac: 0, attack: 0, damage: 0, save: 0 },
+              buffs: [],
+            };
+          } else {
+            if (!Array.isArray(char.consumables)) char.consumables = [];
+            char.consumables.push({
+              id: 'i-' + Date.now() + '-w1',
+              name: w.name || 'Arma',
+              qty: 1,
+              category: 'Weapon - martial melee',
+              desc: w.notes || '',
+            });
+            if (asOffHand) {
+              console.warn(`[migración v14] Personaje "${char.name || char.id}": "${w.name}" (weapons[1]) no se equipó en mano secundaria porque el escudo tenía prioridad — quedó en la mochila.`);
+            }
+          }
+        }
+
+        // attunement[] viejo (texto libre, sin estructura) → no hay forma de
+        // mapearlo a un slot real. Se descarta, pero se deja rastro en consola.
+        const nonEmptyAttune = oldAttune.filter(s => (s || '').trim() !== '').length;
+        if (nonEmptyAttune > 0) {
+          console.warn(`[migración v14] Personaje "${char.name || char.id}": se descartaron ${nonEmptyAttune} entrada(s) de attunement de texto libre (sin forma de mapear a un slot real).`);
+        }
+
+        // magicItems[] (si tenía contenido real) → consumables con categoría 'Ítem mágico'
+        oldMagic.forEach(item => {
+          if (!item || !item.name) return;
+          if (!Array.isArray(char.consumables)) char.consumables = [];
+          char.consumables.push({
+            id: 'i-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
+            name: item.name,
+            qty: 1,
+            category: 'Ítem mágico',
+            desc: item.desc || '',
+          });
+        });
+
+        char.equipment = equipment;
+      }
+      // Limpiar campos viejos incondicionalmente (aunque char.equipment ya
+      // existiera de antes, ej. Lursey reconstruida por buildLursey()).
+      delete char.weapons;
+      delete char.armor;
+      delete char.attunement;
+      delete char.magicItems;
+      if (!char.statBuffs) {
+        char.statBuffs = { ca: [], attack: [], save: [], spellDc: [] };
+      }
+      char._dataVersion = 14;
+    }
 
     // ── Siempre: campos estructurales obligatorios ─────────────────────────────
     // Corre INDEPENDIENTEMENTE de la versión. Cubre JSONs importados con
@@ -371,7 +494,8 @@ const Storage = (() => {
     _fixField(!Array.isArray(char.diary),  () => { char.diary = []; });
     _fixField(!Array.isArray(char.ifttt),  () => { char.ifttt = []; });
     _fixField(!Array.isArray(char.conditions), () => { char.conditions = []; });
-    _fixField(!Array.isArray(char.weapons),    () => { char.weapons = []; });
+    _fixField(!char.equipment, () => { char.equipment = { mainHand:null, offHand:null, armor:null, ring:null, neck:null, misc:null }; });
+    _fixField(!char.statBuffs, () => { char.statBuffs = { ca:[], attack:[], save:[], spellDc:[] }; });
     _fixField(typeof char.exhaustion !== 'number', () => { char.exhaustion = 0; });
     _fixField(!char.turn, () => { char.turn = { movement:false, action:false, reaction:false, bonus:false }; });
     if (!char.bonuses) { char.bonuses = {}; _structFixed = true; }

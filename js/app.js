@@ -2438,6 +2438,7 @@ const App = (() => {
     // Otros
     'Valuable':                 { bg: 'rgba(201,151,58,0.15)',  color: 'var(--gold)', border: 'var(--gold-dim)' },
     'Magic item':               { bg: 'rgba(160,80,220,0.15)',  color: '#b060e0', border: 'rgba(160,80,220,0.3)' },
+    'Ítem mágico':              { bg: 'rgba(160,80,220,0.15)',  color: '#b060e0', border: 'rgba(160,80,220,0.3)' },
     'Part':                     { bg: 'rgba(140,120,100,0.15)', color: '#9a8870', border: 'rgba(140,120,100,0.3)' },
     'Other':                    { bg: 'rgba(160,160,160,0.12)', color: '#aaa',    border: 'rgba(160,160,160,0.3)' },
   };
@@ -2448,7 +2449,7 @@ const App = (() => {
     'Ammo': 'Munición', 'Potion': 'Poción', 'Poison': 'Veneno', 'Food': 'Comida',
     'Spell scroll': 'Pergamino', 'Adventuring gear': 'Equipo avent.', 'Tool': 'Herramienta',
     'Apparel': 'Indumentaria', 'Equipment': 'Equipamiento', 'Valuable': 'Valioso',
-    'Magic item': 'Ítem mágico', 'Part': 'Material', 'Other': 'Otro',
+    'Magic item': 'Ítem mágico', 'Ítem mágico': 'Ítem mágico', 'Part': 'Material', 'Other': 'Otro',
   };
 
   function _itemCatBadge(cat) {
@@ -2457,208 +2458,255 @@ const App = (() => {
     return `<span class="item-cat-badge" style="background:${c.bg};color:${c.color};border-color:${c.border};">${label}</span>`;
   }
 
-  function _renderEquipoTab() {
-    const c = _char;
+  // Categorías consideradas "ítem mágico equipable" desde la mochila (muestran botón Equipar)
+  const _MAGIC_ITEM_CATS = new Set(['Magic item', 'Ítem mágico']);
+
+  // ── Sistema de slots de equipo ──────────────────────────────────────────
+  const EQUIP_SLOTS = [
+    { key: 'mainHand', label: 'Mano principal',      icon: '⚔️', kinds: ['weapon'],           full: false },
+    { key: 'offHand',  label: 'Mano secundaria',     icon: '🛡',  kinds: ['shield','weapon'],  full: false },
+    { key: 'armor',    label: 'Armadura de cuerpo',  icon: '🧥', kinds: ['armor'],            full: true  },
+    { key: 'ring',     label: 'Anillo',              icon: '💍', kinds: ['wondrous'],         full: false },
+    { key: 'neck',     label: 'Amuleto / Cuello',    icon: '📿', kinds: ['wondrous'],         full: false },
+    { key: 'misc',     label: 'Misceláneo mágico',   icon: '✨', kinds: ['wondrous'],         full: true  },
+  ];
+  const ATTUNABLE_SLOTS = new Set(['ring', 'neck', 'misc']);
+
+  function _emptyEquipment() {
+    return { mainHand: null, offHand: null, armor: null, ring: null, neck: null, misc: null };
+  }
+
+  function _ensureEquipment(c) {
+    if (!c.equipment) c.equipment = _emptyEquipment();
+    if (!c.statBuffs) c.statBuffs = { ca: [], attack: [], save: [], spellDc: [] };
+    return c.equipment;
+  }
+
+  function _buffChipsHTML(buffs, onRemove) {
+    if (!Array.isArray(buffs) || buffs.length === 0) return '';
+    return `<div class="buff-chips">` + buffs.map(b => `
+      <span class="buff-chip" title="${(b.source||'').replace(/"/g,'&quot;')}">
+        ${b.label != null ? b.label : ((b.value>=0?'+':'')+b.value)}
+        <button class="buff-chip-x" onclick="${onRemove(b.id)}">✕</button>
+      </span>`).join('') + `</div>`;
+  }
+
+  function _slotItemLine(item) {
+    if (!item) return '';
+    if (item.kind === 'weapon') {
+      const bits = [];
+      if (item.die && item.die !== '—') bits.push(item.die);
+      if (item.bonus) bits.push(item.bonus);
+      return bits.join(' · ');
+    }
+    if (item.kind === 'shield') {
+      return `+${item.shield_bonus != null ? item.shield_bonus : 2} CA`;
+    }
+    if (item.kind === 'armor') {
+      return `CA base ${item.base_ca}${item.add_dex ? ' + DES' : ''}`;
+    }
+    // wondrous: mostrar bonuses no-cero
+    const parts = [];
+    if (item.bonuses) {
+      Object.entries(item.bonuses).forEach(([k,v]) => {
+        if (v) parts.push(`${v>0?'+':''}${v} ${k.toUpperCase()}`);
+      });
+    }
+    return parts.join(' · ');
+  }
+
+  function _renderEquipSlot(slotDef, item) {
+    const isEmpty = !item;
+    const fullClass = slotDef.full ? ' equip-slot--full' : '';
+    if (isEmpty) {
+      return `
+      <div class="equip-slot equip-slot--empty${fullClass}" onclick="App.openEquipPicker('${slotDef.key}')">
+        <div class="equip-slot-icon">${slotDef.icon}</div>
+        <div class="equip-slot-role">${slotDef.label}</div>
+        <div class="equip-slot-cta">+ Equipar</div>
+      </div>`;
+    }
+    const attunable = ATTUNABLE_SLOTS.has(slotDef.key);
+    let attuneBadge = '';
+    if (attunable) {
+      if (item.requiresAttunement) {
+        attuneBadge = `<button class="equip-attune-badge${item.attuned ? ' equip-attune-badge--on' : ''}"
+          onclick="event.stopPropagation();App.toggleAttunement('${slotDef.key}')"
+          title="${item.attuned ? 'Sintonizado — tocar para quitar' : 'Necesita sintonía — tocar para sintonizar'}">
+          ${item.attuned ? '✦ atunado' : '◇ necesita sintonía'}
+        </button>`;
+      }
+    }
+    const line = _slotItemLine(item);
+    return `
+    <div class="equip-slot equip-slot--filled${fullClass}" onclick="App.openSlotOptions('${slotDef.key}')">
+      <button class="equip-slot-add-buff" onclick="event.stopPropagation();App.openBuffModal('slot','${slotDef.key}')" title="Agregar buff">+</button>
+      <div class="equip-slot-icon">${slotDef.icon}</div>
+      <div class="equip-slot-body">
+        <div class="equip-slot-role">${slotDef.label}</div>
+        <div class="equip-slot-name">${item.name}</div>
+        ${line ? `<div class="equip-slot-line">${line}</div>` : ''}
+        ${attuneBadge}
+        ${_buffChipsHTML(item.buffs, id => `event.stopPropagation();App.removeSlotBuff('${slotDef.key}','${id}')`)}
+      </div>
+    </div>`;
+  }
+
+  function _renderAttunementBar(equipment) {
+    const count = Characters.calcAttunementCount(equipment);
+    const max = Characters.ATTUNEMENT_MAX;
+    const dots = Array.from({length: max}, (_,i) =>
+      `<span class="attune-dot${i < count ? ' attune-dot--on' : ''}"></span>`).join('');
+    return `
+    <div class="attunement-bar">
+      <span class="attunement-bar-label">Sintonía</span>
+      <span class="attunement-bar-dots">${dots}</span>
+      <span class="attunement-bar-count">${count}/${max}</span>
+    </div>`;
+  }
+
+  function _statChipBreakdown(parts) {
+    return parts.filter(Boolean).join(' ');
+  }
+
+  function _renderStatChips(c) {
+    const eq = c.equipment || {};
     const ca = Characters.calcCA(c);
+    const atqArma = Characters.calcWeaponAttackBonus(c);
+    const cd = Characters.calcCD(c);
 
-    // ── COLUMNA IZQUIERDA: Armas + Armadura + Ítems ──
-    let htmlIzq = `<div class="section-hd">🎒 Ítems</div>
+    // Desglose CA
+    const armor = eq.armor;
+    const offHand = eq.offHand;
+    const caBreakdownParts = [];
+    if (armor) caBreakdownParts.push(`${armor.base_ca} ${armor.name || 'armadura'}`);
+    else caBreakdownParts.push('10 base');
+    if (armor && armor.add_dex) caBreakdownParts.push(`+DES`);
+    if (offHand && offHand.kind === 'shield') caBreakdownParts.push(`+${offHand.shield_bonus||2} escudo`);
+    const caItemBuffs = (armor && (armor.buffs||[]).length) || (offHand && (offHand.buffs||[]).length);
+    if (caItemBuffs) caBreakdownParts.push('+buffs ítem');
+    if ((c.statBuffs && c.statBuffs.ca || []).length) caBreakdownParts.push('+buff');
+    if ((c.bonuses && c.bonuses.ca)) caBreakdownParts.push(`+${c.bonuses.ca} manual`);
 
-    <!-- ARMAS -->
-    <div class="equip-section">
-      <div class="rc-header">
-        <span class="rc-name">Armas</span>
-        <button class="btn-sm" onclick="App.openAddWeapon()">+ Agregar</button>
+    const atqBreakdown = atqArma !== null
+      ? `${eq.mainHand.name}${(eq.mainHand.buffs||[]).length ? ' +buffs' : ''}`
+      : 'Sin arma equipada';
+
+    const cdBreakdown = cd !== null
+      ? `${c.spellcastingStat ? c.spellcastingStat.toUpperCase() : ''} + prof${(c.statBuffs && c.statBuffs.spellDc || []).length ? ' +buff' : ''}`
+      : 'Sin conjuros';
+
+    const chip = (key, icon, label, value, breakdown, buffs) => `
+      <div class="stat-chip-eq">
+        <button class="stat-chip-add-buff" onclick="App.openBuffModal('stat','${key}')" title="Agregar buff">+</button>
+        <div class="stat-chip-icon">${icon}</div>
+        <div class="stat-chip-value">${value}</div>
+        <div class="stat-chip-label">${label}</div>
+        ${breakdown ? `<div class="stat-chip-breakdown">${breakdown}</div>` : ''}
+        ${_buffChipsHTML(buffs, id => `App.removeStatBuff('${key}','${id}')`)}
       </div>`;
 
-    if ((c.weapons || []).length === 0) {
-      htmlIzq += `<div class="equip-empty">Sin armas.</div>`;
-    } else {
-      const prof = Characters.calcProfBonus(c.nivel);
-      const strMod = Characters.calcMod(c.stats.for);
-      const dexMod = Characters.calcMod(c.stats.des);
-      (c.weapons || []).forEach((w, i) => {
-        const isFocus = w.type === 'focus';
-        const hitStr = w.bonus && w.bonus !== '+0' ? w.bonus : '';
-        const dmgStr = w.die !== '—' ? w.die : '—';
-        const extraStr = w.extraDie ? `+${w.extraDie}${w.extraType ? ' ' + w.extraType : ''}` : '';
-        const masteryBadge = w.mastery ? `<span class="item-mastery-badge">${w.mastery}</span>` : '';
-        const statLabel = w.statUsed === 'dex' ? 'DES' : w.statUsed === 'choice' ? 'FUE/DES' : '';
-        htmlIzq += `
-        <div class="item-row">
-          <div class="item-row-left">
-            <span class="item-name">${w.name}</span>
-            ${w.notes ? `<span class="item-desc">${w.notes}</span>` : ''}
-          </div>
-          <div class="item-row-right">
-            ${masteryBadge}
-            ${!isFocus && statLabel ? `<span class="item-stat item-stat-dim">${statLabel}</span>` : ''}
-            ${!isFocus && hitStr ? `<span class="item-stat hit-badge">${hitStr} golpe</span>` : ''}
-            ${!isFocus ? `<span class="item-stat">${dmgStr}${extraStr ? ' <span class="item-extra-dmg">'+extraStr+'</span>' : ''}</span>` : ''}
-            <button class="item-edit" onclick="App.openEditWeapon(${i})" title="Editar">✎</button>
-            <button class="item-del" onclick="App.deleteWeapon(${i})">✕</button>
-          </div>
-        </div>`;
-      });
-    }
+    return `
+    <div class="stat-chips-eq-row">
+      ${chip('ca', '🛡', 'CA Total', ca, _statChipBreakdown(caBreakdownParts), c.statBuffs && c.statBuffs.ca)}
+      ${chip('attack', '⚔️', 'Ataque (arma)', atqArma !== null ? ((atqArma>=0?'+':'')+atqArma) : '—', atqBreakdown, c.statBuffs && c.statBuffs.attack)}
+      ${chip('spellDc', '✨', 'CD Conjuro', cd !== null ? cd : '—', cdBreakdown, c.statBuffs && c.statBuffs.spellDc)}
+    </div>`;
+  }
 
-    htmlIzq += `</div>
+  function _renderEquipoTab() {
+    const c = _char;
+    _ensureEquipment(c);
+    const eq = c.equipment;
 
-    <!-- CUERPO & ARMADURA (fusionado) -->
-    <div class="equip-section">
-      <div class="rc-header" style="margin-bottom:10px;">
-        <span class="rc-name">🧥 Cuerpo & Armadura</span>
-        <button class="btn-sm" onclick="App.openAddItem('body')">+ Agregar</button>
-      </div>
-      <!-- CA block compacto -->
-      <div class="armor-row">
-        <div class="armor-info">
-          <div style="font-size:15px;color:var(--text);font-weight:600;display:flex;align-items:center;gap:8px;">
-            ${c.armor.name || 'Sin armadura'}
-            <button class="btn-edit-stats" style="font-size:10px;padding:2px 7px;"
-              onclick="App.openArmorPicker()" title="Cambiar armadura">✎ Cambiar</button>
-          </div>
-          <div class="armor-formula">
-            CA ${c.armor.base_ca}
-            ${c.armor.add_dex ? ` + DES (${Characters.calcMod(c.stats.des) >= 0 ? '+' : ''}${Characters.calcMod(c.stats.des)})` : ''}
-            ${c.armor.shield ? ` + Escudo +${c.armor.shield_bonus||2}` : ''}
-            ${(c.bonuses&&c.bonuses.ca) ? ` + bonus +${c.bonuses.ca}` : ''}
-            = <strong>${ca}</strong>
-          </div>
-          <div class="armor-controls">
-            <button class="cond-btn ${c.armor.shield ? 'active' : ''}" onclick="App.toggleShield()" style="margin-top:6px;">
-              🛡 Escudo ${c.armor.shield ? 'ON' : 'OFF'}
-            </button>
-            <div class="bonus-row" style="margin-top:8px;">
-              <span class="bonus-label">Bonus CA</span>
-              <input type="number" class="bonus-input" value="${(c.bonuses&&c.bonuses.ca)||0}"
-                     onchange="App.setBonus('ca', this.value)" onclick="this.select()">
-              <span class="bonus-hint">(ítems, hechizos)</span>
-            </div>
-          </div>
-        </div>
-        <div class="ca-display">
-          <div class="ca-big">${ca}</div>
-          <div class="ca-label">CA Total</div>
-        </div>
-      </div>
-      <!-- Piezas equipadas -->
-      <div class="body-items-list">`;
+    let htmlIzq = `<div class="section-hd">🎒 Ítems</div>
 
-    const bodyItems = (c.consumables || []).filter(item => item.slot === 'body');
-    if (bodyItems.length === 0) {
-      htmlIzq += `<div class="equip-empty" style="margin-top:6px;">Sin ropa ni equipo equipado.</div>`;
-    } else {
-      (c.consumables || []).forEach((item, i) => {
-        if (item.slot !== 'body') return;
-        const cat = item.category || 'Other';
-        htmlIzq += `
-        <div class="item-row">
-          <div class="item-row-left">
-            <span class="item-name">${item.name}</span>
-            ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
-          </div>
-          <div class="item-row-right">
-            ${_itemCatBadge(cat)}
-            <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
-            <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
-          </div>
-        </div>`;
-      });
-    }
+    ${_renderAttunementBar(eq)}
 
-    htmlIzq += `</div>
+    <div class="equip-slots-grid">
+      ${EQUIP_SLOTS.map(s => _renderEquipSlot(s, eq[s.key])).join('')}
     </div>
 
-    <!-- ÍTEMS MÁGICOS -->
-    <div class="equip-section">
-      <div class="rc-header">
-        <span class="rc-name">Ítems Mágicos</span>
-        <button class="btn-sm" onclick="App.addMagicItem()">+ Agregar</button>
-      </div>
-      <div id="magicItemsList">`;
-
-    if ((c.magicItems || []).length === 0) {
-      htmlIzq += `<div class="equip-empty">Sin ítems mágicos.</div>`;
-    } else {
-      (c.magicItems || []).forEach((item, i) => {
-        htmlIzq += `
-        <div class="item-row">
-          <div class="item-row-left">
-            <span class="item-name">${item.name}</span>
-            ${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}
-          </div>
-          <div class="item-row-right">
-            ${_itemCatBadge('Valuable')}
-            <button class="item-edit" onclick="App.editMagicItem(${i})" title="Editar">✎</button>
-            <button class="item-del" onclick="App.deleteMagicItem(${i})">✕</button>
-          </div>
-        </div>`;
-      });
-    }
-
-    htmlIzq += `</div></div>
-
-    <!-- ATTUNEMENT -->
-    <div class="equip-section">
-      <div class="rc-name" style="margin-bottom:8px;">Attunement (máx 3)</div>
-      <div class="attunement-slots">`;
-
-    (c.attunement || ['','','']).forEach((slot, i) => {
-      htmlIzq += `<input type="text" class="attunement-input"
-        value="${slot.replace(/"/g,'&quot;')}"
-        placeholder="Ítem sintonizado ${i+1}..."
-        onchange="App.setAttunement(${i},this.value)">`;
-    });
-
-    htmlIzq += `</div></div>
-
-    <!-- NOTAS DE SESIÓN -->
-    <div class="equip-section">
-      <div class="rc-header">
-        <span class="rc-name">Notas de Sesión</span>
-        <button class="btn-sm" onclick="document.getElementById('sessionNotesArea').value='';App.setNotes('');">Limpiar</button>
-      </div>
-      <textarea class="notes-area" id="sessionNotesArea"
-                placeholder="NPCs encontrados, pistas, acuerdos, daño recibido..."
-                oninput="App.setNotes(this.value)">${c.notes || ''}</textarea>
-    </div>
-
+    ${_renderStatChips(c)}
     `;
 
     // ── COLUMNA DERECHA: Mochila + Dinero ──
-    let htmlDer = `
-    <!-- MOCHILA -->
-    <div class="equip-section">
-      <div class="rc-header">
-        <span class="rc-name">🎒 Mochila</span>
-        <button class="btn-sm" onclick="App.openAddItem('bag')">+ Agregar</button>
-      </div>`;
+    let htmlDer = _renderMochilaHTML(c);
+    htmlDer += `
 
-    const bagItems = (c.consumables || []).filter(item => item.slot !== 'body');
-    if (bagItems.length === 0) {
-      htmlDer += `<div class="equip-empty">Mochila vacía.</div>`;
+    <!-- DINERO -->
+    ${_renderCurrencyHTML(c)}`;
+
+    document.getElementById('col-equipo-izq').innerHTML = htmlIzq;
+    document.getElementById('col-equipo-der').innerHTML = htmlDer;
+  }
+
+  // Estado del filtro/búsqueda de mochila (no persiste, es de sesión de UI)
+  let _bagSearch = '';
+  let _bagCatFilter = '';
+
+  function _renderMochilaHTML(c) {
+    const items = c.consumables || [];
+    const cats = Array.from(new Set(items.map(i => i.category || 'Other')));
+
+    const q = _bagSearch.trim().toLowerCase();
+    const filtered = items.filter((item, i) => {
+      item.__idx = i;
+      return true;
+    }).filter(item => {
+      if (_bagCatFilter && (item.category || 'Other') !== _bagCatFilter) return false;
+      if (!q) return true;
+      const hay = `${item.name} ${item.category||''} ${item.desc||''}`.toLowerCase();
+      return hay.includes(q);
+    });
+
+    const filterChips = cats.map(cat => `
+      <button class="bag-filter-chip${_bagCatFilter === cat ? ' bag-filter-chip--active' : ''}"
+        onclick="App.setBagCatFilter('${cat.replace(/'/g,"\\'")}')">${ITEM_CAT_LABELS[cat] || cat}</button>
+    `).join('');
+
+    let rows = '';
+    if (filtered.length === 0) {
+      rows = `<div class="equip-empty">${items.length === 0 ? 'Mochila vacía.' : 'Sin resultados.'}</div>`;
     } else {
-      (c.consumables || []).forEach((item, i) => {
-        if (item.slot === 'body') return;
+      filtered.forEach(item => {
+        const i = item.__idx;
         const cat = item.category || 'Other';
+        const isMagic = _MAGIC_ITEM_CATS.has(cat);
+        const hasCharges = !!item.charges;
         const isEmpty = item.qty === 0;
         const isContainer = !!item.container;
         const maxQty = item.maxQty || item.qty || 1;
         const emptyClass = isEmpty ? ' item-row--empty' : '';
-        const qtyControls = isContainer
-          ? `<div class="qty-mini">
+
+        let qtyControls;
+        if (hasCharges) {
+          const cur = item.charges.current || 0;
+          const max = item.charges.max || 1;
+          const pips = Array.from({length: max}, (_,p) =>
+            `<span class="charge-pip${p < cur ? ' charge-pip--on' : ''}"></span>`).join('');
+          qtyControls = `
+            <div class="charges-mini">
+              <span class="charges-pips">${pips}</span>
+              <span class="charges-label">${cur}/${max} cargas</span>
+              <button class="qty-btn qty-btn--refill" onclick="App.refillCharges(${i})" title="Rellenar cargas">↻ Rellenar</button>
+            </div>`;
+        } else if (isContainer) {
+          qtyControls = `<div class="qty-mini">
                <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
                <span class="qty-val" id="cons-${i}">${item.qty}<span class="qty-max">/${maxQty}</span></span>
                <button class="qty-btn" onclick="App.adjustConsumable(${i},1)" ${item.qty >= maxQty ? 'disabled' : ''}>+</button>
                <button class="qty-btn qty-btn--refill" onclick="App.refillContainer(${i})" title="Rellenar">↺</button>
-             </div>`
-          : `<div class="qty-mini">
+             </div>`;
+        } else {
+          qtyControls = `<div class="qty-mini">
                <button class="qty-btn" onclick="App.adjustConsumable(${i},-1)">−</button>
-               <span class="qty-val" id="cons-${i}">${item.qty}</span>
+               <span class="qty-val" id="cons-${i}">×${item.qty}</span>
                <button class="qty-btn" onclick="App.adjustConsumable(${i},1)">+</button>
              </div>`;
-        htmlDer += `
+        }
+
+        rows += `
         <div class="item-row${emptyClass}" id="item-row-${i}">
           <div class="item-row-left">
             <span class="item-name">${item.name}</span>
@@ -2667,6 +2715,7 @@ const App = (() => {
           <div class="item-row-right">
             ${qtyControls}
             <div class="item-actions">
+              ${isMagic ? `<button class="btn-sm" onclick="App.openEquipPicker(null, ${i})" title="Equipar">Equipar</button>` : ''}
               <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
               <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
             </div>
@@ -2675,13 +2724,33 @@ const App = (() => {
       });
     }
 
-    htmlDer += `</div>
+    return `
+    <div class="equip-section">
+      <div class="rc-header">
+        <span class="rc-name">🎒 Mochila</span>
+        <button class="btn-sm" onclick="App.openAddItem('bag')">+ Ítem</button>
+      </div>
+      <input type="text" class="bag-search-input" placeholder="Buscar por nombre o categoría..."
+        value="${_bagSearch.replace(/"/g,'&quot;')}" oninput="App.setBagSearch(this.value)">
+      ${cats.length > 0 ? `<div class="bag-filter-row">
+        <button class="bag-filter-chip${!_bagCatFilter ? ' bag-filter-chip--active' : ''}" onclick="App.setBagCatFilter('')">Todos</button>
+        ${filterChips}
+      </div>` : ''}
+      <div class="bag-items-list">${rows}</div>
+    </div>`;
+  }
 
-    <!-- DINERO -->
-    ${_renderCurrencyHTML(c)}`;
+  function setBagSearch(val) {
+    _bagSearch = val;
+    _renderEquipoTab();
+    // Reponer foco y cursor tras el re-render (innerHTML destruye el input)
+    const input = document.querySelector('.bag-search-input');
+    if (input) { input.focus(); input.setSelectionRange(val.length, val.length); }
+  }
 
-    document.getElementById('col-equipo-izq').innerHTML = htmlIzq;
-    document.getElementById('col-equipo-der').innerHTML = htmlDer;
+  function setBagCatFilter(cat) {
+    _bagCatFilter = cat;
+    _renderEquipoTab();
   }
 
   // Todas las denominaciones — GP como unidad de referencia total
@@ -4586,6 +4655,10 @@ const App = (() => {
      EQUIPO
   ══════════════════════════════════════════════════════ */
 
+  /* ── Modal Agregar/Editar Arma (reusado para mainHand/offHand) ── */
+
+  let _awmSlot = 'mainHand'; // slot destino al guardar
+
   function _awmClearSearch() {
     const el = document.getElementById('awmSearch');
     const sg = document.getElementById('awmSuggestions');
@@ -4605,8 +4678,9 @@ const App = (() => {
     document.getElementById('awmDesc').value     = w.notes     || (w.properties ? w.properties.join(', ') : '');
   }
 
-  function openAddWeapon() {
-    _editWeaponIdx = null;
+  // slot: 'mainHand' o 'offHand'. Abre el modal para crear un arma nueva en ese slot.
+  function openAddWeapon(slot) {
+    _awmSlot = slot || 'mainHand';
     document.getElementById('awmModalTitle').textContent = '+ Agregar Arma';
     _awmFill({ die:'1d6', type:'melee', statUsed:'str' });
     _awmClearSearch();
@@ -4614,10 +4688,11 @@ const App = (() => {
     setTimeout(() => document.getElementById('awmSearch')?.focus(), 80);
   }
 
-  function openEditWeapon(idx) {
-    const w = (_char.weapons || [])[idx];
+  // Edita el arma que ya está equipada en el slot dado.
+  function openEditWeapon(slot) {
+    const w = _char.equipment && _char.equipment[slot];
     if (!w) return;
-    _editWeaponIdx = idx;
+    _awmSlot = slot;
     document.getElementById('awmModalTitle').textContent = '✎ Editar Arma';
     _awmFill(w);
     _awmClearSearch();
@@ -4682,30 +4757,376 @@ const App = (() => {
     const extraDie  = document.getElementById('awmExtraDie').value.trim();
     const extraType = document.getElementById('awmExtraType').value.trim();
     const notes     = document.getElementById('awmDesc').value.trim();
-    const data = { name, die, bonus, type, statUsed, mastery, extraDie, extraType, notes };
-    if (!Array.isArray(_char.weapons)) _char.weapons = [];
-    if (_editWeaponIdx !== null) {
-      Object.assign(_char.weapons[_editWeaponIdx], data);
-    } else {
-      _char.weapons.push({ id:'w-'+Date.now(), ...data });
-    }
+    _ensureEquipment(_char);
+    const existing = _char.equipment[_awmSlot];
+    const bonuses = (existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 };
+    const buffs   = (existing && existing.buffs) || [];
+    const id      = (existing && existing.id) || ('w-' + Date.now());
+    _char.equipment[_awmSlot] = { id, name, kind:'weapon', die, bonus, type, statUsed, mastery, extraDie, extraType, notes, bonuses, buffs };
     _saveChar();
     closeAddWeapon();
     _renderEquipoTab();
+    _renderHeader();
   }
 
-  function addWeapon() { openAddWeapon(); }
+  /* ── Picker de equipar (elegir qué ítem de la mochila ocupa un slot, o crear nuevo) ── */
 
-  function deleteWeapon(idx) {
-    const name = _char.weapons[idx]?.name || 'esta arma';
-    _confirm(`¿Eliminar "${name}"?`, () => {
-      _char.weapons.splice(idx, 1);
+  let _equipPickerSlot = null;
+  let _equipPickerBagIdx = null; // si viene desde "Equipar" en la mochila
+
+  function openEquipPicker(slotKey, bagIdx) {
+    _equipPickerSlot = slotKey;
+    _equipPickerBagIdx = (bagIdx !== undefined) ? bagIdx : null;
+
+    // Si viene desde la mochila (ítem mágico sin slot fijo), hay que elegir el slot destino.
+    if (slotKey === null && bagIdx !== undefined) {
+      _openSlotChooserModal(bagIdx);
+      return;
+    }
+
+    const slotDef = EQUIP_SLOTS.find(s => s.key === slotKey);
+    if (!slotDef) return;
+
+    if (slotDef.kinds.includes('weapon') && (slotKey === 'mainHand' || slotKey === 'offHand')) {
+      // Slot de arma: ofrecer buscador de armas directo (reusa el modal existente)
+      openAddWeapon(slotKey);
+      return;
+    }
+    if (slotKey === 'offHand') {
+      _openOffHandChooserModal();
+      return;
+    }
+    if (slotKey === 'armor') {
+      openArmorPicker();
+      return;
+    }
+    // ring / neck / misc: ítem "wondrous" genérico — abrir mini-form
+    _openWondrousModal(slotKey);
+  }
+
+  // Mini modal genérico reusado para wondrous items (ring/neck/misc) y para
+  // convertir un ítem mágico de mochila en un ítem equipado.
+  function _wondrousOverlay() {
+    let overlay = document.getElementById('wondrousModalOverlay');
+    if (overlay) return overlay;
+    overlay = document.createElement('div');
+    overlay.id = 'wondrousModalOverlay';
+    overlay.className = 'modal-overlay';
+    overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:380px;width:100%;">
+        <div class="modal-header"><span id="wondrousModalTitle"></span></div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label class="modal-mini-label">Nombre</label>
+            <input id="wondrousNameInput" type="text" placeholder="Ej: Anillo de Protección" class="modal-mini-input">
+          </div>
+          <div>
+            <label class="modal-mini-label">Notas <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+            <input id="wondrousNotesInput" type="text" placeholder="Ej: +1 CA y Saving Throws" class="modal-mini-input">
+          </div>
+          <label class="modal-mini-check">
+            <input id="wondrousAttuneCheck" type="checkbox"> Requiere sintonía
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App._closeWondrousModal()">Cancelar</button>
+          <button id="wondrousSaveBtn" class="btn-primary" onclick="App._saveWondrousModal()">Guardar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function _openWondrousModal(slotKey) {
+    const overlay = _wondrousOverlay();
+    const item = (_char.equipment && _char.equipment[slotKey]) || {};
+    document.getElementById('wondrousModalTitle').textContent = item.name ? '✎ Editar ítem' : '✦ Nuevo ítem';
+    document.getElementById('wondrousNameInput').value = item.name || '';
+    document.getElementById('wondrousNotesInput').value = item.notes || '';
+    document.getElementById('wondrousAttuneCheck').checked = !!item.requiresAttunement;
+    overlay.dataset.slot = slotKey;
+    overlay.dataset.bagIdx = '';
+    overlay.style.display = 'flex';
+    setTimeout(() => document.getElementById('wondrousNameInput').focus(), 50);
+  }
+
+  // Convierte un ítem de mochila (categoría mágica) en un ítem equipado en slotKey.
+  function _openSlotChooserModal(bagIdx) {
+    const item = (_char.consumables || [])[bagIdx];
+    if (!item) return;
+    // Elegir automáticamente el primer slot wondrous libre; si no hay, usar 'misc'.
+    const candidates = ['ring','neck','misc'];
+    const free = candidates.find(k => !_char.equipment[k]) || 'misc';
+    const overlay = _wondrousOverlay();
+    document.getElementById('wondrousModalTitle').textContent = `✦ Equipar "${item.name}"`;
+    document.getElementById('wondrousNameInput').value = item.name || '';
+    document.getElementById('wondrousNotesInput').value = item.desc || '';
+    document.getElementById('wondrousAttuneCheck').checked = false;
+    overlay.dataset.slot = free;
+    overlay.dataset.bagIdx = String(bagIdx);
+    overlay.style.display = 'flex';
+    setTimeout(() => document.getElementById('wondrousNameInput').focus(), 50);
+  }
+
+  function _closeWondrousModal() {
+    const overlay = document.getElementById('wondrousModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  function _saveWondrousModal() {
+    const overlay = document.getElementById('wondrousModalOverlay');
+    const slotKey = overlay?.dataset.slot;
+    if (!slotKey) return;
+    const name = (document.getElementById('wondrousNameInput')?.value || '').trim();
+    if (!name) { showToast('El nombre es obligatorio'); return; }
+    const notes = (document.getElementById('wondrousNotesInput')?.value || '').trim();
+    const requiresAttunement = !!document.getElementById('wondrousAttuneCheck')?.checked;
+
+    _ensureEquipment(_char);
+    const existing = _char.equipment[slotKey];
+    const bonuses = (existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 };
+    const buffs   = (existing && existing.buffs) || [];
+    const attuned = existing ? !!existing.attuned : false;
+    _char.equipment[slotKey] = {
+      id: (existing && existing.id) || ('wnd-' + Date.now()),
+      name, kind:'wondrous', requiresAttunement, attuned, notes, bonuses, buffs,
+    };
+
+    const bagIdxRaw = overlay.dataset.bagIdx;
+    if (bagIdxRaw !== '') {
+      const bagIdx = parseInt(bagIdxRaw);
+      if (!isNaN(bagIdx)) _char.consumables.splice(bagIdx, 1);
+    }
+
+    _saveChar();
+    _closeWondrousModal();
+    _renderEquipoTab();
+    _renderHeader();
+  }
+
+  // Elegir arma liviana o escudo para offHand
+  function _openOffHandChooserModal() {
+    _confirmChoice(
+      'Mano secundaria',
+      '¿Qué querés equipar?',
+      '🛡 Escudo',
+      '⚔️ Arma',
+      () => {
+        _ensureEquipment(_char);
+        const existing = _char.equipment.offHand;
+        _char.equipment.offHand = {
+          id: (existing && existing.id) || ('shield-' + Date.now()),
+          name: 'Escudo', kind:'shield', shield_bonus: 2,
+          bonuses: (existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 },
+          buffs: (existing && existing.buffs) || [],
+        };
+        _saveChar();
+        _renderEquipoTab();
+        _renderHeader();
+      },
+      () => openAddWeapon('offHand')
+    );
+  }
+
+  /* ── Opciones de slot lleno: editar / desequipar / eliminar ── */
+
+  function openSlotOptions(slotKey) {
+    const item = _char.equipment && _char.equipment[slotKey];
+    if (!item) return;
+    const slotDef = EQUIP_SLOTS.find(s => s.key === slotKey);
+    let overlay = document.getElementById('slotOptionsOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'slotOptionsOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:320px;width:100%;">
+        <div class="modal-header">${item.name}</div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn-secondary" style="width:100%;" onclick="App._slotOptEdit('${slotKey}')">✎ Editar</button>
+          <button class="btn-secondary" style="width:100%;" onclick="App._slotOptUnequip('${slotKey}')">↩ Desequipar (a mochila)</button>
+          <button class="btn-secondary" style="width:100%;color:var(--danger,#d05050);" onclick="App._slotOptDelete('${slotKey}')">✕ Eliminar</button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App._closeSlotOptions()">Cerrar</button>
+        </div>
+      </div>`;
+    overlay.style.display = 'flex';
+  }
+
+  function _closeSlotOptions() {
+    const overlay = document.getElementById('slotOptionsOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  function _slotOptEdit(slotKey) {
+    _closeSlotOptions();
+    const item = _char.equipment[slotKey];
+    if (!item) return;
+    if (item.kind === 'weapon') openEditWeapon(slotKey);
+    else if (item.kind === 'armor') openArmorPicker();
+    else if (item.kind === 'shield') _openOffHandChooserModal();
+    else _openWondrousModal(slotKey);
+  }
+
+  function _slotOptUnequip(slotKey) {
+    _closeSlotOptions();
+    const item = _char.equipment[slotKey];
+    if (!item) return;
+    if (!_char.consumables) _char.consumables = [];
+    const catByKind = { weapon: 'Weapon - martial melee', shield: 'Equipment', armor: 'Apparel', wondrous: 'Ítem mágico' };
+    _char.consumables.push({
+      id: 'i-' + Date.now(), name: item.name, qty: 1,
+      category: catByKind[item.kind] || 'Other',
+      desc: item.notes || '',
+    });
+    _char.equipment[slotKey] = null;
+    _saveChar();
+    _renderEquipoTab();
+    _renderHeader();
+    showToast(`${item.name} → mochila`);
+  }
+
+  function _slotOptDelete(slotKey) {
+    _closeSlotOptions();
+    const item = _char.equipment[slotKey];
+    if (!item) return;
+    _confirm(`¿Eliminar "${item.name}"?`, () => {
+      _char.equipment[slotKey] = null;
       _saveChar();
       _renderEquipoTab();
+      _renderHeader();
     });
   }
 
-  let _editWeaponIdx = null;
+  /* ── Attunement (derivado: contar atunados en equipment) ── */
+
+  function toggleAttunement(slotKey) {
+    const item = _char.equipment && _char.equipment[slotKey];
+    if (!item || !item.requiresAttunement) return;
+    if (!item.attuned) {
+      const count = Characters.calcAttunementCount(_char.equipment);
+      if (count >= Characters.ATTUNEMENT_MAX) {
+        showToast(`Ya tenés ${Characters.ATTUNEMENT_MAX} ítems sintonizados (máximo)`, 'error');
+        return;
+      }
+      item.attuned = true;
+    } else {
+      item.attuned = false;
+    }
+    _saveChar();
+    _renderEquipoTab();
+    _renderHeader();
+    if (_activeTab === 'combate') _renderCombateTab();
+  }
+
+  /* ── Buffs puntuales (por slot o por stat-chip general) ── */
+
+  // scope: 'slot' | 'stat'. key: nombre del slot (mainHand, armor...) o del stat (ca, attack, spellDc)
+  function openBuffModal(scope, key) {
+    let overlay = document.getElementById('buffModalOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'buffModalOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:340px;width:100%;">
+          <div class="modal-header">+ Agregar buff</div>
+          <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <label class="modal-mini-label">Etiqueta</label>
+              <input id="buffLabelInput" type="text" placeholder="Ej: +1d8 fuego" class="modal-mini-input">
+            </div>
+            <div>
+              <label class="modal-mini-label">Valor numérico <span style="font-weight:400;text-transform:none;">(para el cálculo total)</span></label>
+              <input id="buffValueInput" type="number" placeholder="1" class="modal-mini-input">
+            </div>
+            <div>
+              <label class="modal-mini-label">Fuente <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+              <input id="buffSourceInput" type="text" placeholder="Ej: Bendición del DM (8h)" class="modal-mini-input">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" onclick="App._closeBuffModal()">Cancelar</button>
+            <button class="btn-primary" onclick="App._saveBuffModal()">Agregar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+    overlay.dataset.scope = scope;
+    overlay.dataset.key = key;
+    document.getElementById('buffLabelInput').value = '';
+    document.getElementById('buffValueInput').value = '';
+    document.getElementById('buffSourceInput').value = '';
+    overlay.style.display = 'flex';
+    setTimeout(() => document.getElementById('buffLabelInput').focus(), 50);
+  }
+
+  function _closeBuffModal() {
+    const overlay = document.getElementById('buffModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  function _saveBuffModal() {
+    const overlay = document.getElementById('buffModalOverlay');
+    const scope = overlay?.dataset.scope;
+    const key = overlay?.dataset.key;
+    const label = (document.getElementById('buffLabelInput')?.value || '').trim();
+    const value = parseFloat(document.getElementById('buffValueInput')?.value) || 0;
+    const source = (document.getElementById('buffSourceInput')?.value || '').trim();
+    if (!label) { showToast('La etiqueta es obligatoria'); return; }
+    const buff = { id: 'buff-' + Date.now(), label, value, source };
+
+    if (scope === 'slot') {
+      const item = _char.equipment && _char.equipment[key];
+      if (!item) return;
+      if (!Array.isArray(item.buffs)) item.buffs = [];
+      // stat implícito según el slot: armadura/escudo → ac; arma → attack; wondrous → ac genérico
+      buff.stat = item.kind === 'weapon' ? 'attack' : 'ac';
+      item.buffs.push(buff);
+    } else if (scope === 'stat') {
+      if (!_char.statBuffs) _char.statBuffs = { ca: [], attack: [], save: [], spellDc: [] };
+      const map = { ca: 'ca', attack: 'attack', spellDc: 'spellDc' };
+      const listKey = map[key] || 'ca';
+      if (!Array.isArray(_char.statBuffs[listKey])) _char.statBuffs[listKey] = [];
+      _char.statBuffs[listKey].push(buff);
+    }
+
+    _saveChar();
+    _closeBuffModal();
+    _renderEquipoTab();
+    _renderHeader();
+    if (_activeTab === 'combate') _renderCombateTab();
+  }
+
+  function removeSlotBuff(slotKey, buffId) {
+    const item = _char.equipment && _char.equipment[slotKey];
+    if (!item || !Array.isArray(item.buffs)) return;
+    item.buffs = item.buffs.filter(b => b.id !== buffId);
+    _saveChar();
+    _renderEquipoTab();
+    _renderHeader();
+    if (_activeTab === 'combate') _renderCombateTab();
+  }
+
+  function removeStatBuff(statKey, buffId) {
+    if (!_char.statBuffs) return;
+    const map = { ca: 'ca', attack: 'attack', spellDc: 'spellDc' };
+    const listKey = map[statKey] || statKey;
+    if (!Array.isArray(_char.statBuffs[listKey])) return;
+    _char.statBuffs[listKey] = _char.statBuffs[listKey].filter(b => b.id !== buffId);
+    _saveChar();
+    _renderEquipoTab();
+    _renderHeader();
+    if (_activeTab === 'combate') _renderCombateTab();
+  }
+
+  /* ── Mochila (Agregar/Editar ítem, con soporte de cargas) ── */
 
   let _addItemSlot = 'bag';
   let _editItemIdx = null;  // null = crear nuevo, number = editar existente
@@ -4726,24 +5147,41 @@ const App = (() => {
     _setContainerBtn(input?.value !== '1');
   }
 
+  function _setChargesFields(hasCharges, current, max) {
+    const row = document.getElementById('aimChargesRow');
+    const has = document.getElementById('aimHasCharges');
+    const cur = document.getElementById('aimChargesCurrent');
+    const mx  = document.getElementById('aimChargesMax');
+    if (has) has.checked = hasCharges;
+    if (row) row.style.display = hasCharges ? 'flex' : 'none';
+    if (cur) cur.value = current != null ? current : 1;
+    if (mx)  mx.value  = max != null ? max : 1;
+  }
+
+  function toggleChargesFields() {
+    const has = document.getElementById('aimHasCharges');
+    _setChargesFields(!!has?.checked, null, null);
+  }
+
   function openEditItem(idx) {
     const item = (_char.consumables || [])[idx];
     if (!item) return;
     _editItemIdx = idx;
-    _addItemSlot = item.slot || 'bag';
+    _addItemSlot = 'bag';
     document.getElementById('aimName').value = item.name || '';
     document.getElementById('aimDesc').value = item.desc || '';
     document.getElementById('aimQty').value  = item.qty !== undefined ? item.qty : 1;
     document.getElementById('aimCategory').value = item.category || 'Other';
     _setContainerBtn(!!item.container);
+    _setChargesFields(!!item.charges, item.charges && item.charges.current, item.charges && item.charges.max);
     const titleEl = document.getElementById('addItemModalTitle');
     if (titleEl) titleEl.textContent = '✎ Editar ítem';
     const saveBtn = document.getElementById('aimSaveBtn');
     if (saveBtn) saveBtn.textContent = 'Guardar';
     const qtyField = document.getElementById('aimQtyField');
-    if (qtyField) qtyField.style.display = item.slot === 'body' ? 'none' : '';
+    if (qtyField) qtyField.style.display = '';
     const containerRow = document.getElementById('aimContainerRow');
-    if (containerRow) containerRow.style.display = item.slot === 'body' ? 'none' : '';
+    if (containerRow) containerRow.style.display = '';
     document.getElementById('addItemModal').classList.add('show');
   }
 
@@ -4753,17 +5191,19 @@ const App = (() => {
     document.getElementById('aimName').value = '';
     document.getElementById('aimDesc').value = '';
     _setContainerBtn(false);
+    _setChargesFields(false, 1, 1);
     document.getElementById('addItemModal').classList.add('show');
     const titleEl = document.getElementById('addItemModalTitle');
-    if (titleEl) titleEl.textContent = slot === 'body' ? '+ Equipo del cuerpo' : '+ Agregar a mochila';
+    if (titleEl) titleEl.textContent = '+ Agregar a mochila';
     const saveBtn = document.getElementById('aimSaveBtn');
     if (saveBtn) saveBtn.textContent = 'Agregar';
-    document.getElementById('aimCategory').value = slot === 'body' ? 'Apparel' : 'Other';
+    document.getElementById('aimCategory').value = 'Other';
     const qtyField = document.getElementById('aimQtyField');
-    if (qtyField) qtyField.style.display = slot === 'body' ? 'none' : '';
+    if (qtyField) qtyField.style.display = '';
     const containerRow = document.getElementById('aimContainerRow');
-    if (containerRow) containerRow.style.display = slot === 'body' ? 'none' : '';
+    if (containerRow) containerRow.style.display = '';
     document.getElementById('aimQty').value = '1';
+    setTimeout(() => document.getElementById('aimName')?.focus(), 80);
   }
 
   function closeAddItem() {
@@ -4774,12 +5214,19 @@ const App = (() => {
     const name = document.getElementById('aimName').value.trim();
     if (!name) return;
     const qtyRaw = parseInt(document.getElementById('aimQty').value);
-    const qty  = _addItemSlot === 'body' ? 1 : (isNaN(qtyRaw) ? 1 : qtyRaw);
+    const qty  = isNaN(qtyRaw) ? 1 : qtyRaw;
     const category = document.getElementById('aimCategory').value;
     const desc = document.getElementById('aimDesc').value.trim();
     if (!_char.consumables) _char.consumables = [];
 
     const isContainer = document.getElementById('aimContainer')?.value === '1';
+    const hasCharges = !!document.getElementById('aimHasCharges')?.checked;
+    let charges;
+    if (hasCharges) {
+      const cur = parseInt(document.getElementById('aimChargesCurrent')?.value);
+      const max = parseInt(document.getElementById('aimChargesMax')?.value);
+      charges = { current: isNaN(cur) ? 1 : cur, max: isNaN(max) ? 1 : max };
+    }
 
     if (_editItemIdx !== null) {
       const item = _char.consumables[_editItemIdx];
@@ -4790,10 +5237,13 @@ const App = (() => {
         item.category  = category;
         item.container = isContainer || undefined;
         if (isContainer) item.maxQty = qty > 0 ? qty : (item.maxQty || 1);
+        if (hasCharges) item.charges = charges; else delete item.charges;
       }
     } else {
-      _char.consumables.push({ id:'i-'+Date.now(), name, qty, category, desc, slot: _addItemSlot,
-        container: isContainer || undefined, maxQty: isContainer ? qty : undefined });
+      const newItem = { id:'i-'+Date.now(), name, qty, category, desc,
+        container: isContainer || undefined, maxQty: isContainer ? qty : undefined };
+      if (hasCharges) newItem.charges = charges;
+      _char.consumables.push(newItem);
     }
 
     _saveChar();
@@ -4819,6 +5269,15 @@ const App = (() => {
     showToast(`${item.name} rellenado`);
   }
 
+  function refillCharges(idx) {
+    const item = _char.consumables[idx];
+    if (!item || !item.charges) return;
+    item.charges.current = item.charges.max;
+    _saveChar();
+    _renderEquipoTab();
+    showToast(`${item.name} recargado`);
+  }
+
   function deleteConsumable(idx) {
     const name = _char.consumables[idx]?.name || 'este ítem';
     _confirm(`¿Eliminar "${name}"?`, () => {
@@ -4832,99 +5291,6 @@ const App = (() => {
 
   function setCurrency(coin, val) {
     _char.currency[coin] = Math.max(0, val);
-    _saveChar();
-  }
-
-  function setAttunement(idx, val) {
-    if (!_char.attunement) _char.attunement = ['','',''];
-    _char.attunement[idx] = val;
-    _saveChar();
-  }
-
-  // _magicItemEditIdx: null = agregar nuevo, número = editar ese índice
-  let _magicItemEditIdx = null;
-
-  function _openMagicItemModal(idx) {
-    _magicItemEditIdx = idx !== undefined ? idx : null;
-    const isEdit = _magicItemEditIdx !== null;
-    const item   = isEdit ? (_char.magicItems[_magicItemEditIdx] || {}) : {};
-
-    let overlay = document.getElementById('magicItemModalOverlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'magicItemModalOverlay';
-      overlay.className = 'modal-overlay';
-      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
-      overlay.innerHTML = `
-        <div class="modal" style="max-width:380px;width:100%;">
-          <div class="modal-header"><span id="magicItemModalTitle"></span></div>
-          <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
-            <div>
-              <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:4px;">Nombre</label>
-              <input id="magicItemNameInput" type="text" placeholder="Ej: Ring of Protection"
-                     style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:14px;"
-                     onkeydown="if(event.key==='Enter')App._saveMagicItemModal()">
-            </div>
-            <div>
-              <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);display:block;margin-bottom:4px;">Descripción <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
-              <input id="magicItemDescInput" type="text" placeholder="Ej: +1 CA y Saving Throws"
-                     style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:13px;"
-                     onkeydown="if(event.key==='Enter')App._saveMagicItemModal()">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn-secondary" onclick="App._closeMagicItemModal()">Cancelar</button>
-            <button id="magicItemSaveBtn" class="btn-primary" onclick="App._saveMagicItemModal()"></button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-    }
-
-    document.getElementById('magicItemModalTitle').textContent = isEdit ? '✎ Editar Ítem Mágico' : '✦ Ítem Mágico';
-    document.getElementById('magicItemSaveBtn').textContent    = isEdit ? 'Guardar' : 'Agregar';
-    document.getElementById('magicItemNameInput').value = item.name || '';
-    document.getElementById('magicItemDescInput').value = item.desc || '';
-    overlay.style.display = 'flex';
-    setTimeout(() => document.getElementById('magicItemNameInput').focus(), 50);
-  }
-
-  function addMagicItem()       { _openMagicItemModal(); }
-  function editMagicItem(idx)   { _openMagicItemModal(idx); }
-
-  function _closeMagicItemModal() {
-    const overlay = document.getElementById('magicItemModalOverlay');
-    if (overlay) overlay.style.display = 'none';
-    _magicItemEditIdx = null;
-  }
-
-  function _saveMagicItemModal() {
-    const name = (document.getElementById('magicItemNameInput')?.value || '').trim();
-    if (!name) { showToast('El nombre es obligatorio'); return; }
-    const desc = (document.getElementById('magicItemDescInput')?.value || '').trim();
-    if (!_char.magicItems) _char.magicItems = [];
-    if (_magicItemEditIdx !== null) {
-      // Editar existente
-      _char.magicItems[_magicItemEditIdx] = { ..._char.magicItems[_magicItemEditIdx], name, desc };
-    } else {
-      // Agregar nuevo
-      _char.magicItems.push({ name, desc });
-    }
-    _saveChar();
-    _closeMagicItemModal();
-    _renderEquipoTab();
-  }
-
-  function deleteMagicItem(idx) {
-    const name = _char.magicItems[idx]?.name || 'este ítem';
-    _confirm(`¿Eliminar "${name}"?`, () => {
-      _char.magicItems.splice(idx, 1);
-      _saveChar();
-      _renderEquipoTab();
-    });
-  }
-
-  function setNotes(val) {
-    _char.notes = val;
     _saveChar();
   }
 
@@ -4993,21 +5359,12 @@ const App = (() => {
     if (_activeTab === 'equipo') _renderEquipoTab();
   }
 
-  function toggleShield() {
-    if (!_char) return;
-    _char.armor.shield = !_char.armor.shield;
-    _saveChar();
-    _renderHeader();
-    if (_activeTab === 'equipo') _renderEquipoTab();
-    if (_activeTab === 'combate') _renderCombateTab();
-    showToast(_char.armor.shield ? 'Escudo equipado' : 'Escudo quitado');
-  }
-
-  /* ── ARMOR PICKER ── */
+  /* ── ARMOR PICKER (ahora escribe en equipment.armor) ── */
 
   function openArmorPicker() {
     const catalog = Characters.ARMOR_CATALOG;
-    const current = (_char && _char.armor) ? _char.armor : {};
+    _ensureEquipment(_char);
+    const current = _char.equipment.armor || {};
     const groups  = { light: 'aprLight', medium: 'aprMedium', heavy: 'aprHeavy', none: 'aprOther', custom: 'aprOther' };
 
     Object.values(groups).forEach(id => {
@@ -5056,21 +5413,24 @@ const App = (() => {
       return;
     }
 
+    _ensureEquipment(_char);
+    const existing = _char.equipment.armor;
+    const bonuses = (existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 };
+    const buffs   = (existing && existing.buffs) || [];
+    const id      = (existing && existing.id) || ('armor-' + Date.now());
+
     if (armorId === 'none') {
-      _char.armor.name    = '';
-      _char.armor.base_ca = 10;
-      _char.armor.add_dex = true;
+      _char.equipment.armor = null;
     } else {
-      _char.armor.name    = a.name;
-      _char.armor.base_ca = a.base_ca;
-      _char.armor.add_dex = a.add_dex;
+      _char.equipment.armor = { id, name: a.name, kind:'armor', base_ca: a.base_ca, add_dex: a.add_dex, bonuses, buffs };
     }
 
     _saveChar();
     closeArmorPicker();
     _renderHeader();
     _renderEquipoTab();
-    showToast(`✓ ${a.name} equipada · CA ${Characters.calcCA(_char)}`);
+    if (_activeTab === 'combate') _renderCombateTab();
+    showToast(armorId === 'none' ? `✓ Armadura quitada · CA ${Characters.calcCA(_char)}` : `✓ ${a.name} equipada · CA ${Characters.calcCA(_char)}`);
   }
 
   /* ══════════════════════════════════════════════════════
@@ -7333,7 +7693,6 @@ ${notesText}`;
     const diary   = c.diary   || [];
     const log     = _combatLog;
     const spells  = c.spells  || [];
-    const weapons = c.weapons || [];
 
     // Días desde creación
     const created  = new Date(c.createdAt || Date.now());
@@ -8326,7 +8685,7 @@ ${notesText}`;
     // HP
     setHP, adjustHP, applyFreeHP, applyFreeHPAs, healFull, setHPMax,
     setTempHP, adjustTempHP, promptTempHP,
-    setBonus, toggleShield, openArmorPicker, closeArmorPicker, selectArmorType,
+    setBonus, openArmorPicker, closeArmorPicker, selectArmorType,
 
     // Turn & Rounds
     toggleTurn, endTurn,
@@ -8358,13 +8717,16 @@ ${notesText}`;
     openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
 
     // Equipo
-    addWeapon, openAddWeapon, openEditWeapon, closeAddWeapon, saveAddWeapon, deleteWeapon,
+    openAddWeapon, openEditWeapon, closeAddWeapon, saveAddWeapon,
     awmSearch, awmPick, awmSearchKey,
-    openAddItem, openEditItem, closeAddItem, saveAddItem, toggleContainerBtn,
-    adjustConsumable, deleteConsumable, addConsumable, refillContainer,
-    setCurrency, setAttunement,
-    addMagicItem, editMagicItem, deleteMagicItem, _closeMagicItemModal, _saveMagicItemModal,
-    setNotes, setSpeciesTraits,
+    openAddItem, openEditItem, closeAddItem, saveAddItem, toggleContainerBtn, toggleChargesFields,
+    adjustConsumable, deleteConsumable, addConsumable, refillContainer, refillCharges,
+    setCurrency, setBagSearch, setBagCatFilter,
+    openEquipPicker, openSlotOptions, _closeSlotOptions, _slotOptEdit, _slotOptUnequip, _slotOptDelete,
+    toggleAttunement,
+    openBuffModal, _closeBuffModal, _saveBuffModal, removeSlotBuff, removeStatBuff,
+    _closeWondrousModal, _saveWondrousModal,
+    setSpeciesTraits,
     addResistance, removeResistance, addLanguage, removeLanguage,
 
     // Habilidades

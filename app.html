@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 346;
+const _SW_EXPECTED = 347;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 346;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=85">
+<link rel="stylesheet" href="css/style.css?v=86">
 </head>
 <body>
 
@@ -900,7 +900,8 @@ const _SW_EXPECTED = 346;
           </optgroup>
           <optgroup label="── Otros ──">
             <option value="Valuable">Valioso / Joya</option>
-            <option value="Magic item">Ítem mágico</option>
+            <option value="Magic item">Ítem mágico (no equipable)</option>
+            <option value="Ítem mágico">Ítem mágico (equipable)</option>
             <option value="Part">Parte / Material</option>
             <option value="Other">Otro</option>
           </optgroup>
@@ -923,6 +924,21 @@ const _SW_EXPECTED = 346;
             <span style="color:var(--text-dim);font-size:11px;display:block;">cantimplora, frasco, bolsa…</span>
           </span>
         </button>
+      </div>
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label class="modal-mini-check" style="margin:0;">
+          <input type="checkbox" id="aimHasCharges" onchange="App.toggleChargesFields()"> ¿Tiene cargas?
+        </label>
+      </div>
+      <div class="modal-field" id="aimChargesRow" style="grid-column:1/-1;display:none;gap:10px;">
+        <div style="flex:1;">
+          <label>Cargas actuales</label>
+          <input type="number" id="aimChargesCurrent" value="1" min="0">
+        </div>
+        <div style="flex:1;">
+          <label>Cargas máximas</label>
+          <input type="number" id="aimChargesMax" value="1" min="1">
+        </div>
       </div>
     </div>
     <div class="modal-btns">
@@ -1235,9 +1251,9 @@ const _SW_EXPECTED = 346;
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=51"></script>
-<script src="js/characters.js?v=95"></script>
+<script src="js/characters.js?v=96"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=181"></script>
+<script src="js/app.js?v=182"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

@@ -2764,6 +2764,359 @@ input[type=number] { -moz-appearance: textfield; }
 .notes-area:focus { border-color: var(--gold-dim); }
 .notes-area::placeholder { color: var(--text-dim); font-style: italic; }
 
+/* ═══════════════════════════════════════════════════════
+   SISTEMA DE EQUIPO (slots equipables)
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Barra de sintonía ── */
+.attunement-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+.attunement-bar-label {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.attunement-bar-dots { display: flex; gap: 5px; }
+.attune-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold-dim);
+  background: transparent;
+  display: inline-block;
+}
+.attune-dot--on { background: var(--gold); border-color: var(--gold); }
+.attunement-bar-count {
+  margin-left: auto;
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+/* ── Grid de slots ── */
+.equip-slots-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.equip-slot {
+  position: relative;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  min-height: 64px;
+}
+
+.equip-slot--full { grid-column: 1 / -1; }
+
+.equip-slot--empty {
+  border: 1.5px dashed var(--border);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.equip-slot--empty:hover { border-color: var(--gold-dim); color: var(--gold-light); }
+.equip-slot--empty .equip-slot-icon { font-size: 18px; opacity: .6; }
+.equip-slot--empty .equip-slot-role { font-size: 11px; }
+.equip-slot--empty .equip-slot-cta {
+  font-size: 10px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.equip-slot--filled {
+  border: 1px solid var(--gold-dim);
+  background: var(--bg3);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.equip-slot--filled:hover { border-color: var(--gold); }
+
+.equip-slot-icon { font-size: 20px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+
+.equip-slot-body { flex: 1; min-width: 0; }
+
+.equip-slot-role {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.equip-slot-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 1px;
+  overflow-wrap: anywhere;
+}
+
+.equip-slot-line {
+  font-size: 12px;
+  color: var(--gold-light);
+  margin-top: 1px;
+}
+
+.equip-slot-add-buff {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-dim);
+  background: var(--bg2);
+  color: var(--gold-light);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.equip-slot-add-buff:hover { background: var(--gold-dim); color: var(--bg1); }
+
+.equip-attune-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.equip-attune-badge--on {
+  border-color: var(--gold);
+  background: rgba(201,151,58,0.15);
+  color: var(--gold-light);
+}
+
+/* ── Buffs (tags verdes con ✕) ── */
+.buff-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.buff-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 6px 3px 9px;
+  border-radius: 20px;
+  background: rgba(80,200,120,0.14);
+  border: 1px solid rgba(80,200,120,0.35);
+  color: #6ec98a;
+  white-space: nowrap;
+}
+.buff-chip-x {
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: .7;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+  line-height: 1;
+}
+.buff-chip-x:hover { opacity: 1; }
+
+/* ── Stat chips (CA / Ataque / CD) ── */
+.stat-chips-eq-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stat-chip-eq {
+  position: relative;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 10px 8px;
+  text-align: center;
+}
+
+.stat-chip-add-buff {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-dim);
+  background: var(--bg2);
+  color: var(--gold-light);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.stat-chip-add-buff:hover { background: var(--gold-dim); color: var(--bg1); }
+
+.stat-chip-icon { font-size: 16px; }
+.stat-chip-value {
+  font-family: 'Cinzel', serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--gold-light);
+  line-height: 1.1;
+}
+.stat-chip-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.stat-chip-breakdown {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.stat-chip-eq .buff-chips { justify-content: center; }
+
+/* ── Mochila: buscador y filtros ── */
+.bag-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: 'Jost', sans-serif;
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  margin-bottom: 8px;
+  transition: border-color .15s;
+}
+.bag-search-input:focus { border-color: var(--gold-dim); }
+.bag-search-input::placeholder { color: var(--text-dim); font-style: italic; }
+
+.bag-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.bag-filter-chip {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.bag-filter-chip:hover { border-color: var(--gold-dim); color: var(--text); }
+.bag-filter-chip--active {
+  border-color: var(--gold);
+  background: rgba(201,151,58,0.15);
+  color: var(--gold-light);
+}
+
+.bag-items-list { margin-top: 2px; }
+
+/* ── Cargas (ítems recargables) ── */
+.charges-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.charges-pips { display: flex; gap: 3px; }
+.charge-pip {
+  width: 9px; height: 9px;
+  border-radius: 2px;
+  border: 1px solid var(--gold-dim);
+  background: transparent;
+  display: inline-block;
+}
+.charge-pip--on { background: var(--gold); border-color: var(--gold); }
+.charges-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ── Inputs de mini-modales dinámicos (buff, wondrous item) ── */
+.modal-mini-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 4px;
+}
+.modal-mini-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2, var(--bg2));
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+.modal-mini-input:focus { border-color: var(--gold-dim); }
+.modal-mini-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .equip-slots-grid { grid-template-columns: 1fr; }
+  .equip-slot--full { grid-column: 1; }
+  .stat-chips-eq-row { grid-template-columns: 1fr; }
+}
+
 /* ═══ TAB HABILIDADES ═══ */
 .btn-edit-stats {
   font-family: 'Cinzel', serif;
