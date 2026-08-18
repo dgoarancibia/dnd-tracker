@@ -243,6 +243,7 @@ const App = (() => {
 
   let _activeTab = 'combate';
   let _showingHidden = false; // muestra features ocultas sin desocultarlas permanentemente
+  let _pouchDetailOpen = false; // detalle expandido del panel "Tu pouch" de dados
   let _toastTimer = null;
   let _concAlertTimer = null;
   let _diaryOpen = false;
@@ -1629,6 +1630,114 @@ const App = (() => {
     return html;
   }
 
+  // ── DICE POUCH: cuántos dados físicos de cada tipo llevar a mesa ─────────
+  // Calculado SOLO desde lo activo hoy: arma equipada + hechizos preparados.
+  // Para cada cara de dado (d4,d6,d8,d10,d12,d20) el número recomendado es
+  // el MÁXIMO "N dados iguales en una sola tirada" entre todas las fuentes.
+  const _DICE_FACES = [4, 6, 8, 10, 12, 20];
+
+  function _parseDiceFromText(text) {
+    // Devuelve [{n, face}, ...] por cada match NdM en el texto (case-insensitive)
+    if (!text) return [];
+    const out = [];
+    const re = /(\d+)d(\d+)/gi;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      out.push({ n: parseInt(m[1], 10), face: parseInt(m[2], 10) });
+    }
+    return out;
+  }
+
+  function _calcDicePouch(char) {
+    const c = char || {};
+    const pouch = {};
+    _DICE_FACES.forEach(f => { pouch['d' + f] = { count: 0, sources: [] }; });
+
+    const addSource = (name, n, face) => {
+      const key = 'd' + face;
+      if (!pouch[key]) pouch[key] = { count: 0, sources: [] };
+      pouch[key].sources.push({ name, dice: `${n}d${face}` });
+      if (n > pouch[key].count) pouch[key].count = n;
+    };
+
+    // Arma(s) equipada(s): mainHand y offHand si son kind:'weapon'
+    const eq = c.equipment || {};
+    ['mainHand', 'offHand'].forEach(slot => {
+      const item = eq[slot];
+      if (item && item.kind === 'weapon' && item.die) {
+        _parseDiceFromText(item.die).forEach(({ n, face }) => addSource(item.name, n, face));
+      }
+    });
+
+    // Hechizos preparados hoy (solo los que están en preparedToday)
+    const prepared = new Set(c.preparedToday || []);
+    (c.spells || []).forEach(sp => {
+      if (!prepared.has(sp.id)) return;
+      const text = (sp.damage && sp.damage.trim()) ? sp.damage : sp.desc;
+      _parseDiceFromText(text).forEach(({ n, face }) => addSource(sp.name, n, face));
+    });
+
+    // d20 siempre mínimo 1 — cualquier ataque/save/check lo usa
+    if (!pouch.d20.sources.length) {
+      pouch.d20.sources.push({ name: 'Ataques y saves', dice: '1d20' });
+    }
+    if (pouch.d20.count < 1) pouch.d20.count = 1;
+
+    return pouch;
+  }
+
+  function _renderDicePouch(char) {
+    const pouch = _calcDicePouch(char);
+    const order = [20, 12, 10, 8, 6, 4]; // para el resumen: mayor a menor cara
+
+    // Cards: solo las que tengan count > 0 (d20 siempre cuenta con 1)
+    const cardFaces = _DICE_FACES.filter(f => pouch['d' + f].count > 0);
+    const maxCount = Math.max(...cardFaces.map(f => pouch['d' + f].count));
+
+    const cards = cardFaces.map(f => {
+      const key = 'd' + f;
+      const entry = pouch[key];
+      // Fuente ganadora: la que aportó el count máximo de esta cara
+      const winner = entry.sources.find(s => {
+        const m = s.dice.match(/^(\d+)d/);
+        return m && parseInt(m[1], 10) === entry.count;
+      }) || entry.sources[0];
+      const isMax = entry.count === maxCount;
+      return `
+      <div class="die-chip${isMax ? ' max' : ''}">
+        ${isMax ? '<span class="die-star">⭐</span>' : ''}
+        <div class="die-count">${entry.count}</div>
+        <div class="die-label">×${key}</div>
+        <div class="die-source">${winner ? winner.name : ''}</div>
+      </div>`;
+    }).join('');
+
+    const summary = order
+      .filter(f => pouch['d' + f].count > 0)
+      .map(f => `${pouch['d' + f].count}×d${f}`)
+      .join(' · ');
+
+    // Detalle: todas las fuentes individuales, agrupadas por cara de dado
+    const detailRows = order
+      .filter(f => pouch['d' + f].sources.length)
+      .map(f => pouch['d' + f].sources.map(s =>
+        `<div class="detail-row"><span class="dr-name">${s.name}</span><span class="dr-dice">${s.dice}</span></div>`
+      ).join(''))
+      .join('');
+
+    return `
+    <div class="section-hd" style="margin-top:14px;">🎲 Tu pouch</div>
+    <div class="dice-grid">${cards}</div>
+    <div class="pouch-summary">Llevá al menos: <b>${summary}</b></div>
+    <button class="feat-show-hidden-btn" onclick="App.togglePouchDetail()">${_pouchDetailOpen ? '🙈 Ocultar detalle' : '👁 Ver detalle por fuente'}</button>
+    ${_pouchDetailOpen ? `<div class="detail-list">${detailRows}</div>` : ''}`;
+  }
+
+  function togglePouchDetail() {
+    _pouchDetailOpen = !_pouchDetailOpen;
+    _renderCombateDer();
+  }
+
   function _renderCombateDer() {
     try {
     const c = _char;
@@ -1786,6 +1895,8 @@ const App = (() => {
 
       html += `<div class="section-hd" style="margin-top:14px;">⚡ Habilidades</div>${echoPanel}<div class="ability-cards-grid">${abilityCards}</div>`;
     }
+
+    html += _renderDicePouch(c);
 
     html += `<div class="section-hd" style="margin-top:14px;">✨ Conjuros de Referencia</div>`;
 
@@ -9015,6 +9126,7 @@ ${notesText}`;
     openAbilityDetail, toggleEcho, larryRoll, closeLarryModal,
     openFeatureDetail, closeFeatureDetail,
     toggleHideFeature, toggleShowHidden, showAllHiddenFeatures,
+    togglePouchDetail,
 
     // Monedas
     addCoin, consolidateCurrency,

@@ -8438,3 +8438,18 @@ mark.diary-highlight {
 .ai-import-row-tag { font-size:10.5px; color:var(--text-dim); font-style:italic; margin-left:6px; }
 .ai-import-row.existing .ai-import-row-tag { color:var(--gold-dim); }
 .ai-import-row-note { font-size:12.5px; color:var(--text-mid); line-height:1.5; margin-top:2px; }
+
+/* ── Tu pouch (dados físicos a llevar a mesa) ── */
+.dice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.die-chip { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 8px; text-align: center; position: relative; }
+.die-chip.max { border-color: var(--gold-dim); background: var(--gold-faint); }
+.die-count { font-family:'Cinzel',serif; font-size: 22px; color: var(--gold-light); }
+.die-label { font-size: 11px; color: var(--text-mid); margin-top:2px; }
+.die-source { font-size: 9.5px; color: var(--text-dim); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.die-star { position:absolute; top:6px; right:8px; font-size:11px; }
+.pouch-summary { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-mid); text-align:center; }
+.pouch-summary b { color: var(--gold-light); }
+.detail-list { display:flex; flex-direction:column; gap:4px; margin-top:10px; }
+.detail-row { display:flex; justify-content:space-between; font-size:11.5px; padding:5px 8px; background:var(--bg3); border-radius:6px; }
+.detail-row .dr-name { color: var(--text-mid); }
+.detail-row .dr-dice { color: var(--gold-light); font-family:'Cinzel',serif; }
