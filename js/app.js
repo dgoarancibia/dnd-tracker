@@ -2462,18 +2462,28 @@ const App = (() => {
   const _MAGIC_ITEM_CATS = new Set(['Magic item', 'Ítem mágico']);
 
   // ── Sistema de slots de equipo ──────────────────────────────────────────
+  // Categorías de cuerpo del DMG (un ítem mágico por categoría a la vez,
+  // salvo Anillo que permite 2 por regla estándar de D&D). El bonus real
+  // depende siempre del ítem, no del slot — son solo organización visual.
   const EQUIP_SLOTS = [
     { key: 'mainHand', label: 'Mano principal',      icon: '⚔️', kinds: ['weapon'],           full: false },
     { key: 'offHand',  label: 'Mano secundaria',     icon: '🛡',  kinds: ['shield','weapon'],  full: false },
     { key: 'armor',    label: 'Armadura de cuerpo',  icon: '🧥', kinds: ['armor'],            full: true  },
-    { key: 'ring',     label: 'Anillo',              icon: '💍', kinds: ['wondrous'],         full: false },
+    { key: 'head',     label: 'Cabeza',              icon: '🪖', kinds: ['wondrous'],         full: false },
+    { key: 'eyes',     label: 'Ojos',                icon: '👁',  kinds: ['wondrous'],         full: false },
     { key: 'neck',     label: 'Amuleto / Cuello',    icon: '📿', kinds: ['wondrous'],         full: false },
+    { key: 'cloak',    label: 'Capa / Espalda',      icon: '🧣', kinds: ['wondrous'],         full: false },
+    { key: 'hands',    label: 'Manos',               icon: '🧤', kinds: ['wondrous'],         full: false },
+    { key: 'belt',     label: 'Cintura',             icon: '🎗',  kinds: ['wondrous'],         full: false },
+    { key: 'feet',     label: 'Pies',                icon: '👢', kinds: ['wondrous'],         full: false },
+    { key: 'ring',     label: 'Anillo',              icon: '💍', kinds: ['wondrous'],         full: false },
     { key: 'misc',     label: 'Misceláneo mágico',   icon: '✨', kinds: ['wondrous'],         full: true  },
   ];
-  const ATTUNABLE_SLOTS = new Set(['ring', 'neck', 'misc']);
+  const ATTUNABLE_SLOTS = new Set(['head', 'eyes', 'neck', 'cloak', 'hands', 'belt', 'feet', 'ring', 'misc']);
+  const WONDROUS_SLOTS = ['head', 'eyes', 'neck', 'cloak', 'hands', 'belt', 'feet', 'ring', 'misc'];
 
   function _emptyEquipment() {
-    return { mainHand: null, offHand: null, armor: null, ring: null, neck: null, misc: null };
+    return { mainHand: null, offHand: null, armor: null, head: null, eyes: null, neck: null, cloak: null, hands: null, belt: null, feet: null, ring: null, misc: null };
   }
 
   function _ensureEquipment(c) {
@@ -4853,21 +4863,51 @@ const App = (() => {
     setTimeout(() => document.getElementById('wondrousNameInput').focus(), 50);
   }
 
-  // Convierte un ítem de mochila (categoría mágica) en un ítem equipado en slotKey.
+  // Convierte un ítem de mochila (categoría mágica) en un ítem equipado.
+  // Con 9 categorías de cuerpo posibles (DMG), no se auto-elige: se muestra
+  // un selector para que el jugador diga a qué slot va (capa, botas, etc.).
   function _openSlotChooserModal(bagIdx) {
     const item = (_char.consumables || [])[bagIdx];
     if (!item) return;
-    // Elegir automáticamente el primer slot wondrous libre; si no hay, usar 'misc'.
-    const candidates = ['ring','neck','misc'];
-    const free = candidates.find(k => !_char.equipment[k]) || 'misc';
-    const overlay = _wondrousOverlay();
+    let overlay = document.getElementById('slotChooserOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'slotChooserOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      document.body.appendChild(overlay);
+    }
+    const btns = WONDROUS_SLOTS.map(key => {
+      const def = EQUIP_SLOTS.find(s => s.key === key);
+      const occupied = !!(_char.equipment && _char.equipment[key]);
+      return `<button class="btn-secondary slot-chooser-btn" onclick="App._pickSlotForBagItem('${key}',${bagIdx})">
+        ${def.icon} ${def.label}${occupied ? ' <span class="slot-chooser-occupied">(ocupado)</span>' : ''}
+      </button>`;
+    }).join('');
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:360px;width:100%;">
+        <div class="modal-header">✦ ¿Dónde equipar "${item.name}"?</div>
+        <div class="modal-body slot-chooser-grid">${btns}</div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="document.getElementById('slotChooserOverlay').style.display='none'">Cancelar</button>
+        </div>
+      </div>`;
+    overlay.style.display = 'flex';
+  }
+
+  function _pickSlotForBagItem(slotKey, bagIdx) {
+    const overlay = document.getElementById('slotChooserOverlay');
+    if (overlay) overlay.style.display = 'none';
+    const item = (_char.consumables || [])[bagIdx];
+    if (!item) return;
+    const wOverlay = _wondrousOverlay();
     document.getElementById('wondrousModalTitle').textContent = `✦ Equipar "${item.name}"`;
     document.getElementById('wondrousNameInput').value = item.name || '';
     document.getElementById('wondrousNotesInput').value = item.desc || '';
     document.getElementById('wondrousAttuneCheck').checked = false;
-    overlay.dataset.slot = free;
-    overlay.dataset.bagIdx = String(bagIdx);
-    overlay.style.display = 'flex';
+    wOverlay.dataset.slot = slotKey;
+    wOverlay.dataset.bagIdx = String(bagIdx);
+    wOverlay.style.display = 'flex';
     setTimeout(() => document.getElementById('wondrousNameInput').focus(), 50);
   }
 
@@ -8725,7 +8765,7 @@ ${notesText}`;
     adjustConsumable, deleteConsumable, addConsumable, refillContainer, refillCharges,
     setCurrency, setBagSearch, setBagCatFilter,
     openEquipPicker, openSlotOptions, _closeSlotOptions, _slotOptEdit, _slotOptUnequip, _slotOptDelete,
-    toggleAttunement,
+    toggleAttunement, _pickSlotForBagItem,
     openBuffModal, _closeBuffModal, _saveBuffModal, removeSlotBuff, removeStatBuff,
     _closeWondrousModal, _saveWondrousModal,
     setSpeciesTraits,

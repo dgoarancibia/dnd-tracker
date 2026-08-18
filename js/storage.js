@@ -369,7 +369,7 @@ const Storage = (() => {
         const oldAttune   = Array.isArray(char.attunement) ? char.attunement : [];
         const oldMagic    = Array.isArray(char.magicItems) ? char.magicItems : [];
 
-        const equipment = { mainHand: null, offHand: null, armor: null, ring: null, neck: null, misc: null };
+        const equipment = { mainHand: null, offHand: null, armor: null, head: null, eyes: null, neck: null, cloak: null, hands: null, belt: null, feet: null, ring: null, misc: null };
 
         // weapons[0] → mainHand
         if (oldWeapons[0]) {
@@ -494,7 +494,13 @@ const Storage = (() => {
     _fixField(!Array.isArray(char.diary),  () => { char.diary = []; });
     _fixField(!Array.isArray(char.ifttt),  () => { char.ifttt = []; });
     _fixField(!Array.isArray(char.conditions), () => { char.conditions = []; });
-    _fixField(!char.equipment, () => { char.equipment = { mainHand:null, offHand:null, armor:null, ring:null, neck:null, misc:null }; });
+    _fixField(!char.equipment, () => { char.equipment = { mainHand:null, offHand:null, armor:null, head:null, eyes:null, neck:null, cloak:null, hands:null, belt:null, feet:null, ring:null, misc:null }; });
+    // Personajes que ya migraron a `equipment` antes de que existieran las
+    // categorías de cuerpo del DMG (head/eyes/cloak/hands/belt/feet) — completar
+    // las claves nuevas sin tocar lo que ya tenían equipado.
+    ['head','eyes','cloak','hands','belt','feet'].forEach(k => {
+      if (char.equipment && !(k in char.equipment)) { char.equipment[k] = null; _structFixed = true; }
+    });
     _fixField(!char.statBuffs, () => { char.statBuffs = { ca:[], attack:[], save:[], spellDc:[] }; });
     _fixField(typeof char.exhaustion !== 'number', () => { char.exhaustion = 0; });
     _fixField(!char.turn, () => { char.turn = { movement:false, action:false, reaction:false, bonus:false }; });

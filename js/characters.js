@@ -1188,7 +1188,7 @@ const Characters = (() => {
       spells: [],
       preparedToday: [],
 
-      equipment: { mainHand: null, offHand: null, armor: null, ring: null, neck: null, misc: null },
+      equipment: { mainHand: null, offHand: null, armor: null, head: null, eyes: null, neck: null, cloak: null, hands: null, belt: null, feet: null, ring: null, misc: null },
       statBuffs: { ca: [], attack: [], save: [], spellDc: [] },
       consumables: [],
       currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
@@ -4619,7 +4619,7 @@ const Characters = (() => {
       spells,
       preparedToday:    [],
 
-      equipment:        { mainHand: null, offHand: null, armor: null, ring: null, neck: null, misc: null },
+      equipment:        { mainHand: null, offHand: null, armor: null, head: null, eyes: null, neck: null, cloak: null, hands: null, belt: null, feet: null, ring: null, misc: null },
       statBuffs:        { ca: [], attack: [], save: [], spellDc: [] },
       consumables:      [],
       currency:         { pp: 0, gp: 0, sp: 0, cp: 0 },
