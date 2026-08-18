@@ -1617,9 +1617,18 @@ const App = (() => {
 
   function _buildConcBtns(c) {
     const active = c.concentration;
-    // Incluir todos los hechizos con concentración que el personaje conoce/tiene
-    // (dominio, preparados hoy, o simplemente conocidos — ej. Brujo, Bardo, Hechicero)
-    const allConc = (c.spells || []).filter(s => s.concentration && s.level > 0);
+    // Solo los que realmente podés lanzar hoy: preparados + dominio/MI (siempre
+    // disponibles) + el que ya esté activo. Antes listaba todos los conocidos,
+    // lo que hacía la lista innecesariamente larga en mesa.
+    const prep = new Set(c.preparedToday || []);
+    const esKnownCaster = Characters.CLASES_CONFIG
+      && Characters.CLASES_CONFIG[c.clase]
+      && Characters.CLASES_CONFIG[c.clase].knownCaster;
+    const allConc = (c.spells || []).filter(s =>
+      s.concentration && s.level > 0 &&
+      // known casters (Brujo, Bardo, Hechicero) no preparan: todo lo conocido cuenta
+      (esKnownCaster || prep.has(s.id) || s.domain || s.mi || active === s.id)
+    );
 
     let html = active
       ? `<button class="conc-btn none conc-romper" onclick="App.setConc(null)">✕ Romper</button>`
@@ -4570,36 +4579,42 @@ const App = (() => {
       return;
     }
 
-    // Domain or MI spells — free cast (no slot consumed)
-    if (sp.domain || sp.mi) {
-      _pendingCast = { spellId: sp.id, slotLevel: 0 };
-      openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp), true);
-      return;
-    }
+    // Domain / MI: gratis SOLO si no se eligió un slot explícito. Si el jugador
+    // eligió slot en el picker (upcast), hay que respetarlo y descontarlo —
+    // antes se forzaba slotLevel 0 y el upcast no gastaba nada.
+    const esGratis = sp.domain || sp.mi;
 
-    // Leveled spell — need a slot
     if (slotLevel === undefined) {
-      // Find lowest available slot at or above sp.level
-      let found = null;
-      for (let i = sp.level; i <= 9; i++) {
-        const slot = _char.spellSlots[i];
-        if (slot && slot.current > 0) { found = i; break; }
-      }
-      if (found === null) {
-        showToast(`Sin slots disponibles para ${sp.name}`);
-        return;
-      }
-      // If spell can be upcast and there are higher slots, show picker
+      // Slots disponibles desde el nivel base del hechizo hacia arriba
       const availSlots = [];
       for (let i = sp.level; i <= 9; i++) {
         const slot = _char.spellSlots[i];
         if (slot && slot.current > 0) availSlots.push(i);
       }
+
+      // Dominio/MI: se puede lanzar gratis, pero también upcastear gastando
+      // slot. Si hay slots y el hechizo escala, ofrecer el picker con la
+      // opción "gratis" incluida.
+      if (esGratis) {
+        if (availSlots.length > 0 && sp.upcast) {
+          _openCastPicker(sp, availSlots, true);
+          return;
+        }
+        _pendingCast = { spellId: sp.id, slotLevel: 0 };
+        openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp), true);
+        return;
+      }
+
+      if (availSlots.length === 0) {
+        showToast(`Sin slots disponibles para ${sp.name}`);
+        return;
+      }
+      // Si puede upcastear y hay más de un slot, dejar elegir
       if (availSlots.length > 1 && sp.upcast) {
         _openCastPicker(sp, availSlots);
         return;
       }
-      slotLevel = found;
+      slotLevel = availSlots[0];
     }
 
     // Validar que haya slot, pero NO consumirlo todavía: el gasto se confirma
@@ -4673,12 +4688,17 @@ const App = (() => {
   // Slot picker modal for upcasting
   let _castPickerSpell = null;
 
-  function _openCastPicker(sp, availSlots) {
+  // conFree: hechizo de dominio/MI que puede lanzarse gratis o upcastear
+  // gastando un slot — se agrega el botón "Gratis" como primera opción.
+  function _openCastPicker(sp, availSlots, conFree) {
     _castPickerSpell = sp;
     const modal = document.getElementById('castPickerModal');
     const btns  = document.getElementById('castPickerBtns');
     document.getElementById('castPickerName').textContent = sp.name;
-    btns.innerHTML = availSlots.map(lv =>
+    const freeBtn = conFree
+      ? `<button class="btn btn-ghost cast-picker-btn" onclick="App.confirmCastAtLevel('${sp.id}',0)">✦ Gratis (nivel ${sp.level})</button>`
+      : '';
+    btns.innerHTML = freeBtn + availSlots.map(lv =>
       `<button class="btn btn-ghost cast-picker-btn" onclick="App.confirmCastAtLevel('${sp.id}',${lv})">Slot ${lv}</button>`
     ).join('');
     modal.classList.add('show');
