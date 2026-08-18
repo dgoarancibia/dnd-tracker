@@ -4390,53 +4390,41 @@ const App = (() => {
     const kind = _inferSpellRefKind(sp);
     // Bonuses pasivos de la tabla curada que aplican al daño de conjuros
     const passiveBonuses = Characters.getPassiveDamageBonuses(_char, 'spell');
+    // El popup responde una sola pregunta: "¿qué dados tiro?". Alcance, casteo
+    // y duración NO se repiten acá — ya están en la tarjeta del conjuro.
     if (kind === 'attack') {
       const atkBonus = Characters.calcAtaqueBonus(_char);
       return {
-        kind,
-        title: sp.name,
-        icon: '✨',
-        passiveBonuses,
+        kind, title: sp.name, icon: '✨', passiveBonuses,
         attackFormula: atkBonus != null ? `d20+${atkBonus}` : null,
         damage: sp.damage || null,
-        meta: [
-          sp.range ? { label: 'Alcance', val: fmtDist(sp.range) } : null,
-          sp.castTime ? { label: 'Casteo', val: sp.castTime } : null,
-        ].filter(Boolean),
-        note: null,
+        meta: [], note: null,
       };
     }
     if (kind === 'save') {
-      const cd = Characters.calcCD(_char);
-      const saveStat = _inferSaveStat(sp);
       return {
-        kind,
-        title: sp.name,
-        icon: '✨',
-        passiveBonuses,
-        cd,
-        saveStat,
+        kind, title: sp.name, icon: '✨', passiveBonuses,
+        cd: Characters.calcCD(_char),
+        saveStat: _inferSaveStat(sp),
         damage: sp.damage || null,
-        meta: [
-          sp.range ? { label: 'Alcance', val: fmtDist(sp.range) } : null,
-          sp.castTime ? { label: 'Casteo', val: sp.castTime } : null,
-        ].filter(Boolean),
-        note: null,
+        meta: [], note: null,
       };
     }
-    // utility
+    // utility: mostrar solo la fórmula de dados, no el desc completo (eso ya
+    // está en la tarjeta). Si el conjuro no tira dados, no hay chip que mostrar.
     return {
-      kind,
-      title: sp.name,
-      icon: '✨',
-      effect: sp.damage || sp.desc || null,
-      meta: [
-        sp.range ? { label: 'Alcance', val: fmtDist(sp.range) } : null,
-        sp.castTime ? { label: 'Casteo', val: sp.castTime } : null,
-        sp.duration ? { label: 'Duración', val: sp.duration } : null,
-      ].filter(Boolean),
-      note: sp.upcast ? `A mayor nivel: ${sp.upcast}` : null,
+      kind, title: sp.name, icon: '✨',
+      effect: sp.damage || _extractDiceFormula(sp.desc),
+      meta: [], note: null,
     };
+  }
+
+  // Extrae solo la fórmula de dados de un texto libre (ej. de un desc largo
+  // saca "2d4+4"). Devuelve null si el texto no tiene ninguna tirada.
+  function _extractDiceFormula(text) {
+    if (!text) return null;
+    const m = text.match(/\d+d\d+(?:\s*\+\s*\w+)?/i);
+    return m ? m[0].replace(/\s+/g, '') : null;
   }
 
   // Un chip por cada caso de daño. Con daño condicional (ej. Toll the Dead)
@@ -4502,7 +4490,9 @@ const App = (() => {
       }
     } else if (kind === 'utility') {
       if (data.effect) {
-        body += `<div class="ref-formula-row"><div class="ref-formula-chip"><div class="f">${data.effect}</div><div class="l">Efecto</div></div></div>`;
+        body += `<div class="ref-formula-row"><div class="ref-formula-chip"><div class="f">${data.effect}</div><div class="l">Tirada</div></div></div>`;
+      } else {
+        body += `<div class="ref-no-dice">Sin tiradas de dados</div>`;
       }
     }
 
@@ -4551,11 +4541,10 @@ const App = (() => {
       passiveBonuses: Characters.getPassiveDamageBonuses(_char, 'weapon'),
       attackFormula: atkBonus != null ? `d20+${atkBonus}` : null,
       damage: dmgFormula,
-      meta: [
-        { label: 'Tipo', val: w.type === 'ranged' ? 'Distancia' : 'Cuerpo a cuerpo' },
-        w.notes ? { label: 'Notas', val: w.notes } : null,
-      ].filter(Boolean),
-      note: null,
+      // Sin meta redundante: el popup es solo "qué dados tiro". Las notas del
+      // arma sí van, porque son propiedades mecánicas que no están en otro lado.
+      meta: [],
+      note: w.notes || null,
     });
   }
 
