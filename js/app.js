@@ -1669,6 +1669,34 @@ const App = (() => {
       html += _renderCompanionHTML(c);
     }
 
+    // ── ARMAS EQUIPADAS COMO ACCIÓN DE COMBATE ───────────────────────────────
+    // Solo armas reales (kind:'weapon'); si offHand es escudo u otro ítem, no se muestra.
+    const eq = c.equipment || {};
+    const weaponSlots = [
+      { slot: 'mainHand', label: 'Mano principal' },
+      { slot: 'offHand',  label: 'Mano secundaria' },
+    ].filter(w => eq[w.slot] && eq[w.slot].kind === 'weapon');
+
+    if (weaponSlots.length) {
+      const weaponCards = weaponSlots.map(w => {
+        const item = eq[w.slot];
+        const typeLabel = item.type === 'ranged' ? 'Distancia' : 'Cuerpo a cuerpo';
+        return `
+        <div class="ability-card">
+          <div class="ability-card-top">
+            <div class="ability-card-info">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                <span class="ability-card-name">⚔️ ${item.name}</span>
+              </div>
+              <div class="ability-card-desc">${w.label} · ${typeLabel}</div>
+            </div>
+            <button class="cast-btn" onclick="App.attackWithWeapon('${w.slot}')">Atacar</button>
+          </div>
+        </div>`;
+      }).join('');
+      html += `<div class="section-hd" style="margin-top:14px;">⚔️ Ataques</div><div class="ability-cards-grid">${weaponCards}</div>`;
+    }
+
     // ── HABILIDADES ACTIVABLES (todos los recursos con action o desc) ───────────
     // Los recursos con max>0 TAMBIÉN aparecen como dots en la columna izquierda.
     // Aquí se muestran como tarjetas activables en la derecha para poder usarlos.
@@ -4162,6 +4190,167 @@ const App = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
+     MODAL DE REFERENCIA DE ACCIÓN (ataque arma / hechizo)
+     openActionRefModal(kind, data) — kind: 'attack' | 'save' | 'utility'
+  ══════════════════════════════════════════════════════ */
+
+  // Estadísticas de save reconocibles en el texto de un hechizo (desc/fullDesc).
+  // Heurística simple de texto — si no aparece ninguna, se omite el dato en vez de adivinar.
+  const _SAVE_STAT_WORDS = [
+    { re: /save\s+sab|save\s+wis|sab\b.*save|wisdom saving/i, label: 'SAB' },
+    { re: /save\s+des|save\s+dex|dexterity saving/i, label: 'DES' },
+    { re: /save\s+con|constitution saving/i, label: 'CON' },
+    { re: /save\s+for|save\s+str|strength saving/i, label: 'FOR' },
+    { re: /save\s+int|intelligence saving/i, label: 'INT' },
+    { re: /save\s+car|save\s+cha|charisma saving/i, label: 'CAR' },
+  ];
+
+  function _inferSaveStat(sp) {
+    const text = `${sp.desc || ''} ${sp.fullDesc || ''}`;
+    for (const s of _SAVE_STAT_WORDS) {
+      if (s.re.test(text)) return s.label;
+    }
+    return null;
+  }
+
+  // Decide el tipo de popup de referencia para un hechizo según los datos disponibles.
+  // Sin campo explícito attackType en los datos — se infiere de texto (desc/fullDesc).
+  // Por defecto ('utility') si no hay señal confiable de ataque o save.
+  function _inferSpellRefKind(sp) {
+    const text = `${sp.desc || ''} ${sp.fullDesc || ''}`;
+    if (/ataque de conjuro/i.test(text)) return 'attack';
+    if (/\bsave\b/i.test(text)) return 'save';
+    return 'utility';
+  }
+
+  function _spellRefData(sp) {
+    const kind = _inferSpellRefKind(sp);
+    if (kind === 'attack') {
+      const atkBonus = Characters.calcAtaqueBonus(_char);
+      return {
+        kind,
+        title: sp.name,
+        icon: '✨',
+        attackFormula: atkBonus != null ? `d20+${atkBonus}` : null,
+        damage: sp.damage || null,
+        meta: [
+          sp.range ? { label: 'Alcance', val: fmtDist(sp.range) } : null,
+          sp.castTime ? { label: 'Casteo', val: sp.castTime } : null,
+        ].filter(Boolean),
+        note: null,
+      };
+    }
+    if (kind === 'save') {
+      const cd = Characters.calcCD(_char);
+      const saveStat = _inferSaveStat(sp);
+      return {
+        kind,
+        title: sp.name,
+        icon: '✨',
+        cd,
+        saveStat,
+        damage: sp.damage || null,
+        meta: [
+          sp.range ? { label: 'Alcance', val: fmtDist(sp.range) } : null,
+          sp.castTime ? { label: 'Casteo', val: sp.castTime } : null,
+        ].filter(Boolean),
+        note: null,
+      };
+    }
+    // utility
+    return {
+      kind,
+      title: sp.name,
+      icon: '✨',
+      effect: sp.damage || sp.desc || null,
+      meta: [
+        sp.range ? { label: 'Alcance', val: fmtDist(sp.range) } : null,
+        sp.castTime ? { label: 'Casteo', val: sp.castTime } : null,
+        sp.duration ? { label: 'Duración', val: sp.duration } : null,
+      ].filter(Boolean),
+      note: sp.upcast ? `A mayor nivel: ${sp.upcast}` : null,
+    };
+  }
+
+  function openActionRefModal(kind, data) {
+    const titleEl = document.getElementById('refTitle');
+    const bodyEl = document.getElementById('refBody');
+    if (!titleEl || !bodyEl) return;
+
+    titleEl.innerHTML = `<span>${data.icon || '✨'}</span><span>${data.title || ''}</span>`;
+
+    let body = '';
+
+    if (kind === 'attack') {
+      body += `<div class="ref-formula-row">`;
+      if (data.attackFormula) {
+        body += `<div class="ref-formula-chip"><div class="f">${data.attackFormula}</div><div class="l">Tirada de ataque</div></div>`;
+      }
+      if (data.damage) {
+        body += `<div class="ref-formula-chip"><div class="f">${data.damage}</div><div class="l">Daño</div></div>`;
+      }
+      body += `</div>`;
+    } else if (kind === 'save') {
+      if (data.cd != null) {
+        body += `<div class="ref-dc-chip"><div class="dc-f">CD ${data.cd}</div>${data.saveStat ? `<div class="dc-l">Save de ${data.saveStat}</div>` : ''}</div>`;
+      }
+      if (data.damage) {
+        body += `<div class="ref-formula-row"><div class="ref-formula-chip"><div class="f">${data.damage}</div><div class="l">Daño</div></div></div>`;
+      }
+    } else if (kind === 'utility') {
+      if (data.effect) {
+        body += `<div class="ref-formula-row"><div class="ref-formula-chip"><div class="f">${data.effect}</div><div class="l">Efecto</div></div></div>`;
+      }
+    }
+
+    if (data.meta && data.meta.length) {
+      body += `<div class="ref-meta-row">${data.meta.map(m => `<span><b>${m.label}:</b> ${m.val}</span>`).join('')}</div>`;
+    }
+
+    if (data.note) {
+      body += `<div class="ref-note">${data.note}</div>`;
+    }
+
+    bodyEl.innerHTML = body;
+
+    document.getElementById('refActionModal').classList.add('show');
+  }
+
+  function closeActionRefModal() {
+    const modal = document.getElementById('refActionModal');
+    if (modal) modal.classList.remove('show');
+  }
+
+  // Card de "Atacar" con arma equipada — abre el popup de referencia con la
+  // fórmula de ataque/daño calculada del arma real (equipment.mainHand/offHand).
+  function attackWithWeapon(slot) {
+    if (!_char) return;
+    const w = _char.equipment && _char.equipment[slot];
+    if (!w || w.kind !== 'weapon') return;
+
+    const atkBonus = Characters.calcWeaponAttackBonus(_char);
+    const dmgBonus = (w.bonuses && Number(w.bonuses.damage)) || 0;
+    const buffDmg = (Array.isArray(w.buffs) ? w.buffs : [])
+      .filter(b => b.stat === 'damage')
+      .reduce((acc, b) => acc + (Number(b.value) || 0), 0);
+    const totalDmgBonus = dmgBonus + buffDmg;
+    const dmgFormula = `${w.die || '?'}${totalDmgBonus ? (totalDmgBonus > 0 ? `+${totalDmgBonus}` : totalDmgBonus) : ''}`;
+
+    openActionRefModal('attack', {
+      kind: 'attack',
+      title: w.name,
+      icon: '⚔️',
+      attackFormula: atkBonus != null ? `d20+${atkBonus}` : null,
+      damage: dmgFormula,
+      meta: [
+        { label: 'Tipo', val: w.type === 'ranged' ? 'Distancia' : 'Cuerpo a cuerpo' },
+        w.notes ? { label: 'Notas', val: w.notes } : null,
+      ].filter(Boolean),
+      note: null,
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════
      CAST SPELL (Epic 1)
   ══════════════════════════════════════════════════════ */
 
@@ -4221,6 +4410,9 @@ const App = (() => {
 
   function _finalizeCast(sp, slotLevel) {
     _saveChar(true);
+
+    // Popup de referencia mecánica — fórmula exacta antes de tirar dados físicos.
+    openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp));
 
     // Auto-concentration
     if (sp.concentration) {
@@ -8756,6 +8948,7 @@ ${notesText}`;
     // Conjuros
     toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter,
     castSpell, confirmCastAtLevel, closeCastPicker,
+    openActionRefModal, closeActionRefModal, attackWithWeapon,
     openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
 
     // Equipo
