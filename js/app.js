@@ -1669,10 +1669,11 @@ const App = (() => {
       }
     });
 
-    // Hechizos preparados hoy (solo los que están en preparedToday)
+    // Hechizos preparados hoy + cantrips (nivel 0): los trucos nunca se
+    // preparan, están siempre disponibles, así que sus dados siempre cuentan.
     const prepared = new Set(c.preparedToday || []);
     (c.spells || []).forEach(sp => {
-      if (!prepared.has(sp.id)) return;
+      if (sp.level !== 0 && !prepared.has(sp.id)) return;
       const text = (sp.damage && sp.damage.trim()) ? sp.damage : sp.desc;
       _parseDiceFromText(text).forEach(({ n, face }) => addSource(sp.name, n, face));
     });
@@ -1684,6 +1685,38 @@ const App = (() => {
     if (pouch.d20.count < 1) pouch.d20.count = 1;
 
     return pouch;
+  }
+
+  // Modal del pouch: se consulta una vez antes de la sesión (armar los dados
+  // físicos), no necesita estar ocupando espacio permanente en Combate.
+  function openDicePouchModal() {
+    if (!_char) return;
+    let overlay = document.getElementById('dicePouchOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'dicePouchOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      overlay.onclick = (e) => { if (e.target === overlay) closeDicePouchModal(); };
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:420px;width:100%;">
+        <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>🎲 Tu pouch para hoy</span>
+          <span class="ref-close" onclick="App.closeDicePouchModal()">✕</span>
+        </div>
+        <div class="modal-body">${_renderDicePouch(_char)}</div>
+        <div class="modal-footer">
+          <button class="ref-ok-btn" onclick="App.closeDicePouchModal()">Listo</button>
+        </div>
+      </div>`;
+    overlay.style.display = 'flex';
+  }
+
+  function closeDicePouchModal() {
+    const overlay = document.getElementById('dicePouchOverlay');
+    if (overlay) overlay.style.display = 'none';
   }
 
   function _renderDicePouch(char) {
@@ -1895,8 +1928,6 @@ const App = (() => {
 
       html += `<div class="section-hd" style="margin-top:14px;">⚡ Habilidades</div>${echoPanel}<div class="ability-cards-grid">${abilityCards}</div>`;
     }
-
-    html += _renderDicePouch(c);
 
     html += `<div class="section-hd" style="margin-top:14px;">✨ Conjuros de Referencia</div>`;
 
@@ -9126,7 +9157,7 @@ ${notesText}`;
     openAbilityDetail, toggleEcho, larryRoll, closeLarryModal,
     openFeatureDetail, closeFeatureDetail,
     toggleHideFeature, toggleShowHidden, showAllHiddenFeatures,
-    togglePouchDetail,
+    togglePouchDetail, openDicePouchModal, closeDicePouchModal,
 
     // Monedas
     addCoin, consolidateCurrency,

@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 351;
+const _SW_EXPECTED = 352;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -239,6 +239,12 @@ const _SW_EXPECTED = 351;
       </button>
       <button class="hm-btn" id="loadPointBtn" onclick="App.openLoadModal();App.closeHeaderMenu()" style="display:none;" title="Cargar el último guardado o un checkpoint anterior">
         ↺ Cargar punto guardado
+      </button>
+
+      <div class="hm-divider"></div>
+
+      <button class="hm-btn" onclick="App.openDicePouchModal();App.closeHeaderMenu()" title="Qué dados físicos llevar a la sesión">
+        🎲 Tu pouch de dados
       </button>
 
       <div class="hm-divider"></div>
@@ -1267,7 +1273,7 @@ const _SW_EXPECTED = 351;
 <script src="js/storage.js?v=52"></script>
 <script src="js/characters.js?v=97"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=186"></script>
+<script src="js/app.js?v=187"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>
