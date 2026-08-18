@@ -2238,18 +2238,6 @@ input[type=number] { -moz-appearance: textfield; }
   opacity: 0.5;
 }
 
-/* Cast picker modal buttons */
-.cast-picker-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-.cast-picker-btn {
-  min-width: 80px;
-  font-size: 14px;
-}
-
 .spell-checkbox {
   width: 20px;
   height: 20px;
@@ -4139,6 +4127,8 @@ input[type=number] { -moz-appearance: textfield; }
 .ref-note { font-size: 12.5px; color: var(--text-mid); line-height:1.5; background: var(--bg); border-left: 2px solid var(--gold-dim); padding: 8px 12px; border-radius: 0 8px 8px 0; }
 .ref-footer { display:flex; justify-content:flex-end; gap: 10px; padding: 10px 16px; border-top:1px solid var(--border); }
 .ref-no-dice { text-align:center; font-size:13px; color:var(--text-dim); font-style:italic; padding:14px 8px; }
+/* El efecto es una frase, no un número: tipografía normal y con wrap. */
+.ref-formula-chip .f.ref-effect-txt { font-family:'Jost',sans-serif; font-size:14px; line-height:1.35; white-space:normal; }
 .ref-ok-btn { font-family:'Cinzel',serif; font-size:12px; letter-spacing:0.05em; text-transform:uppercase; background: var(--gold-faint); border:1px solid var(--gold-dim); border-radius:8px; color:var(--gold-light); padding:8px 18px; cursor:pointer; }
 .ref-dc-chip { display:flex; align-items:center; justify-content:center; gap:8px; background: var(--bg3); border:1px solid var(--border-strong); border-radius:10px; padding:10px 8px; }
 .ref-dc-chip .dc-f { font-family:'Cinzel',serif; font-size:18px; color:var(--gold-light); }
@@ -4548,6 +4538,52 @@ input[type=number] { -moz-appearance: textfield; }
   padding-right: 30px;
 }
 
+/* ── Bloque destacado "lo que anuncio" ──
+   Va justo bajo el nombre y antes de la metadata: es lo primero que el ojo
+   debe encontrar. Fondo y borde dorado lo separan del resto del contenido. */
+.sdm-announce-wrap:empty { display: none; }
+
+.sdm-announce {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(201,151,58,0.07);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+/* CD y daño forman UNA unidad visual: nada se interpone entre ellos, para
+   poder decir de corrido "save de Sabiduría contra 17, 2d12 necróticos". */
+.sdm-announce .sdm-dc-chip {
+  background: rgba(201,151,58,0.12);
+  border-color: var(--gold-dim);
+}
+.sdm-announce .sdm-dc-chip .dc-f {
+  font-size: 22px;
+  font-weight: 700;
+}
+.sdm-announce .sdm-dc-chip .dc-l {
+  font-size: 10.5px;
+  color: var(--gold-light);
+  opacity: 0.85;
+}
+
+/* El daño manda dentro del bloque: tipografía mayor que el resto del modal. */
+.sdm-announce .ref-formula-chip .f {
+  font-size: 21px;
+  font-weight: 700;
+}
+.sdm-announce .ref-formula-chip .f.ref-effect-txt {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--gold-light);
+}
+.sdm-announce .ref-formula-row {
+  flex-wrap: wrap;
+}
+
 .sdm-meta-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -4624,6 +4660,44 @@ input[type=number] { -moz-appearance: textfield; }
 .sdm-footer {
   margin-top: 16px;
   text-align: center;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.sdm-cast-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.sdm-cast-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.sdm-cast-btn {
+  min-width: 92px;
+  font-size: 14px;
+}
+
+/* Slot por encima del nivel base (upcast): se distingue del lanzamiento normal. */
+.sdm-cast-btn--up {
+  background: rgba(201,151,58,0.10);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-light);
+}
+
+.sdm-cast-empty {
+  font-family: 'Jost', sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 8px;
 }
 
 /* ── Initiative Modal ── */
@@ -6047,8 +6121,7 @@ input[type=number] { -moz-appearance: textfield; }
 /* Overlays y modales */
 [data-theme="light"] .diary-panel,
 [data-theme="light"] .ifttt-panel,
-[data-theme="light"] .overlay-modal,
-[data-theme="light"] .cast-picker-modal {
+[data-theme="light"] .overlay-modal {
   background: var(--bg2);
 }
 

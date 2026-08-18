@@ -4426,7 +4426,9 @@ const App = (() => {
     // está en la tarjeta). Si el conjuro no tira dados, no hay chip que mostrar.
     return {
       kind, title: sp.name, icon: '✨',
-      effect: sp.damage || _extractDiceFormula(sp.desc),
+      // Prioridad: el efecto anunciable completo ("hasta 3 criaturas +1d4 a
+      // ataques y saves") es más útil en mesa que la fórmula suelta ("1d4").
+      effect: sp.damage || _extractEffect(sp.desc) || _extractDiceFormula(sp.desc),
       meta: [], note: null,
     };
   }
@@ -4437,6 +4439,35 @@ const App = (() => {
     if (!text) return null;
     const m = text.match(/\d+d\d+(?:\s*\+\s*\w+)?/i);
     return m ? m[0].replace(/\s+/g, '') : null;
+  }
+
+  // Segmentos del desc que son metadata (ya visible en la tarjeta) o comentario
+  // táctico — se descartan para dejar solo el efecto que se anuncia en voz alta.
+  const _DESC_META = /^(acción|accion|bonus action|acción de bonus|reacción|toque|uno mismo|auto|ritual|conc|concentración|sin concentración|instant|\d+\s*(m|ft|min|h|ronda|turno)s?|hasta \d+\s*(min|h)|nivel \d|\d+\s*(min|h))/i;
+  const _DESC_TACTICO = /(ideal|excelente|imprescindible|tu (buff|hechizo)|usar con|lanzar al inicio|muy útil|clave para|prioridad|siempre tener|peor que|inferior|escala|situacional|necesario)/i;
+
+  // Efecto anunciable: "+5 HP máximos y +5 HP actuales" en vez del desc entero.
+  // Los desc del proyecto usan "·" como separador de segmentos.
+  function _extractEffect(desc) {
+    if (!desc) return null;
+    const partes = desc.split('·').map(s => s.trim()).filter(Boolean);
+    const utiles = partes.filter(p => !_DESC_META.test(p) && !_DESC_TACTICO.test(p));
+    if (!utiles.length) return null;
+    // En mesa el dado es lo primero que se anuncia: cualquier segmento con
+    // fórmula (2d4+4 HP) gana sobre el resto, aunque sea corto. Sin esto el
+    // filtro de "3 palabras o más" descartaba justo el dato más importante
+    // (Healing Word perdía "2d4+4 HP" y dejaba solo la nota táctica).
+    const conDados = utiles.filter(p => /\d+d\d+/.test(p));
+    if (conDados.length) {
+      const txtDados = conDados.join(' · ');
+      return txtDados.length > 80 ? conDados[0] : txtDados;
+    }
+    // Descartar fragmentos sueltos sin información accionable (ej. "ilimitado",
+    // "save WIS" a secas): un chip de una sola palabra no aporta nada.
+    const sustanciales = utiles.filter(p => p.split(/\s+/).length >= 3);
+    const finales = sustanciales.length ? sustanciales : utiles;
+    const txt = finales.join(' · ');
+    return txt.length > 80 ? finales[0] : txt;
   }
 
   // Un chip por cada caso de daño. Con daño condicional (ej. Toll the Dead)
@@ -4463,6 +4494,37 @@ const App = (() => {
          <div class="l">${b.label}${b.note ? ` · ${b.note}` : ''}</div>
        </div>`
     ).join('') + `</div>`;
+  }
+
+  /* ── Bloque destacado "lo que anuncio en voz alta" ──────────────────
+     Une CD y daño en UNA sola unidad visual para poder decir de corrido
+     "save de Sabiduría contra 17, 2d12 necróticos" sin buscar en el modal.
+     Devuelve '' si el hechizo no tiene nada mecánico que anunciar. */
+  function _castAnnounceHTML(sp) {
+    const data = _spellRefData(sp);
+    let inner = '';
+
+    if (data.kind === 'attack') {
+      const chips = [];
+      if (data.attackFormula) {
+        chips.push(`<div class="ref-formula-chip"><div class="f">${data.attackFormula}</div><div class="l">Tirada de ataque</div></div>`);
+      }
+      if (data.damage) chips.push(_damageChipsHTML(data.damage));
+      if (chips.length) inner += `<div class="ref-formula-row">${chips.join('')}</div>`;
+    } else if (data.kind === 'save') {
+      // CD arriba y daño pegado abajo: se leen juntos, sin nada en medio.
+      if (data.cd != null) {
+        inner += `<div class="ref-dc-chip sdm-dc-chip"><div class="dc-f">CD ${data.cd}</div>${data.saveStat ? `<div class="dc-l">Save de ${data.saveStat}</div>` : ''}</div>`;
+      }
+      if (data.damage) inner += `<div class="ref-formula-row">${_damageChipsHTML(data.damage)}</div>`;
+    } else if (data.effect) {
+      inner += `<div class="ref-formula-row"><div class="ref-formula-chip"><div class="f ref-effect-txt">${data.effect}</div><div class="l">Efecto</div></div></div>`;
+    }
+
+    if (!inner) return '';
+    // Bonuses pasivos solo cuando la acción realmente causa daño.
+    if (data.damage) inner += _passiveBonusChipsHTML(data.passiveBonuses);
+    return `<div class="sdm-announce">${inner}</div>`;
   }
 
   // needsConfirm: true cuando el popup precede a un lanzamiento real (el slot
@@ -4502,7 +4564,7 @@ const App = (() => {
       }
     } else if (kind === 'utility') {
       if (data.effect) {
-        body += `<div class="ref-formula-row"><div class="ref-formula-chip"><div class="f">${data.effect}</div><div class="l">Tirada</div></div></div>`;
+        body += `<div class="ref-formula-row"><div class="ref-formula-chip"><div class="f ref-effect-txt">${data.effect}</div><div class="l">Efecto</div></div></div>`;
       } else {
         body += `<div class="ref-no-dice">Sin tiradas de dados</div>`;
       }
@@ -4567,73 +4629,67 @@ const App = (() => {
   // Cast pendiente de confirmar desde el popup de referencia.
   let _pendingCast = null;
 
+  /* Opciones de lanzamiento de un hechizo — única fuente de verdad de las
+     reglas de slots, consumida por el modal unificado de detalle.
+     Devuelve { free, slots, sinSlot } donde:
+       · free  = puede lanzarse sin gastar slot (truco, o Magic Initiate †)
+       · slots = niveles de slot ofrecibles, solo los que tienen carga
+     OJO — domain y mi NO son lo mismo:
+       · domain (◆): siempre preparado (no ocupa tu límite de preparados) pero
+         SÍ gasta slot al lanzarlo, como cualquier hechizo normal.
+       · mi (†): Magic Initiate, se lanza 1×/descanso largo SIN gastar slot. */
+  function _castOptions(sp) {
+    if (sp.level === 0) return { free: true, slots: [], sinSlot: false };
+
+    const slots = [];
+    for (let i = sp.level; i <= 9; i++) {
+      const slot = _char.spellSlots[i];
+      if (slot && slot.current > 0) slots.push(i);
+    }
+    // Sin upcast no tiene sentido ofrecer slots superiores: solo el nivel base.
+    const ofrecibles = sp.upcast ? slots : slots.filter(lv => lv === sp.level);
+    return { free: !!sp.mi, slots: ofrecibles, sinSlot: !!sp.mi };
+  }
+
+  // Punto de entrada desde las tarjetas de conjuro: el modal de detalle es
+  // ahora la única pantalla de lanzamiento (elegir slot y lanzar ocurren ahí).
   function castSpell(spellId, slotLevel) {
     if (!_char) return;
     const sp = (_char.spells || []).find(s => s.id === spellId);
     if (!sp) return;
 
-    // Cantrip — no gasta slot, pero igual pasa por el popup de referencia
-    if (sp.level === 0) {
-      _pendingCast = { spellId: sp.id, slotLevel: 0 };
-      openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp), true);
-      return;
-    }
-
-    // Domain / MI: gratis SOLO si no se eligió un slot explícito. Si el jugador
-    // eligió slot en el picker (upcast), hay que respetarlo y descontarlo —
-    // antes se forzaba slotLevel 0 y el upcast no gastaba nada.
-    const esGratis = sp.domain || sp.mi;
-
+    // Sin nivel explícito → abrir el modal unificado para que el usuario elija.
     if (slotLevel === undefined) {
-      // Slots disponibles desde el nivel base del hechizo hacia arriba
-      const availSlots = [];
-      for (let i = sp.level; i <= 9; i++) {
-        const slot = _char.spellSlots[i];
-        if (slot && slot.current > 0) availSlots.push(i);
-      }
-
-      // Dominio/MI: se puede lanzar gratis, pero también upcastear gastando
-      // slot. Si hay slots y el hechizo escala, ofrecer el picker con la
-      // opción "gratis" incluida.
-      if (esGratis) {
-        if (availSlots.length > 0 && sp.upcast) {
-          _openCastPicker(sp, availSlots, true);
-          return;
-        }
-        _pendingCast = { spellId: sp.id, slotLevel: 0 };
-        openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp), true);
-        return;
-      }
-
-      if (availSlots.length === 0) {
-        showToast(`Sin slots disponibles para ${sp.name}`);
-        return;
-      }
-      // Si puede upcastear y hay más de un slot, dejar elegir
-      if (availSlots.length > 1 && sp.upcast) {
-        _openCastPicker(sp, availSlots);
-        return;
-      }
-      slotLevel = availSlots[0];
+      openSpellDetail(spellId);
+      return;
     }
 
-    // Validar que haya slot, pero NO consumirlo todavía: el gasto se confirma
-    // desde el popup de referencia (botón "Lanzar"), para poder cancelar.
-    const slot = _char.spellSlots[slotLevel];
-    if (!slot || slot.current <= 0) {
-      showToast(`Sin slots de nivel ${slotLevel}`);
-      return;
+    // Con nivel explícito (truco/MI = 0): validar sin consumir todavía. El
+    // gasto se confirma en confirmPendingCast() para poder cancelar.
+    if (slotLevel > 0) {
+      const slot = _char.spellSlots[slotLevel];
+      if (!slot || slot.current <= 0) {
+        showToast(`Sin slots de nivel ${slotLevel}`);
+        return;
+      }
     }
     _pendingCast = { spellId: sp.id, slotLevel };
-    openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp), true);
+    confirmPendingCast();
+  }
+
+  // Cierra la superficie desde la que se lanzó. Hoy el lanzamiento vive en el
+  // modal de detalle; el de referencia sigue abriéndose para atacar con arma.
+  function _closeCastSurfaces() {
+    if (_spellDetailOpen) closeSpellDetail();
+    closeActionRefModal();
   }
 
   // Confirma el lanzamiento: recién acá se descuenta el slot.
   function confirmPendingCast() {
-    if (!_pendingCast) { closeActionRefModal(); return; }
+    if (!_pendingCast) { _closeCastSurfaces(); return; }
     const { spellId, slotLevel } = _pendingCast;
     _pendingCast = null;
-    closeActionRefModal();
+    _closeCastSurfaces();
 
     const sp = (_char.spells || []).find(s => s.id === spellId);
     if (!sp) return;
@@ -4652,7 +4708,7 @@ const App = (() => {
 
   function cancelPendingCast() {
     _pendingCast = null;
-    closeActionRefModal();
+    _closeCastSurfaces();
   }
 
   function _finalizeCast(sp, slotLevel) {
@@ -4683,38 +4739,6 @@ const App = (() => {
 
     // Refresh right column to show updated slot dots
     _renderCombateDer();
-  }
-
-  // Slot picker modal for upcasting
-  let _castPickerSpell = null;
-
-  // conFree: hechizo de dominio/MI que puede lanzarse gratis o upcastear
-  // gastando un slot — se agrega el botón "Gratis" como primera opción.
-  function _openCastPicker(sp, availSlots, conFree) {
-    _castPickerSpell = sp;
-    const modal = document.getElementById('castPickerModal');
-    const btns  = document.getElementById('castPickerBtns');
-    document.getElementById('castPickerName').textContent = sp.name;
-    const freeBtn = conFree
-      ? `<button class="btn btn-ghost cast-picker-btn" onclick="App.confirmCastAtLevel('${sp.id}',0)">✦ Gratis (nivel ${sp.level})</button>`
-      : '';
-    btns.innerHTML = freeBtn + availSlots.map(lv =>
-      `<button class="btn btn-ghost cast-picker-btn" onclick="App.confirmCastAtLevel('${sp.id}',${lv})">Slot ${lv}</button>`
-    ).join('');
-    modal.classList.add('show');
-    document.getElementById('overlayBackdrop').classList.add('show');
-  }
-
-  function confirmCastAtLevel(spellId, slotLevel) {
-    closeCastPicker();
-    castSpell(spellId, slotLevel);
-  }
-
-  function closeCastPicker() {
-    _castPickerSpell = null;
-    const modal = document.getElementById('castPickerModal');
-    if (modal) modal.classList.remove('show');
-    document.getElementById('overlayBackdrop').classList.toggle('show', _diaryOpen || _iftttOpen || _spellDetailOpen);
   }
 
   function _checkConcAlert(damage) {
@@ -8447,13 +8471,11 @@ ${notesText}`;
     document.getElementById('sdmDuration').textContent = sp.duration || '—';
     document.getElementById('sdmRange').textContent = fmtDist(sp.range) || '—';
 
-    const damageWrap = document.getElementById('sdmDamageWrap');
-    if (sp.damage) {
-      document.getElementById('sdmDamage').textContent = sp.damage;
-      damageWrap.style.display = '';
-    } else {
-      damageWrap.style.display = 'none';
-    }
+    // Bloque destacado: lo primero que el ojo encuentra. Sustituye al viejo
+    // tile "Daño" de la fila de metadata (que quedaba perdido entre casteo y
+    // duración) y unifica CD + daño para anunciar de un golpe de vista.
+    const announceWrap = document.getElementById('sdmAnnounce');
+    if (announceWrap) announceWrap.innerHTML = _castAnnounceHTML(sp);
 
     document.getElementById('sdmDesc').textContent = fmtDesc(sp.fullDesc || sp.desc || '');
 
@@ -8465,16 +8487,48 @@ ${notesText}`;
       upcastWrap.style.display = 'none';
     }
 
-    // "Lanzar" button — show for castable spells, hide for cantrips cast-from-combat-tab
-    const castBtn = document.getElementById('sdmCastBtn');
-    if (castBtn) {
-      castBtn.style.display = '';
-      castBtn.onclick = () => { closeSpellDetail(); castSpell(sp.id); };
-    }
+    // Botonera de lanzamiento integrada: elegir slot y lanzar ocurren acá
+    // mismo, sin abrir ningún otro modal.
+    _renderCastButtons(sp);
 
     _spellDetailOpen = true;
     document.getElementById('spellDetailModal').classList.add('show');
     document.getElementById('overlayBackdrop').classList.add('show');
+  }
+
+  /* Botonera de lanzamiento del modal de detalle. Reglas en _castOptions():
+     truco → un solo "Lanzar"; MI (†) → "✦ Sin slot" + slots para upcastear;
+     dominio (◆) → slots normales, sin opción gratis; normal → un botón por
+     slot disponible. Sin slots → estado deshabilitado con mensaje claro. */
+  function _renderCastButtons(sp) {
+    const foot = document.getElementById('sdmCastBtns');
+    if (!foot) return;
+
+    const { free, slots } = _castOptions(sp);
+    const btns = [];
+
+    if (sp.level === 0) {
+      btns.push(`<button class="btn btn-gold sdm-cast-btn" onclick="App.castSpellAt('${sp.id}',0)">✨ Lanzar</button>`);
+    } else {
+      if (free) {
+        btns.push(`<button class="btn btn-gold sdm-cast-btn" onclick="App.castSpellAt('${sp.id}',0)">✦ Sin slot</button>`);
+      }
+      slots.forEach(lv => {
+        const up = lv > sp.level ? ' sdm-cast-btn--up' : '';
+        btns.push(`<button class="btn sdm-cast-btn${free ? ' btn-ghost' : ' btn-gold'}${up}" onclick="App.castSpellAt('${sp.id}',${lv})">Slot ${lv}</button>`);
+      });
+    }
+
+    // Un truco no "se lanza con" nada: no gasta slot, así que sobra el rótulo.
+    const label = sp.level === 0 ? '' : `<div class="sdm-cast-label">Lanzar con</div>`;
+    foot.innerHTML = btns.length
+      ? `${label}<div class="sdm-cast-row">${btns.join('')}</div>`
+      : `<div class="sdm-cast-empty">Sin slots disponibles</div>`;
+  }
+
+  // Lanza desde la botonera del modal unificado.
+  function castSpellAt(spellId, slotLevel) {
+    castSpell(spellId, slotLevel);
   }
 
   function closeSpellDetail() {
@@ -9300,7 +9354,7 @@ ${notesText}`;
 
     // Conjuros
     toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter,
-    castSpell, confirmCastAtLevel, closeCastPicker,
+    castSpell, castSpellAt,
     openActionRefModal, closeActionRefModal, attackWithWeapon,
     confirmPendingCast, cancelPendingCast,
     openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
