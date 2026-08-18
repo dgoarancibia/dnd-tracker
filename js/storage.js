@@ -190,9 +190,10 @@ const Storage = (() => {
      guardados con esas subrazas quedarían apuntando a algo que ya no está en
      RAZAS_CONFIG, así que se limpia el campo `subraza`.
 
-     Para no quitarle nada que ya usaba en mesa, las proficiencias de skill que
-     la subraza vieja otorgaba se conservan en char.skillProfs (sin duplicar si
-     ya las tiene por clase o trasfondo).
+     La app es fiel al PHB 2024: las especies unificadas NO otorgan las skill
+     profs que daban sus subrazas de 2014 (el Enano 2024 tiene skillProfs: []).
+     Por eso la migración solo limpia el campo `subraza` y NO hereda skills —
+     agregarlas sería mezclar reglas de dos ediciones.
 
      IMPORTANTE: esta migración NO toca hp.max ni hp.current. El bonus de
      Dwarven Toughness ya fue aplicado manualmente por el usuario a sus
@@ -200,43 +201,23 @@ const Storage = (() => {
      de RAZAS_CONFIG solo aplica hacia adelante, al subir de nivel.
   ── */
   const _SUBRAZAS_ELIMINADAS_2024 = {
-    'Enano': {
-      'Enano de las Colinas': ['perspicacia'],  // Dwarven Wisdom (2014)
-      'Enano de las Montañas': ['atletismo'],   // Dwarven Strength (2014)
-    },
-    'Halfling': {
-      'Pies Ligeros': [],
-      'Robusto': [],
-    },
+    'Enano':    ['Enano de las Colinas', 'Enano de las Montañas'],
+    'Halfling': ['Pies Ligeros', 'Robusto'],
   };
 
   function _migrateSpecies2024(char) {
     if (!char || !char.subraza) return false;
-    const porRaza = _SUBRAZAS_ELIMINADAS_2024[char.raza];
-    if (!porRaza) return false;
-    const skillsHeredadas = porRaza[char.subraza];
-    if (!skillsHeredadas) return false; // subraza no reconocida: no tocar nada
+    const subrazasDeLaRaza = _SUBRAZAS_ELIMINADAS_2024[char.raza];
+    if (!subrazasDeLaRaza) return false;
+    if (!subrazasDeLaRaza.includes(char.subraza)) return false; // no reconocida: no tocar
 
     const subrazaVieja = char.subraza;
     char.subraza = '';
 
-    // Preservar las skill profs que venían de la subraza eliminada, sin duplicar.
-    if (!Array.isArray(char.skillProfs)) char.skillProfs = [];
-    const agregadas = [];
-    skillsHeredadas.forEach(skill => {
-      if (!char.skillProfs.includes(skill)) {
-        char.skillProfs.push(skill);
-        agregadas.push(skill);
-      }
-    });
-
     console.info(
       `[migración especies 2024] "${char.name || char.id}": ${char.raza} — ` +
       `se eliminó la subraza "${subrazaVieja}" (no existe en el PHB 2024). ` +
-      (agregadas.length
-        ? `Se preservaron las proficiencias: ${agregadas.join(', ')}. `
-        : 'No hubo proficiencias nuevas que preservar. ') +
-      `HP sin cambios (${char.hp ? char.hp.max : '?'} máx).`
+      `Skills y HP sin cambios (${char.hp ? char.hp.max : '?'} máx).`
     );
     return true;
   }
