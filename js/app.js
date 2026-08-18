@@ -1687,6 +1687,19 @@ const App = (() => {
       _parseDiceFromText(text).forEach(({ n, face }) => addSource(sp.name, n, face));
     });
 
+    // Bonuses pasivos de features (ej. Blessed Strikes nv7: +1d8 radiante).
+    // Se tiran junto con el daño, así que suman dados al pouch.
+    if (typeof Characters !== 'undefined' && Characters.getPassiveDamageBonuses) {
+      const vistos = new Set();
+      ['weapon', 'spell'].forEach(ctx => {
+        (Characters.getPassiveDamageBonuses(c, ctx) || []).forEach(b => {
+          if (vistos.has(b.label)) return; // no duplicar si aplica a ambos contextos
+          vistos.add(b.label);
+          _parseDiceFromText(b.dice).forEach(({ n, face }) => addSource(b.label, n, face));
+        });
+      });
+    }
+
     // d20 siempre mínimo 1 — cualquier ataque/save/check lo usa
     if (!pouch.d20.sources.length) {
       pouch.d20.sources.push({ name: 'Ataques y saves', dice: '1d20' });
