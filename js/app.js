@@ -2505,13 +2505,15 @@ const App = (() => {
     if (item.kind === 'armor') {
       return `CA base ${item.base_ca}${item.add_dex ? ' + DES' : ''}`;
     }
-    // wondrous: mostrar bonuses no-cero
+    // wondrous: mostrar bonuses no-cero, y si no hay ninguno, las notas libres
+    // del ítem (ej. "1CD y 1 SATK") — antes se guardaban pero nunca se pintaban.
     const parts = [];
     if (item.bonuses) {
       Object.entries(item.bonuses).forEach(([k,v]) => {
         if (v) parts.push(`${v>0?'+':''}${v} ${k.toUpperCase()}`);
       });
     }
+    if (parts.length === 0 && item.notes) return item.notes;
     return parts.join(' · ');
   }
 

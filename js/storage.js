@@ -498,6 +498,21 @@ const Storage = (() => {
     _fixField(!char.statBuffs, () => { char.statBuffs = { ca:[], attack:[], save:[], spellDc:[] }; });
     _fixField(typeof char.exhaustion !== 'number', () => { char.exhaustion = 0; });
     _fixField(!char.turn, () => { char.turn = { movement:false, action:false, reaction:false, bonus:false }; });
+    // consumables con el viejo sistema container/maxQty (ej. Cantimplora)
+    // → unificar al nuevo charges{current,max}: misma UI de pips para todo
+    // ítem recargable en vez de dos sistemas paralelos sin conectar. Corre
+    // siempre (no solo en la migración v14) para alcanzar chars que ya
+    // pasaron por esa versión antes de que este fix existiera.
+    (char.consumables || []).forEach(item => {
+      if (item.container && !item.charges) {
+        const max = item.maxQty || item.qty || 1;
+        item.charges = { current: item.qty || 0, max };
+        item.qty = 1;
+        delete item.container;
+        delete item.maxQty;
+        _structFixed = true;
+      }
+    });
     if (!char.bonuses) { char.bonuses = {}; _structFixed = true; }
     ['init','ataque','hpMax','ca','cd','savesAll'].forEach(k => {
       if (char.bonuses[k] === undefined) { char.bonuses[k] = 0; _structFixed = true; }
