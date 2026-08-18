@@ -226,7 +226,7 @@ const _SW_EXPECTED = 349;
         <svg width="13" height="13" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1h-9.2v2.82h5.28c-.24 1.32-1.04 2.44-2.2 3.18v2.64h3.56c2.08-1.92 3.28-4.74 3.28-8.08 0-.56-.06-1.12-.14-1.66z"/><path fill="currentColor" d="M12.15 22c2.7 0 4.96-.9 6.61-2.44l-3.56-2.64c-.9.6-2.06.96-3.05.96-2.35 0-4.34-1.59-5.05-3.73H3.46v2.72A9.98 9.98 0 0 0 12.15 22z"/><path fill="currentColor" d="M7.1 14.15A5.97 5.97 0 0 1 6.79 12c0-.74.13-1.45.31-2.15V7.13H3.46A9.98 9.98 0 0 0 2.15 12c0 1.61.38 3.14 1.31 4.87z"/><path fill="currentColor" d="M12.15 6.12c1.32 0 2.5.45 3.43 1.35l2.57-2.57C16.51 3.38 14.55 2 12.15 2A9.98 9.98 0 0 0 3.46 7.13l3.64 2.72c.71-2.14 2.7-3.73 5.05-3.73z"/></svg>
         Iniciar sesión Google
       </button>
-      <button class="hm-btn hm-btn-danger" id="logoutBtn" onclick="Cloud.signOut();App.closeHeaderMenu()" style="display:none;">
+      <button class="hm-btn hm-btn-danger" id="logoutBtn" onclick="App.closeHeaderMenu();Cloud.signOut().then(()=>window.location.replace('./index.html'))" style="display:none;">
         ✕ Cerrar sesión
         <span id="userLabel" style="font-size:9px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px;"></span>
       </button>
