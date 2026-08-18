@@ -204,6 +204,8 @@ const Maps = (() => {
     document.getElementById('mapCanvasOverlay').classList.remove('show');
     _activeMap = null;
     _drawing   = false;
+    _pinching  = false;
+    resetZoom(); // que no quede escalado al abrir el próximo mapa
     _removeCanvasEvents();
   }
 
@@ -278,6 +280,14 @@ const Maps = (() => {
     _canvas.addEventListener('pointermove',   _onMove,   { passive: false });
     _canvas.addEventListener('pointerup',     _onUp,     { passive: false });
     _canvas.addEventListener('pointercancel', _onUp,     { passive: false });
+    // Zoom con pellizco (2 dedos) — se escucha en el contenedor para poder
+    // hacer pinch aunque los dedos caigan fuera del canvas.
+    const wrap = _canvas.parentElement;
+    if (wrap) {
+      wrap.addEventListener('touchstart', _onTouchStart, { passive: false });
+      wrap.addEventListener('touchmove',  _onTouchMove,  { passive: false });
+      wrap.addEventListener('touchend',   _onTouchEnd,   { passive: false });
+    }
   }
 
   function _removeCanvasEvents() {
@@ -286,6 +296,58 @@ const Maps = (() => {
     _canvas.removeEventListener('pointermove',   _onMove);
     _canvas.removeEventListener('pointerup',     _onUp);
     _canvas.removeEventListener('pointercancel', _onUp);
+    const wrap = _canvas.parentElement;
+    if (wrap) {
+      wrap.removeEventListener('touchstart', _onTouchStart);
+      wrap.removeEventListener('touchmove',  _onTouchMove);
+      wrap.removeEventListener('touchend',   _onTouchEnd);
+    }
+  }
+
+  /* ── Zoom con pellizco ──────────────────────────────────────────────────
+     Se escala el canvas por CSS (transform), no el bitmap: el dibujo mantiene
+     su resolución y _getPos sigue mapeando bien porque usa getBoundingClientRect.
+  ── */
+  let _zoom = 1, _zoomBase = 1, _pinchDist0 = 0, _pinching = false;
+
+  function _distDedos(t) {
+    return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  }
+
+  function _aplicarZoom() {
+    if (!_canvas) return;
+    _canvas.style.transform = `scale(${_zoom})`;
+    _canvas.style.transformOrigin = 'center center';
+  }
+
+  function _onTouchStart(e) {
+    if (e.touches.length !== 2) return;
+    e.preventDefault();
+    _pinching   = true;
+    _drawing    = false;   // cancelar cualquier trazo en curso
+    _currentPath = [];
+    _pinchDist0 = _distDedos(e.touches);
+    _zoomBase   = _zoom;
+    _redraw();
+  }
+
+  function _onTouchMove(e) {
+    if (!_pinching || e.touches.length !== 2) return;
+    e.preventDefault();
+    const d = _distDedos(e.touches);
+    if (_pinchDist0 > 0) {
+      _zoom = Math.max(0.5, Math.min(4, _zoomBase * (d / _pinchDist0)));
+      _aplicarZoom();
+    }
+  }
+
+  function _onTouchEnd(e) {
+    if (e.touches.length < 2) _pinching = false;
+  }
+
+  function resetZoom() {
+    _zoom = 1;
+    _aplicarZoom();
   }
 
   function _getPos(e) {
@@ -293,6 +355,44 @@ const Maps = (() => {
     const scaleX = _canvas.width  / rect.width;
     const scaleY = _canvas.height / rect.height;
     return [(e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY];
+  }
+
+  // ── Goma: borra ANOTACIONES, no píxeles ────────────────────────────────
+  // Antes usaba destination-out, que agujereaba también la imagen del mapa.
+  // Ahora elimina las anotaciones que el trazo de goma toca, dejando el mapa
+  // intacto — comportamiento de goma real.
+
+  // Distancia mínima de un punto a un segmento (para saber si la goma lo tocó)
+  function _distPuntoSegmento(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const largo2 = dx * dx + dy * dy;
+    if (largo2 === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / largo2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  }
+
+  function _anotacionTocada(a, x, y, radio) {
+    if (a.type === 'text') {
+      // Caja aproximada del texto (el origen del fillText es la baseline)
+      const ancho = (a.text || '').length * (a.size || 18) * 0.55;
+      const alto  = (a.size || 18);
+      return x >= a.x - radio && x <= a.x + ancho + radio &&
+             y >= a.y - alto - radio && y <= a.y + radio;
+    }
+    const pts = a.pts || [];
+    const tolerancia = radio + (a.size || 4) / 2;
+    for (let i = 0; i + 3 < pts.length; i += 2) {
+      if (_distPuntoSegmento(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3]) <= tolerancia) return true;
+    }
+    return false;
+  }
+
+  function _borrarEn(x, y) {
+    const radio = Math.max(8, _size * 2); // área de borrado del dedo/puntero
+    const antes = _annotations.length;
+    _annotations = _annotations.filter(a => !_anotacionTocada(a, x, y, radio));
+    return _annotations.length !== antes;
   }
 
   function _onDown(e) {
@@ -305,6 +405,12 @@ const Maps = (() => {
       return;
     }
 
+    if (_tool === 'eraser') {
+      _drawing = true;
+      if (_borrarEn(x, y)) _redraw();
+      return;
+    }
+
     _drawing     = true;
     _currentPath = [x, y];
   }
@@ -313,6 +419,12 @@ const Maps = (() => {
     e.preventDefault();
     if (!_drawing || _tool === 'text') return;
     const [x, y] = _getPos(e);
+
+    if (_tool === 'eraser') {
+      if (_borrarEn(x, y)) _redraw();
+      return;
+    }
+
     _currentPath.push(x, y);
     _redraw();
     _drawPath({ pts: _currentPath, color: _color, size: _size, tool: _tool });
@@ -321,6 +433,7 @@ const Maps = (() => {
   function _onUp(e) {
     if (!_drawing) return;
     _drawing = false;
+    if (_tool === 'eraser') { _redraw(); return; } // se guarda con el botón, igual que el pincel
     if (_currentPath.length >= 4) {
       _annotations.push({ type: 'path', pts: _currentPath, color: _color, size: _size, tool: _tool });
     }
@@ -432,7 +545,7 @@ const Maps = (() => {
     triggerAddMap, triggerCamera, handleFileSelect, deleteMap,
     openMap, closeMap,
     setTool, setColor, setSize,
-    undo, clearAll, saveAnnotations,
+    undo, clearAll, saveAnnotations, resetZoom,
   };
 
 })();
