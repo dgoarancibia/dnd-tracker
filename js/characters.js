@@ -270,12 +270,16 @@ const Characters = (() => {
   // skillProfs: proficiencias de habilidad que otorga
   // weaponProfs: proficiencias de armas
   // darkvision: alcance en metros (0 = sin darkvision)
+  // hpPerLevel: bonus de HP máximo por nivel de personaje (ej. Dwarven Toughness).
+  //             Se aplica al SUBIR de nivel (applyLevelUp / getHPGainHelp), no
+  //             retroactivamente sobre personajes ya existentes.
   const RAZAS_CONFIG = {
     'Humano': {
       emoji: '👤', speed: 30, darkvision: 0,
       traits: [
-        'Versatile — proficiencia en una habilidad a elección',
-        'Heroic Inspiration — 1 vez por descanso largo, tirar dado de ventaja',
+        'Resourceful — ganas Heroic Inspiration cada vez que terminas un Long Rest',
+        'Skillful — proficiencia en una habilidad a elección',
+        'Versatile — ganas una dote de Origen a elección (Origin feat)',
       ],
       resistances: [], languages: ['Común', 'Un idioma a elección'],
       skillProfs: [], weaponProfs: [],
@@ -283,87 +287,77 @@ const Characters = (() => {
     'Elfo': {
       emoji: '🧝', speed: 30, darkvision: 18,
       traits: [
-        'Fey Ancestry — ventaja en saves contra ser encantado, inmune a dormir mágico',
-        'Keen Senses — proficiencia en Percepción',
-        'Trance — solo necesita 4 h de meditación en vez de 8 h de sueño',
+        'Fey Ancestry — ventaja en saves para evitar o terminar el estado Encantado',
+        'Keen Senses — proficiencia en Perspicacia, Percepción o Supervivencia (a elección)',
+        'Trance — completas un Long Rest en 4 h de meditación consciente',
       ],
       resistances: [], languages: ['Común', 'Élfico'],
-      skillProfs: ['percepcion'], weaponProfs: [],
+      // 2024: Keen Senses es una ELECCIÓN entre 3 skills; ya no otorga
+      // Percepción fija, así que no se pre-asigna nada acá.
+      skillProfs: [], weaponProfs: [],
       subraces: [
         {
           name: 'Alto Elfo', emoji: '✨',
-          traits: ['High Elf Cantrip — conoces un cantrip de Mago (INT)', 'Elf Weapon Training — prof espadas largas, espadas cortas, arcos cortos y largos'],
-          skillProfs: [], weaponProfs: ['Espada larga', 'Espada corta', 'Arco corto', 'Arco largo'],
+          traits: ['Cantrip — conoces Prestidigitation (puedes cambiarlo por otro cantrip de Mago tras cada Long Rest)', 'Detect Magic (nv3) — 1 vez por Long Rest sin gastar slot', 'Misty Step (nv5) — 1 vez por Long Rest sin gastar slot'],
+          skillProfs: [], weaponProfs: [],
         },
         {
           name: 'Elfo de Bosque', emoji: '🌲',
-          traits: ['Fleet of Foot — velocidad 35 ft (10,5 m)', 'Mask of the Wild — puedes intentar esconderte cuando estés en terreno natural'],
-          speed: 35, skillProfs: [], weaponProfs: ['Espada larga', 'Espada corta', 'Arco corto', 'Arco largo'],
+          traits: ['Velocidad 35 ft (10,5 m)', 'Cantrip — conoces Druidcraft', 'Longstrider (nv3) — 1 vez por Long Rest sin gastar slot', 'Pass without Trace (nv5) — 1 vez por Long Rest sin gastar slot'],
+          speed: 35, skillProfs: [], weaponProfs: [],
         },
         {
           name: 'Drow', emoji: '🕷️',
-          traits: ['Superior Darkvision — visión en penumbra 36 m', 'Sunlight Sensitivity — desventaja en ataques y Percepción con luz solar', 'Drow Magic — Dancing Lights cantrip; Faerie Fire (nv3); Darkness (nv5)'],
-          darkvision: 36, skillProfs: [], weaponProfs: ['Rapiera', 'Espada corta', 'Ballesta de mano'],
+          traits: ['Superior Darkvision — visión en penumbra 36 m', 'Cantrip — conoces Dancing Lights', 'Faerie Fire (nv3) — 1 vez por Long Rest sin gastar slot', 'Darkness (nv5) — 1 vez por Long Rest sin gastar slot'],
+          darkvision: 36, skillProfs: [], weaponProfs: [],
         },
       ],
     },
+    // PHB 2024: el Enano se unificó — ya NO hay subrazas (Colinas/Montañas).
+    // Dwarven Toughness pasó a ser un rasgo de TODO Enano (+1 HP máx por nivel).
+    // Darkvision subió a 120 ft (36 m). Ya no otorga proficiencias de arma.
     'Enano': {
-      emoji: '⛏️', speed: 30, darkvision: 18,
+      emoji: '⛏️', speed: 30, darkvision: 36, hpPerLevel: 1,
       traits: [
-        'Dwarven Resilience — ventaja en saves contra veneno, resistencia a daño de veneno',
-        'Stonecunning — Tremorsense 18 m en piedra sin pulir (Sabiduría, bonus acción)',
+        'Dwarven Resilience — resistencia a daño de veneno y ventaja en saves para evitar o terminar el estado Envenenado',
+        'Dwarven Toughness — HP máximo +1, y +1 más cada vez que subes de nivel',
+        'Stonecunning — acción bonus: Tremorsense 18 m por 10 min estando sobre o tocando una superficie de piedra (Prof Bonus usos/Long Rest)',
       ],
       resistances: ['Veneno'], languages: ['Común', 'Enano'],
-      skillProfs: [], weaponProfs: ['Hacha de batalla', 'Hacha de mano', 'Martillo ligero', 'Martillo de guerra'],
-      subraces: [
-        {
-          name: 'Enano de las Colinas', emoji: '🌾',
-          traits: ['Dwarven Toughness — HP máximo +1 por nivel', 'Dwarven Wisdom — proficiencia en Perspicacia'],
-          skillProfs: ['perspicacia'],
-        },
-        {
-          name: 'Enano de las Montañas', emoji: '⛰️',
-          traits: ['Dwarven Armor Training — proficiencia con armaduras ligeras y medias', 'Dwarven Strength — proficiencia en Atletismo'],
-          skillProfs: ['atletismo'],
-        },
-      ],
+      skillProfs: [], weaponProfs: [],
     },
+    // PHB 2024: el Halfling se unificó — ya NO hay subrazas (Pies Ligeros/Robusto).
+    // Naturally Stealthy pasó a ser rasgo de todo Halfling. No hay resistencia a
+    // veneno ni bonus de HP (eso era el Stout 2014).
     'Halfling': {
       emoji: '🦶', speed: 30, darkvision: 0,
       traits: [
-        'Brave — ventaja en saves contra el estado Asustado',
-        'Halfling Nimbleness — puede moverse a través del espacio de criaturas más grandes',
-        'Luck — cuando saca 1 en ataque, check o save, puede tirar de nuevo',
+        'Brave — ventaja en saves para evitar o terminar el estado Asustado',
+        'Halfling Nimbleness — puedes moverte a través del espacio de criaturas de tamaño mayor al tuyo (no puedes detenerte ahí)',
+        'Luck — cuando sacas 1 natural en un D20 Test, tiras de nuevo y usas el resultado nuevo',
+        'Naturally Stealthy — puedes usar la acción Esconderse aun estando oscurecido solo por una criatura al menos un tamaño mayor que tú',
       ],
       resistances: [], languages: ['Común'], skillProfs: [], weaponProfs: [],
-      subraces: [
-        {
-          name: 'Pies Ligeros', emoji: '🐾',
-          traits: ['Naturally Stealthy — puede intentar esconderse tras criaturas de tamaño Mediano o mayor'],
-          skillProfs: [],
-        },
-        {
-          name: 'Robusto', emoji: '🛡️',
-          traits: ['Sturdy — +1 HP por nivel', 'Resilience — ventaja en saves contra veneno, resistencia a veneno'],
-          resistances: ['Veneno'], skillProfs: [],
-        },
-      ],
     },
+    // PHB 2024: el Dragonborn gana Darkvision 60 ft (18 m). El Breath Weapon ya
+    // NO depende del ancestro para forma ni save: siempre reemplaza un ataque,
+    // cono 15 ft o línea 30x5 ft (eliges cada vez), save DEX (CD 8 + CON + Prof),
+    // 1d10 y sube a 2d10/3d10/4d10 en niveles 5/11/17. El ancestro define solo
+    // el TIPO DE DAÑO, que es también el tipo de la resistencia.
     'Dragonborn': {
-      emoji: '🐉', speed: 30, darkvision: 0,
+      emoji: '🐉', speed: 30, darkvision: 18,
       traits: [
-        'Breath Weapon — acción bonus, área según tipo, save DEX/CON, daño escala con nivel',
-        'Draconic Flight (nv5) — acción bonus para volar 10 m hasta fin del turno',
+        'Breath Weapon — reemplaza un ataque: cono 15 ft o línea 30 ft (eliges), save DES CD 8+CON+Prof, 1d10 del tipo de tu ancestro (2d10 nv5, 3d10 nv11, 4d10 nv17) · Prof Bonus usos/Long Rest',
+        'Damage Resistance — resistencia al tipo de daño de tu ancestro dracónico',
+        'Draconic Flight (nv5) — acción bonus: alas espectrales por 10 min, velocidad de vuelo = tu velocidad · 1 vez/Long Rest',
       ],
       resistances: [], languages: ['Común', 'Dracónico'], skillProfs: [], weaponProfs: [],
       subraces: [
-        { name: 'Linaje de Fuego',    emoji: '🔥', traits: ['Draconic Ancestry: Fuego — Breath Weapon cono 15ft, save DEX'], resistances: ['Fuego'] },
-        { name: 'Linaje de Frío',     emoji: '❄️', traits: ['Draconic Ancestry: Frío — Breath Weapon línea 30ft, save CON'],  resistances: ['Frío'] },
-        { name: 'Linaje de Ácido',    emoji: '🟢', traits: ['Draconic Ancestry: Ácido — Breath Weapon línea 30ft, save DEX'], resistances: ['Ácido'] },
-        { name: 'Linaje de Rayo',     emoji: '⚡', traits: ['Draconic Ancestry: Rayo — Breath Weapon línea 30ft, save DEX'],  resistances: ['Relámpago'] },
-        { name: 'Linaje de Veneno',   emoji: '☠️', traits: ['Draconic Ancestry: Veneno — Breath Weapon cono 15ft, save CON'], resistances: ['Veneno'] },
-        { name: 'Linaje de Trueno',   emoji: '💥', traits: ['Draconic Ancestry: Trueno — Breath Weapon cono 15ft, save CON'], resistances: ['Trueno'] },
-        { name: 'Linaje de Psíquico', emoji: '🔮', traits: ['Draconic Ancestry: Psíquico — Breath Weapon línea 30ft, save INT'], resistances: ['Psíquico'] },
+        { name: 'Linaje de Fuego',    emoji: '🔥', traits: ['Ancestro dracónico: daño de Fuego (Breath Weapon y resistencia)'],     resistances: ['Fuego'] },
+        { name: 'Linaje de Frío',     emoji: '❄️', traits: ['Ancestro dracónico: daño de Frío (Breath Weapon y resistencia)'],      resistances: ['Frío'] },
+        { name: 'Linaje de Ácido',    emoji: '🟢', traits: ['Ancestro dracónico: daño de Ácido (Breath Weapon y resistencia)'],     resistances: ['Ácido'] },
+        { name: 'Linaje de Rayo',     emoji: '⚡', traits: ['Ancestro dracónico: daño de Relámpago (Breath Weapon y resistencia)'], resistances: ['Relámpago'] },
+        { name: 'Linaje de Veneno',   emoji: '☠️', traits: ['Ancestro dracónico: daño de Veneno (Breath Weapon y resistencia)'],    resistances: ['Veneno'] },
       ],
     },
     'Gnomo': {
@@ -373,12 +367,12 @@ const Characters = (() => {
       subraces: [
         {
           name: 'Gnomo de Roca', emoji: '⚙️',
-          traits: ['Artificer\'s Lore — doble prof en Arcanos con herramientas', 'Tinker — crear pequeños dispositivos con herramientas de artesano'],
+          traits: ['Conoces los cantrips Mending y Prestidigitation', 'Clockwork Device — 10 min lanzando Prestidigitation para crear un dispositivo mecánico Diminuto (CA 5, 1 PV)'],
           skillProfs: [],
         },
         {
           name: 'Gnomo de Bosque', emoji: '🌿',
-          traits: ['Natural Illusionist — conoces el cantrip Minor Illusion (INT)', 'Speak with Small Beasts — comunicación básica con animales pequeños'],
+          traits: ['Conoces el cantrip Minor Illusion', 'Speak with Animals — siempre preparado; lo lanzas sin gastar slot (Prof Bonus usos/Long Rest)'],
           skillProfs: [],
         },
       ],
@@ -390,70 +384,80 @@ const Characters = (() => {
       subraces: [
         {
           name: 'Linaje Infernal', emoji: '🔱',
-          traits: ['Hellish Resistance — resistencia a daño de Fuego', 'Infernal Legacy — Hellish Rebuke (nv3), Darkness (nv5)'],
+          traits: ['Resistencia a daño de Fuego', 'Conoces el cantrip Fire Bolt', 'Hellish Rebuke (nv3) — 1 vez por Long Rest sin gastar slot', 'Darkness (nv5) — 1 vez por Long Rest sin gastar slot'],
           resistances: ['Fuego'],
         },
         {
           name: 'Linaje Abisal', emoji: '🌀',
-          traits: ['Abyssal Fortitude — +1 HP por nivel', 'Abyssal Arcana — conjuros de la lista Abismal (cambian por nivel)'],
-          resistances: [],
+          traits: ['Resistencia a daño de Veneno', 'Conoces el cantrip Poison Spray', 'Ray of Sickness (nv3) — 1 vez por Long Rest sin gastar slot', 'Hold Person (nv5) — 1 vez por Long Rest sin gastar slot'],
+          resistances: ['Veneno'],
         },
         {
           name: 'Linaje Ctónico', emoji: '💀',
-          traits: ['Necrotic Resistance — resistencia a daño necrótico', 'Chthonic Legacy — Spare the Dying cantrip; False Life (nv3); Ray of Enfeeblement (nv5)'],
+          traits: ['Resistencia a daño Necrótico', 'Conoces el cantrip Chill Touch', 'False Life (nv3) — 1 vez por Long Rest sin gastar slot', 'Ray of Enfeeblement (nv5) — 1 vez por Long Rest sin gastar slot'],
           resistances: ['Necrótico'],
         },
       ],
     },
+    // PHB 2024: el Aasimar SÍ está en el PHB 2024 (una de las 3 especies nuevas
+    // junto a Goliath y Orco). Sus "subrazas" no se eligen en creación: son las
+    // tres opciones de Celestial Revelation, que se desbloquean a nivel 3 y se
+    // eligen una sola vez. Se modelan como subraces para reusar la UI existente.
     'Aasimar': {
       emoji: '😇', speed: 30, darkvision: 18,
       traits: [
-        'Celestial Resistance — resistencia a daño necrótico y radiante',
-        'Healing Hands — acción: toca criatura y cura nº de PV = prof bonus (Long Rest)',
-        'Light Bearer — conoces el cantrip Light',
+        'Celestial Resistance — resistencia a daño Necrótico y Radiante',
+        'Healing Hands — acción mágica: tocas una criatura y tiras d4 = Prof Bonus; recupera esos PV · 1 vez/Long Rest',
+        'Light Bearer — conoces el cantrip Light (Carisma es tu aptitud mágica)',
+        'Celestial Revelation (nv3) — acción bonus: te transformas 1 min y sumas daño extra = Prof Bonus una vez por turno · 1 vez/Long Rest',
       ],
       resistances: ['Necrótico', 'Radiante'], languages: ['Común', 'Celestial'],
       skillProfs: [], weaponProfs: [],
       subraces: [
         {
-          name: 'Protector', emoji: '🕊️',
-          traits: ['Radiant Soul (nv3) — alas, velocidad de vuelo = velocidad caminando, daño radiante extra = prof bonus'],
+          name: 'Alas Celestiales', emoji: '🕊️',
+          traits: ['Heavenly Wings (nv3) — alas espectrales: velocidad de vuelo = tu velocidad · daño extra Radiante = Prof Bonus'],
         },
         {
-          name: 'Caído', emoji: '🌑',
-          traits: ['Necrotic Shroud (nv3) — alas esqueléticas, criaturas cercanas hacen save CAR o quedan Asustadas; daño necrótico extra'],
+          name: 'Resplandor Interior', emoji: '☀️',
+          traits: ['Inner Radiance (nv3) — luz brillante 3 m + tenue 3 m más · al final de cada turno tuyo, cada criatura a 3 m recibe daño Radiante = Prof Bonus · daño extra Radiante = Prof Bonus'],
         },
         {
-          name: 'Scourge', emoji: '☀️',
-          traits: ['Radiant Consumption (nv3) — luz intensa 3 m, daño radiante a ti y cercanos, daño radiante extra = prof bonus'],
+          name: 'Manto Necrótico', emoji: '🌑',
+          traits: ['Necrotic Shroud (nv3) — criaturas no aliadas a 3 m hacen save CAR o quedan Asustadas hasta el fin de tu próximo turno · daño extra Necrótico = Prof Bonus'],
         },
       ],
     },
     'Goliath': {
       emoji: '🏔️', speed: 35, darkvision: 0,
       traits: [
-        'Large Form (nv5) — acción bonus: tamaño Grande por 10 min, 1 vez por Long Rest',
-        'Powerful Build — cuenta como tamaño Grande para cargar/empujar/arrastrar',
+        'Large Form (nv5) — acción bonus: tamaño Grande por 10 min, ventaja en pruebas de Fuerza y +3 m de velocidad · 1 vez/Long Rest',
+        'Powerful Build — ventaja en pruebas para terminar el estado Apresado; cuentas como un tamaño mayor para capacidad de carga',
       ],
       resistances: [], languages: ['Común', 'Gigante'], skillProfs: [], weaponProfs: [],
+      // 2024: ningún linaje de gigante otorga resistencia a daño.
       subraces: [
-        { name: 'Linaje de Nube',    emoji: '☁️',  traits: ['Cloud\'s Jaunt — teletransportación 9 m como acción bonus (Prof Bonus/día)'] },
-        { name: 'Linaje de Fuego',   emoji: '🔥',  traits: ['Fire\'s Burn — +1d10 daño de fuego al golpear (Prof Bonus/día)'], resistances: ['Fuego'] },
-        { name: 'Linaje de Escarcha',emoji: '❄️',  traits: ['Frost\'s Chill — objetivo velocidad −9 m hasta tu próximo turno (Prof Bonus/día)'], resistances: ['Frío'] },
-        { name: 'Linaje de Colina',  emoji: '🌄',  traits: ['Hill\'s Tumble — empuja objetivo Grande o menor a tierra (Prof Bonus/día)'] },
-        { name: 'Linaje de Piedra',  emoji: '🪨',  traits: ['Stone\'s Endurance — reduces daño recibido en 1d12+CON mod (Prof Bonus/día)'] },
-        { name: 'Linaje de Tormenta',emoji: '⛈️', traits: ['Storm\'s Thunder — daño trueno 1d8 a atacante (Prof Bonus/día)'], resistances: ['Relámpago'] },
+        { name: 'Linaje de Nube',    emoji: '☁️',  traits: ['Cloud\'s Jaunt — acción bonus: te teletransportas hasta 9 m (Prof Bonus usos/Long Rest)'] },
+        { name: 'Linaje de Fuego',   emoji: '🔥',  traits: ['Fire\'s Burn — al golpear con un ataque, +1d10 daño de Fuego (Prof Bonus usos/Long Rest)'] },
+        { name: 'Linaje de Escarcha',emoji: '❄️',  traits: ['Frost\'s Chill — al golpear con un ataque, +1d6 daño de Frío y reduces la velocidad del objetivo en 3 m (Prof Bonus usos/Long Rest)'] },
+        { name: 'Linaje de Colina',  emoji: '🌄',  traits: ['Hill\'s Tumble — al golpear a una criatura Grande o menor, la derribas Derribada (Prof Bonus usos/Long Rest)'] },
+        { name: 'Linaje de Piedra',  emoji: '🪨',  traits: ['Stone\'s Endurance — reacción: reduces el daño recibido en 1d12 + mod CON (Prof Bonus usos/Long Rest)'] },
+        { name: 'Linaje de Tormenta',emoji: '⛈️', traits: ['Storm\'s Thunder — reacción al recibir daño: 1d8 de daño de Trueno a una criatura visible a 18 m (Prof Bonus usos/Long Rest)'] },
       ],
     },
+    // PHB 2024: Darkvision del Orco es 120 ft (36 m), el doble del estándar.
     'Orco': {
-      speed: 30, darkvision: 18,
+      speed: 30, darkvision: 36,
       traits: [
-        'Adrenaline Rush — acción bonus para Dash, gana PV temporales = prof bonus',
-        'Relentless Endurance — 1 vez por Long Rest: al caer a 0 HP, quedas en 1 HP',
-        'Powerful Build — cuenta como Grande para cargar/empujar',
+        'Adrenaline Rush — acción bonus: acción Correr y ganas PV temporales = Prof Bonus · Prof Bonus usos, recuperas todos con descanso corto o largo',
+        'Relentless Endurance — al caer a 0 PV sin morir del golpe, quedas en 1 PV · 1 vez/Long Rest',
+        'Powerful Build — ventaja en pruebas para terminar el estado Apresado; cuentas como un tamaño mayor para capacidad de carga',
       ],
       resistances: [], languages: ['Común', 'Orco'], skillProfs: [], weaponProfs: [],
     },
+    // FUENTE: Shadar-Kai NO está en el PHB 2024. Viene de Mordenkainen Presents:
+    // Monsters of the Multiverse (2022, pág. 31), donde es un linaje de elfo.
+    // Se conserva intacta a propósito: el usuario la juega con permiso de su DM.
     'Shadar-Kai': {
       emoji: '👤', speed: 30, darkvision: 18,
       traits: [
@@ -714,25 +718,34 @@ const Characters = (() => {
     return !!(cfg && cfg.preparesCaster);
   }
 
+  // Bonus de HP máximo por nivel que otorga la especie (ej. Dwarven Toughness
+  // del Enano 2024: +1 HP máx por nivel de personaje). Retorna 0 si no aplica.
+  // Solo se usa hacia adelante (al subir de nivel), nunca retroactivamente.
+  function getRaceHPPerLevel(char) {
+    const cfg = char && RAZAS_CONFIG[char.raza];
+    return (cfg && cfg.hpPerLevel) || 0;
+  }
+
   // Ayuda para el input de "HP ganado" al subir de nivel: dado de golpe real,
   // modificador de CON, promedio fijo y mínimo. Retorna null si falta el dado.
-  // NOTA: el proyecto NO modela bonuses raciales de HP por nivel de forma
-  // numérica (Dwarven Toughness existe solo como texto en RAZAS_CONFIG.traits),
-  // así que no se suma nada acá — la UI avisa que hay que revisarlo a mano.
-  // TODO: si algún día se modela hpPerLevel por raza/feat, sumarlo acá.
+  // El bonus racial de HP por nivel (hpPerLevel, ej. Dwarven Toughness) se suma
+  // a los totales: el mínimo de 1 PV aplica al dado+CON, y el bonus racial va
+  // por encima de ese mínimo (las reglas lo tratan como un aumento aparte).
   function getHPGainHelp(char) {
     const cfg = CLASES_CONFIG[char.clase];
     const hitDie = char.hitDie || (cfg && cfg.hitDie);
     if (!hitDie) return null;
     const conMod = calcMod(char.stats.con);
     const fixed = Math.floor(hitDie / 2) + 1;
+    const raceBonus = getRaceHPPerLevel(char);
     return {
       hitDie,
       conMod,
+      raceBonus,                          // ej. +1 por Dwarven Toughness
       fixed,                              // promedio fijo del dado (sin CON)
-      fixedTotal: Math.max(1, fixed + conMod),
-      minTotal:   Math.max(1, 1 + conMod),
-      maxTotal:   Math.max(1, hitDie + conMod),
+      fixedTotal: Math.max(1, fixed + conMod) + raceBonus,
+      minTotal:   Math.max(1, 1 + conMod) + raceBonus,
+      maxTotal:   Math.max(1, hitDie + conMod) + raceBonus,
     };
   }
 
@@ -963,7 +976,8 @@ const Characters = (() => {
       clase: 'Clérigo',
       subclase: 'Dominio de la Paz',
       raza: 'Enano',
-      subraza: 'Enano de las Montañas',
+      // PHB 2024: el Enano no tiene subrazas. Antes era 'Enano de las Montañas'.
+      subraza: '',
       trasfondo: 'Acólito',
       deity: 'Clangeddin Barbablanca',
       alignment: 'LB',
@@ -978,7 +992,10 @@ const Characters = (() => {
       velocidad: 30,
 
       savingThrows: ['sab', 'car'],
-      skillProfs: ['perspicacia', 'historia', 'persuasion', 'religion'],
+      // 'atletismo' venía de Dwarven Strength (Enano de las Montañas 2014). Ese
+      // rasgo ya no existe en 2024, pero se conserva para no quitarle en mesa
+      // una proficiencia que ya usaba (igual criterio que la migración v15).
+      skillProfs: ['perspicacia', 'historia', 'persuasion', 'religion', 'atletismo'],
       skillExpertise: [],
 
       spellcastingStat: 'sab',
@@ -987,14 +1004,13 @@ const Characters = (() => {
 
       hitDice: { current: 6, max: 6 },
 
-      // Rasgos raciales PHB 2024 — Enano de las Montañas
+      // Rasgos raciales PHB 2024 — Enano (especie unificada, sin subrazas)
       speciesTraits: [
-        '⛏️ Dwarven Resilience — ventaja en saves contra veneno, resistencia a daño de veneno',
-        '🔭 Darkvision 18 m — ves en penumbra como si fuera luz brillante, en oscuridad como penumbra',
-        '🪨 Stonecunning — Tremorsense 18 m en piedra sin pulir (Sabiduría, acción bonus, 10 min)',
-        '⚔️ Dwarven Armor Training — proficiencia con armaduras ligeras y medias (Montañas)',
-        '💪 Dwarven Strength — proficiencia en Atletismo (Enano de las Montañas)',
-        '🔨 Weapon Proficiency — Hacha de batalla, Hacha de mano, Martillo ligero, Martillo de guerra',
+        '⛏️ Dwarven Resilience — resistencia a daño de veneno y ventaja en saves para evitar o terminar el estado Envenenado',
+        '🔭 Darkvision 36 m — ves en penumbra como si fuera luz brillante, en oscuridad como penumbra',
+        '❤️ Dwarven Toughness — HP máximo +1, y +1 más cada vez que subes de nivel (ya incluido en los 50 PV)',
+        '🪨 Stonecunning — acción bonus: Tremorsense 18 m por 10 min sobre o tocando piedra (Prof Bonus usos/Long Rest)',
+        '💪 Atletismo — proficiencia heredada de Dwarven Strength (Enano de las Montañas 2014, rasgo ya inexistente)',
       ].join('\n'),
 
       resources: [
@@ -4769,6 +4785,10 @@ const Characters = (() => {
 
   /* ── LEVEL UP ── */
 
+  // hpGained viene de la UI, que lo prellena con getHPGainHelp().fixedTotal —
+  // ese total YA incluye el bonus racial de HP por nivel (hpPerLevel, ej.
+  // Dwarven Toughness). Por eso NO se vuelve a sumar acá: hacerlo lo duplicaría.
+  // Al saltar varios niveles de golpe el usuario ajusta el total a mano.
   function applyLevelUp(char, newLevel, hpGained) {
     char.nivel = newLevel;
     char.hp.max += hpGained;
@@ -5734,6 +5754,7 @@ const Characters = (() => {
     getPreparedMax,
     getPreparedMaxAtLevel,
     getHPGainHelp,
+    getRaceHPPerLevel,
     getPassiveDamageBonuses,
     getCantripsKnown,
     isKnownCaster,

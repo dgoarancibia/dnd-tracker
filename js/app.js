@@ -7032,18 +7032,24 @@ const App = (() => {
     document.getElementById('levelUpModal').classList.remove('show');
   }
 
-  // Texto de ayuda para el input de HP: dado real de la clase + mod CON.
-  // El proyecto no modela bonuses raciales/feats de HP por nivel de forma
-  // numérica, así que se avisa explícitamente en vez de inventar el número.
+  // Texto de ayuda para el input de HP: dado real de la clase + mod CON, más el
+  // bonus racial de HP por nivel si la especie lo otorga (ej. Dwarven Toughness
+  // del Enano 2024), que ya viene sumado en los totales de getHPGainHelp().
   function _renderHPGainHelp(help) {
     const el = document.getElementById('luHPHelp');
     if (!el) return;
     if (!help) { el.innerHTML = ''; return; }
     const con = `${help.conMod >= 0 ? '+' : ''}${help.conMod}`;
+    const race = help.raceBonus
+      ? ` +<b>${help.raceBonus}</b> (especie)`
+      : '';
+    const note = help.raceBonus
+      ? `Incluye +${help.raceBonus} HP por nivel de tu especie. Revisá si algún feat suma HP extra aparte.`
+      : 'Revisá si algún feat suma HP extra por nivel: no está incluido en este cálculo.';
     el.innerHTML =
-      `Tirá <b>1d${help.hitDie}</b> (o tomá <b>${help.fixed}</b> fijo) ${con} (CON) =
+      `Tirá <b>1d${help.hitDie}</b> (o tomá <b>${help.fixed}</b> fijo) ${con} (CON)${race} =
        mínimo <b>${help.minTotal}</b> · promedio <b>${help.fixedTotal}</b> · máximo <b>${help.maxTotal}</b>
-       <span class="lu-hp-help-note">Revisá si tu raza o algún feat suma HP extra por nivel (ej. Dwarven Toughness): no está incluido en este cálculo.</span>`;
+       <span class="lu-hp-help-note">${note}</span>`;
   }
 
   function _updateLevelUpPreview() {

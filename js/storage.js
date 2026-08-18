@@ -9,7 +9,7 @@ const Storage = (() => {
   const BACKUP_TS    = 'dnd_backup_ts_v1';
   const DELETED_KEY  = 'dnd_deleted_ids_v1'; // IDs eliminados — persiste en localStorage
   const TRASH_KEY    = 'dnd_trash_v1';        // Papelera — personajes borrados recuperables
-  const DATA_VERSION = 14;  // Incrementar al cambiar el esquema
+  const DATA_VERSION = 15;  // Incrementar al cambiar el esquema
   const LURSEY_ID    = 'lursey-brumaclara'; // personaje de demo — sus features vienen de buildLursey()
 
   // ── IndexedDB shadow backup ──────────────────────────────────────────────
@@ -182,6 +182,63 @@ const Storage = (() => {
       }
     }
     return true; // indica que se modificó el char
+  }
+
+  /* ── Migración de especies al PHB 2024 ───────────────────────────────────
+     En el PHB 2024 el Enano y el Halfling se unificaron: sus subrazas de 2014
+     (Colinas/Montañas, Pies Ligeros/Robusto) dejaron de existir. Los personajes
+     guardados con esas subrazas quedarían apuntando a algo que ya no está en
+     RAZAS_CONFIG, así que se limpia el campo `subraza`.
+
+     Para no quitarle nada que ya usaba en mesa, las proficiencias de skill que
+     la subraza vieja otorgaba se conservan en char.skillProfs (sin duplicar si
+     ya las tiene por clase o trasfondo).
+
+     IMPORTANTE: esta migración NO toca hp.max ni hp.current. El bonus de
+     Dwarven Toughness ya fue aplicado manualmente por el usuario a sus
+     personajes existentes; recalcularlo acá lo duplicaría. El campo hpPerLevel
+     de RAZAS_CONFIG solo aplica hacia adelante, al subir de nivel.
+  ── */
+  const _SUBRAZAS_ELIMINADAS_2024 = {
+    'Enano': {
+      'Enano de las Colinas': ['perspicacia'],  // Dwarven Wisdom (2014)
+      'Enano de las Montañas': ['atletismo'],   // Dwarven Strength (2014)
+    },
+    'Halfling': {
+      'Pies Ligeros': [],
+      'Robusto': [],
+    },
+  };
+
+  function _migrateSpecies2024(char) {
+    if (!char || !char.subraza) return false;
+    const porRaza = _SUBRAZAS_ELIMINADAS_2024[char.raza];
+    if (!porRaza) return false;
+    const skillsHeredadas = porRaza[char.subraza];
+    if (!skillsHeredadas) return false; // subraza no reconocida: no tocar nada
+
+    const subrazaVieja = char.subraza;
+    char.subraza = '';
+
+    // Preservar las skill profs que venían de la subraza eliminada, sin duplicar.
+    if (!Array.isArray(char.skillProfs)) char.skillProfs = [];
+    const agregadas = [];
+    skillsHeredadas.forEach(skill => {
+      if (!char.skillProfs.includes(skill)) {
+        char.skillProfs.push(skill);
+        agregadas.push(skill);
+      }
+    });
+
+    console.info(
+      `[migración especies 2024] "${char.name || char.id}": ${char.raza} — ` +
+      `se eliminó la subraza "${subrazaVieja}" (no existe en el PHB 2024). ` +
+      (agregadas.length
+        ? `Se preservaron las proficiencias: ${agregadas.join(', ')}. `
+        : 'No hubo proficiencias nuevas que preservar. ') +
+      `HP sin cambios (${char.hp ? char.hp.max : '?'} máx).`
+    );
+    return true;
   }
 
   /* ── Migrations ── */
@@ -483,11 +540,25 @@ const Storage = (() => {
       }
       char._dataVersion = 14;
     }
+    if (char._dataVersion < 15) {
+      // v14 → v15: alinear especies con el PHB 2024. Enano y Halfling se
+      // unificaron (ya no tienen subrazas), así que los personajes guardados con
+      // una subraza eliminada quedarían apuntando a algo inexistente.
+      // La lógica real vive en _migrateSpecies2024(), que corre SIEMPRE (abajo)
+      // para alcanzar también a los personajes que ya venían con _dataVersion
+      // alto desde un JSON importado y se saltearon esta migración.
+      char._dataVersion = 15;
+    }
+
+    // ── Siempre: migración de especies al PHB 2024 ─────────────────────────────
+    // Corre INDEPENDIENTEMENTE de la versión (mismo motivo que los bloques de
+    // abajo: los JSONs importados llegan con _dataVersion ya alto).
+    const _speciesFixed = _migrateSpecies2024(char);
 
     // ── Siempre: campos estructurales obligatorios ─────────────────────────────
     // Corre INDEPENDIENTEMENTE de la versión. Cubre JSONs importados con
     // _dataVersion ya alto que saltearon las migraciones anteriores.
-    let _structFixed = false;
+    let _structFixed = _speciesFixed;
     function _fixField(condition, fix) { if (condition) { fix(); _structFixed = true; } }
     _fixField(!char.hitDice,               () => { char.hitDice = { current: char.nivel || 1, max: char.nivel || 1 }; });
     _fixField(!char.currency,              () => { char.currency = { pp:0, gp:0, ep:0, sp:0, cp:0 }; });
