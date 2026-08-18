@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 352;
+const _SW_EXPECTED = 353;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -1108,7 +1108,7 @@ const _SW_EXPECTED = 352;
       <span class="ref-close" onclick="App.closeActionRefModal()">✕</span>
     </div>
     <div class="ref-body" id="refBody"></div>
-    <div class="ref-footer">
+    <div class="ref-footer" id="refFooter">
       <button class="ref-ok-btn" onclick="App.closeActionRefModal()">Entendido</button>
     </div>
   </div>
@@ -1273,7 +1273,7 @@ const _SW_EXPECTED = 352;
 <script src="js/storage.js?v=52"></script>
 <script src="js/characters.js?v=97"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=187"></script>
+<script src="js/app.js?v=188"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=3"></script>
 <script>

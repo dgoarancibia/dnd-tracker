@@ -4365,6 +4365,27 @@ const App = (() => {
     return 'utility';
   }
 
+  // Separa daño condicional en casos independientes para mostrarlos como chips
+  // distintos. Ej: "1d8 necrótico (2d12 si ya tiene daño)" → dos casos, cada
+  // uno con su fórmula y su condición. Si no hay paréntesis con condición,
+  // devuelve un solo caso con el string tal cual.
+  function _splitConditionalDamage(dmg) {
+    if (!dmg) return [];
+    const m = dmg.match(/^(.+?)\s*\((\d+d\d+[^)]*)\)\s*$/);
+    if (!m) return [{ formula: dmg.trim(), cond: null }];
+
+    const base = m[1].trim();
+    const inner = m[2].trim();
+    // Dentro del paréntesis: "2d12 si ya tiene daño" → fórmula + condición
+    const im = inner.match(/^(\d+d\d+(?:\s*\+\s*\d+)?)\s*(.*)$/);
+    if (!im) return [{ formula: dmg.trim(), cond: null }];
+
+    return [
+      { formula: base, cond: 'caso normal' },
+      { formula: im[1].trim(), cond: im[2].trim() || 'caso alternativo' },
+    ];
+  }
+
   function _spellRefData(sp) {
     const kind = _inferSpellRefKind(sp);
     if (kind === 'attack') {
@@ -4414,10 +4435,33 @@ const App = (() => {
     };
   }
 
-  function openActionRefModal(kind, data) {
+  // Un chip por cada caso de daño. Con daño condicional (ej. Toll the Dead)
+  // salen dos chips, cada uno rotulado con su condición.
+  function _damageChipsHTML(dmg) {
+    const cases = _splitConditionalDamage(dmg);
+    if (!cases.length) return '';
+    if (cases.length === 1) {
+      return `<div class="ref-formula-chip"><div class="f">${cases[0].formula}</div><div class="l">Daño</div></div>`;
+    }
+    return cases.map(c =>
+      `<div class="ref-formula-chip"><div class="f">${c.formula}</div><div class="l">${c.cond}</div></div>`
+    ).join('');
+  }
+
+  // needsConfirm: true cuando el popup precede a un lanzamiento real (el slot
+  // se descuenta al confirmar). false = solo referencia (ej. atacar con arma).
+  function openActionRefModal(kind, data, needsConfirm) {
     const titleEl = document.getElementById('refTitle');
     const bodyEl = document.getElementById('refBody');
+    const footEl = document.getElementById('refFooter');
     if (!titleEl || !bodyEl) return;
+
+    if (footEl) {
+      footEl.innerHTML = needsConfirm
+        ? `<button class="btn-secondary" onclick="App.cancelPendingCast()">Cancelar</button>
+           <button class="ref-ok-btn" onclick="App.confirmPendingCast()">Lanzar</button>`
+        : `<button class="ref-ok-btn" onclick="App.closeActionRefModal()">Entendido</button>`;
+    }
 
     titleEl.innerHTML = `<span>${data.icon || '✨'}</span><span>${data.title || ''}</span>`;
 
@@ -4429,7 +4473,7 @@ const App = (() => {
         body += `<div class="ref-formula-chip"><div class="f">${data.attackFormula}</div><div class="l">Tirada de ataque</div></div>`;
       }
       if (data.damage) {
-        body += `<div class="ref-formula-chip"><div class="f">${data.damage}</div><div class="l">Daño</div></div>`;
+        body += _damageChipsHTML(data.damage);
       }
       body += `</div>`;
     } else if (kind === 'save') {
@@ -4437,7 +4481,7 @@ const App = (() => {
         body += `<div class="ref-dc-chip"><div class="dc-f">CD ${data.cd}</div>${data.saveStat ? `<div class="dc-l">Save de ${data.saveStat}</div>` : ''}</div>`;
       }
       if (data.damage) {
-        body += `<div class="ref-formula-row"><div class="ref-formula-chip"><div class="f">${data.damage}</div><div class="l">Daño</div></div></div>`;
+        body += `<div class="ref-formula-row">${_damageChipsHTML(data.damage)}</div>`;
       }
     } else if (kind === 'utility') {
       if (data.effect) {
@@ -4496,21 +4540,25 @@ const App = (() => {
      CAST SPELL (Epic 1)
   ══════════════════════════════════════════════════════ */
 
+  // Cast pendiente de confirmar desde el popup de referencia.
+  let _pendingCast = null;
+
   function castSpell(spellId, slotLevel) {
     if (!_char) return;
     const sp = (_char.spells || []).find(s => s.id === spellId);
     if (!sp) return;
 
-    // Cantrip — no slot needed
+    // Cantrip — no gasta slot, pero igual pasa por el popup de referencia
     if (sp.level === 0) {
-      _finalizeCast(sp, 0);
+      _pendingCast = { spellId: sp.id, slotLevel: 0 };
+      openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp), true);
       return;
     }
 
-    // Domain or MI spells — free cast (no slot consumed), but only if current ≥ 1
+    // Domain or MI spells — free cast (no slot consumed)
     if (sp.domain || sp.mi) {
-      // Find a resource matching the spell name or a slot if forced
-      _finalizeCast(sp, sp.level);
+      _pendingCast = { spellId: sp.id, slotLevel: 0 };
+      openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp), true);
       return;
     }
 
@@ -4539,22 +4587,46 @@ const App = (() => {
       slotLevel = found;
     }
 
-    // Consume slot
+    // Validar que haya slot, pero NO consumirlo todavía: el gasto se confirma
+    // desde el popup de referencia (botón "Lanzar"), para poder cancelar.
     const slot = _char.spellSlots[slotLevel];
     if (!slot || slot.current <= 0) {
       showToast(`Sin slots de nivel ${slotLevel}`);
       return;
     }
-    slot.current -= 1;
+    _pendingCast = { spellId: sp.id, slotLevel };
+    openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp), true);
+  }
+
+  // Confirma el lanzamiento: recién acá se descuenta el slot.
+  function confirmPendingCast() {
+    if (!_pendingCast) { closeActionRefModal(); return; }
+    const { spellId, slotLevel } = _pendingCast;
+    _pendingCast = null;
+    closeActionRefModal();
+
+    const sp = (_char.spells || []).find(s => s.id === spellId);
+    if (!sp) return;
+
+    if (slotLevel > 0) {
+      const slot = _char.spellSlots[slotLevel];
+      if (!slot || slot.current <= 0) {
+        showToast(`Sin slots de nivel ${slotLevel}`);
+        return;
+      }
+      slot.current -= 1;
+    }
     _finalizeCast(sp, slotLevel);
-    _refreshSlotDots(slotLevel);
+    if (slotLevel > 0) _refreshSlotDots(slotLevel);
+  }
+
+  function cancelPendingCast() {
+    _pendingCast = null;
+    closeActionRefModal();
   }
 
   function _finalizeCast(sp, slotLevel) {
     _saveChar(true);
-
-    // Popup de referencia mecánica — fórmula exacta antes de tirar dados físicos.
-    openActionRefModal(_inferSpellRefKind(sp), _spellRefData(sp));
 
     // Auto-concentration
     if (sp.concentration) {
@@ -9091,6 +9163,7 @@ ${notesText}`;
     toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter,
     castSpell, confirmCastAtLevel, closeCastPicker,
     openActionRefModal, closeActionRefModal, attackWithWeapon,
+    confirmPendingCast, cancelPendingCast,
     openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
 
     // Equipo
