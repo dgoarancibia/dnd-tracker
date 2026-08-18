@@ -1768,7 +1768,10 @@ const App = (() => {
 
   function togglePouchDetail() {
     _pouchDetailOpen = !_pouchDetailOpen;
-    _renderCombateDer();
+    // El pouch vive en su propio modal (no en la pestaña Combate): hay que
+    // repintar el cuerpo del modal, no la columna derecha de combate.
+    const body = document.querySelector('#dicePouchOverlay .modal-body');
+    if (body && _char) body.innerHTML = _renderDicePouch(_char);
   }
 
   function _renderCombateDer() {
