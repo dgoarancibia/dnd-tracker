@@ -4129,6 +4129,11 @@ input[type=number] { -moz-appearance: textfield; }
 .ref-formula-chip { flex:1; text-align:center; background: var(--bg3); border:1px solid var(--border-strong); border-radius:10px; padding:10px 8px; }
 .ref-formula-chip .f { font-family:'Cinzel',serif; font-size:18px; color:var(--gold-light); }
 .ref-formula-chip .l { font-size:9.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-top:3px; }
+/* Bonus pasivo automático (Blessed Strikes, Radiant Strikes...) — se distingue
+   del daño base con borde verde y fondo tenue. */
+.ref-formula-chip--bonus { background: rgba(74,138,90,0.10); border-color: rgba(74,138,90,0.40); border-style: dashed; }
+.ref-formula-chip--bonus .f { color: var(--green-light); font-size:16px; }
+.ref-formula-chip--bonus .l { color: var(--green-light); opacity:0.75; }
 .ref-meta-row { display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--text-mid); }
 .ref-meta-row b { color: var(--gold-light); font-weight:600; }
 .ref-note { font-size: 12.5px; color: var(--text-mid); line-height:1.5; background: var(--bg); border-left: 2px solid var(--gold-dim); padding: 8px 12px; border-radius: 0 8px 8px 0; }
@@ -4262,6 +4267,16 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .modal-calc-preview strong { color: var(--gold-light); }
+
+/* Ayuda de HP al subir de nivel (dado de golpe + mod CON) */
+.lu-hp-help {
+  font-size: 12.5px; color: var(--text-mid); line-height: 1.6;
+  background: var(--bg); border-left: 2px solid var(--gold-dim);
+  padding: 8px 12px; border-radius: 0 8px 8px 0; margin-bottom: 12px;
+}
+.lu-hp-help:empty { display: none; }
+.lu-hp-help b { color: var(--gold-light); font-weight: 600; }
+.lu-hp-help-note { display: block; margin-top: 5px; font-size: 11px; font-style: italic; color: var(--text-dim); }
 
 /* ── Short Rest redesign ── */
 .sr-step {

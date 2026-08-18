@@ -695,6 +695,47 @@ const Characters = (() => {
     return Math.max(1, mod + nivel);
   }
 
+  // Igual que getPreparedMax pero para un nivel arbitrario (para comparar
+  // antes/después en el modal de Novedades sin mutar el personaje).
+  function getPreparedMaxAtLevel(char, nivel) {
+    if (!char.spellcastingStat) return 0;
+    const cfg = CLASES_CONFIG[char.clase];
+    if (cfg && cfg.knownCaster && cfg.spellsKnown) {
+      return cfg.spellsKnown[Math.min(nivel - 1, 19)];
+    }
+    const mod = calcMod(char.stats[char.spellcastingStat]);
+    return Math.max(1, mod + nivel);
+  }
+
+  // true si la clase prepara conjuros de una lista (Clérigo, Druida, Mago,
+  // Paladín, Explorador). Complemento de isKnownCaster.
+  function isPreparedCaster(char) {
+    const cfg = CLASES_CONFIG[char.clase];
+    return !!(cfg && cfg.preparesCaster);
+  }
+
+  // Ayuda para el input de "HP ganado" al subir de nivel: dado de golpe real,
+  // modificador de CON, promedio fijo y mínimo. Retorna null si falta el dado.
+  // NOTA: el proyecto NO modela bonuses raciales de HP por nivel de forma
+  // numérica (Dwarven Toughness existe solo como texto en RAZAS_CONFIG.traits),
+  // así que no se suma nada acá — la UI avisa que hay que revisarlo a mano.
+  // TODO: si algún día se modela hpPerLevel por raza/feat, sumarlo acá.
+  function getHPGainHelp(char) {
+    const cfg = CLASES_CONFIG[char.clase];
+    const hitDie = char.hitDie || (cfg && cfg.hitDie);
+    if (!hitDie) return null;
+    const conMod = calcMod(char.stats.con);
+    const fixed = Math.floor(hitDie / 2) + 1;
+    return {
+      hitDie,
+      conMod,
+      fixed,                              // promedio fijo del dado (sin CON)
+      fixedTotal: Math.max(1, fixed + conMod),
+      minTotal:   Math.max(1, 1 + conMod),
+      maxTotal:   Math.max(1, hitDie + conMod),
+    };
+  }
+
   // Retorna cantidad de cantrips que puede conocer según clase y nivel
   function getCantripsKnown(char) {
     const cfg = CLASES_CONFIG[char.clase];
@@ -4190,6 +4231,86 @@ const Characters = (() => {
     10:5, 11:5, 12:5, 13:5, 14:5, 15:5, 16:5, 17:5, 18:5, 19:5, 20:5
   };
 
+  /* ── PASSIVE_DAMAGE_FEATURES ────────────────────────────────────────────
+     TABLA CURADA A MANO. Solo features cuyo `desc` real en este archivo es
+     INEQUÍVOCO sobre cuántos dados, de qué tipo, y en qué contexto aplican.
+     NUNCA se infiere nada parseando texto libre: si un featureId no está acá,
+     no toca ningún cálculo (solo aparece en Novedades, como siempre).
+
+     Forma: featureId → { dice, damageType, label, appliesTo, note, supersedes }
+       appliesTo : ['spell'] | ['weapon'] | ['spell','weapon']
+       supersedes: id de la versión básica que esta feature reemplaza
+                   (para que nunca se sumen las dos)
+     Los `dice` son fijos; cuando una feature escala con el nivel, el proyecto
+     ya la modela como DOS ids distintos (ej. blessed-strikes / improved-
+     blessed-strikes), así que acá van como entradas separadas con supersedes.
+     Deliberadamente NO incluidas (ver reporte): sneak-attack, divine-smite,
+     potent-spellcasting, y los Divine Strike de dominio que escalan dentro de
+     un mismo id. */
+  const PASSIVE_DAMAGE_FEATURES = {
+    // Clérigo nv7: "Cuando causas daño con conjuro o ataque de arma:
+    // +1d8 daño radiante (1 vez por turno)." → inequívoco en dados, tipo y contexto.
+    'blessed-strikes': {
+      dice: '1d8', damageType: 'radiante', label: 'Blessed Strikes',
+      appliesTo: ['spell', 'weapon'], note: '1×/turno',
+    },
+    // Clérigo nv14: "Blessed Strikes mejora: +2d8 daño radiante en lugar de +1d8."
+    // El "en lugar de" es explícito → supersedes.
+    'improved-blessed-strikes': {
+      dice: '2d8', damageType: 'radiante', label: 'Improved Blessed Strikes',
+      appliesTo: ['spell', 'weapon'], note: '1×/turno',
+      supersedes: 'blessed-strikes',
+    },
+    // Paladín nv11: "+1d8 daño radiante a tus ataques de arma y ataques
+    // desarmados." Sin condición ni límite por turno → siempre aplica al arma.
+    'radiant-strikes': {
+      dice: '1d8', damageType: 'radiante', label: 'Radiant Strikes',
+      appliesTo: ['weapon'], note: 'cada ataque de arma',
+    },
+  };
+
+  // Devuelve los bonuses pasivos de daño activos del personaje para un
+  // contexto dado ('spell' o 'weapon'). Solo mira la tabla curada; resuelve
+  // supersedes para que la versión básica y la mejorada nunca se sumen.
+  // Retorna [{ dice, damageType, label, note }].
+  function getPassiveDamageBonuses(char, context) {
+    if (!char || !context) return [];
+
+    // Features activas: clase + subclase al nivel actual
+    const active = [];
+    const claseCfg = CLASE_FEATURES[char.clase];
+    if (claseCfg && typeof claseCfg.features === 'function') {
+      active.push(...claseCfg.features(char.nivel || 1));
+    }
+    if (char.subclase) {
+      const subCfg = SUBCLASES_CONFIG[char.subclase];
+      if (subCfg && typeof subCfg.features === 'function') {
+        active.push(...subCfg.features(char.nivel || 1));
+      }
+    }
+
+    const activeIds = new Set(active.map(f => f.id));
+
+    // Ids que quedan anulados porque el personaje tiene su versión mejorada
+    const superseded = new Set();
+    activeIds.forEach(id => {
+      const entry = PASSIVE_DAMAGE_FEATURES[id];
+      if (entry && entry.supersedes) superseded.add(entry.supersedes);
+    });
+
+    const out = [];
+    const seen = new Set();
+    activeIds.forEach(id => {
+      if (superseded.has(id) || seen.has(id)) return;
+      const entry = PASSIVE_DAMAGE_FEATURES[id];
+      if (!entry) return;
+      if (!entry.appliesTo.includes(context)) return;
+      seen.add(id);
+      out.push({ dice: entry.dice, damageType: entry.damageType, label: entry.label, note: entry.note });
+    });
+    return out;
+  }
+
   // ── calcMulticlassSlots: tabla oficial PHB de multiclase ──────────────────
   function calcMulticlassSlots(classes) {
     let casterLevels = 0;
@@ -5593,6 +5714,7 @@ const Characters = (() => {
     METAMAGIC_OPTIONS,
     WARLOCK_SLOTS,
     WARLOCK_SLOT_LEVEL,
+    PASSIVE_DAMAGE_FEATURES,
     calcMod,
     calcProfBonus,
     calcCD,
@@ -5610,8 +5732,12 @@ const Characters = (() => {
     getSlotsForClass,
     calcMulticlassSlots,
     getPreparedMax,
+    getPreparedMaxAtLevel,
+    getHPGainHelp,
+    getPassiveDamageBonuses,
     getCantripsKnown,
     isKnownCaster,
+    isPreparedCaster,
     getXPForLevel,
     getNextLevelXP,
     getLevelFromXP,

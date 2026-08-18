@@ -4388,12 +4388,15 @@ const App = (() => {
 
   function _spellRefData(sp) {
     const kind = _inferSpellRefKind(sp);
+    // Bonuses pasivos de la tabla curada que aplican al daño de conjuros
+    const passiveBonuses = Characters.getPassiveDamageBonuses(_char, 'spell');
     if (kind === 'attack') {
       const atkBonus = Characters.calcAtaqueBonus(_char);
       return {
         kind,
         title: sp.name,
         icon: '✨',
+        passiveBonuses,
         attackFormula: atkBonus != null ? `d20+${atkBonus}` : null,
         damage: sp.damage || null,
         meta: [
@@ -4410,6 +4413,7 @@ const App = (() => {
         kind,
         title: sp.name,
         icon: '✨',
+        passiveBonuses,
         cd,
         saveStat,
         damage: sp.damage || null,
@@ -4446,6 +4450,19 @@ const App = (() => {
     return cases.map(c =>
       `<div class="ref-formula-chip"><div class="f">${c.formula}</div><div class="l">${c.cond}</div></div>`
     ).join('');
+  }
+
+  // Chips de bonuses pasivos automáticos (Blessed Strikes, Radiant Strikes...).
+  // Vienen SOLO de la tabla curada Characters.PASSIVE_DAMAGE_FEATURES — nunca
+  // se infieren parseando descripciones.
+  function _passiveBonusChipsHTML(bonuses) {
+    if (!bonuses || !bonuses.length) return '';
+    return `<div class="ref-formula-row">` + bonuses.map(b =>
+      `<div class="ref-formula-chip ref-formula-chip--bonus">
+         <div class="f">+${b.dice} ${b.damageType}</div>
+         <div class="l">${b.label}${b.note ? ` · ${b.note}` : ''}</div>
+       </div>`
+    ).join('') + `</div>`;
   }
 
   // needsConfirm: true cuando el popup precede a un lanzamiento real (el slot
@@ -4489,6 +4506,11 @@ const App = (() => {
       }
     }
 
+    // Bonuses pasivos automáticos — solo si la acción realmente causa daño.
+    if (data.damage) {
+      body += _passiveBonusChipsHTML(data.passiveBonuses);
+    }
+
     if (data.meta && data.meta.length) {
       body += `<div class="ref-meta-row">${data.meta.map(m => `<span><b>${m.label}:</b> ${m.val}</span>`).join('')}</div>`;
     }
@@ -4526,6 +4548,7 @@ const App = (() => {
       kind: 'attack',
       title: w.name,
       icon: '⚔️',
+      passiveBonuses: Characters.getPassiveDamageBonuses(_char, 'weapon'),
       attackFormula: atkBonus != null ? `d20+${atkBonus}` : null,
       damage: dmgFormula,
       meta: [
@@ -6995,13 +7018,32 @@ const App = (() => {
   function openLevelUp() {
     document.getElementById('luNewLevel').value = Math.min(20, _char.nivel + 1);
     document.getElementById('luNewLevel').min = _char.nivel + 1;
-    document.getElementById('luHPGained').value = Math.floor(_char.hitDie / 2) + 1;
+    const help = Characters.getHPGainHelp(_char);
+    // Prellenamos con el promedio fijo INCLUYENDO CON (antes solo iba el dado).
+    document.getElementById('luHPGained').value = help
+      ? help.fixedTotal
+      : Math.floor(_char.hitDie / 2) + 1;
+    _renderHPGainHelp(help);
     _updateLevelUpPreview();
     document.getElementById('levelUpModal').classList.add('show');
   }
 
   function closeLevelUp() {
     document.getElementById('levelUpModal').classList.remove('show');
+  }
+
+  // Texto de ayuda para el input de HP: dado real de la clase + mod CON.
+  // El proyecto no modela bonuses raciales/feats de HP por nivel de forma
+  // numérica, así que se avisa explícitamente en vez de inventar el número.
+  function _renderHPGainHelp(help) {
+    const el = document.getElementById('luHPHelp');
+    if (!el) return;
+    if (!help) { el.innerHTML = ''; return; }
+    const con = `${help.conMod >= 0 ? '+' : ''}${help.conMod}`;
+    el.innerHTML =
+      `Tirá <b>1d${help.hitDie}</b> (o tomá <b>${help.fixed}</b> fijo) ${con} (CON) =
+       mínimo <b>${help.minTotal}</b> · promedio <b>${help.fixedTotal}</b> · máximo <b>${help.maxTotal}</b>
+       <span class="lu-hp-help-note">Revisá si tu raza o algún feat suma HP extra por nivel (ej. Dwarven Toughness): no está incluido en este cálculo.</span>`;
   }
 
   function _updateLevelUpPreview() {
@@ -7037,6 +7079,22 @@ const App = (() => {
     if (newLevel <= _char.nivel) { showToast('El nivel debe ser mayor al actual'); return; }
 
     const oldLevel = _char.nivel;
+
+    // Snapshot ANTES de mutar: necesario para el diff numérico en Novedades.
+    const beforeSnap = {
+      level:      oldLevel,
+      prof:       Characters.calcProfBonus(oldLevel),
+      cd:         _char.spellcastingStat ? Characters.calcCD(_char) : null,
+      atk:        _char.spellcastingStat ? Characters.calcAtaqueBonus(_char) : null,
+      slots:      Characters.calcMulticlassSlots(
+                    (_char.classes && _char.classes.length)
+                      ? _char.classes
+                      : [{ name: _char.clase, level: oldLevel, subclass: _char.subclase || '' }]
+                  ),
+      preparedMax: Characters.getPreparedMaxAtLevel(_char, oldLevel),
+      hpMax:      _char.hp.max,
+    };
+
     Characters.applyLevelUp(_char, newLevel, hpGained);
     _saveChar();
     closeLevelUp();
@@ -7054,7 +7112,9 @@ const App = (() => {
     const afterChoices = () => {
       _renderCombateTab();
       _renderHabilidadesTab();
-      if (newFeatures.length > 0) _showLevelUpNews(newLevel, newFeatures);
+      // Siempre mostramos Novedades: aunque no haya features nuevas, casi
+      // siempre hay cambios numéricos (slots, preparados, prof, dados de golpe).
+      _showLevelUpNews(newLevel, newFeatures, beforeSnap);
     };
     if (pending.length > 0) {
       openChoicesQueue(pending, afterChoices);
@@ -7087,8 +7147,9 @@ const App = (() => {
     return [...classFeatures, ...subFeatures];
   }
 
-  // Modal de novedades al subir de nivel
-  function _showLevelUpNews(newLevel, features) {
+  // Modal de novedades al subir de nivel.
+  // `before` = snapshot pre-subida (ver applyLevelUp) para el diff numérico.
+  function _showLevelUpNews(newLevel, features, before) {
     let overlay = document.getElementById('levelUpNewsOverlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -7109,13 +7170,73 @@ const App = (() => {
     }
 
     document.getElementById('levelUpNewsTitle').textContent = `✦ Nivel ${newLevel} — Novedades`;
-    document.getElementById('levelUpNewsBody').innerHTML = features.map(f => `
-      <div style="margin-bottom:14px;padding:10px 12px;background:var(--surface2,rgba(255,255,255,0.05));border-radius:8px;border-left:3px solid var(--accent,#c9a84c);">
-        <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${f.name}</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">${f.source || ''}</div>
-        <div style="font-size:13px;line-height:1.5;">${f.desc || ''}</div>
-      </div>
-    `).join('');
+
+    const secHd = (t) => `<div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-light);margin:16px 0 8px;">${t}</div>`;
+    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-mid);">${label}</span><strong>${val}</strong></div>`;
+
+    let html = '';
+
+    // ── Features nuevas ──
+    if (features.length) {
+      html += secHd('Nuevas capacidades');
+      html += features.map(f => `
+        <div style="margin-bottom:10px;padding:10px 12px;background:var(--surface2,rgba(255,255,255,0.05));border-radius:8px;border-left:3px solid var(--accent,#c9a84c);">
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${f.name}</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">${f.source || ''}</div>
+          <div style="font-size:13px;line-height:1.5;">${f.desc || ''}</div>
+        </div>`).join('');
+    }
+
+    if (before) {
+      // ── Slots de conjuro: solo los que cambiaron ──
+      const afterSlots = Characters.calcMulticlassSlots(
+        (_char.classes && _char.classes.length)
+          ? _char.classes
+          : [{ name: _char.clase, level: newLevel, subclass: _char.subclase || '' }]
+      );
+      const slotRows = [];
+      for (let i = 1; i <= 9; i++) {
+        const oldMax = (before.slots[i] && before.slots[i].max) || 0;
+        const newMax = (afterSlots[i] && afterSlots[i].max) || 0;
+        if (newMax !== oldMax) {
+          slotRows.push(row(`Nivel ${i}`, `${oldMax} → ${newMax} slot${newMax === 1 ? '' : 's'}`));
+        }
+      }
+      if (slotRows.length) html += secHd('Spell slots') + slotRows.join('');
+
+      // ── Cambios numéricos generales ──
+      const numRows = [];
+      const newProf = Characters.calcProfBonus(newLevel);
+      if (newProf !== before.prof) numRows.push(row('Bonus de competencia', `+${before.prof} → +${newProf}`));
+
+      if (_char.spellcastingStat) {
+        const newCD = Characters.calcCD(_char);
+        if (newCD !== before.cd) numRows.push(row('CD de conjuros', `${before.cd} → ${newCD}`));
+        const newAtk = Characters.calcAtaqueBonus(_char);
+        if (newAtk !== before.atk) numRows.push(row('Ataque de conjuro', `+${before.atk} → +${newAtk}`));
+
+        // Preparados: solo para prepared casters (para known casters el label
+        // correcto es "conjuros conocidos" y lo mostramos como tal).
+        const newPrep = Characters.getPreparedMaxAtLevel(_char, newLevel);
+        if (newPrep !== before.preparedMax) {
+          const castMod = Characters.calcMod(_char.stats[_char.spellcastingStat]);
+          const isPrep = Characters.isPreparedCaster(_char);
+          numRows.push(row(
+            isPrep ? 'Hechizos preparados' : 'Conjuros conocidos',
+            `${before.preparedMax} → ${newPrep}` + (isPrep ? ` <span style="color:var(--text-dim);font-weight:400;">(${newLevel} + ${castMod >= 0 ? '+' : ''}${castMod})</span>` : '')
+          ));
+        }
+      }
+
+      numRows.push(row('HP máximo', `${before.hpMax} → ${_char.hp.max}`));
+      numRows.push(row('Dados de golpe', `${_char.hitDice.current}/${_char.hitDice.max} d${_char.hitDie}`));
+
+      if (numRows.length) html += secHd('Cambios numéricos') + numRows.join('');
+    }
+
+    if (!html) html = `<div style="font-size:13px;color:var(--text-dim);">Sin cambios que reportar.</div>`;
+
+    document.getElementById('levelUpNewsBody').innerHTML = html;
 
     overlay.style.display = 'flex';
   }
