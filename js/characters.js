@@ -87,22 +87,54 @@ const Characters = (() => {
     11:[4],12:[4],13:[4],14:[4],15:[4],16:[4],17:[4],18:[4],19:[4],20:[4]
   };
 
-  // knownCaster: true → conjuros conocidos (tabla fija), siempre disponibles, no se "preparan"
-  // preparesCaster: true → preparan de una lista (mod+nivel), como Clérigo/Druida/Mago/Paladín
+  // ── Hechizos preparados por nivel (PHB 2024) ─────────────────────────────
+  // En 2024 la columna "Spells Known" fue ELIMINADA: todas las clases mágicas
+  // usan una columna "Prepared Spells" con valores fijos por nivel (ya NO se
+  // calcula como modificador + nivel de clase, que era la regla de 2014).
+  // Índice 0 = nivel 1 … índice 19 = nivel 20.
+  //
+  // Verificado contra D&D Beyond y aidedd.org (ver getPreparedMaxAtLevel).
+  const PREPARED_SPELLS_2024 = {
+    'Clérigo':    [4,5,6,7,9,10,11,12,14,15,16,16,17,17,18,18,19,20,21,22],
+    'Druida':     [4,5,6,7,9,10,11,12,14,15,16,16,17,17,18,18,19,20,21,22],
+    'Bardo':      [4,5,6,7,9,10,11,12,14,15,16,16,17,17,18,18,19,20,21,22],
+    'Mago':       [4,5,6,7,9,10,11,12,14,15,16,16,17,18,19,21,22,23,24,25],
+    'Hechicero':  [2,4,6,7,9,10,11,12,14,15,16,16,17,17,18,18,19,20,21,22],
+    'Brujo':      [2,3,4,5,6,7,8,9,10,10,11,11,12,12,13,13,14,14,15,15],
+    'Paladín':    [2,2,4,5,6,6,7,7,9,9,10,10,11,11,12,12,14,14,15,15],
+    // NOTA (ambigüedad de fuentes): en Explorador niveles 9-10, aidedd.org
+    // indica 8/8 mientras que D&D Beyond y 5e24srd.com indican 9/9. Se usa el
+    // valor de D&D Beyond (fuente oficial): 9,9.
+    'Explorador': [2,3,4,5,6,6,7,7,9,9,10,10,11,11,12,12,14,14,15,15],
+  };
+
+  // knownCaster: en 2024 TODAS las clases mágicas preparan hechizos, así que
+  // esta bandera ya NO decide el cálculo de preparados (eso lo hace
+  // PREPARED_SPELLS_2024). Se conserva porque marca las clases cuyos hechizos
+  // se eligen de forma permanente al subir de nivel — getPendingChoices() la
+  // usa para generar los picks spellPick/cantripPick, storage.js para marcar
+  // picks al importar, y la UI para el label "Conjuros conocidos". Separar
+  // ambos conceptos evita romper ese flujo al corregir la fórmula.
+  // preparesCaster: true → preparan de una lista, cambiable en descanso largo.
   const CLASES_CONFIG = {
-    'Clérigo':      { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['sab', 'car'], slotTable: 'full',    preparesCaster: true },
-    'Druida':       { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['int', 'sab'], slotTable: 'full',    preparesCaster: true },
+    'Clérigo':      { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['sab', 'car'], slotTable: 'full',    preparesCaster: true,
+      cantripsKnown: [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5] },
+    'Druida':       { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['int', 'sab'], slotTable: 'full',    preparesCaster: true,
+      cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4] },
     'Bardo':        { hitDie: 8,  spellcastingStat: 'car', savingThrows: ['des', 'car'], slotTable: 'full',    knownCaster: true,
       // cantrips conocidos por nivel: [nv1..20]
       cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
-      spellsKnown:   [4,5,6,7,8,9,10,11,12,14,15,15,16,18,19,19,20,22,22,22] },
+      spellsKnown:   PREPARED_SPELLS_2024['Bardo'] },
     'Hechicero':    { hitDie: 6,  spellcastingStat: 'car', savingThrows: ['con', 'car'], slotTable: 'full',    knownCaster: true,
-      cantripsKnown: [4,4,4,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6],
-      spellsKnown:   [2,3,4,5,6,7,8,9,10,11,12,12,13,13,14,14,15,15,15,15] },
+      cantripsKnown: [4,4,4,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6],
+      spellsKnown:   PREPARED_SPELLS_2024['Hechicero'] },
     'Brujo':        { hitDie: 8,  spellcastingStat: 'car', savingThrows: ['sab', 'car'], slotTable: 'warlock', knownCaster: true,
       cantripsKnown: [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
-      spellsKnown:   [2,3,4,5,6,7,8,9,10,10,11,11,12,12,13,13,14,14,14,15] },
-    'Mago':         { hitDie: 6,  spellcastingStat: 'int', savingThrows: ['int', 'sab'], slotTable: 'full',    preparesCaster: true },
+      spellsKnown:   PREPARED_SPELLS_2024['Brujo'] },
+    'Mago':         { hitDie: 6,  spellcastingStat: 'int', savingThrows: ['int', 'sab'], slotTable: 'full',    preparesCaster: true,
+      cantripsKnown: [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5] },
+    // Paladín y Explorador no tienen columna de cantrips en 2024 (el Explorador
+    // solo puede obtenerlos vía el estilo de combate Druidic Warrior).
     'Paladín':      { hitDie: 10, spellcastingStat: 'car', savingThrows: ['sab', 'car'], slotTable: 'half',    preparesCaster: true },
     'Explorador':   { hitDie: 10, spellcastingStat: 'sab', savingThrows: ['fue', 'des'], slotTable: 'half',    preparesCaster: true },
     'Guerrero':     { hitDie: 10, spellcastingStat: null,  savingThrows: ['fue', 'con'], slotTable: null },
@@ -684,38 +716,44 @@ const Characters = (() => {
     return (table[targetLevel] || Array(9).fill(0));
   }
 
-  function getPreparedMax(char) {
-    if (!char.spellcastingStat) return 0;
-    const cfg = CLASES_CONFIG[char.clase];
-    const nivel = char.nivel || 1;
-
-    // Known casters (Hechicero, Bardo, Brujo): usan tabla fija de conjuros conocidos
-    if (cfg && cfg.knownCaster && cfg.spellsKnown) {
-      return cfg.spellsKnown[Math.min(nivel - 1, 19)];
-    }
-
-    // Prepare casters (Clérigo, Druida, Mago, Paladín, Explorador): mod + nivel
-    const mod = calcMod(char.stats[char.spellcastingStat]);
-    return Math.max(1, mod + nivel);
+  // Hechizos preparados de UNA clase a un nivel de clase dado (PHB 2024).
+  // Devuelve 0 si la clase no tiene tabla (Guerrero, Bárbaro, Pícaro, Monje).
+  function _preparedForClass(claseNombre, nivelClase) {
+    const tabla = PREPARED_SPELLS_2024[claseNombre];
+    if (!tabla) return 0;
+    const idx = Math.min(Math.max(nivelClase, 1) - 1, 19);
+    return tabla[idx];
   }
 
-  // Igual que getPreparedMax pero para un nivel arbitrario (para comparar
-  // antes/después en el modal de Novedades sin mutar el personaje).
+  // Máximo de hechizos preparados para un nivel arbitrario (PHB 2024).
+  // Se usa tanto para el estado actual como para comparar antes/después en el
+  // modal de Novedades sin mutar el personaje.
+  //
+  // Multiclase: en 2024 cada clase aporta según su PROPIO nivel de clase y su
+  // propia tabla — los niveles NO se suman antes de consultar la tabla. Por eso
+  // se suma el valor de tabla de cada clase por separado.
   function getPreparedMaxAtLevel(char, nivel) {
     if (!char.spellcastingStat) return 0;
-    const cfg = CLASES_CONFIG[char.clase];
-    if (cfg && cfg.knownCaster && cfg.spellsKnown) {
-      return cfg.spellsKnown[Math.min(nivel - 1, 19)];
+
+    // Multiclase: sumar el aporte de cada clase por su nivel individual.
+    const clases = Array.isArray(char.classes) ? char.classes : null;
+    if (clases && clases.length > 1) {
+      return clases.reduce((tot, c) => tot + _preparedForClass(c.name, c.level || 1), 0);
     }
-    const mod = calcMod(char.stats[char.spellcastingStat]);
-    return Math.max(1, mod + nivel);
+
+    // Monoclase: si viene un nivel explícito lo usamos (comparación antes/después).
+    return _preparedForClass(char.clase, nivel);
   }
 
-  // true si la clase prepara conjuros de una lista (Clérigo, Druida, Mago,
-  // Paladín, Explorador). Complemento de isKnownCaster.
+  function getPreparedMax(char) {
+    return getPreparedMaxAtLevel(char, char.nivel || 1);
+  }
+
+  // true si la clase prepara conjuros. En 2024 esto incluye TAMBIÉN a
+  // Bardo/Hechicero/Brujo (la columna "Spells Known" ya no existe), por lo que
+  // se basa en tener tabla de preparados y no en la bandera preparesCaster.
   function isPreparedCaster(char) {
-    const cfg = CLASES_CONFIG[char.clase];
-    return !!(cfg && cfg.preparesCaster);
+    return !!PREPARED_SPELLS_2024[char.clase];
   }
 
   // Bonus de HP máximo por nivel que otorga la especie (ej. Dwarven Toughness

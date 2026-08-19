@@ -7274,11 +7274,12 @@ const App = (() => {
         // correcto es "conjuros conocidos" y lo mostramos como tal).
         const newPrep = Characters.getPreparedMaxAtLevel(_char, newLevel);
         if (newPrep !== before.preparedMax) {
-          const castMod = Characters.calcMod(_char.stats[_char.spellcastingStat]);
-          const isPrep = Characters.isPreparedCaster(_char);
+          // En 2024 el máximo sale de la tabla de la clase, no de nivel+mod,
+          // así que ya no se muestra el desglose de la fórmula 2014.
+          const isKnownSel = Characters.isKnownCaster(_char);
           numRows.push(row(
-            isPrep ? 'Hechizos preparados' : 'Conjuros conocidos',
-            `${before.preparedMax} → ${newPrep}` + (isPrep ? ` <span style="color:var(--text-dim);font-weight:400;">(${newLevel} + ${castMod >= 0 ? '+' : ''}${castMod})</span>` : '')
+            isKnownSel ? 'Conjuros conocidos' : 'Hechizos preparados',
+            `${before.preparedMax} → ${newPrep}`
           ));
         }
       }
