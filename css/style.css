@@ -215,16 +215,23 @@ input[type=number] { -moz-appearance: textfield; }
   top: 12px;
   right: 12px;
   display: flex;
-  gap: 6px;
+  gap: 10px; /* separación: evita tocar "eliminar" queriendo "editar" */
   opacity: 0;
   transition: opacity 0.2s;
+}
+/* En pantallas táctiles no hay hover: si dependen de él, quedan invisibles.
+   Se muestran siempre (atenuados) en cualquier dispositivo sin hover fino. */
+@media (hover: none), (pointer: coarse) {
+  .char-card-menu { opacity: 0.65; }
 }
 
 .char-card:hover .char-card-menu { opacity: 1; }
 
 .char-menu-btn {
-  width: 28px;
-  height: 28px;
+  /* 40px: área táctil cómoda en iPad. Antes 28px, lo que hacía fácil dar en
+     "eliminar" queriendo "editar" — y eliminar es destructivo. */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--bg4);
@@ -337,7 +344,10 @@ input[type=number] { -moz-appearance: textfield; }
   min-height: 76px;
 }
 
-.app-header-left { flex: 0 1 auto; min-width: 0; max-width: 160px; }
+/* max-width generoso: con 160px fijos "Lursey Brumaclara" se truncaba aunque
+   sobrara espacio a la derecha. Importa porque el nombre distingue las fichas. */
+.app-header-left { flex: 0 1 auto; min-width: 0; max-width: 280px; }
+@media (max-width: 900px) { .app-header-left { max-width: 180px; } }
 
 /* ═══ AVATAR CIRCULAR ═══ */
 .char-avatar-wrap {

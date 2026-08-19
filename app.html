@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 363;
+const _SW_EXPECTED = 364;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 363;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=93">
+<link rel="stylesheet" href="css/style.css?v=94">
 </head>
 <body>
 
@@ -1295,10 +1295,17 @@ const _SW_EXPECTED = 363;
 <script type="module">
   await import('./js/firebase.js');
 
+  // Modo invitado ("Usar sin cuenta"): no hay ni habrá usuario de Firebase,
+  // así que el guard de abajo expulsaría siempre. Se acepta y se sigue.
+  const _esInvitado = (() => {
+    try { return localStorage.getItem('dnd_guest') === '1'; } catch (e) { return false; }
+  })();
+
   // Guard: esperar sesión de auth antes de mostrar la app.
   // Safari iOS post-redirect puede emitir null primero mientras resuelve
   // la sesión desde localStorage — esperamos hasta 4s antes de redirigir.
   await new Promise(resolve => {
+    if (_esInvitado) { resolve(null); return; } // invitado: no se espera Firebase
     let redirectTimer = null;
     const unsub = FirebaseApp.onAuthChange(user => {
       if (user) {
