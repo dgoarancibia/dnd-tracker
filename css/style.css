@@ -585,10 +585,12 @@ input[type=number] { -moz-appearance: textfield; }
 
 .hp-header-label {
   font-family: 'Cinzel', serif;
-  font-size: 8px;
-  letter-spacing: 2px;
+  /* 8px con --text-dim daba 3.49:1 de contraste (mínimo legible: 4.5:1).
+     Es lo que más se mira en combate, y en mesa suele haber poca luz. */
+  font-size: 11px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: #9a9078;
   flex-shrink: 0;
 }
 
@@ -751,10 +753,12 @@ input[type=number] { -moz-appearance: textfield; }
 
 .stat-box .sl {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 2px;
+  /* Labels de CA/CD/Init/Atk/Perc: mismo motivo que .hp-header-label —
+     9px sobre --text-dim no llegaba al mínimo de contraste legible. */
+  font-size: 11px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: #9a9078;
   margin-bottom: 2px;
 }
 
@@ -3239,6 +3243,18 @@ input[type=number] { -moz-appearance: textfield; }
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative; /* ancla del área táctil ampliada (::before) */
+}
+
+/* Área táctil ampliada sin cambiar el tamaño visual: el círculo sigue midiendo
+   16px pero el dedo acierta en 36px. 36 y no 44 porque las filas de skills
+   están a 4px de distancia y las áreas se solaparían entre sí. */
+.skill-prof-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px; height: 36px;
 }
 
 .skill-prof-btn.active { background: var(--gold-dim); border-color: var(--gold); }
@@ -3274,8 +3290,18 @@ input[type=number] { -moz-appearance: textfield; }
 /* Toggle de proficiencia en saving throw — clickeable */
 .save-prof-toggle {
   background: none; border: none; cursor: pointer;
-  font-size: 11px; color: var(--border); padding: 0 2px;
+  font-size: 13px; color: var(--border); padding: 0 2px;
   transition: color 0.15s; line-height: 1; flex-shrink: 0;
+  position: relative; /* ancla del área táctil */
+}
+/* Medía 15×11px: casi imposible de acertar con el dedo. El ★ se ve igual,
+   pero responde en 40px (las filas de saves están en grid con 6px de gap). */
+.save-prof-toggle::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px; height: 40px;
 }
 .save-prof-toggle.active { color: var(--gold); }
 .save-prof-toggle:hover { color: var(--gold-light); }
