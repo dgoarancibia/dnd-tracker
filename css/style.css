@@ -3247,14 +3247,15 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 /* Área táctil ampliada sin cambiar el tamaño visual: el círculo sigue midiendo
-   16px pero el dedo acierta en 36px. 36 y no 44 porque las filas de skills
-   están a 4px de distancia y las áreas se solaparían entre sí. */
+   16px pero el dedo acierta en un área mayor. El alto se limita a 28px (la
+   altura real de la fila) para que las áreas de filas vecinas no se pisen y
+   un toque no active la skill de al lado; a lo ancho hay espacio libre. */
 .skill-prof-btn::before {
   content: '';
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 36px; height: 36px;
+  width: 40px; height: 28px;
 }
 
 .skill-prof-btn.active { background: var(--gold-dim); border-color: var(--gold); }
@@ -3294,14 +3295,15 @@ input[type=number] { -moz-appearance: textfield; }
   transition: color 0.15s; line-height: 1; flex-shrink: 0;
   position: relative; /* ancla del área táctil */
 }
-/* Medía 15×11px: casi imposible de acertar con el dedo. El ★ se ve igual,
-   pero responde en 40px (las filas de saves están en grid con 6px de gap). */
+/* Medía 15×11px: casi imposible de acertar con el dedo. El ★ se ve igual, pero
+   el área responde en 34×30. El alto queda en 30 (no 44) porque las filas del
+   grid de saves están a ~32px entre centros y se pisarían entre ellas. */
 .save-prof-toggle::before {
   content: '';
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 40px; height: 40px;
+  width: 34px; height: 30px;
 }
 .save-prof-toggle.active { color: var(--gold); }
 .save-prof-toggle:hover { color: var(--gold-light); }
