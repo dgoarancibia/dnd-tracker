@@ -3342,7 +3342,11 @@ const App = (() => {
         </div>
         <div class="xp-info">
           ${nextLevelXP
-            ? `<strong style="color:var(--text);">Nivel ${c.nivel}</strong> → Nivel ${c.nivel+1}<br>Faltan <strong style="color:var(--gold-light);">${Math.max(0, nextLevelXP - c.xp).toLocaleString()}</strong> XP`
+            ? (c.xp >= nextLevelXP
+                // Ya alcanza para subir: mostrar el sobrante en vez de "Faltan 0",
+                // que se leía como si la XP extra se hubiera perdido.
+                ? `<strong style="color:var(--gold-light);">¡Podés subir a nivel ${c.nivel+1}!</strong>${c.xp > nextLevelXP ? `<br><span style="color:var(--text-dim);">+${(c.xp - nextLevelXP).toLocaleString()} XP de sobra</span>` : ''}`
+                : `<strong style="color:var(--text);">Nivel ${c.nivel}</strong> → Nivel ${c.nivel+1}<br>Faltan <strong style="color:var(--gold-light);">${(nextLevelXP - c.xp).toLocaleString()}</strong> XP`)
             : `<strong style="color:var(--gold-light);">¡Nivel máximo alcanzado!</strong>`
           }
         </div>
