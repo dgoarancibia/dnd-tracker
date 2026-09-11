@@ -435,7 +435,15 @@ const App = (() => {
         // sus conjuros manualmente — no auto-agregar para no sobrepasar el límite.
         const savedPrepared = _char.preparedToday || [];
         const existingIds   = new Set((_char.spells || []).map(s => s.id));
-        const newSpells = catalog.filter(s => s.level > 0 && !existingIds.has(s.id)).map(s => ({ ...s }));
+        // Solo hasta el nivel de slot que el personaje realmente tiene: un
+        // Clérigo nv7 llega a slots de nivel 4, así que agregar conjuros de
+        // nivel 5+ le ensuciaba la lista con cosas que no puede lanzar.
+        const maxLvl = Characters.getMaxSpellLevel
+          ? Characters.getMaxSpellLevel(_char.clase, _char.nivel || 1)
+          : 9;
+        const newSpells = catalog
+          .filter(s => s.level > 0 && s.level <= maxLvl && !existingIds.has(s.id))
+          .map(s => ({ ...s }));
         if (newSpells.length > 0) {
           _char.spells = [...(_char.spells || []), ...newSpells];
         }
@@ -473,7 +481,11 @@ const App = (() => {
     // (esperar un tick para que el DOM esté listo)
     setTimeout(() => {
       if (_char && _char.id !== 'lursey-brumaclara') {
-        const pending = Characters.getPendingChoices(_char, _char.nivel || 1);
+        // fromLevel 0: acá sí queremos TODAS las elecciones sin resolver desde
+        // nivel 1 (personaje recién creado o importado incompleto). Al subir de
+        // nivel, en cambio, se pasa el nivel anterior para no repetir elecciones
+        // que el jugador ya hizo en niveles previos.
+        const pending = Characters.getPendingChoices(_char, _char.nivel || 1, 0);
         if (pending.length > 0) {
           openChoicesQueue(pending, () => {
             _renderCombateTab();

@@ -556,6 +556,23 @@ const Storage = (() => {
     _fixField(!char.statBuffs, () => { char.statBuffs = { ca:[], attack:[], save:[], spellDc:[] }; });
     _fixField(typeof char.exhaustion !== 'number', () => { char.exhaustion = 0; });
     _fixField(!char.turn, () => { char.turn = { movement:false, action:false, reaction:false, bonus:false }; });
+    // Limpiar conjuros por encima del nivel de slot accesible: un sync previo
+    // agregaba todo el catálogo de clase sin filtrar, así que quedaron conjuros
+    // de nivel 5+ en fichas que solo llegan a nivel 4. Corre siempre porque el
+    // tope cambia al subir de nivel.
+    if (Array.isArray(char.spells) && typeof Characters !== 'undefined' && Characters.getMaxSpellLevel) {
+      const maxLvl = Characters.getMaxSpellLevel(char.clase, char.nivel || 1);
+      if (maxLvl > 0) {
+        const antes = char.spells.length;
+        // No tocar los que estén preparados: si el jugador los usa, respetarlos.
+        const prep = new Set(char.preparedToday || []);
+        char.spells = char.spells.filter(s => s.level <= maxLvl || prep.has(s.id));
+        if (char.spells.length !== antes) {
+          console.info(`[migración] "${char.name || char.id}": quitados ${antes - char.spells.length} conjuros sobre nivel ${maxLvl}`);
+          _structFixed = true;
+        }
+      }
+    }
     // consumables con el viejo sistema container/maxQty (ej. Cantimplora)
     // → unificar al nuevo charges{current,max}: misma UI de pips para todo
     // ítem recargable en vez de dos sistemas paralelos sin conectar. Corre

@@ -5501,7 +5501,15 @@ const Characters = (() => {
   function getPendingChoices(char, targetLevel, fromLevel) {
     const claseCfg = CHOICES_CONFIG[char.clase] || [];
     const existing = char.choices || {};
-    const staticChoices = claseCfg.filter(c => c.level <= targetLevel && !existing[c.id]);
+    // Solo las elecciones de los niveles que se están ganando AHORA. Antes el
+    // filtro era `c.level <= targetLevel`, así que un personaje sin `choices`
+    // registradas (ej. los construidos por buildLursey) recibía al subir de
+    // nivel todas las elecciones retroactivas: subclase de nivel 1, ASI de
+    // nivel 4, etc. — cosas que el jugador ya había resuelto en su momento.
+    const desde = (fromLevel !== undefined ? fromLevel : (char.nivel || 1));
+    const staticChoices = claseCfg.filter(c =>
+      c.level > desde && c.level <= targetLevel && !existing[c.id]
+    );
 
     // Para known casters (Hechicero, Bardo, Brujo): generar elecciones de hechizo por nivel
     const cfg = CLASES_CONFIG[char.clase];
@@ -5800,6 +5808,7 @@ const Characters = (() => {
     getXPForLevel,
     getNextLevelXP,
     getLevelFromXP,
+    getMaxSpellLevel: _maxSpellLevelAt,
     createNew,
     buildDefaultChar,
     getPendingChoices,
