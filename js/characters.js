@@ -834,11 +834,14 @@ const Characters = (() => {
       castTime:'Acción', range:'Toque', duration:'Concentración (1 min)', damage:null, upcast:null,
       desc:'Acción · toque · conc 1 min · +1d4 a 1 check de habilidad antes de tirar · solo fuera de combate', tags:['conc'],
       fullDesc:'Tocas a una criatura voluntaria. Antes de que termine la concentración puede añadir 1d4 al resultado de un check de habilidad de su elección. Usa el dado antes o después de tirar. Ideal fuera de combate.' },
-    { id:'thaumaturgy',  name:'Thaumaturgy',      level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:false,
+    // cantrip_racial: viene del feat de origen Magic Initiate (junto con Spare
+    // the Dying y Guiding Bolt), así que es gratis y no ocupa el tope de
+    // cantrips de Clérigo.
+    { id:'thaumaturgy',  name:'Thaumaturgy',      level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:false, cantrip_racial:true,
       castTime:'Acción', range:'9 m', duration:'1 minuto', damage:null, upcast:null,
       desc:'Acción · 9 m · efectos menores (voz, llamas, temblor, ojos) · duración 1 min · puro roleplay', tags:[],
       fullDesc:'Manifiestas un pequeño milagro: voz que retumba 3× más fuerte, llamas en colores, temblor leve, truenos lejanos, puertas que se abren solas, o tus ojos brillan. Hasta 3 efectos activos a la vez, cada uno dura 1 minuto.' },
-    { id:'spare-dying',  name:'Spare the Dying',  level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:true,
+    { id:'spare-dying',  name:'Spare the Dying',  level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:true, cantrip_racial:true,
       castTime:'Acción', range:'Toque', duration:'Instantáneo', damage:null, upcast:null,
       desc:'Acción · toque · estabiliza a criatura en 0 HP · no gasta slot · sin curación · solo detiene la muerte', tags:[],
       fullDesc:'Tocas a una criatura viva con 0 HP. Queda estabilizada automáticamente. No cura nada, solo detiene las tiradas de muerte. No funciona en construcciones ni muertos vivientes.' },
