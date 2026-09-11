@@ -2307,14 +2307,27 @@ const App = (() => {
       sourceSpells = classCatalog;
     } else {
       // Prepare caster: catálogo + spells del char que no están en el catálogo (dominio, magia de subclase, etc.)
-      const catalogIds = new Set(classCatalog.map(s => s.id));
-      const extraSpells = (c.spells || []).filter(s => !catalogIds.has(s.id));
+      // Comparar también por nombre: el mismo conjuro tiene ids distintos según
+      // la fuente (ej. 'guidance' en la ficha vs 'guidance-c' en el catálogo),
+      // y mirar solo el id lo mostraba dos veces en la lista.
+      const normName = n => (n || '').toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, '');
+      const catalogIds   = new Set(classCatalog.map(s => s.id));
+      const catalogNames = new Set(classCatalog.map(s => normName(s.name)));
+      const extraSpells = (c.spells || []).filter(s =>
+        !catalogIds.has(s.id) && !catalogNames.has(normName(s.name))
+      );
       sourceSpells = classCatalog.length > 0
         ? [...classCatalog, ...extraSpells]
         : (c.spells || []);
     }
 
     const knownIds = new Set((c.spells || []).map(s => s.id));
+    // Índice por nombre normalizado: permite reconocer el conjuro del personaje
+    // aunque la tarjeta venga del catálogo con otro id ('guidance' vs 'guidance-c').
+    const _normSpellName = n => (n || '').toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, '');
+    const charSpellByName = new Map((c.spells || []).map(s => [_normSpellName(s.name), s]));
+    const findCharSpell = sp =>
+      (c.spells || []).find(s => s.id === sp.id) || charSpellByName.get(_normSpellName(sp.name));
 
     // Build filter chips from sourceSpells levels
     // Solo los niveles que el personaje puede lanzar: el catálogo de clase llega
@@ -2392,20 +2405,25 @@ const App = (() => {
           const isCantrip  = sp.level === 0;
           const isDomain   = sp.domain;
           const isMI       = sp.mi;
-          const isKnown    = knownIds.has(sp.id);
-          const isPrepared = prepared.includes(sp.id) || isDomain || isMI || isCantrip;
+          // Buscar versión del hechizo en char.spells (puede tener cantrip_racial/subclass).
+          // Por id o por nombre: el catálogo usa ids distintos para el mismo conjuro.
+          const knownVersion = findCharSpell(sp);
+          const isKnown    = knownIds.has(sp.id) || !!knownVersion;
+          const isPrepared = prepared.includes(sp.id)
+                          || (knownVersion && prepared.includes(knownVersion.id))
+                          || isDomain || isMI || isCantrip;
           const tags = _buildTagsHTML(sp);
-
-          // Buscar versión del hechizo en char.spells (puede tener cantrip_racial/subclass)
-          const knownVersion = (c.spells || []).find(s => s.id === sp.id);
+          // Los botones deben actuar sobre el id que tiene el personaje, no el
+          // del catálogo: si no, quitar/preparar no encuentra su conjuro.
+          const actionId = (knownVersion && knownVersion.id) || sp.id;
           let checkClass, checkClick, checkCursor, checkTitle;
           if (isCantrip) {
             const isFree = (knownVersion && (knownVersion.cantrip_subclass || knownVersion.cantrip_racial))
                         || sp.cantrip_subclass || sp.cantrip_racial;
             checkClass  = isFree ? 'domain' : (isKnown ? 'cantrip' : '');
             checkClick  = isFree ? '' : (isKnown
-              ? `onclick="App.removeKnownSpell('${sp.id}')"`
-              : `onclick="App.addKnownSpell('${sp.id}')"`);
+              ? `onclick="App.removeKnownSpell('${actionId}')"`
+              : `onclick="App.addKnownSpell('${actionId}')"`);
             checkCursor = isFree ? '' : 'cursor:pointer;';
             checkTitle  = isFree ? 'Cantrip gratuito (raza/subclase)' : (isKnown ? 'Quitar cantrip' : 'Agregar cantrip');
           } else if (isDomain || isMI) {
@@ -2417,13 +2435,13 @@ const App = (() => {
             // Known caster: ★ marcado si está en conocidos, click = toggle agregar/quitar
             checkClass  = isKnown ? 'known-always' : '';
             checkClick  = isKnown
-              ? `onclick="App.removeKnownSpell('${sp.id}')"`
-              : `onclick="App.addKnownSpell('${sp.id}')"`;
+              ? `onclick="App.removeKnownSpell('${actionId}')"`
+              : `onclick="App.addKnownSpell('${actionId}')"`;
             checkCursor = 'cursor:pointer;';
             checkTitle  = isKnown ? 'Quitar de conocidos' : 'Agregar a conocidos';
           } else {
             checkClass  = isPrepared ? 'checked' : '';
-            checkClick  = `onclick="App.toggleSpellPrepared('${sp.id}')"`;
+            checkClick  = `onclick="App.toggleSpellPrepared('${actionId}')"`;
             checkCursor = 'cursor:pointer;';
             checkTitle  = isPrepared ? 'Despreparar' : 'Preparar';
           }
