@@ -435,6 +435,11 @@ const App = (() => {
         // sus conjuros manualmente — no auto-agregar para no sobrepasar el límite.
         const savedPrepared = _char.preparedToday || [];
         const existingIds   = new Set((_char.spells || []).map(s => s.id));
+        // También por nombre: el mismo hechizo aparece con ids distintos según
+        // la fuente (ej. 'toll-dead' en la lista de Lursey vs 'toll-the-dead'
+        // en el catálogo de clase), y comparar solo por id lo duplicaba.
+        const normName = n => (n || '').toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, '');
+        const existingNames = new Set((_char.spells || []).map(s => normName(s.name)));
         // Solo hasta el nivel de slot que el personaje realmente tiene: un
         // Clérigo nv7 llega a slots de nivel 4, así que agregar conjuros de
         // nivel 5+ le ensuciaba la lista con cosas que no puede lanzar.
@@ -442,7 +447,8 @@ const App = (() => {
           ? Characters.getMaxSpellLevel(_char.clase, _char.nivel || 1)
           : 9;
         const newSpells = catalog
-          .filter(s => s.level > 0 && s.level <= maxLvl && !existingIds.has(s.id))
+          .filter(s => s.level > 0 && s.level <= maxLvl
+                    && !existingIds.has(s.id) && !existingNames.has(normName(s.name)))
           .map(s => ({ ...s }));
         if (newSpells.length > 0) {
           _char.spells = [...(_char.spells || []), ...newSpells];
@@ -2257,6 +2263,7 @@ const App = (() => {
 
   // Spell filter state
   let _spellFilter = { tag: 'all', level: null };
+  let _spellSearch = '';
 
   function setSpellFilter(tag, level) {
     _spellFilter = { tag, level: level !== undefined ? level : null };
@@ -2267,6 +2274,14 @@ const App = (() => {
       const l = el.dataset.level !== undefined ? +el.dataset.level : null;
       el.classList.toggle('active', t === tag && (l === null ? level === undefined : l === level));
     });
+  }
+
+  function setSpellSearch(val) {
+    _spellSearch = val;
+    _renderConjurosIzq();
+    // Reponer foco y cursor: el re-render por innerHTML destruye el input.
+    const input = document.getElementById('spellSearchInput');
+    if (input) { input.focus(); input.setSelectionRange(val.length, val.length); }
   }
 
   function _renderConjurosIzq() {
@@ -2305,6 +2320,9 @@ const App = (() => {
       <span>Todos los Conjuros</span>
       <span style="font-size:10px;color:var(--text-dim);font-family:'Crimson Pro',serif;font-style:italic;text-transform:none;letter-spacing:0;">${subLabel}</span>
     </div>
+    <input type="text" class="spell-search-input" id="spellSearchInput"
+           placeholder="🔍 Buscar conjuro..." value="${_spellSearch.replace(/"/g,'&quot;')}"
+           oninput="App.setSpellSearch(this.value)">
     <div class="sf-bar">
       <button class="sf-chip${tag==='all'?' active':''}" data-tag="all" onclick="App.setSpellFilter('all')">Todos</button>
       ${isKnownCasterCtx ? `<button class="sf-chip${tag==='known'?' active':''}" data-tag="known" onclick="App.setSpellFilter('known')">Conocidos</button>` : `<button class="sf-chip${tag==='prep'?' active':''}" data-tag="prep" onclick="App.setSpellFilter('prep')">Preparados</button>`}
@@ -2320,6 +2338,15 @@ const App = (() => {
     else if (tag === 'conc')   spells = spells.filter(s => s.concentration);
     else if (tag === 'bonus')  spells = spells.filter(s => s.bonus);
     else if (tag === 'lvl')    spells = spells.filter(s => s.level === level);
+
+    // Buscador: con 45+ conjuros, encontrar uno requería scrollear 13 pantallas.
+    // Busca en nombre y descripción (ej. "radiante" trae todo lo que hace ese daño).
+    if (_spellSearch.trim()) {
+      const q = _spellSearch.trim().toLowerCase();
+      spells = spells.filter(s =>
+        `${s.name} ${s.desc || ''} ${s.damage || ''}`.toLowerCase().includes(q)
+      );
+    }
 
     const byLevel = {};
     spells.forEach(s => {
@@ -9383,7 +9410,7 @@ ${notesText}`;
     toggleInspiration,
 
     // Conjuros
-    toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter,
+    toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter, setSpellSearch,
     castSpell, castSpellAt,
     openActionRefModal, closeActionRefModal, attackWithWeapon,
     confirmPendingCast, cancelPendingCast,

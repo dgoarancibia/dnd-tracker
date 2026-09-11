@@ -556,6 +556,29 @@ const Storage = (() => {
     _fixField(!char.statBuffs, () => { char.statBuffs = { ca:[], attack:[], save:[], spellDc:[] }; });
     _fixField(typeof char.exhaustion !== 'number', () => { char.exhaustion = 0; });
     _fixField(!char.turn, () => { char.turn = { movement:false, action:false, reaction:false, bonus:false }; });
+    // Quitar conjuros duplicados por nombre: el mismo hechizo llegó con ids
+    // distintos según la fuente (ej. 'heal-word' vs 'healing-word'), y las dos
+    // copias a veces se contradicen entre sí (una dice "Bonus · 18 m" y la otra
+    // "Acción · Toque"), lo que es peligroso al decidir en mesa. Se conserva la
+    // copia preparada; si ninguna lo está, la primera.
+    if (Array.isArray(char.spells)) {
+      const normName = n => (n || '').toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, '');
+      const prep = new Set(char.preparedToday || []);
+      const vistos = new Map();
+      char.spells.forEach(s => {
+        const k = normName(s.name);
+        const previo = vistos.get(k);
+        if (!previo) { vistos.set(k, s); return; }
+        // Si el nuevo está preparado y el previo no, el nuevo gana.
+        if (prep.has(s.id) && !prep.has(previo.id)) vistos.set(k, s);
+      });
+      if (vistos.size !== char.spells.length) {
+        console.info(`[migración] "${char.name || char.id}": ${char.spells.length - vistos.size} conjuros duplicados quitados`);
+        char.spells = [...vistos.values()];
+        _structFixed = true;
+      }
+    }
+
     // Limpiar conjuros por encima del nivel de slot accesible: un sync previo
     // agregaba todo el catálogo de clase sin filtrar, así que quedaron conjuros
     // de nivel 5+ en fichas que solo llegan a nivel 4. Corre siempre porque el

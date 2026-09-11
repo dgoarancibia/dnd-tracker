@@ -887,7 +887,14 @@ input[type=number] { -moz-appearance: textfield; }
   padding: 0 16px;
   flex-shrink: 0;
   gap: 2px;
+  /* Scroll propio: si las tabs no caben, se deslizan ACÁ. Sin esto el
+     navegador scrollea el contenedor padre al enfocar una tab y arrastra el
+     panel de contenido, cortándole ~120px por el overflow:hidden del padre. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
+.tab-nav::-webkit-scrollbar { display: none; }
 
 .tab-btn {
   font-family: 'Cinzel', serif;
@@ -2164,16 +2171,35 @@ input[type=number] { -moz-appearance: textfield; }
   margin-bottom: 10px;
 }
 
+/* Buscador de conjuros — mismo estilo que el de la mochila, por consistencia */
+.spell-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  padding: 9px 11px;
+  outline: none;
+  margin-bottom: 8px;
+  transition: border-color .15s;
+}
+.spell-search-input:focus { border-color: var(--gold-dim); }
+
 .sf-chip {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  /* 9px sobre --text-dim daba 1.4:1 de contraste: casi invisibles, por eso
+     el usuario no los usaba. 12px y gris más claro para llegar al mínimo. */
+  font-size: 12px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  padding: 4px 9px;
+  padding: 7px 12px;
   border-radius: 20px;
   border: 1px solid var(--border);
   background: var(--bg3);
-  color: var(--text-dim);
+  color: #9a9078;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
