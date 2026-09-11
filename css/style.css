@@ -1047,6 +1047,11 @@ input[type=number] { -moz-appearance: textfield; }
   overflow: hidden;
 }
 
+/* Conjuros usa el ancho completo (el sidebar de skills se oculta al entrar),
+   y la lista —que es lo denso— se lleva 3/5 del espacio; el panel de slots y
+   acciones no necesita tanto. */
+#tab-conjuros.two-col { grid-template-columns: 3fr 2fr; }
+
 .tab-panel.active.two-col { display: grid; }
 
 .two-col-left, .two-col-right {

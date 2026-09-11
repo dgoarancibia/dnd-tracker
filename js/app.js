@@ -1422,10 +1422,15 @@ const App = (() => {
     document.getElementById(`tab-${name}`).classList.add('active');
     _activeTab = name;
 
-    // El sidebar fijo y la franja de Stats no aplican a Biblioteca (no es del
-    // PJ, y esa tab necesita todo el ancho para el lector de PDF).
+    // El sidebar de skills se oculta en Biblioteca (no es del PJ, necesita todo
+    // el ancho para el PDF) y en Conjuros: con 45+ hechizos la lista quedaba en
+    // dos columnas de ~250px con los nombres partidos en 3 líneas, mientras la
+    // columna de skills —que no se mira al elegir un conjuro— ocupaba la mitad.
+    const sinSidebar = name === 'biblioteca' || name === 'conjuros';
     const sidebar = document.getElementById('statsSidebar');
-    if (sidebar) sidebar.style.display = name === 'biblioteca' ? 'none' : 'flex';
+    if (sidebar) sidebar.style.display = sinSidebar ? 'none' : 'flex';
+    // La franja de Stats sí se mantiene en Conjuros: SAB y CD son contexto útil
+    // al preparar. Solo Biblioteca la oculta.
     const stripBar = document.getElementById('statsStripBar');
     if (stripBar) stripBar.style.display = name === 'biblioteca' ? 'none' : '';
     if (name !== 'biblioteca') _renderStatsSidebar();
@@ -1500,13 +1505,16 @@ const App = (() => {
   }
 
   // D&D 2024: cada nivel agrega -2 acumulativo a todos los d20 tests. Nivel 6 = muerte.
+  // PHB 2024: penalización -2 por nivel a d20 tests y -1,5 m (5 ft) de
+  // velocidad por nivel. Los efectos de 2014 (velocidad a la mitad/0 y HP máximo
+  // reducido a la mitad) ya no existen; nivel 6 sigue siendo muerte.
   const EXHAUSTION_EFFECTS = [
     null,
-    '-2 a todos los d20 tests (ataques, checks, saves)',
-    '-4 a todos los d20 tests · Velocidad reducida a la mitad',
-    '-6 a todos los d20 tests · Velocidad reducida a la mitad',
-    '-8 a todos los d20 tests · Velocidad reducida a la mitad · HP máx reducido a la mitad',
-    '-10 a todos los d20 tests · Velocidad 0 · HP máx reducido a la mitad',
+    '-2 a todos los d20 tests (ataques, checks, saves) · Velocidad -1,5 m',
+    '-4 a todos los d20 tests · Velocidad -3 m',
+    '-6 a todos los d20 tests · Velocidad -4,5 m',
+    '-8 a todos los d20 tests · Velocidad -6 m',
+    '-10 a todos los d20 tests · Velocidad -7,5 m',
     'Muerte',
   ];
 
@@ -1527,7 +1535,7 @@ const App = (() => {
       <div class="exh-pips">
         ${[1,2,3,4,5,6].map(n => `<div class="exh-pip ${n <= exhaustion ? (exhaustion >= 6 ? 'dead' : exhaustion >= 5 ? 'danger' : exhaustion >= 3 ? 'warning' : 'filled') : ''}" onclick="App.setExhaustion(${n === exhaustion ? 0 : n})" title="Nivel ${n}: ${EXHAUSTION_EFFECTS[n]}"></div>`).join('')}
       </div>
-      ${exEffect ? `<div class="exh-effect">${exEffect}${exhaustion >= 2 ? '<br><span style="opacity:0.7;font-size:10px;">+ efectos anteriores acumulados</span>' : ''}</div>` : '<div class="exh-none">Sin agotamiento</div>'}
+      ${exEffect ? `<div class="exh-effect">${exEffect}${exhaustion > 0 && exhaustion < 6 ? '<br><span style="opacity:0.7;font-size:10px;">Se quita 1 nivel por descanso largo</span>' : ''}</div>` : '<div class="exh-none">Sin agotamiento</div>'}
     </div>`;
   }
 
