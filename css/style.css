@@ -2326,10 +2326,12 @@ input[type=number] { -moz-appearance: textfield; }
   font-style: italic;
   line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  /* 3 líneas (antes 2): con el ancho completo de la pestaña, la mayoría de las
+     descripciones entran enteras y ya no se cortan a media frase. */
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  max-height: 2.8em;
+  max-height: 4.4em;
   transition: max-height 0.25s ease, -webkit-line-clamp 0.25s;
 }
 

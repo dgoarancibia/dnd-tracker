@@ -2380,7 +2380,7 @@ const App = (() => {
       const freeRaceC = (c.spells || []).filter(s => s.level === 0 && s.cantrip_racial).length;
       const freeC  = freeSubC + freeRaceC;
       const paidC  = totalC - freeC;
-      const freeLabel = [freeSubC > 0 ? `+${freeSubC} subclase` : '', freeRaceC > 0 ? `+${freeRaceC} raza` : ''].filter(Boolean).join(', ');
+      const freeLabel = [freeSubC > 0 ? `+${freeSubC} subclase` : '', freeRaceC > 0 ? `+${freeRaceC} gratis` : ''].filter(Boolean).join(', ');
       const cantripLabel = maxC !== null
         ? `Cantrips — ${paidC}/${maxC}${freeLabel ? ` (${freeLabel})` : ''}`
         : `Cantrips — ${totalC}`;
@@ -2515,7 +2515,7 @@ const App = (() => {
       const over = cantripsKnown !== null && cantripsCount > cantripsKnown;
       const freeSubCantrips  = freeCantrips.filter(s => s.cantrip_subclass);
       const freeRaceCantrips = freeCantrips.filter(s => s.cantrip_racial);
-      const freeLbl = [freeSubCantrips.length > 0 ? `+${freeSubCantrips.length} subclase` : '', freeRaceCantrips.length > 0 ? `+${freeRaceCantrips.length} raza` : ''].filter(Boolean).join(', ');
+      const freeLbl = [freeSubCantrips.length > 0 ? `+${freeSubCantrips.length} subclase` : '', freeRaceCantrips.length > 0 ? `+${freeRaceCantrips.length} gratis` : ''].filter(Boolean).join(', ');
       const countText = cantripsKnown !== null
         ? `${cantripsCount} / ${cantripsKnown}${freeLbl ? ` (${freeLbl})` : ''}`
         : `${allCantrips.length}`;
@@ -2533,14 +2533,14 @@ const App = (() => {
           const isSubcls  = sp.cantrip_subclass;
           const isFree    = isRacial || isSubcls;
           const badgeHtml = isRacial
-            ? `<span style="font-size:9px;background:rgba(80,160,220,0.2);color:#60a8d8;border:1px solid rgba(80,160,220,0.35);border-radius:3px;padding:1px 4px;margin-left:4px;">🔒 raza</span>`
+            ? `<span style="font-size:9px;background:rgba(80,160,220,0.2);color:#60a8d8;border:1px solid rgba(80,160,220,0.35);border-radius:3px;padding:1px 4px;margin-left:4px;">🔒 gratis</span>`
             : isSubcls
               ? `<span style="font-size:9px;background:rgba(201,151,58,0.2);color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:1px 4px;margin-left:4px;">◆ subclase</span>`
               : '';
           const toggleBtn = !isFree
-            ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.12);border:1px solid rgba(80,160,220,0.3);border-radius:3px;color:#60a8d8;cursor:pointer;white-space:nowrap;" title="Marcar como cantrip de raza (no contará contra el límite)">+ raza</button>`
+            ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.12);border:1px solid rgba(80,160,220,0.3);border-radius:3px;color:#60a8d8;cursor:pointer;white-space:nowrap;" title="Marcar como cantrip gratuito de raza o feat de origen (no cuenta al límite)">+ gratis</button>`
             : isRacial
-              ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.2);border:1px solid rgba(80,160,220,0.4);border-radius:3px;color:#60a8d8;cursor:pointer;" title="Quitar marca de raza">✕ raza</button>`
+              ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.2);border:1px solid rgba(80,160,220,0.4);border-radius:3px;color:#60a8d8;cursor:pointer;" title="Quitar marca de gratuito">✕ gratis</button>`
               : '';
           htmlDer += `
           <div class="spell-card" style="padding:4px 6px;margin-bottom:3px;">
