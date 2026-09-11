@@ -2260,6 +2260,9 @@ const App = (() => {
     }
     if (sp.concentration) tags += '<span class="tag tag-c">Conc</span>';
     if (sp.bonus) tags += '<span class="tag tag-b">Bonus</span>';
+    // Dominio: antes el ◆ solo existía dentro del nombre en la ficha, así que
+    // no se veía cuando la tarjeta venía del catálogo de clase.
+    if (sp.domain) tags += '<span class="tag tag-dom">◆ Dominio</span>';
     if (sp.mi) tags += '<span class="tag tag-mi">MI</span>';
     if (sp.ritual) tags += '<span class="tag tag-r">Ritual</span>';
     return tags;

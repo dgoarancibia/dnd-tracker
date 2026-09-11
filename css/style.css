@@ -2361,6 +2361,7 @@ input[type=number] { -moz-appearance: textfield; }
 .tag-c { background: rgba(138,58,58,0.2); color: #c07070; border: 1px solid rgba(138,58,58,0.3); }
 .tag-b { background: rgba(58,90,138,0.2); color: #7090c0; border: 1px solid rgba(58,90,138,0.3); }
 .tag-d { background: rgba(74,138,90,0.2); color: #6ab87a; border: 1px solid rgba(74,138,90,0.3); }
+.tag-dom { background: var(--gold-faint); color: var(--gold-light); border: 1px solid var(--gold-dim); }
 .tag-mi { background: rgba(138,90,58,0.2); color: #c09060; border: 1px solid rgba(138,90,58,0.3); }
 .tag-r { background: rgba(106,58,138,0.2); color: #a870c8; border: 1px solid rgba(106,58,138,0.3); }
 
