@@ -2403,16 +2403,21 @@ const App = (() => {
         htmlIzq += `<div class="spell-group-title">${label}</div>`;
         byLevel[lv].forEach(sp => {
           const isCantrip  = sp.level === 0;
-          const isDomain   = sp.domain;
-          const isMI       = sp.mi;
           // Buscar versión del hechizo en char.spells (puede tener cantrip_racial/subclass).
           // Por id o por nombre: el catálogo usa ids distintos para el mismo conjuro.
           const knownVersion = findCharSpell(sp);
+          // Las marcas del personaje mandan sobre las del catálogo: un conjuro de
+          // dominio (ej. Sanctuary para Dominio de la Paz) figura como normal en
+          // el catálogo de clase, y sin esto no se veía marcado en la lista.
+          const isDomain   = (knownVersion && knownVersion.domain) || sp.domain;
+          const isMI       = (knownVersion && knownVersion.mi) || sp.mi;
           const isKnown    = knownIds.has(sp.id) || !!knownVersion;
           const isPrepared = prepared.includes(sp.id)
                           || (knownVersion && prepared.includes(knownVersion.id))
                           || isDomain || isMI || isCantrip;
-          const tags = _buildTagsHTML(sp);
+          // Tags (◆ dominio, † MI, conc...) desde la versión del personaje si
+          // existe: el catálogo no sabe que es de dominio para esta subclase.
+          const tags = _buildTagsHTML(knownVersion || sp);
           // Los botones deben actuar sobre el id que tiene el personaje, no el
           // del catálogo: si no, quitar/preparar no encuentra su conjuro.
           const actionId = (knownVersion && knownVersion.id) || sp.id;
