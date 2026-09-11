@@ -2317,7 +2317,15 @@ const App = (() => {
     const knownIds = new Set((c.spells || []).map(s => s.id));
 
     // Build filter chips from sourceSpells levels
-    const levels = [...new Set(sourceSpells.filter(s => s.level > 0).map(s => s.level))].sort((a,b)=>a-b);
+    // Solo los niveles que el personaje puede lanzar: el catálogo de clase llega
+    // hasta nivel 9, pero ofrecer "Nvl 6" a un Clérigo nv6 (que llega a 3) es
+    // un filtro que nunca devuelve nada.
+    const maxLvlAccesible = Characters.getMaxSpellLevel
+      ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1)
+      : 9;
+    const levels = [...new Set(
+      sourceSpells.filter(s => s.level > 0 && s.level <= maxLvlAccesible).map(s => s.level)
+    )].sort((a,b)=>a-b);
 
     const subLabel = isKnownCasterCtx
       ? 'Toca ★ para agregar/quitar de conocidos'
