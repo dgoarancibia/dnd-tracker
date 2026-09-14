@@ -530,6 +530,52 @@ const Storage = (() => {
       // alto desde un JSON importado y se saltearon esta migración.
       char._dataVersion = 15;
     }
+    if (char._dataVersion < 16) {
+      /* v15 → v16: reconstruir sesiones para las notas huérfanas.
+         Hasta ahora la sesión había que abrirla a mano ANTES de escribir,
+         así que en la práctica casi ninguna nota quedó asociada (en backups
+         reales: 37 de 37 con sessionId null) y el Timeline salía vacío.
+         Se agrupan las notas sin sesión por cercanía temporal, con el mismo
+         corte de 6h que usa la sesión automática. No se toca ninguna nota
+         que YA tenga sesión, ni se borra nada. */
+      const GAP_MS = 6 * 60 * 60 * 1000;
+      const diary = Array.isArray(char.diary) ? char.diary : [];
+      const huerfanas = diary
+        .filter(e => e && !e.sessionId && e.timestamp)
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      if (huerfanas.length) {
+        if (!Array.isArray(char.sessions)) char.sessions = [];
+        let grupo = [];
+        const cerrarGrupo = () => {
+          if (!grupo.length) return;
+          const ini = new Date(grupo[0].timestamp).toISOString();
+          const fin = new Date(grupo[grupo.length - 1].timestamp).toISOString();
+          const sess = {
+            id: 'sess-rec-' + new Date(ini).getTime(),
+            startedAt: ini,
+            endedAt: fin,
+            label: '',
+            auto: true,
+            reconstruida: true,
+          };
+          char.sessions.push(sess);
+          grupo.forEach(e => { e.sessionId = sess.id; });
+          grupo = [];
+        };
+        for (const nota of huerfanas) {
+          if (!grupo.length) { grupo.push(nota); continue; }
+          const prev = new Date(grupo[grupo.length - 1].timestamp).getTime();
+          const act  = new Date(nota.timestamp).getTime();
+          if (act - prev > GAP_MS) cerrarGrupo();
+          grupo.push(nota);
+        }
+        cerrarGrupo();
+        char.sessions.sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
+        console.info(`[Storage] v16: ${huerfanas.length} nota(s) sin sesión agrupadas en sesiones reconstruidas`);
+      }
+      char._dataVersion = 16;
+    }
 
     // ── Siempre: migración de especies al PHB 2024 ─────────────────────────────
     // Corre INDEPENDIENTEMENTE de la versión (mismo motivo que los bloques de

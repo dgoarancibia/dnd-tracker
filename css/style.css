@@ -8543,6 +8543,12 @@ mark.diary-highlight {
 .session-info { display:flex; flex-direction:column; gap:1px; flex:1; min-width:0; }
 .session-info .lbl { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; }
 .session-info .val { font-size:13px; color:var(--text); font-family:'Cinzel', serif; }
+/* El nombre de la sesión es tocable para renombrarla (se hace después de
+   jugar, no en la mesa). Área táctil cómoda y señal de que se puede tocar. */
+#sessionRenameBtn { cursor:pointer; border-radius:6px; padding:4px 8px; margin:-4px -8px; transition:background 0.15s; min-height:44px; justify-content:center; }
+#sessionRenameBtn:hover { background:rgba(201,151,58,0.10); }
+#sessionRenameBtn .val::after { content:' ✎'; opacity:0.45; font-size:11px; }
+.session-hint { flex:1; font-size:11px; color:var(--text-dim); font-style:italic; }
 
 /* ═══ Mención dropdown ═══ */
 .mention-dropdown { position:absolute; bottom:calc(100% + 4px); left:16px; right:16px; max-width:320px; background:var(--bg4); border:1px solid var(--border-strong); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,0.5); overflow:hidden; z-index:10; }

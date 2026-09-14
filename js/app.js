@@ -7487,6 +7487,46 @@ const App = (() => {
     return (_char.sessions || []).find(s => s.endedAt === null) || null;
   }
 
+  /* ── SESIONES AUTOMÁTICAS ────────────────────────────────────────
+     Antes había que acordarse de abrir la sesión ANTES de escribir; si
+     no, la nota quedaba con sessionId:null y huérfana para siempre (en
+     backups reales: 37 de 37 notas sin sesión). Ahora la sesión se abre
+     sola con la primera nota y se cierra sola tras 6h de inactividad,
+     que es más que una partida y menos que el hueco entre dos. */
+  const _SESSION_GAP_MS = 6 * 60 * 60 * 1000;
+
+  // Devuelve la sesión donde debe caer una nota nueva, creándola o
+  // cerrando la anterior si corresponde. Nunca retorna null.
+  function _ensureSessionForNow() {
+    if (!_char.sessions) _char.sessions = [];
+    const ahora = Date.now();
+    const open = _getOpenSession();
+
+    if (open) {
+      // ¿Sigue viva? Se mide contra la última nota de esa sesión, no
+      // contra su hora de inicio: una partida larga no debe cortarse.
+      const notas = (_char.diary || []).filter(e => e.sessionId === open.id);
+      const ultima = notas.length
+        ? Math.max(...notas.map(e => new Date(e.timestamp).getTime()))
+        : new Date(open.startedAt).getTime();
+      if (ahora - ultima <= _SESSION_GAP_MS) return open;
+      // Quedó abierta de una partida vieja: se cierra al final de su
+      // actividad real, no ahora, para que el Timeline no mienta.
+      open.endedAt = new Date(ultima).toISOString();
+      open.autoClosed = true;
+    }
+
+    const sess = {
+      id: 'sess-' + ahora,
+      startedAt: new Date().toISOString(),
+      endedAt: null,
+      label: '',
+      auto: true,
+    };
+    _char.sessions.push(sess);
+    return sess;
+  }
+
   function startNewSession() {
     if (!_char.sessions) _char.sessions = [];
     const open = _getOpenSession();
@@ -7513,6 +7553,22 @@ const App = (() => {
     showToast('Sesión cerrada');
   }
 
+  // Renombrar la sesión: se hace DESPUÉS, con calma, no en la mesa.
+  // Sin nombre las sesiones son "Sesión 1, 2, 3…" e indistinguibles.
+  function renameSession(sessionId) {
+    const sess = (_char.sessions || []).find(s => s.id === sessionId)
+              || _getOpenSession();
+    if (!sess) return;
+    const n = _sessionNumber(sess.id);
+    const nuevo = prompt(`Nombre para la sesión ${n}:`, sess.label || '');
+    if (nuevo === null) return;
+    sess.label = nuevo.trim().slice(0, 60);
+    _saveChar();
+    _renderSessionBar();
+    if (_notebookTab === 'timeline') _renderTimeline();
+    showToast(sess.label ? `Sesión ${n}: ${sess.label}` : `Sesión ${n} sin nombre`);
+  }
+
   function _sessionNumber(sessionId) {
     // Número de sesión = posición cronológica ascendente (1-indexed) por startedAt
     const sessions = (_char.sessions || []).slice().sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
@@ -7528,9 +7584,15 @@ const App = (() => {
     if (open) {
       const n = _sessionNumber(open.id);
       const time = new Date(open.startedAt).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-      document.getElementById('sessionBarLabel').textContent = `Sesión ${n} · desde ${time}`;
+      // El nombre, si lo tiene, manda: "Sesión 3 · El carnaval" se
+      // reconoce después; "Sesión 3 · desde 21:14" no.
+      document.getElementById('sessionBarLabel').textContent = open.label
+        ? `Sesión ${n} · ${open.label}`
+        : `Sesión ${n} · desde ${time}`;
       const aiBtn = document.getElementById('sessionAIExportBtn');
       if (aiBtn) aiBtn.dataset.sessionId = open.id;
+      const renBtn = document.getElementById('sessionRenameBtn');
+      if (renBtn) renBtn.dataset.sessionId = open.id;
       bar.style.display = 'flex';
       barClosed.style.display = 'none';
     } else {
@@ -8294,7 +8356,7 @@ ${notesText}`;
       }
     }
 
-    const openSession = _getOpenSession();
+    const openSession = _ensureSessionForNow();
     const entry = {
       id: 'e-' + Date.now(),
       timestamp: new Date().toISOString(),
@@ -9599,7 +9661,7 @@ ${notesText}`;
     toggleCombatLog, clearCombatLog, exportCombatLog,
 
     // Sesiones de juego
-    startNewSession, closeCurrentSession,
+    startNewSession, closeCurrentSession, renameSession,
 
     // Exportar sesión para IA / importar resultado estructurado
     exportSessionForAI, openAIImportModal, closeAIImportModal,
