@@ -3473,7 +3473,10 @@ const App = (() => {
     }
 
     const beast = beasts[beastId];
-    const ac    = beast.calcAC(nivel);
+    // PHB 2024: la bestia escala con SABIDURÍA del Ranger, no con su Bono de
+    // Competencia (eso era Tasha's 2020). CA = 13 + mod SAB, y el daño suma
+    // mod SAB. El ataque usa el modificador de ataque de conjuro (PB + SAB).
+    const ac    = 13 + wisMod;
     const maxHp = beast.calcMaxHP(nivel);
     const curHp = companion.hp != null ? companion.hp : maxHp;
     const hitBonus = wisMod + pb;
@@ -3495,7 +3498,7 @@ const App = (() => {
       <div class="companion-attack">
         <span class="companion-atk-name">${a.name}</span>
         <span class="companion-atk-bonus">${hitStr}</span>
-        <span class="companion-atk-dmg">${a.damageDie}+${a.damageBonus + pb} ${a.damageType}</span>
+        <span class="companion-atk-dmg">${a.damageDie}+${a.damageBonus + wisMod} ${a.damageType}</span>
       </div>`).join('');
 
     // Traits

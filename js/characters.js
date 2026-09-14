@@ -2126,10 +2126,10 @@ const Characters = (() => {
       clase: 'Explorador',
       resources: () => [],
       features: (nivel) => [
-        { id:'bm-ranger-companion', name:'Ranger\'s Companion',
-          source:'Beast Master · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Tienes una bestia compañera que actúa en tu iniciativa. Puede atacar usando tu acción bonus.',
-          fullDesc:'A nivel 3 ganas la servicio de una bestia. Elige un animal CR ≤ 1/4 con velocidad de vuelo, o CR ≤ 1/2 sin ella. Añade tu Prof Bonus a sus tiradas de ataque, daño, saves y percepción. La bestia actúa en tu turno. Puedes usar tu acción bonus para ordenarle que ataque.' },
+        { id:'bm-ranger-companion', name:'Primal Companion',
+          source:'Beast Master · Nv3', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
+          desc:'Invocas una bestia primigenia (Tierra, Mar o Cielo) que actúa en tu iniciativa. Acción bonus para ordenarle atacar.',
+          fullDesc:'A nivel 3 lanzas Summon Beast sin gastar slot ni componentes para invocar tu compañero: eliges el bloque de estadísticas Bestia de la Tierra, del Mar o del Cielo, y decides qué animal es. La bestia actúa justo después de ti en la iniciativa y puede moverse y usar su reacción sola; para que ataque o realice otra acción, usás tu acción bonus. Sus estadísticas escalan con tu nivel de Explorador y tu modificador de Sabiduría. Si muere, vuelve con una hora de trabajo o al relanzar el conjuro; puedes reinvocarla gratis una vez por descanso largo.' },
         ...(nivel >= 7 ? [{ id:'bm-exceptional-training', name:'Exceptional Training',
           source:'Beast Master · Nv7', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
           desc:'Como bonus action, puedes ordenarle a tu compañero que haga Dash, Disengage, Dodge o Help.',
@@ -2137,7 +2137,7 @@ const Characters = (() => {
         ...(nivel >= 11 ? [{ id:'bm-bestial-fury', name:'Bestial Fury',
           source:'Beast Master · Nv11', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Tu compañero puede hacer dos ataques cuando tú usas tu acción para ordenarle que ataque.',
-          fullDesc:'A nivel 11, tu compañero puede atacar dos veces cuando usas tu acción para ordenarle que realice el ataque de la acción Atacar.' }] : []),
+          fullDesc:'A nivel 11, cuando ordenas a tu compañero usar Beast\'s Strike, puede hacerlo dos veces. Además, si tienes Hunter\'s Mark activo sobre el objetivo, los ataques de la bestia también aplican el daño extra de la marca.' }] : []),
         ...(nivel >= 15 ? [{ id:'bm-share-spells', name:'Share Spells',
           source:'Beast Master · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Cuando te lanzas un conjuro a ti mismo, puede afectar también a tu compañero si está a 9 m.',
@@ -5194,7 +5194,7 @@ const Characters = (() => {
       type: 'Bestia',
       speed: '40 ft · Trepa 40 ft',
       stats: { for:14, des:14, con:15, int:8, sab:14, car:11 },
-      calcAC: (nivel) => 13 + calcProfBonus(nivel),
+      calcAC: (nivel) => 13 + calcProfBonus(nivel), // 2024: la CA real es 13 + mod SAB (se calcula en app.js)
       calcHP: (nivel) => 5 + 5 * nivel,
       calcMaxHP: (nivel) => 5 + 5 * nivel,
       senses: 'Percepción pasiva 14',
@@ -5205,15 +5205,15 @@ const Characters = (() => {
           type: 'melee',
           // bonus to hit = WIS mod + PB (se calcula dinámicamente)
           damageDie: '1d8',
-          damageBonus: 2,  // +2 fijo, más PB se suma dinámicamente
+          damageBonus: 2,  // +2 fijo, más mod SAB (PHB 2024)
           damageType: 'perforante o cortante',
-          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = SABmod + PB. Daño: 1d8 + 2 + PB.',
+          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = mod de ataque de conjuro. Daño: 1d8 + 2 + mod SAB.',
         }
       ],
       traits: [
         {
           name: 'Charge',
-          desc: 'Si se mueve al menos 6 m en línea recta hacia un objetivo y lo golpea, el objetivo debe superar un save de FUE (CD = 8+PB+SAB mod) o quedar tumbado. Si cae, la bestia puede hacer un ataque adicional de bonificación.',
+          desc: 'Si se mueve al menos 6 m en línea recta hacia un objetivo y lo golpea, el objetivo debe superar un save de FUE (CD = tu CD de conjuros) o quedar tumbado. Si cae, la bestia puede hacer un ataque adicional de bonificación.',
         },
         {
           name: 'Primal Bond',
@@ -5231,7 +5231,7 @@ const Characters = (() => {
       type: 'Bestia',
       speed: '5 ft · Nada 60 ft',
       stats: { for:14, des:14, con:15, int:8, sab:14, car:11 },
-      calcAC: (nivel) => 13 + calcProfBonus(nivel),
+      calcAC: (nivel) => 13 + calcProfBonus(nivel), // 2024: la CA real es 13 + mod SAB (se calcula en app.js)
       calcHP: (nivel) => 5 + 5 * nivel,
       calcMaxHP: (nivel) => 5 + 5 * nivel,
       senses: 'Percepción pasiva 14',
@@ -5243,7 +5243,7 @@ const Characters = (() => {
           damageDie: '1d6',
           damageBonus: 2,
           damageType: 'contundente o perforante',
-          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = SABmod + PB. Daño: 1d6 + 2 + PB. El objetivo queda agarrado (Escape CD = 8+PB+SABmod). Mientras esté agarrado puede repetir el ataque automáticamente.',
+          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = mod de ataque de conjuro. Daño: 1d6 + 2 + mod SAB. El objetivo queda agarrado (Escape CD = tu CD de conjuros). Mientras esté agarrado puede repetir el ataque automáticamente.',
         }
       ],
       traits: [
@@ -5267,7 +5267,7 @@ const Characters = (() => {
       type: 'Bestia',
       speed: '10 ft · Vuela 60 ft',
       stats: { for:6, des:16, con:13, int:8, sab:14, car:11 },
-      calcAC: (nivel) => 13 + calcProfBonus(nivel),
+      calcAC: (nivel) => 13 + calcProfBonus(nivel), // 2024: la CA real es 13 + mod SAB (se calcula en app.js)
       calcHP: (nivel) => 4 + 4 * nivel,
       calcMaxHP: (nivel) => 4 + 4 * nivel,
       senses: 'Percepción pasiva 14',
@@ -5279,7 +5279,7 @@ const Characters = (() => {
           damageDie: '1d4',
           damageBonus: 3,  // DEX mod base (+3 DES=16)
           damageType: 'cortante',
-          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = SABmod + PB. Daño: 1d4 + 3 + PB.',
+          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = mod de ataque de conjuro. Daño: 1d4 + 3 + mod SAB.',
         }
       ],
       traits: [
