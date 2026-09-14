@@ -8401,6 +8401,16 @@ ${notesText}`;
         nombre = comillas[1].trim();
       } else if (autoTipo === 'quest') {
         nombre = limpio.split(/[.;\n]/)[0].trim().split(/\s+/).slice(0, 6).join(' ');
+      } else if (catAuto) {
+        // Categoría deducida: el nombre es la racha inicial de palabras
+        // capitalizadas, así "Kaleen Giaco" no se guarda como "Kaleen"
+        // ni "Mister Whiter" como "Mister".
+        const props = [];
+        for (const p of limpio.split(/\s+/)) {
+          if (/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ'’-]*$/.test(p) && props.length < 3) props.push(p);
+          else break;
+        }
+        nombre = props.join(' ') || (limpio.split(/\s+/)[0] || '');
       } else {
         nombre = limpio.split(/\s+/)[0] || '';
       }
