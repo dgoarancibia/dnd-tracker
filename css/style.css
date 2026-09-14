@@ -96,6 +96,12 @@ input[type=number] { -moz-appearance: textfield; }
 @media (orientation: portrait) {
   .portrait-warning { display: flex; }
 }
+/* En Split View / Slide Over el alto supera al ancho, así que
+   orientation:portrait se cumple aunque el iPad esté en horizontal. Ahí el
+   aviso estorba: la ventana es angosta porque el usuario lo quiso. */
+@media (orientation: portrait) and (min-height: 700px) and (max-width: 620px) {
+  .portrait-warning { display: none; }
+}
 
 /* ═══ INDEX — PANTALLA DE INICIO ═══ */
 .index-body {
@@ -732,7 +738,7 @@ input[type=number] { -moz-appearance: textfield; }
 .hp-hdr-free:focus { outline: none; border-color: var(--gold-dim); }
 
 /* STAT BOXES HEADER */
-.stats-strip { display: flex; gap: 6px; align-items: center; flex-shrink: 1; }
+.stats-strip { display: flex; gap: 6px; align-items: center; flex-shrink: 1; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
 
 .stat-divider {
   width: 1px;
@@ -8822,3 +8828,22 @@ mark.diary-highlight {
   padding: 8px 0; min-height: 40px;
 }
 .prep-link:hover { text-decoration: underline; }
+
+/* ── Ventana angosta (Split View de iPad, ~400-620px) ────────────────
+   El CSS tenía breakpoints solo para teléfono (900/640/480/400), así que a
+   media pantalla de iPad la barra de stats se desbordaba hasta 820px y
+   quedaba cortada fuera de la vista. */
+@media (max-width: 620px) {
+  /* Las 6 stats en una fila no entran: pasan a 3x2. */
+  .stats-strip-bar .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .stats-strip { gap: 4px; row-gap: 4px; }
+  .stats-strip .stat-divider { display: none; }
+  .stats-strip .stat-box { padding: 2px 5px; }
+  /* El header se apila para dejarle el ancho completo a los stats. */
+  .app-header { flex-wrap: wrap; row-gap: 6px; }
+  .app-header-left { max-width: 100%; }
+  /* Modales a ancho completo con margen mínimo: a este ancho un
+     max-width fijo deja los bordes pegados o corta el contenido. */
+  .prep-modal, .modal { max-width: calc(100vw - 24px); }
+  .prep-body { max-height: 66vh; }
+}
