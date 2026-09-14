@@ -1827,6 +1827,131 @@ const App = (() => {
     return activas.map(q => `<div class="prep-quest">⚔️ ${q.name.replace(/</g,'&lt;')}</div>`).join('');
   }
 
+  /* ══════════════════════════════════════════════════════
+     COMPARTIR FICHA CON EL DM
+
+     Publica una COPIA de solo lectura en /shared/{token}. El token es la
+     credencial: quien tenga el link ve la ficha, sin necesitar cuenta.
+     El diario, el Codex y las sesiones NO viajan (ver _SHARE_OMIT).
+     Es una foto del momento: hay que actualizar para reflejar cambios.
+  ══════════════════════════════════════════════════════ */
+
+  function _shareUrl(token) {
+    const base = location.href.replace(/\/[^/]*$/, '/');
+    return base + 'ficha.html?t=' + token;
+  }
+
+  async function openShareModal() {
+    if (!_char) return;
+    const user = (typeof FirebaseApp !== 'undefined' && FirebaseApp.getCurrentUser) ? FirebaseApp.getCurrentUser() : null;
+    if (!user) {
+      showToast('Iniciá sesión para compartir la ficha');
+      return;
+    }
+
+    let overlay = document.getElementById('shareOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'shareOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      overlay.onclick = (e) => { if (e.target === overlay) closeShareModal(); };
+      document.body.appendChild(overlay);
+    }
+    _renderShareModal();
+    overlay.style.display = 'flex';
+  }
+
+  function _renderShareModal(estado) {
+    const overlay = document.getElementById('shareOverlay');
+    if (!overlay) return;
+    const token = _char.shareToken;
+    const url = token ? _shareUrl(token) : null;
+    const fecha = _char.sharedAt ? new Date(_char.sharedAt).toLocaleString('es') : null;
+
+    const cuerpo = url
+      ? `<div class="share-url-box">
+           <input type="text" class="share-url" id="shareUrlInput" readonly value="${url}" onclick="this.select()">
+           <button class="share-copy" onclick="App.copyShareUrl()">Copiar</button>
+         </div>
+         ${fecha ? `<div class="share-meta">Actualizada el ${fecha}</div>` : ''}
+         <div class="share-note">Es una foto del momento: si cambiás la ficha, tocá <b>Actualizar</b> para que tu DM vea lo nuevo.</div>
+         <div class="share-actions">
+           <button class="share-btn" onclick="App.publishShare()">↻ Actualizar</button>
+           <button class="share-btn danger" onclick="App.revokeShare()">Revocar link</button>
+         </div>`
+      : `<div class="share-note">Genera un link de <b>solo lectura</b> para mandarle a tu DM. No necesita cuenta: abre y ve la ficha.</div>
+         <div class="share-warn">Cualquiera con el link puede verla, así que compartilo solo con quien quieras. Podés revocarlo cuando quieras.</div>
+         <div class="share-actions">
+           <button class="share-btn primary" onclick="App.publishShare()">Crear link</button>
+         </div>`;
+
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:480px;width:100%;">
+        <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>🔗 Compartir con el DM</span>
+          <span class="ref-close" onclick="App.closeShareModal()">✕</span>
+        </div>
+        <div class="modal-body">
+          ${estado ? `<div class="share-estado">${estado}</div>` : ''}
+          <div class="share-que">Se comparte: características, combate, conjuros preparados y recursos.<br>
+            <span class="share-no">No se comparte: tu diario, el Codex ni las sesiones.</span></div>
+          ${cuerpo}
+        </div>
+      </div>`;
+  }
+
+  function closeShareModal() {
+    const o = document.getElementById('shareOverlay');
+    if (o) o.style.display = 'none';
+  }
+
+  async function publishShare() {
+    if (!_char) return;
+    const user = (typeof FirebaseApp !== 'undefined' && FirebaseApp.getCurrentUser) ? FirebaseApp.getCurrentUser() : null;
+    if (!user) { showToast('Iniciá sesión para compartir'); return; }
+
+    _renderShareModal('Publicando…');
+    try {
+      // La CA y la velocidad son calculadas, no viven en el documento:
+      // se agregan para que la vista pública no tenga que recalcular.
+      const copia = { ..._char };
+      copia._ca = Characters.calcCA(_char);
+      const token = await FirebaseApp.publishSharedChar(user.uid, copia, _char.shareToken);
+      _char.shareToken = token;
+      _char.sharedAt = new Date().toISOString();
+      _saveChar();
+      _renderShareModal('✓ Link actualizado');
+      showToast('Ficha compartida');
+    } catch (e) {
+      _renderShareModal('No se pudo publicar. Revisá tu conexión.');
+      showToast('Error al compartir');
+    }
+  }
+
+  async function revokeShare() {
+    if (!_char || !_char.shareToken) return;
+    _confirm('¿Revocar el link? Tu DM dejará de poder ver la ficha.', async () => {
+      const token = _char.shareToken;
+      try {
+        await FirebaseApp.revokeSharedChar(token);
+      } catch (e) { /* si ya no existe, igual limpiamos local */ }
+      delete _char.shareToken;
+      delete _char.sharedAt;
+      _saveChar();
+      _renderShareModal('Link revocado');
+      showToast('Link revocado');
+    });
+  }
+
+  function copyShareUrl() {
+    const input = document.getElementById('shareUrlInput');
+    if (!input) return;
+    _copyToClipboard(input.value)
+      .then(() => showToast('Link copiado'))
+      .catch(() => showToast('No se pudo copiar'));
+  }
+
   function openPrepSesion() {
     if (!_char) return;
     let overlay = document.getElementById('prepSesionOverlay');
@@ -10152,6 +10277,7 @@ ${notesText}`;
     toggleHideFeature, toggleShowHidden, showAllHiddenFeatures,
     togglePouchDetail, openDicePouchModal, closeDicePouchModal,
     openPrepSesion, closePrepSesion,
+    openShareModal, closeShareModal, publishShare, revokeShare, copyShareUrl,
 
     // Monedas
     addCoin, consolidateCurrency,

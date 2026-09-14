@@ -200,8 +200,72 @@ async function deleteCheckpointCloud(uid, charId, cpId) {
   await deleteDoc(_checkpointRef(uid, charId, cpId));
 }
 
+/* ══════════════════════════════════════════════════════
+   COMPARTIR FICHA POR LINK
+
+   Guarda una COPIA de la ficha en /shared/{token}, donde el token es un
+   id aleatorio largo que hace de credencial: solo quien tiene el link
+   puede leer. El documento privado del usuario nunca se expone.
+   Es una foto del momento: hay que republicar para actualizarla.
+══════════════════════════════════════════════════════ */
+
+function _sharedRef(token) {
+  return doc(_db, 'shared', token);
+}
+
+// Token aleatorio de 160 bits en base36. crypto.getRandomValues es
+// criptográficamente seguro; Math.random no lo es y acá el token ES la
+// credencial de acceso.
+function newShareToken() {
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Campos que NO viajan en la copia compartida: son privados o no le
+// sirven de nada al DM.
+const _SHARE_OMIT = ['diary', 'entities', 'sessions', 'checkpoints', '_cloudDirty', 'shareToken', 'sharedAt', 'notes', 'ifttt'];
+
+function _stripForShare(char) {
+  const copia = {};
+  for (const k of Object.keys(char)) {
+    if (_SHARE_OMIT.includes(k)) continue;
+    copia[k] = char[k];
+  }
+  return copia;
+}
+
+async function publishSharedChar(uid, char, token) {
+  const t = token || newShareToken();
+  const data = {
+    ..._stripUndefined(_stripForShare(char)),
+    ownerUid: uid,
+    sharedAt: serverTimestamp(),
+  };
+  await setDoc(_sharedRef(t), data);
+  return t;
+}
+
+async function loadSharedChar(token) {
+  const snap = await getDoc(_sharedRef(token));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  if (data.sharedAt && data.sharedAt.toDate) {
+    data.sharedAt = data.sharedAt.toDate().toISOString();
+  }
+  return data;
+}
+
+async function revokeSharedChar(token) {
+  await deleteDoc(_sharedRef(token));
+}
+
 /* ── Exportar singleton ── */
 window.FirebaseApp = {
+  newShareToken,
+  publishSharedChar,
+  loadSharedChar,
+  revokeSharedChar,
   signIn,
   signOutUser,
   getCurrentUser,

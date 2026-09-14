@@ -10,7 +10,7 @@
        controlado), y siempre verifica el timestamp de la nube antes de pisar.
      - La bajada es EXPLÍCITA: forcePullFromCloud() (botón "Sincronizar desde nube").
    ═══════════════════════════════════════════════════════ */
-import './firebase.js';
+import './firebase.js?v=2';
 
 const Cloud = (() => {
   let _uid     = null;    // UID del usuario autenticado

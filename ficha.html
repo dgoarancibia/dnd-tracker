@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Ficha compartida · D&D Tracker</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg1: #14120f; --bg2: #1c1915; --bg3: #24201a;
+      --border: #3a332a; --text: #e8e0d0; --text-mid: #b5aa96;
+      --text-dim: #8a8070; --gold: #c9973a; --gold-dim: #8a6a2a;
+      --red: #b5473a; --green: #6a9a5b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg1); color: var(--text);
+      font-family: 'Jost', system-ui, sans-serif; font-size: 14px;
+      line-height: 1.6; padding: 16px; min-height: 100vh;
+    }
+    .wrap { max-width: 780px; margin: 0 auto; }
+
+    .hd {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px; margin-bottom: 18px;
+    }
+    .hd h1 {
+      font-family: 'Cinzel', serif; font-size: 24px;
+      color: var(--gold); font-weight: 600; line-height: 1.25;
+    }
+    .hd .sub { color: var(--text-mid); font-size: 13px; margin-top: 3px; }
+    .ro-badge {
+      display: inline-block; margin-top: 9px; font-size: 11px;
+      padding: 3px 9px; border-radius: 10px;
+      background: rgba(201,151,58,0.14); color: var(--gold);
+      border: 1px solid var(--gold-dim);
+    }
+
+    .sec { margin-bottom: 22px; }
+    .sec-hd {
+      font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.07em;
+      color: var(--gold); text-transform: uppercase;
+      margin-bottom: 9px; padding-bottom: 5px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grid { display: grid; gap: 8px; }
+    .g3 { grid-template-columns: repeat(3, 1fr); }
+    .g6 { grid-template-columns: repeat(6, 1fr); }
+    @media (max-width: 620px) { .g6 { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 420px) { .g3 { grid-template-columns: repeat(2, 1fr); } }
+
+    .box {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 7px; padding: 9px 10px; text-align: center;
+    }
+    .box .lbl {
+      font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .box .val { font-size: 20px; color: var(--text); font-weight: 500; margin-top: 2px; }
+    .box .mod { font-size: 12px; color: var(--gold); }
+
+    .row {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 10px; padding: 7px 10px; border-radius: 6px;
+      background: var(--bg2); margin-bottom: 4px;
+    }
+    .row .n { color: var(--text-mid); font-size: 13px; }
+    .row .v { color: var(--text); font-weight: 500; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .chip {
+      font-size: 12px; padding: 3px 9px; border-radius: 11px;
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text-mid);
+    }
+    .chip.on { border-color: var(--gold-dim); color: var(--gold); }
+
+    .state, .err {
+      text-align: center; padding: 50px 20px; color: var(--text-dim);
+    }
+    .err .t {
+      font-family: 'Cinzel', serif; font-size: 17px;
+      color: var(--text-mid); margin-bottom: 7px;
+    }
+    .foot {
+      margin-top: 30px; padding-top: 14px;
+      border-top: 1px solid var(--border);
+      text-align: center; font-size: 11px; color: var(--text-dim);
+    }
+    .foot a { color: var(--gold-dim); }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="root">
+    <div class="state">Cargando ficha…</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const app = initializeApp({
+      apiKey:            "AIzaSyDtryd_alBvOzWIeqDjQjMYXbSTrL53pio",
+      authDomain:        "dndtracker-ac78f.firebaseapp.com",
+      projectId:         "dndtracker-ac78f",
+      storageBucket:     "dndtracker-ac78f.firebasestorage.app",
+      messagingSenderId: "708565457437",
+      appId:             "1:708565457437:web:ae7fddca5e6113aa3d44f4"
+    });
+    const db = getFirestore(app);
+
+    const esc = (v) => String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const mod = (v) => { const m = Math.floor((Number(v) - 10) / 2); return (m >= 0 ? '+' : '') + m; };
+
+    const STATS = [
+      ['fue', 'Fuerza'], ['des', 'Destreza'], ['con', 'Constitución'],
+      ['int', 'Inteligencia'], ['sab', 'Sabiduría'], ['car', 'Carisma'],
+    ];
+
+    function render(c, token) {
+      const nombre = c.nombre || c.name || 'Sin nombre';
+      const linea = [c.especie || c.raza, c.clase, c.subclase, c.nivel ? 'Nivel ' + c.nivel : '']
+        .filter(Boolean).join(' · ');
+
+      let h = `<div class="hd">
+        <h1>${esc(nombre)}</h1>
+        <div class="sub">${esc(linea)}</div>
+        <span class="ro-badge">Solo lectura</span>
+      </div>`;
+
+      // Stats
+      h += `<div class="sec"><div class="sec-hd">Características</div><div class="grid g6">`;
+      for (const [k, nom] of STATS) {
+        const v = (c.stats || {})[k];
+        h += `<div class="box"><div class="lbl">${nom.slice(0, 3)}</div>
+              <div class="val">${v != null ? esc(v) : '—'}</div>
+              <div class="mod">${v != null ? mod(v) : ''}</div></div>`;
+      }
+      h += `</div></div>`;
+
+      // Combate
+      const hp = c.hp || {};
+      h += `<div class="sec"><div class="sec-hd">Combate</div><div class="grid g3">
+        <div class="box"><div class="lbl">Puntos de golpe</div><div class="val">${esc(hp.current != null ? hp.current : '—')}<span style="font-size:13px;color:var(--text-dim)">/${esc(hp.max != null ? hp.max : '—')}</span></div></div>
+        <div class="box"><div class="lbl">Clase de armadura</div><div class="val">${esc(c._ca != null ? c._ca : '—')}</div></div>
+        <div class="box"><div class="lbl">Velocidad</div><div class="val">${esc(c.velocidad || c.speed || '—')}</div></div>
+      </div></div>`;
+
+      // Conjuros preparados
+      const prep = c.preparedToday || [];
+      const spells = c.spells || [];
+      if (spells.length) {
+        const byId = new Map(spells.map(s => [s.id, s]));
+        const lista = prep.map(id => byId.get(id)).filter(Boolean);
+        h += `<div class="sec"><div class="sec-hd">Conjuros preparados</div>`;
+        h += lista.length
+          ? `<div class="chips">${lista.map(s => `<span class="chip on">${esc(s.name)}</span>`).join('')}</div>`
+          : `<div style="color:var(--text-dim);font-size:12px">Ninguno preparado ahora.</div>`;
+        h += `</div>`;
+      }
+
+      // Recursos
+      const res = (c.resources || []).filter(r => r.max > 0);
+      if (res.length) {
+        h += `<div class="sec"><div class="sec-hd">Recursos</div>`;
+        h += res.map(r => `<div class="row"><span class="n">${esc(r.name || r.id)}</span>
+              <span class="v">${esc(r.current != null ? r.current : r.max)}/${esc(r.max)}</span></div>`).join('');
+        h += `</div>`;
+      }
+
+      const fecha = c.sharedAt ? new Date(c.sharedAt).toLocaleString('es') : null;
+      h += `<div class="foot">Ficha compartida desde D&amp;D Tracker${fecha ? ' · actualizada el ' + esc(fecha) : ''}
+            <br>Es una copia: los cambios posteriores no se ven hasta que se vuelva a compartir.</div>`;
+
+      document.getElementById('root').innerHTML = h;
+      document.title = nombre + ' · Ficha compartida';
+    }
+
+    function error(titulo, detalle) {
+      document.getElementById('root').innerHTML =
+        `<div class="err"><div class="t">${esc(titulo)}</div><div>${esc(detalle)}</div></div>`;
+    }
+
+    (async () => {
+      const token = new URLSearchParams(location.search).get('t');
+      if (!token || !/^[a-f0-9]{16,64}$/i.test(token)) {
+        error('Link inválido', 'Este enlace no tiene un identificador de ficha válido.');
+        return;
+      }
+      try {
+        const snap = await getDoc(doc(db, 'shared', token));
+        if (!snap.exists()) {
+          error('Ficha no disponible', 'El enlace fue revocado o nunca existió.');
+          return;
+        }
+        render(snap.data(), token);
+      } catch (e) {
+        error('No se pudo cargar', 'Revisá tu conexión e intentá de nuevo.');
+      }
+    })();
+  </script>
+</body>
+</html>

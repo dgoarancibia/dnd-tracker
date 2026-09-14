@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v396';
+const CACHE = 'dnd-tracker-v397';
 
 // IMPORTANTE: app.html e index.html NO se cachean aquí intencionalmente.
 // Si se cachean, el SW viejo puede servir el HTML viejo y el nuevo SW nunca
@@ -29,7 +29,7 @@ self.addEventListener('activate', e => {
       .then(() => {
         // Notificar a todos los clientes que el SW nuevo está activo
         self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 396 }));
+          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 397 }));
         });
       })
   );
@@ -40,7 +40,7 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
   // Cliente pregunta la versión del SW activo
   if (e.data && e.data.type === 'GET_VERSION') {
-    e.source.postMessage({ type: 'SW_VERSION', version: 396 });
+    e.source.postMessage({ type: 'SW_VERSION', version: 397 });
   }
 });
 
@@ -58,6 +58,7 @@ self.addEventListener('fetch', e => {
   // NUNCA cachear los HTML principales — siempre van a red para detectar SW nuevo
   if (url.pathname.endsWith('/') ||
       url.pathname.endsWith('/app.html') ||
+      url.pathname.endsWith('/ficha.html') ||
       url.pathname.endsWith('/index.html')) {
     e.respondWith(
       fetch(e.request).catch(() => caches.match(e.request))

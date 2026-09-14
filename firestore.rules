@@ -8,5 +8,26 @@ service cloud.firestore {
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // Fichas compartidas por link. El id del documento es un token aleatorio
+    // largo, así que sirve de credencial: solo quien tiene el link puede leer.
+    // Es una COPIA de la ficha, no el documento privado del usuario.
+    match /shared/{token} {
+      // Lectura pública: el DM abre el link sin tener cuenta.
+      allow read: if true;
+
+      // Solo un usuario autenticado puede crear un link, y el documento debe
+      // quedar marcado con su uid para que después pueda actualizarlo o
+      // borrarlo. Nadie puede crear un link a nombre de otro.
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      // Actualizar y revocar: solo el dueño, y sin poder cambiar de dueño.
+      allow update: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+    }
   }
 }

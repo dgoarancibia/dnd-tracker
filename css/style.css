@@ -8847,3 +8847,42 @@ mark.diary-highlight {
   .prep-modal, .modal { max-width: calc(100vw - 24px); }
   .prep-body { max-height: 66vh; }
 }
+
+/* ── Compartir ficha con el DM ───────────────────────────────────── */
+.share-que { font-size: 12px; color: var(--text-mid); margin-bottom: 12px; line-height: 1.6; }
+.share-que .share-no { color: var(--text-dim); }
+.share-note { font-size: 13px; color: var(--text-mid); line-height: 1.6; margin-bottom: 10px; }
+.share-warn {
+  font-size: 12px; color: var(--gold); line-height: 1.55;
+  background: rgba(201,151,58,0.08); border-left: 2px solid var(--gold-dim);
+  border-radius: 0 5px 5px 0; padding: 8px 10px; margin-bottom: 12px;
+}
+.share-estado { font-size: 12px; color: var(--gold); margin-bottom: 10px; }
+.share-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
+
+.share-url-box { display: flex; gap: 6px; margin-bottom: 8px; }
+.share-url {
+  flex: 1; min-width: 0; background: var(--bg1);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-mid); font-size: 12px; padding: 9px 10px;
+  font-family: ui-monospace, monospace;
+}
+.share-copy {
+  background: var(--gold-dim); border: 1px solid var(--gold);
+  color: var(--bg1); font-family: 'Jost', sans-serif; font-size: 12px;
+  font-weight: 600; padding: 0 14px; border-radius: 6px; cursor: pointer;
+  min-height: 40px; white-space: nowrap;
+}
+.share-copy:hover { background: var(--gold); }
+
+.share-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.share-btn {
+  flex: 1; min-width: 120px; min-height: 42px;
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text-mid); font-family: 'Jost', sans-serif; font-size: 13px;
+  border-radius: 6px; cursor: pointer; padding: 10px; transition: all 0.15s;
+}
+.share-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.share-btn.primary { background: var(--gold-dim); border-color: var(--gold); color: var(--bg1); font-weight: 600; }
+.share-btn.primary:hover { background: var(--gold); }
+.share-btn.danger:hover { color: var(--red); border-color: var(--red); }
