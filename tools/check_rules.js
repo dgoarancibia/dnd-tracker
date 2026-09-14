@@ -186,6 +186,54 @@ for (const cl of clases) {
   }
 }
 
+/* ── 11. Cálculos base: CA, saves, habilidades, iniciativa ──────
+   Invariantes que no dependen de conocer el PHB: un personaje sin
+   armadura nunca puede tener menos CA que 10 + DES, un save con
+   competencia siempre supera al mismo save sin ella, etc.          */
+{
+  const mk = (clase, extra) => Object.assign({
+    clase, nivel: 6, stats: { ...STATS, des: 16 },
+    equipment: {}, savingThrows: [], skillProfs: [], skillExpertise: [],
+    bonuses: { ca: 0, init: 0, ataque: 0, savesAll: 0, saves: {}, skills: {}, hpMax: 0, cd: 0 },
+  }, extra || {});
+
+  for (const cl of clases) {
+    const ch = mk(cl);
+    const desMod = C.calcMod(ch.stats.des);
+
+    // CA sin armadura: al menos 10 + DES (Bárbaro y Monje suman más).
+    const ca = C.calcCA(ch);
+    if (ca < 10 + desMod) {
+      err(`${cl}: sin armadura la CA es ${ca}, menor que 10+DES (${10 + desMod})`);
+    }
+
+    // Iniciativa sin bonus = modificador de DES.
+    const ini = C.calcInit(ch);
+    if (ini !== desMod) err(`${cl}: iniciativa ${ini} ≠ mod. DES ${desMod}`);
+
+    // Competencia y pericia siempre suman sobre el mismo save/skill.
+    const save0 = C.calcSave(mk(cl), 'sab');
+    const save1 = C.calcSave(mk(cl, { savingThrows: ['sab'] }), 'sab');
+    if (save1 <= save0) err(`${cl}: el save de SAB con competencia (${save1}) no supera al de sin (${save0})`);
+
+    const sk0 = C.calcSkill(mk(cl), 'percepcion');
+    const sk1 = C.calcSkill(mk(cl, { skillProfs: ['percepcion'] }), 'percepcion');
+    const sk2 = C.calcSkill(mk(cl, { skillExpertise: ['percepcion'] }), 'percepcion');
+    if (sk1 <= sk0) err(`${cl}: percepción con competencia (${sk1}) no supera a sin competencia (${sk0})`);
+    if (sk2 <= sk1) err(`${cl}: percepción con pericia (${sk2}) no supera a solo competencia (${sk1})`);
+  }
+
+  // XP ↔ nivel deben ser coherentes en ambos sentidos.
+  for (let n = 1; n <= 20; n++) {
+    const xp = C.getXPForLevel(n);
+    const vuelta = C.getLevelFromXP(xp);
+    if (vuelta !== n) err(`XP: nivel ${n} pide ${xp} XP, pero ${xp} XP da nivel ${vuelta}`);
+    if (n > 1 && C.getXPForLevel(n) <= C.getXPForLevel(n - 1)) {
+      err(`XP: el umbral de nivel ${n} no es mayor que el de ${n - 1}`);
+    }
+  }
+}
+
 /* ── Reporte ───────────────────────────────────────────────────── */
 console.log(`\n🎲 check_rules — ${clases.length} clases verificadas\n`);
 if (errores.length) {
