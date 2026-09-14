@@ -672,7 +672,9 @@ const Characters = (() => {
     }
 
     // Armadura normal (o clase sin Unarmored Defense)
-    if (!armor) return 10 + bonus;
+    // Sin armadura equipada la CA es 10 + DES: antes devolvía 10 pelado,
+    // así que un Mago con DES 16 mostraba CA 10 en vez de 13.
+    if (!armor) return 10 + desMod + bonus;
     let ca = armor.base_ca != null ? armor.base_ca : 10;
     if (armor.add_dex) ca += desMod;
     ca += _itemStatBonus(armor, 'ac');
