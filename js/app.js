@@ -2456,8 +2456,8 @@ const App = (() => {
 
           htmlIzq += `
           <div class="spell-card">
-            <div class="spell-checkbox ${checkClass}" id="spchk-${sp.id}" ${checkClick} style="${checkCursor}" title="${checkTitle}"></div>
-            <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
+            <div class="spell-checkbox ${checkClass}" id="spchk-${actionId}" ${checkClick} style="${checkCursor}" title="${checkTitle}"></div>
+            <div class="spell-info" onclick="App.openSpellDetail('${actionId}')" style="cursor:pointer;">
               <div class="spell-top">
                 <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
                 <span class="spell-name">${sp.name}</span>${tags}
@@ -5127,20 +5127,12 @@ const App = (() => {
 
     _saveChar();
 
-    // Actualizar checkbox visual sin re-render completo
-    const chk = document.getElementById(`spchk-${id}`);
-    if (chk) {
-      const nowPrepared = _char.preparedToday.includes(id);
-      chk.className = `spell-checkbox ${nowPrepared ? 'checked' : ''}`;
-    }
-
-    // Actualizar contador
-    const newCount = _char.preparedToday.filter(pid => {
-      const s = _char.spells.find(sp => sp.id === pid);
-      return s && !s.domain && !s.mi;
-    }).length;
-    const countEl = document.getElementById('preparedCount');
-    if (countEl) countEl.textContent = newCount;
+    // Repintar la pestaña completa: el checkbox de la izquierda, el contador y
+    // la lista de preparados de la derecha tienen que quedar en el mismo estado.
+    // Antes solo se tocaba el checkbox por id, y cuando el id de la tarjeta (del
+    // catálogo) no coincidía con el de la ficha, el dato cambiaba pero el visual
+    // se quedaba marcado.
+    _renderConjurosTab();
   }
 
   // Quita un conjuro/cantrip de la lista de conocidos
