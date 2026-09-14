@@ -3578,7 +3578,15 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   gap: 2px;
   flex: 1;
+  /* En iPad vertical (768px) "Mapas" y "Sesiones" quedaban fuera del
+     viewport y la barra no scrolleaba: eran inalcanzables. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.nb-tabs::-webkit-scrollbar { display: none; }
+.nb-tab { flex: 0 0 auto; }
 .nb-tab {
   font-family: 'Cinzel', serif;
   font-size: 10px;
@@ -3927,6 +3935,26 @@ input[type=number] { -moz-appearance: textfield; }
 .diary-bubble:hover .diary-pin-btn { opacity: 0.55; }
 .diary-pin-btn:hover { opacity: 1; }
 .diary-pin-btn.pinned { opacity: 1; filter: none; }
+
+/* ── Táctil: borrar y fijar ──────────────────────────────────────────
+   En iPad el ✕ medía 12×14px pegado al 📌 de 13px, y ambos dependían
+   de :hover (que no existe al tocar): invisibles y fáciles de errar.
+   Se les da área táctil de 44px sin cambiar el tamaño visual, se
+   separan entre sí, y se muestran siempre en dispositivos táctiles. */
+.diary-del-btn, .diary-pin-btn { position: relative; }
+.diary-del-btn::before, .diary-pin-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
+}
+@media (hover: none) {
+  .diary-del-btn, .diary-pin-btn { opacity: 0.55; }
+  .diary-pin-btn.pinned { opacity: 1; }
+  /* Separa el ✕ del 📌 para no borrar queriendo fijar. */
+  .diary-del-btn { margin-left: 14px; }
+}
 .diary-bubble.pinned {
   background: rgba(201,151,58,0.08);
   border: 1px solid rgba(201,151,58,0.25);

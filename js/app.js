@@ -8242,14 +8242,66 @@ ${notesText}`;
       if (!text) { showToast('Escribe algo después del shortcut'); return; }
     }
 
+    // ── Tags automáticos ────────────────────────────────────────────
+    // Los #tag escritos en el texto se guardan aunque no se haya tocado
+    // el dropdown: en la mesa nadie confirma el menú. Se suman a los que
+    // sí vinieron del dropdown, sin duplicar.
+    const tags = [..._pendingTags];
+    const tagRe = /#([\wáéíóúñÁÉÍÓÚÑ-]{1,30})/g;
+    let tagMatch;
+    while ((tagMatch = tagRe.exec(text)) !== null) {
+      const t = tagMatch[1];
+      if (!tags.some(x => x.toLowerCase() === t.toLowerCase())) tags.push(t);
+    }
+
+    // ── Entidad automática ──────────────────────────────────────────
+    // Si la nota tiene categoría npc/quest y NO se confirmó una mención
+    // en el dropdown, se crea (o reusa) la entidad con la primera palabra
+    // del texto. Sin esto el Codex queda vacío salvo que se toque el menú.
+    const mentions = [..._pendingMentions];
+    const autoTipo = (_newDiaryCat === 'npc' || _newDiaryCat === 'quest') ? _newDiaryCat : null;
+    if (autoTipo && !mentions.some(m => m.type === autoTipo)) {
+      // Nombre entre comillas al inicio → nombre compuesto explícito.
+      // Si no: un NPC se identifica por su nombre propio (primera
+      // palabra), pero una misión se describe con una frase, así que
+      // se toma la primera oración acotada a 6 palabras.
+      const comillas = text.match(/^"([^"]{1,40})"/);
+      const limpio = text.replace(tagRe, ' ').trim();
+      let nombre;
+      if (comillas) {
+        nombre = comillas[1].trim();
+      } else if (autoTipo === 'quest') {
+        nombre = limpio.split(/[.;\n]/)[0].trim().split(/\s+/).slice(0, 6).join(' ');
+      } else {
+        nombre = limpio.split(/\s+/)[0] || '';
+      }
+      nombre = nombre.replace(/[.,;:!?¿¡)（）"']+$/g, '').trim();
+
+      if (nombre) {
+        if (!_char.entities) _char.entities = [];
+        let entity = _aiImportFindExisting(nombre, autoTipo);
+        if (!entity) {
+          entity = {
+            id: _aiImportNewId(),
+            type: autoTipo,
+            name: nombre,
+            createdAt: new Date().toISOString(),
+          };
+          if (autoTipo === 'quest') entity.status = 'active';
+          _char.entities.push(entity);
+        }
+        mentions.push({ type: entity.type, id: entity.id, name: entity.name });
+      }
+    }
+
     const openSession = _getOpenSession();
     const entry = {
       id: 'e-' + Date.now(),
       timestamp: new Date().toISOString(),
       text,
       cat: _newDiaryCat || '',
-      mentions: [..._pendingMentions],
-      tags: [..._pendingTags],
+      mentions,
+      tags,
       sessionId: openSession ? openSession.id : null,
     };
 

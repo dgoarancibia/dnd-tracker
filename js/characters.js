@@ -1450,7 +1450,7 @@ const Characters = (() => {
           desc:'Bardic Inspiration recarga en Short Rest en lugar de Long Rest. Los dados son d8.', fullDesc:'' }] : []),
         ...(nivel >= 6 ? [{ id:'countercharm', name:'Countercharm', source:'Bardo · Nivel 6', type:'active', action:'Acción', range:'30 ft', recharge:null,
           desc:'Hasta el final de tu próximo turno, tú y aliados que te oigan tienen ventaja en saves contra encantamientos y miedo.', fullDesc:'' }] : []),
-        ...(nivel >= 7 ? [{ id:'bard-asi-8', name:'Ability Score Improvement', source:'Bardo · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+        ...(nivel >= 8 ? [{ id:'bard-asi-8', name:'Ability Score Improvement', source:'Bardo · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
         ...(nivel >= 10 ? [{ id:'magical-secrets', name:'Magical Secrets', source:'Bardo · Nivel 10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Aprendes 2 conjuros de cualquier clase (repetible a nv14 y nv18).', fullDesc:'' }] : []),
