@@ -1043,6 +1043,21 @@ const App = (() => {
     }
   }
 
+  // Distancia + casillas del mapa: "18 m (12 casillas)". Una casilla = 1,5 m
+  // (5 ft), la grilla estándar de D&D. Se usa donde el alcance importa para
+  // medir en el tablero; para chips cortos se sigue usando fmtDist a secas.
+  function fmtDistGrid(val) {
+    const base = fmtDist(val);
+    if (!val || typeof val !== 'string') return base;
+    // Extraer los metros del valor original (siempre viene en metros del dato)
+    const m = val.match(/([\d,\.]+)\s*m\b/);
+    if (!m) return base; // Toque, Personal, Ilimitado… no se miden en casillas
+    const metros = parseFloat(m[1].replace(',', '.'));
+    const casillas = Math.round(metros / 1.5);
+    if (!casillas) return base;
+    return `${base} (${casillas} ${casillas === 1 ? 'casilla' : 'casillas'})`;
+  }
+
   /* ══════════════════════════════════════════════════════
      HEADER
   ══════════════════════════════════════════════════════ */
@@ -8563,7 +8578,7 @@ ${notesText}`;
     document.getElementById('sdmName').textContent = sp.name.replace(/\s*[◆†]/g, '');
     document.getElementById('sdmCastTime').textContent = sp.castTime || '—';
     document.getElementById('sdmDuration').textContent = sp.duration || '—';
-    document.getElementById('sdmRange').textContent = fmtDist(sp.range) || '—';
+    document.getElementById('sdmRange').textContent = fmtDistGrid(sp.range) || '—';
 
     // Bloque destacado: lo primero que el ojo encuentra. Sustituye al viejo
     // tile "Daño" de la fila de metadata (que quedaba perdido entre casteo y
@@ -8792,7 +8807,7 @@ ${notesText}`;
     document.getElementById('fdmSource').textContent = `${r.current}/${r.max} usos · ${rechargeLabel}`;
     let statsHtml = '';
     if (r.action)   statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Acción</div><div class="fdm-stat-val">${r.action}</div></div>`;
-    if (r.range)    statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${fmtDist(r.range)}</div></div>`;
+    if (r.range)    statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Distancia</div><div class="fdm-stat-val">${fmtDistGrid(r.range)}</div></div>`;
     if (rechargeLabel) statsHtml += `<div class="fdm-stat"><div class="fdm-stat-label">Recarga</div><div class="fdm-stat-val">${rechargeLabel}</div></div>`;
     document.getElementById('fdmStatsRow').innerHTML = statsHtml;
     document.getElementById('fdmSummary').textContent = fmtDesc(r.desc || r.note || '');
