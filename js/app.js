@@ -920,12 +920,14 @@ const App = (() => {
         <div class="tl-dot${isOpen ? ' open' : ''}"></div>
         <div class="tl-content">
           <div class="tl-title-row">
-            <span class="tl-title">${session.label ? session.label.replace(/</g,'&lt;') : `Sesión ${n}`}</span>
+            <span class="tl-title">${session.label ? `Sesión ${n} · ${session.label.replace(/</g,'&lt;')}` : `Sesión ${n}`}</span>
             <span class="tl-range">${rangeStr}</span>
           </div>
+          ${session.resumen ? `<div class="tl-resumen">${session.resumen.replace(/</g,'&lt;')}</div>` : ''}
           ${statsHtml}
           <div class="tl-actions">
-            <button class="tl-ai-btn" onclick="App.exportSessionForAI('${session.id}')">🤖 Exportar para IA</button>
+            <button class="tl-ai-btn" onclick="App.exportSessionForAI('${session.id}')">🤖 ${session.resumen ? 'Regenerar resumen' : 'Resumir con IA'}</button>
+            <button class="tl-ai-btn" onclick="App.renameSession('${session.id}')">✎ Nombre</button>
           </div>
         </div>
       </div>`;
@@ -7720,6 +7722,8 @@ const App = (() => {
     return `Sos un asistente que organiza notas de una sesión de D&D. Te paso las notas crudas que un jugador escribió durante su sesión de juego. Tu tarea es reorganizarlas y devolver ÚNICAMENTE un JSON válido (sin texto antes ni después, sin bloques de código markdown) con esta forma exacta:
 
 {
+  "titulo": "string — 4 a 6 palabras que nombren esta sesión, como el título de un capítulo",
+  "resumen": "string — 3 a 5 frases contando qué pasó, en orden, como se lo contarías a alguien que faltó",
   "npcs": [{"name": "string", "note": "breve descripción de quién es o qué se supo de él en esta sesión"}],
   "quests": [{"name": "string", "status": "active" o "resolved", "note": "breve descripción del objetivo o resultado"}],
   "lugares": [{"name": "string", "note": "breve descripción"}],
@@ -7728,9 +7732,11 @@ const App = (() => {
 
 Reglas:
 - Si una nota cruda no encaja en npcs/quests/lugares, va en "notas" con la categoría que más se ajuste.
-- No inventes información que no esté en las notas originales.
+- No inventes información que no esté en las notas originales. Si las notas son escasas o confusas, hacé un resumen corto antes que rellenar con suposiciones.
 - Los nombres de NPCs/quests deben ser cortos (2-4 palabras), aptos para usar como título.
 - Si dos notas hablan del mismo NPC o la misma quest, consolidalas en una sola entrada con toda la info relevante en "note".
+- El "resumen" es lo más importante: sirve para que el jugador recuerde meses después qué pasó en esta sesión. Escribilo en pasado y en español rioplatense, mencionando los nombres propios que aparezcan.
+- Ignorá para el resumen las notas que sean solo números sueltos (tiradas de dados, posiciones, XP).
 
 Notas crudas de la sesión (Sesión ${n}, ${startStr} – ${endStr}):
 
@@ -7795,8 +7801,11 @@ ${notesText}`;
 
     const keys = ['npcs', 'quests', 'lugares', 'notas'];
     const hasValidKey = keys.some(k => Array.isArray(parsed[k]));
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !hasValidKey) {
-      _aiImportShowError('El JSON no tiene el formato esperado (faltan npcs/quests/lugares/notas).');
+    // Un JSON con solo titulo/resumen también sirve: puede que la sesión
+    // no tenga NPCs ni misiones nuevas y aun así valga guardar el relato.
+    const hasResumen = typeof parsed.resumen === 'string' && parsed.resumen.trim();
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || (!hasValidKey && !hasResumen)) {
+      _aiImportShowError('El JSON no tiene el formato esperado (faltan npcs/quests/lugares/notas o resumen).');
       return;
     }
 
@@ -7826,6 +7835,22 @@ ${notesText}`;
     const quests = parsed.quests || [];
     const lugares = parsed.lugares || [];
     const notas = parsed.notas || [];
+
+    // El resumen va primero y destacado: es lo que más se va a leer
+    // después, así que conviene revisarlo antes de aceptarlo.
+    const resumen = (parsed.resumen || '').toString().trim();
+    const titulo  = (parsed.titulo  || '').toString().trim();
+    if (resumen) {
+      html += `<div class="ai-imp-group ai-imp-resumen">
+        <label class="ai-imp-item">
+          <input type="checkbox" data-kind="resumen" checked>
+          <span class="ai-imp-body">
+            <b>📖 Resumen de la sesión${titulo ? ` · ${escapeHtml(titulo)}` : ''}</b>
+            <span class="ai-imp-note">${escapeHtml(resumen)}</span>
+          </span>
+        </label>
+      </div>`;
+    }
 
     if (npcs.length) {
       html += `<div class="ai-import-section"><div class="ai-import-section-hd">🧑 NPCs nuevos <span class="ai-import-count">${npcs.length}</span></div>`;
@@ -7911,6 +7936,23 @@ ${notesText}`;
     if (!_char.entities) _char.entities = [];
     if (!_char.diary) _char.diary = [];
 
+    /* El resumen y el título se guardan EN la sesión, no como una nota
+       suelta: es lo que se lee meses después en el Timeline para
+       recordar qué pasó, y le da nombre a la sesión (antes todas se
+       llamaban "Sesión 1, 2, 3" y eran indistinguibles). */
+    let resumenGuardado = false;
+    const sesionDestino = (_char.sessions || []).find(x => x.id === _aiImportSessionId);
+    if (sesionDestino) {
+      const chkResumen = cont.querySelector('input[data-kind="resumen"]');
+      if (!chkResumen || chkResumen.checked) {
+        const r = (_aiImportParsed.resumen || '').toString().trim();
+        const t = (_aiImportParsed.titulo || '').toString().trim();
+        if (r) { sesionDestino.resumen = r; sesionDestino.resumenAt = new Date().toISOString(); resumenGuardado = true; }
+        // El título no pisa uno puesto a mano.
+        if (t && !sesionDestino.label) sesionDestino.label = t.slice(0, 60);
+      }
+    }
+
     let npcCount = 0, questCount = 0, noteCount = 0;
     const nowIso = () => new Date().toISOString();
     const newDiaryId = () => 'e-' + Date.now() + Math.random().toString(36).slice(2, 6);
@@ -7994,7 +8036,12 @@ ${notesText}`;
 
     _saveChar();
     closeAIImportModal();
-    showToast(`✓ Importado: ${npcCount} NPCs, ${questCount} misiones, ${noteCount} notas`, 'success', 4000);
+    const partes = [];
+    if (resumenGuardado) partes.push('resumen');
+    if (npcCount) partes.push(`${npcCount} ${npcCount === 1 ? 'NPC' : 'NPCs'}`);
+    if (questCount) partes.push(`${questCount} ${questCount === 1 ? 'misión' : 'misiones'}`);
+    if (noteCount) partes.push(`${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`);
+    showToast(partes.length ? `✓ Importado: ${partes.join(', ')}` : '✓ Nada que importar', 'success', 4000);
 
     if (_notebookTab === 'codex') _renderCodex();
     else if (_notebookTab === 'diary') { _renderDiaryEntries(); _renderSessionBar(); }
@@ -8283,7 +8330,17 @@ ${notesText}`;
     }
     // Filtrar por búsqueda (fuzzy: substring, subsecuencia o Levenshtein acotada)
     if (_diarySearch) {
-      entries = entries.filter(e => _fuzzyMatch(_diarySearch, e.text));
+      // Busca también en el resumen de la sesión: una nota puede no
+      // contener la palabra que recordás, pero el resumen sí.
+      const sesionesQueMatchean = new Set(
+        (_char.sessions || [])
+          .filter(ss => (ss.resumen && _fuzzyMatch(_diarySearch, ss.resumen)) ||
+                        (ss.label   && _fuzzyMatch(_diarySearch, ss.label)))
+          .map(ss => ss.id)
+      );
+      entries = entries.filter(e =>
+        _fuzzyMatch(_diarySearch, e.text) ||
+        (e.sessionId && sesionesQueMatchean.has(e.sessionId)));
     }
 
     const container = document.getElementById('diaryEntries');
