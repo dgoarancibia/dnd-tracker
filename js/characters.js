@@ -57,9 +57,11 @@ const Characters = (() => {
     20: [4, 3, 3, 3, 3, 2, 2, 1, 1],
   };
 
-  // Half casters (Paladín, Explorador — empieza nvl 2)
+  // Half casters (Paladín, Explorador). PHB 2024: ambos lanzan conjuros desde
+  // nivel 1 con 2 slots de nivel 1 (en 2014 empezaban en nivel 2).
+  // Verificado en aidedd.org y D&D Beyond para ambas clases.
   const HALF_CASTER_SLOTS = {
-    1:  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    1:  [2, 0, 0, 0, 0, 0, 0, 0, 0],
     2:  [2, 0, 0, 0, 0, 0, 0, 0, 0],
     3:  [3, 0, 0, 0, 0, 0, 0, 0, 0],
     4:  [3, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -1518,66 +1520,83 @@ const Characters = (() => {
           source:'Explorador · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:`Puedes usar la propiedad Mastery de ${nivel>=4?3:2} armas distintas. Cambias las armas elegidas al terminar un descanso largo.`,
           fullDesc:`Puedes usar la propiedad Mastery de ${nivel>=4?3:2} armas con las que tengas competencia.\n\n• Explorador: 2 armas (nv1) → 3 (nv4)\n\nVer la feature Maestría con Armas del Guerrero para el detalle de cada propiedad (Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex).` },
-        ...(nivel >= 2 ? [{
-          id: 'expertise-ranger', name: 'Expertise',
-          source: 'Explorador · Nivel 2', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Eliges 2 habilidades con proficiencia: tu Prof Bonus se duplica para ellas.',
-          fullDesc: 'D&D 2024: El Explorador obtiene Expertise a nivel 2.\n\nEliges 2 habilidades en las que tienes proficiencia. Tu Bono de Competencia se duplica para esas habilidades.\n\nIdeal para: Sigilo, Supervivencia, Percepción, Naturaleza o Atletismo según tu estilo de juego.',
-        }] : []),
         {
+          id: 'ranger-spellcasting', name: 'Spellcasting (SAB)',
+          source: 'Explorador · Nivel 1', type: 'active', action: 'Varía', range: 'Varía', recharge: null,
+          desc: 'Lanzas conjuros de Ranger usando SAB. Half-caster: 2 slots de nivel 1 desde nv1.',
+          fullDesc: 'Desde nivel 1 canalizas la magia de la naturaleza.\n\nStat de conjuro: Sabiduría (SAB)\nCD de conjuros: 8 + Prof Bonus + mod SAB\nBonus de ataque: Prof Bonus + mod SAB\n\nConjuros preparados: empezás preparando 2 conjuros de nivel 1. El máximo sube según la tabla del Ranger (no se calcula con el modificador).\n\nSlots: Half-caster. Ya en nivel 1 tienes 2 slots de nivel 1. Los slots aumentan más lento que los full-casters y llegás a nivel de conjuro 5 como máximo.\n\nHunter\'s Mark: Desde el PHB 2024, Hunter\'s Mark es parte de la habilidad de clase del Ranger y puede lanzarse sin gastar slot un número de veces por Long Rest.',
+        },
+        ...(nivel >= 2 ? [{
+          id: 'deft-explorer', name: 'Deft Explorer',
+          source: 'Explorador · Nivel 2', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Expertise en 1 habilidad con proficiencia y conoces 2 idiomas más.',
+          fullDesc: 'A nivel 2 te conviertes en un explorador consumado:\n\n• Expertise: eliges 1 habilidad en la que tengas proficiencia. Tu Bono de Competencia se duplica para esa habilidad.\n• Idiomas: conoces 2 idiomas más a tu elección.\n\nNota: la Expertise de 2 habilidades adicionales llega a nivel 9 (feature Expertise).',
+        }] : []),
+        ...(nivel >= 2 ? [{
           id: 'ranger-fighting-style', name: 'Fighting Style',
           source: 'Explorador · Nivel 2', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
           desc: 'Estilo de combate especializado. El Ranger tiene acceso a un subconjunto de estilos.',
           fullDesc: 'A nivel 2 adoptas un estilo de combate especializado. Las opciones disponibles para el Ranger son:\n\n• Archery — +2 a tiradas de ataque con armas a distancia.\n• Blind Fighting — Visión ciega 3 m. Puedes ver criaturas invisibles no ocultas.\n• Defense — +1 CA mientras llevas armadura.\n• Druidic Warrior — Aprendes dos cantrips de la lista del Druida (SAB como stat de conjuro). Cuentan como conjuros de Ranger.\n• Dueling — +2 al daño con arma de una mano sin otra arma en la otra mano.\n• Thrown Weapon Fighting — +2 al daño con armas arrojadizas; puedes sacarlas como parte del ataque.\n• Two-Weapon Fighting — Sumas el mod de stat al daño del ataque con la mano secundaria.',
-        },
-        {
-          id: 'ranger-spellcasting', name: 'Spellcasting (SAB)',
-          source: 'Explorador · Nivel 2', type: 'active', action: 'Varía', range: 'Varía', recharge: null,
-          desc: 'Lanzas conjuros de Ranger usando SAB. Half-caster: slots empiezan en nv2.',
-          fullDesc: 'A nivel 2 aprendes a usar la magia de la naturaleza.\n\nStat de conjuro: Sabiduría (SAB)\nCD de conjuros: 8 + Prof Bonus + mod SAB\nBonus de ataque: Prof Bonus + mod SAB\n\nConjuros conocidos: empezás con 2 conjuros de nivel 1. Aprendes más al subir de nivel (siempre según la tabla del Ranger).\n\nSlots: Half-caster. No tienes slots en nivel 1, empezás con 2 slots de nivel 1 en nivel 2. Los slots aumentan más lento que los full-casters.\n\nHunter\'s Mark: Desde el PHB 2024, Hunter\'s Mark es parte de la habilidad de clase del Ranger y puede lanzarse sin gastar slot un número de veces por Long Rest (igual a tu mod SAB mínimo 1).',
-        },
-        {
-          id: 'primeval-awareness', name: 'Primeval Awareness',
-          source: 'Explorador · Nivel 3', type: 'active', action: 'Acción', range: 'Varía', recharge: null,
-          desc: 'Gastas un slot para detectar tipos de criaturas en un radio según el nivel del slot.',
-          fullDesc: 'A nivel 3, puedes usar tu acción y gastar un slot de conjuro de Ranger para enfocar tu conciencia en la región circundante.\n\nDurante 1 minuto por nivel del slot gastado, puedes sentir si los siguientes tipos de criaturas están presentes en un radio de 1,5 km (6 km en terreno favorito): Aberraciones, Celestiales, Dragones, Elementales, Feéricos, Fiends o Muertos Vivientes.\n\nNo sabes la ubicación ni el número, solo si están presentes o no dentro del radio.',
-        },
-        {
+        }] : []),
+        ...(nivel >= 5 ? [{
           id: 'extra-attack-ranger', name: 'Extra Attack',
           source: 'Explorador · Nivel 5', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
           desc: 'Al usar la acción Atacar, atacas dos veces en lugar de una.',
           fullDesc: 'A partir del nivel 5, cada vez que tomas la acción Atacar puedes atacar dos veces en lugar de una.\n\nEsto se aplica a todos los ataques de arma. Hunter\'s Mark te permite añadir 1d6 de daño a cada ataque que conecte contra el objetivo marcado.',
-        },
-        {
-          id: 'lands-stride', name: "Land's Stride",
-          source: 'Explorador · Nivel 8', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'El terreno difícil no mágico no te ralentiza. Ventaja en saves contra plantas mágicas que obstaculizan.',
-          fullDesc: 'A partir del nivel 8, moverte a través de terreno difícil no mágico no te cuesta movimiento extra.\n\nAdemás, tienes ventaja en las tiradas de salvación contra plantas que estén creadas o manipuladas mágicamente para impedir el movimiento (como las creadas por el conjuro Entangle o Spike Growth).\n\nTambién puedes atravesar plantas no mágicas sin que te ralenticen y sin recibir daño de ellas si tienen espinas, agujas u otro tipo de peligro similar.',
-        },
-        {
-          id: 'hide-in-plain-sight', name: 'Hide in Plain Sight',
-          source: 'Explorador · Nivel 10', type: 'active', action: '1 minuto de preparación', range: 'Personal', recharge: null,
-          desc: 'Puedes camuflarte quedándote inmóvil hasta quedar casi invisible (+10 a Sigilo).',
-          fullDesc: 'A partir del nivel 10, puedes pasar 1 minuto creando camuflaje para ti mismo. Debes tener acceso a barro, suciedad, plantas, hollín u otros materiales naturales con los que crear el camuflaje.\n\nUna vez camuflado de esta manera, puedes intentar esconderte presionándote contra una superficie sólida como un árbol o una pared que sea al menos tan alta y ancha como tú.\n\nObtenes un +10 a las tiradas de Sigilo siempre que no te muevas. Si te mueves, el camuflaje pierde efectividad y pierdes este beneficio.',
-        },
-        {
-          id: 'vanish', name: 'Vanish',
-          source: 'Explorador · Nivel 14', type: 'active', action: 'Acción bonus', range: 'Personal', recharge: null,
-          desc: 'Puedes usar Hide como acción bonus. No puedes ser rastreado por medios no mágicos.',
-          fullDesc: 'A partir del nivel 14, puedes usar la acción Esconderse como acción adicional en tu turno.\n\nAdemás, no puedes ser rastreado por medios no mágicos, salvo que elijas dejar rastro.',
-        },
-        {
+        }] : []),
+        ...(nivel >= 6 ? [{
+          id: 'roving', name: 'Roving',
+          source: 'Explorador · Nivel 6', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: '+3 m de velocidad sin armadura pesada. Ganas velocidad de Trepar y Nadar iguales a tu velocidad.',
+          fullDesc: 'A partir del nivel 6, mientras no lleves armadura pesada:\n\n• Tu velocidad aumenta en 3 m (10 ft).\n• Ganas velocidad de Trepar y velocidad de Nadar iguales a tu velocidad de caminar.',
+        }] : []),
+        ...(nivel >= 9 ? [{
+          id: 'expertise-ranger', name: 'Expertise',
+          source: 'Explorador · Nivel 9', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Eliges 2 habilidades más con proficiencia: tu Prof Bonus se duplica para ellas.',
+          fullDesc: 'A nivel 9 eliges 2 habilidades más en las que tengas proficiencia. Tu Bono de Competencia se duplica para esas habilidades.\n\nSe suman a la habilidad que ya elegiste con Deft Explorer en nivel 2.',
+        }] : []),
+        ...(nivel >= 10 ? [{
+          id: 'tireless', name: 'Tireless',
+          source: 'Explorador · Nivel 10', type: 'active', action: 'Acción mágica', range: 'Personal', recharge: 'long',
+          desc: 'Ganas 1d8 + mod SAB HP temporales (usos = mod SAB). Cada descanso corto reduce tu Agotamiento en 1.',
+          fullDesc: 'A partir del nivel 10, las fuerzas primigenias te sostienen:\n\n• Con una acción mágica ganas HP temporales iguales a 1d8 + tu modificador de Sabiduría (mínimo 1). Puedes usarlo un número de veces igual a tu modificador de Sabiduría (mínimo 1) y recuperas los usos al terminar un descanso largo.\n• Cada vez que terminas un descanso corto, tu nivel de Agotamiento (Exhaustion) se reduce en 1, si lo tenías.',
+        }] : []),
+        ...(nivel >= 13 ? [{
+          id: 'relentless-hunter', name: 'Relentless Hunter',
+          source: 'Explorador · Nivel 13', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: "Recibir daño no puede romper tu concentración en Hunter's Mark.",
+          fullDesc: "A partir del nivel 13, recibir daño no puede romper tu concentración en el conjuro Hunter's Mark.\n\nOtras causas de pérdida de concentración siguen aplicando normalmente.",
+        }] : []),
+        ...(nivel >= 14 ? [{
+          id: 'natures-veil', name: "Nature's Veil",
+          source: 'Explorador · Nivel 14', type: 'active', action: 'Acción bonus', range: 'Personal', recharge: 'long',
+          desc: 'Te vuelves Invisible hasta el final de tu próximo turno. Usos = mod SAB por Long Rest.',
+          fullDesc: "A partir del nivel 14 invocas espíritus de la naturaleza para desaparecer.\n\nComo acción adicional te vuelves Invisible junto con el equipo que lleves, hasta el final de tu próximo turno.\n\nPuedes usarlo un número de veces igual a tu modificador de Sabiduría (mínimo 1) y recuperas los usos al terminar un descanso largo.",
+        }] : []),
+        ...(nivel >= 17 ? [{
+          id: 'precise-hunter', name: 'Precise Hunter',
+          source: 'Explorador · Nivel 17', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: "Tienes ventaja en tiradas de ataque contra la criatura marcada con Hunter's Mark.",
+          fullDesc: "A partir del nivel 17 tienes ventaja en las tiradas de ataque contra la criatura que esté marcada actualmente por tu Hunter's Mark.",
+        }] : []),
+        ...(nivel >= 18 ? [{
           id: 'feral-senses', name: 'Feral Senses',
           source: 'Explorador · Nivel 18', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Sentidos sobrehumanos: no tienes desventaja atacando criaturas invisibles si puedes oírlas.',
-          fullDesc: 'A partir del nivel 18, ganas sentidos sobrenaturales que te ayudan a combatir criaturas que no puedes ver.\n\nCuando atacas a una criatura que no puedes ver, tu incapacidad para verla no impone desventaja en tus tiradas de ataque contra ella, siempre que puedas oírla y no estés cegado ni ensordecido.\n\nAdemás, eres consciente de la ubicación de cualquier criatura invisible a 9 m de ti, siempre que la criatura no esté oculta de tú y no estés incapacitado.',
-        },
-        {
+          desc: 'Ganas Visión Ciega (Blindsight) con alcance de 9 m.',
+          fullDesc: 'A partir del nivel 18 ganas Visión Ciega (Blindsight) con un alcance de 9 m (30 ft).\n\nDentro de ese radio puedes ver cualquier cosa que no esté detrás de cobertura total, incluso si estás Cegado o en la oscuridad, y detectas criaturas Invisibles.',
+        }] : []),
+        ...(nivel >= 19 ? [{
+          id: 'ranger-asi-19', name: 'Epic Boon',
+          source: 'Explorador · Nivel 19', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
+          desc: 'Ganas un Epic Boon feat.', fullDesc: '',
+        }] : []),
+        ...(nivel >= 20 ? [{
           id: 'foe-slayer', name: 'Foe Slayer',
           source: 'Explorador · Nivel 20', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Una vez por turno puedes sumar tu mod SAB a la tirada de ataque o de daño contra tu Favored Enemy.',
-          fullDesc: 'Al nivel 20 te conviertes en un cazador sin par contra tus enemigos.\n\nUna vez en cada uno de tus turnos, puedes sumar tu modificador de Sabiduría a la tirada de ataque o a la tirada de daño de un ataque que hagas contra uno de tus enemigos favoritos.\n\nPuedes elegir usar este beneficio antes o después de la tirada, pero antes de que el DM determine si el ataque impacta o falla.',
-        },
+          desc: "El dado de daño de Hunter's Mark pasa de d6 a d10.",
+          fullDesc: "Al nivel 20 tu Hunter's Mark alcanza su máximo poder: el dado de daño extra del conjuro pasa de 1d6 a 1d10.",
+        }] : []),
       ],
     },
     'Guerrero': {
@@ -1770,7 +1789,7 @@ const Characters = (() => {
           desc:'Puedes usar la propiedad Mastery de 2 armas distintas. Cambias las armas elegidas al terminar un descanso largo.',
           fullDesc:'Puedes usar la propiedad Mastery de 2 armas con las que tengas competencia.\n\n• Paladín: 2 armas (fijo)\n\nVer la feature Maestría con Armas del Guerrero para el detalle de cada propiedad (Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex).' },
         ...(nivel >= 2 ? [{ id:'fighting-style-pal', name:'Fighting Style', source:'Paladín · Nivel 2', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Estilo de combate especializado (Defense, Dueling, Great Weapon Fighting, Protection, Blessed Warrior, Interception).', fullDesc:'' }] : []),
-        ...(nivel >= 2 ? [{ id:'spellcasting-pal', name:'Spellcasting (CAR)', source:'Paladín · Nivel 2', type:'passive', action:'Varía', range:'Varía', recharge:null, desc:'Lanzas conjuros divinos usando Carisma. Half-caster (slots desde nv2).', fullDesc:'' }] : []),
+        { id:'spellcasting-pal', name:'Spellcasting (CAR)', source:'Paladín · Nivel 1', type:'passive', action:'Varía', range:'Varía', recharge:null, desc:'Lanzas conjuros divinos usando Carisma. Half-caster: 2 slots de nivel 1 desde nv1.', fullDesc:'' },
         ...(nivel >= 2 ? [{ id:'divine-smite', name:'Divine Smite', source:'Paladín · Nivel 2', type:'active', action:'Ninguna (post-golpe)', range:'Personal', recharge:null, desc:'Después de golpear gastas 1+ slots: +2d8 daño radiante (por nv del slot), +1d8 extra vs Muertos Vivientes/Fiends.', fullDesc:'' }] : []),
         ...(nivel >= 3 ? [{ id:'divine-health', name:'Divine Health', source:'Paladín · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Sos inmune a enfermedades.', fullDesc:'' }] : []),
         ...(nivel >= 3 ? [{ id:'channel-divinity-pal', name:`Channel Divinity (${nivel>=11?3:nivel>=6?2:1} uso${nivel>=6?'s':''})`, source:'Paladín · Nivel 3', type:'active', action:'Acción', range:'Varía', recharge:'short', desc:'Sacred Weapon: +CAR al ataque. Turn the Unholy: ahuyentas Fiends/Muertos Vivientes.', fullDesc:'' }] : []),
@@ -5366,9 +5385,10 @@ const Characters = (() => {
     ],
     'Explorador': [
       // D&D 2024: sin Favored Enemy ni Natural Explorer como elecciones.
-      // El Explorador tiene Expertise en nivel 2 y Fighting Style en nivel 2.
-      { id:'expertise-1',     level:2,  type:'pickSkills', count:2, label:'Expertise (×2)',
-        prompt:'Elige 2 habilidades para tener Expertise (doble Prof Bonus):' },
+      // Deft Explorer (nv2) da Expertise en 1 habilidad; la Expertise de 2
+      // habilidades es una feature aparte a nivel 9.
+      { id:'expertise-1',     level:2,  type:'pickSkills', count:1, label:'Deft Explorer: Expertise (×1)',
+        prompt:'Elige 1 habilidad para tener Expertise (doble Prof Bonus):' },
       { id:'fighting-style-r', level:2, type:'pick1',     label:'Fighting Style',
         prompt:'Elige tu estilo de combate:',
         options: FIGHTING_STYLES_RANGER },
@@ -5378,8 +5398,13 @@ const Characters = (() => {
         appliesSubclass: true },
       { id:'asi-4',           level:4,  type:'asi',       label:'Ability Score Improvement' },
       { id:'asi-8',           level:8,  type:'asi',       label:'Ability Score Improvement' },
+      { id:'expertise-9',     level:9,  type:'pickSkills', count:2, label:'Expertise (×2)',
+        prompt:'Elige 2 habilidades más para tener Expertise (doble Prof Bonus):' },
       { id:'asi-12',          level:12, type:'asi',       label:'Ability Score Improvement' },
       { id:'asi-16',          level:16, type:'asi',       label:'Ability Score Improvement' },
+      // TODO: en 2024 el nivel 19 es Epic Boon, no ASI. Se mantiene asi-19 por
+      // consistencia con el resto de las clases del proyecto (ninguna modela
+      // todavía los Epic Boon como tipo de elección propio).
       { id:'asi-19',          level:19, type:'asi',       label:'Ability Score Improvement' },
     ],
     'Bárbaro': [
