@@ -7413,6 +7413,62 @@ const App = (() => {
   };
 
   // Shortcuts /xxx → categoría
+  /* ══════════════════════════════════════════════════════════════════
+     DETECCIÓN AUTOMÁTICA DE CATEGORÍA
+
+     En notas reales el 76% quedaba sin categoría: elegirla a mano es
+     fricción que en la mesa se saltea. Esto la sugiere al enviar.
+
+     Criterio deliberadamente CONSERVADOR: ante la duda no categoriza.
+     Una nota narrativa sin categoría es lo normal; una mal clasificada
+     ensucia el Codex y hay que ir a corregirla. Solo dispara cuando el
+     patrón es inequívoco.
+  ══════════════════════════════════════════════════════════════════ */
+
+  // Palabras que delatan una oración narrativa (hay un verbo conjugado).
+  // Si aparecen, NO es un nombre propio suelto aunque empiece en mayúscula.
+  const _VERBOS_NARRATIVOS = /\b(es|son|est[áa](?:n|mos)?|estuvimos|hay|tiene|tienen|ten[ée]mos|vamos|fuimos|somos|llev(?:a|amos)|lleg(?:a|ó|amos)|aparec(?:e|en|ió)|nos|me|se|hizo|hace|dice|dijo|cuenta|habla|entrega|pasa(?:mos)?|encontra(?:mos|ron)|qued(?:a|ó|amos)|puede|debe|quiere|sabe|vio|viene|salió|entró|empieza|empez[óa])\b/i;
+
+  function _detectarCategoria(text) {
+    const t = (text || '').trim();
+    if (!t) return '';
+    const low = t.toLowerCase();
+
+    // 1. Tiradas y números sueltos: "25 avanzar", "1. 3444", "Exp: 1625+1000".
+    //    Un tercio de las notas reales son esto. No son narrativa.
+    const sinNumeros = t.replace(/[\d\s.,:;+\-/()]/g, '');
+    // Se marcan como 'nota' (categoría existente) y no como una nueva:
+    // inventar 'tirada' exigiría chip, filtro e icono propios.
+    if (sinNumeros.length <= 2) return 'nota';
+    if (/^(exp|xp|pg|hp|ca|cd)\s*[:=]/i.test(t)) return 'nota';
+    if (/^\d+\s*\.?\s*\d/.test(t) && t.length < 40) return 'nota';
+
+    // 2. Combate: verbos y sustantivos que solo aparecen peleando.
+    if (/\b(atac(?:a|o|ó|amos|an)|golpe[ao]?|da[ñn]o|ataque|iniciativa|emboscada|nos embosc|aparecen?\s+\d|mata(?:mos|ron)?|mu(?:ere|rió)|herid[oa]|derrot|pelea|combate|turno\s+de|salvaci[óo]n|tirada\s+de\s+ataque)\b/i.test(low)) return 'combate';
+    if (/\bslot(s)?\b.*\bnivel\b|\bnivel\b.*\bslot(s)?\b/i.test(low)) return 'combate';
+
+    // 3. Lugar: empieza con un tipo de sitio y nombre propio detrás.
+    if (/^(la|el|los|las)?\s*(capital|ciudad|cuidad|pueblo|aldea|villa|reino|bosque|castillo|fortaleza|ciudadela|cuidadela|taberna|posada|templo|iglesia|cripta|mazmorra|caverna|cueva|torre|puerto|mercado|plaza|palacio|isla|monta[ñn]a|r[íi]o|camino|puente|muelle|barrio|calabozo)\b/i.test(low)) return 'lugar';
+
+    // 4. Ítem: objeto obtenido.
+    if (/\b(encontramos|obtuv(?:e|imos)|nos dieron|recib(?:í|imos)|loot|botín|tesoro)\b.*\b(espada|escudo|anillo|amuleto|poci[óo]n|pergamino|vara|bast[óo]n|armadura|daga|arco|gema|moneda|oro)\b/i.test(low)) return 'item';
+
+    // 5. NPC: nombre propio sin verbo narrativo. El patrón más claro de
+    //    los datos reales ("Kaleen Giaco", "Mister Light", "Talios").
+    //    Se exige que NO haya verbo, para no marcar "Maya miedo a la luz".
+    if (!_VERBOS_NARRATIVOS.test(t)) {
+      const palabras = t.split(/\s+/);
+      if (palabras.length <= 6) {
+        const propias = palabras.filter(p => /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ'-]{1,}$/.test(p));
+        // Al menos un nombre propio y que la nota sea mayormente eso.
+        if (propias.length >= 1 && propias.length >= palabras.length / 2) return 'npc';
+      }
+    }
+
+    // Ante la duda: sin categoría. Es el caso más común y está bien.
+    return '';
+  }
+
   const _DIARY_SHORTCUTS = {
     '/npc':      'npc',
     '/mapa':     'lugar',
@@ -8316,12 +8372,23 @@ ${notesText}`;
       if (!tags.some(x => x.toLowerCase() === t.toLowerCase())) tags.push(t);
     }
 
+    // ── Categoría automática ────────────────────────────────────────
+    // Si no se eligió categoría a mano, se infiere del texto. La elección
+    // manual siempre gana. Se marca catAuto para poder mostrarla como
+    // sugerencia corregible y no como un hecho.
+    let catFinal = _newDiaryCat || '';
+    let catAuto = false;
+    if (!catFinal) {
+      const sugerida = _detectarCategoria(text);
+      if (sugerida) { catFinal = sugerida; catAuto = true; }
+    }
+
     // ── Entidad automática ──────────────────────────────────────────
     // Si la nota tiene categoría npc/quest y NO se confirmó una mención
     // en el dropdown, se crea (o reusa) la entidad con la primera palabra
     // del texto. Sin esto el Codex queda vacío salvo que se toque el menú.
     const mentions = [..._pendingMentions];
-    const autoTipo = (_newDiaryCat === 'npc' || _newDiaryCat === 'quest') ? _newDiaryCat : null;
+    const autoTipo = (catFinal === 'npc' || catFinal === 'quest') ? catFinal : null;
     if (autoTipo && !mentions.some(m => m.type === autoTipo)) {
       // Nombre entre comillas al inicio → nombre compuesto explícito.
       // Si no: un NPC se identifica por su nombre propio (primera
@@ -8361,7 +8428,8 @@ ${notesText}`;
       id: 'e-' + Date.now(),
       timestamp: new Date().toISOString(),
       text,
-      cat: _newDiaryCat || '',
+      cat: catFinal,
+      catAuto: catAuto || undefined,
       mentions,
       tags,
       sessionId: openSession ? openSession.id : null,
@@ -8395,6 +8463,16 @@ ${notesText}`;
     _pendingMentions = [];
     _pendingTags = [];
     _saveChar();
+
+    // Avisar qué se dedujo, para que se pueda corregir de inmediato si
+    // erró. Sin esto la categoría automática sería magia invisible.
+    if (catAuto) {
+      const etiqueta = { npc:'NPC', quest:'Misión', lugar:'Lugar', item:'Ítem', combate:'Combate', nota:'Nota' }[catFinal] || catFinal;
+      const nuevaEnt = mentions.length && !_pendingMentions.length;
+      showToast(nuevaEnt
+        ? `Guardado como ${etiqueta}: ${mentions[mentions.length - 1].name}`
+        : `Guardado como ${etiqueta}`);
+    }
     textarea.value = '';
     textarea.style.height = 'auto';
     // Resetear categoría y hint
