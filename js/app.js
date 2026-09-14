@@ -8310,10 +8310,11 @@ ${notesText}`;
         ${catTag}
         <div class="diary-bubble-text" ondblclick="App.editDiaryEntry('${e.id}',this)" title="Doble click para editar">${textHtml}</div>
         <div class="diary-bubble-meta">
-          <span class="diary-bubble-time">${time}</span>
+          <span class="diary-bubble-time">${time}${e.editedAt ? ' · editada' : ''}</span>
           ${tagsHtml}
+          <button class="diary-edit-open" onclick="App.editDiaryEntryById('${e.id}')" title="Editar nota">✎</button>
           ${pinBtn}
-          <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')">✕</button>
+          <button class="diary-del-btn" onclick="App.deleteDiaryEntry('${e.id}')" title="Eliminar nota">✕</button>
         </div>
       </div>`;
     };
@@ -8526,25 +8527,72 @@ ${notesText}`;
     ta.className = 'diary-edit-ta';
     ta.value = orig;
     ta.rows = Math.max(2, orig.split('\n').length);
+
+    /* Antes se hacía el.innerHTML = '' y se confiaba en blur para guardar:
+       si el blur no llegaba (tocar fuera en iPad, cerrar el panel, recargar)
+       el texto quedaba destruido en pantalla y parecía que la nota se había
+       borrado. Ahora el texto original se conserva oculto y se restaura
+       siempre que la edición no termine en guardado explícito. */
+    const previo = el.innerHTML;
     el.innerHTML = '';
     el.appendChild(ta);
+
+    // Botones explícitos: en táctil no hay "clic afuera" evidente ni
+    // Ctrl+Enter, así que guardar y cancelar tienen que verse.
+    const acciones = document.createElement('div');
+    acciones.className = 'diary-edit-actions';
+    const btnGuardar = document.createElement('button');
+    btnGuardar.className = 'diary-edit-btn save';
+    btnGuardar.textContent = '✓ Guardar';
+    const btnCancelar = document.createElement('button');
+    btnCancelar.className = 'diary-edit-btn cancel';
+    btnCancelar.textContent = 'Cancelar';
+    acciones.appendChild(btnGuardar);
+    acciones.appendChild(btnCancelar);
+    el.appendChild(acciones);
+
     ta.focus();
     ta.setSelectionRange(ta.value.length, ta.value.length);
 
-    const save = () => {
-      const val = ta.value.trim();
-      if (val && val !== orig) {
-        entry.text = val;
-        _saveChar();
+    let cerrado = false;
+    const cerrar = (guardar) => {
+      if (cerrado) return;
+      cerrado = true;
+      if (guardar) {
+        const val = ta.value.trim();
+        if (!val) {
+          // Vaciar el texto no debe borrar la nota en silencio: antes
+          // el `if (val && ...)` simplemente no guardaba y parecía un bug.
+          cerrado = false;
+          showToast('La nota no puede quedar vacía — usá ✕ para eliminarla');
+          ta.focus();
+          return;
+        }
+        if (val !== orig) {
+          entry.text = val;
+          entry.editedAt = new Date().toISOString();
+          _saveChar();
+          showToast('Nota actualizada');
+        }
+      } else {
+        el.innerHTML = previo; // restaura el texto tal cual estaba
       }
       _renderDiaryEntries();
     };
-    ta.addEventListener('blur', save);
+
+    btnGuardar.addEventListener('click', (ev) => { ev.stopPropagation(); cerrar(true); });
+    btnCancelar.addEventListener('click', (ev) => { ev.stopPropagation(); cerrar(false); });
     ta.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { ta.value = orig; ta.blur(); }
-      // Ctrl/Cmd+Enter para guardar (Enter normal hace salto de línea)
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); ta.blur(); }
+      if (e.key === 'Escape') { e.preventDefault(); cerrar(false); }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); cerrar(true); }
     });
+  }
+
+  // Entrada de edición desde el botón ✎: en táctil no hay doble click,
+  // así que la burbuja no puede ser la única vía.
+  function editDiaryEntryById(id) {
+    const el = document.querySelector(`.diary-bubble[data-id="${id}"] .diary-bubble-text`);
+    if (el) editDiaryEntry(id, el);
   }
 
   function deleteDiaryEntry(id) {
@@ -8563,6 +8611,9 @@ ${notesText}`;
     e.pinned = !e.pinned;
     _saveChar();
     _renderDiaryEntries();
+    // Al fijar, la nota SALTA a la sección "📌 Fijadas" de arriba y
+    // desaparece de donde estaba: sin aviso parece que se borró.
+    showToast(e.pinned ? '📌 Fijada arriba del diario' : 'Nota desfijada');
   }
 
   function filterDiary() { /* no-op, kept for compat */ }
@@ -9743,7 +9794,7 @@ ${notesText}`;
 
     // Notebook (diario + log + stats)
     toggleNotebook, switchNotebookTab, toggleCombatPanel,
-    toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, deleteDiaryEntry, togglePinDiary, filterDiary, exportDiary,
+    toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, editDiaryEntryById, deleteDiaryEntry, togglePinDiary, filterDiary, exportDiary,
     openQuickNote, closeQuickNote, setQNCat, onQNInput, saveQuickNote,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
     toggleCombatLog, clearCombatLog, exportCombatLog,

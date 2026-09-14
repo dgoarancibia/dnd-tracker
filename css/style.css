@@ -3878,17 +3878,55 @@ input[type=number] { -moz-appearance: textfield; }
 }
 .diary-edit-ta {
   width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--gold-dim);
+  /* Antes era transparente y sin borde: no se distinguía del texto normal,
+     así que no quedaba claro que estabas editando. */
+  background: rgba(0,0,0,0.22);
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
   color: var(--text);
-  font-size: 16px;
+  font-size: 16px; /* 16px evita el zoom automático de iOS al enfocar */
   font-family: 'Jost', sans-serif;
   line-height: 1.6;
-  resize: none;
+  resize: vertical;
   outline: none;
-  padding: 0;
+  padding: 8px 10px;
+  box-sizing: border-box;
 }
+.diary-edit-ta:focus { border-color: var(--gold); }
+
+/* Guardar / Cancelar explícitos: en táctil no hay "clic afuera" claro
+   ni Ctrl+Enter, y antes la edición se confirmaba solo con blur. */
+.diary-edit-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
+.diary-edit-btn {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  padding: 9px 16px;
+  min-height: 40px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text-mid);
+  transition: all 0.15s;
+}
+.diary-edit-btn.save { background: var(--gold-dim); border-color: var(--gold); color: var(--bg1); font-weight: 600; }
+.diary-edit-btn.save:hover { background: var(--gold); }
+.diary-edit-btn.cancel:hover { color: var(--text); border-color: var(--text-dim); }
+
+/* Botón ✎ para abrir la edición sin depender del doble click. */
+.diary-edit-open {
+  background: none; border: none; color: var(--text-dim);
+  font-size: 11px; cursor: pointer; padding: 1px 3px;
+  border-radius: 3px; line-height: 1; opacity: 0; transition: all 0.15s;
+  position: relative;
+}
+.diary-edit-open::before {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); width: 44px; height: 44px;
+}
+.diary-bubble:hover .diary-edit-open { opacity: 0.55; }
+.diary-edit-open:hover { opacity: 1; color: var(--gold); }
+@media (hover: none) { .diary-edit-open { opacity: 0.55; } }
 
 .diary-bubble-meta {
   display: flex;
@@ -3952,8 +3990,9 @@ input[type=number] { -moz-appearance: textfield; }
 @media (hover: none) {
   .diary-del-btn, .diary-pin-btn { opacity: 0.55; }
   .diary-pin-btn.pinned { opacity: 1; }
-  /* Separa el ✕ del 📌 para no borrar queriendo fijar. */
-  .diary-del-btn { margin-left: 14px; }
+  /* Separa el ✕ de los demás: eliminar es lo único irreversible y
+     estaba pegado al 📌, así que se erraba el toque. */
+  .diary-del-btn { margin-left: 20px; }
 }
 .diary-bubble.pinned {
   background: rgba(201,151,58,0.08);
