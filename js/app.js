@@ -7880,13 +7880,32 @@ ${notesText}`;
   // de mención ("/npc algo" o "/quest algo") o de tag ("#algo").
   function _detectComposerTrigger(text, cursorPos) {
     const upto = text.slice(0, cursorPos);
-    const mentionRe = /\/(npc|quest)\s+([^\s][\wáéíóúñÁÉÍÓÚÑ\s]{0,30})$/i;
+
+    // Nombre entre comillas: /npc "Jorge el herrero" — todo lo que va entre
+    // comillas es el nombre, y lo que sigue después es la nota.
+    const quotedRe = /\/(npc|quest)\s+"([^"]{0,40})$/i;
+    const qMatch = upto.match(quotedRe);
+    if (qMatch) {
+      return {
+        kind: 'mention',
+        entityType: qMatch[1].toLowerCase(),
+        query: qMatch[2].trim(),
+        quoted: true,
+        matchStart: qMatch.index,
+      };
+    }
+
+    // Sin comillas: solo la PRIMERA palabra es el nombre. Antes el regex tomaba
+    // hasta 30 caracteres con espacios, así que en "/npc Jorge el hijo del
+    // vecino" guardaba la frase entera como nombre del NPC.
+    const mentionRe = /\/(npc|quest)\s+([\wáéíóúñÁÉÍÓÚÑ'-]{1,30})$/i;
     const mMatch = upto.match(mentionRe);
     if (mMatch) {
       return {
         kind: 'mention',
         entityType: mMatch[1].toLowerCase(),
         query: mMatch[2].trim(),
+        quoted: false,
         matchStart: mMatch.index,
       };
     }
@@ -7969,6 +7988,9 @@ ${notesText}`;
       entityType: trigger.entityType || null,
       query: trigger.query,
       matchStart: trigger.matchStart,
+      // Fin del trigger en el texto: al confirmar se reemplaza desde matchStart
+      // hasta acá por el nombre limpio.
+      cursorPos: (document.getElementById('diaryInput') || {}).selectionStart,
       items,
       selIdx: 0,
     };
@@ -8079,6 +8101,21 @@ ${notesText}`;
     } else {
       const tagName = item.name;
       if (tagName && !_pendingTags.includes(tagName)) _pendingTags.push(tagName);
+    }
+
+    // Reemplazar el trigger ("/npc Jorge" o '/npc "Jorge el herrero') por el
+    // nombre limpio: al confirmar, lo que sigas escribiendo ya es la nota, no
+    // parte del nombre. Antes el "/npc ..." quedaba crudo dentro del texto.
+    if (textarea && st.matchStart != null) {
+      const nombre = (st.kind === 'mention')
+        ? ((item.type === 'create') ? item.name : (item.name || ''))
+        : ('#' + item.name);
+      const antes = textarea.value.slice(0, st.matchStart);
+      const despues = textarea.value.slice(st.cursorPos != null ? st.cursorPos : textarea.selectionStart);
+      const insertado = nombre + ' ';
+      textarea.value = antes + insertado + despues;
+      const nuevoCursor = (antes + insertado).length;
+      textarea.setSelectionRange(nuevoCursor, nuevoCursor);
     }
 
     _closeMentionDropdown();

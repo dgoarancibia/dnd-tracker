@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 382;
+const _SW_EXPECTED = 383;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -557,7 +557,7 @@ const _SW_EXPECTED = 382;
       <div class="diary-shortcut-hint" id="diaryShortcutHint" style="display:none"></div>
       <div id="mentionDropdown" style="display:none"></div>
       <textarea class="diary-textarea" id="diaryInput" rows="1"
-                placeholder="Escribe una nota… o usa /npc /mapa /lore /item /quest — o @/npc, #tag"
+                placeholder='Nota… /npc Jorge o /npc "Jorge el herrero" · #tag'
                 oninput="App.onDiaryInput(this)"
                 onfocus="document.getElementById('notebookPanel').classList.add('diary-composing');document.getElementById('notebookFab').style.display='none';"
                 onblur="if(!this.value.trim()){document.getElementById('notebookPanel').classList.remove('diary-composing');document.getElementById('notebookFab').style.display='';}"
@@ -1257,7 +1257,7 @@ const _SW_EXPECTED = 382;
 <script src="js/storage.js?v=56"></script>
 <script src="js/characters.js?v=105"></script>
 <script src="js/export_pdf.js?v=7"></script>
-<script src="js/app.js?v=208"></script>
+<script src="js/app.js?v=209"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=4"></script>
 <script>
