@@ -775,7 +775,9 @@ const App = (() => {
       const initial = (entity.name || '?').trim().charAt(0).toUpperCase();
       const links = backlinksFor(entity);
       const sessionsSet = new Set(links.map(l => l.sessionId).filter(Boolean));
-      const metaText = `${links.length} mención${links.length === 1 ? '' : 'es'} · ${sessionsSet.size} sesión${sessionsSet.size === 1 ? '' : 'es'}`;
+      // "mención"→"menciones" y "sesión"→"sesiones": el plural pierde la
+      // tilde, concatenar 'es' daba "sesiónes".
+      const metaText = `${links.length} ${links.length === 1 ? 'mención' : 'menciones'} · ${sessionsSet.size} ${sessionsSet.size === 1 ? 'sesión' : 'sesiones'}`;
 
       let statusHtml = '';
       if (entity.type === 'quest') {
@@ -854,7 +856,7 @@ const App = (() => {
     if (!cont) return;
     const sessions = (_char.sessions || []).slice().sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
     if (!sessions.length) {
-      cont.innerHTML = `<div class="empty-state"><div class="es-icon">📅</div><div class="es-title">Sin sesiones aún</div><div class="es-text">Usa "+ Nueva sesión" en el Diario para empezar a registrar.</div></div>`;
+      cont.innerHTML = `<div class="empty-state"><div class="es-icon">📅</div><div class="es-title">Sin sesiones aún</div><div class="es-text">Escribí tu primera nota en el Diario: la sesión se abre sola.</div></div>`;
       return;
     }
     const diary = (_char.diary || []);
@@ -874,16 +876,26 @@ const App = (() => {
         if (!ent) return;
         if (ent.status === 'resolved') questsResolved++; else questsActive++;
       });
-      const combateCount = notes.filter(n => (n.cat || '') === 'combate').length;
-      const itemCount = notes.filter(n => (n.cat || '') === 'item').length;
+      // Antes solo se contaban combate/item/sueltas, así que el resumen
+      // omitía los lugares y la historia de esa misma sesión.
+      const cuenta = (cat) => notes.filter(n => (n.cat || '') === cat).length;
+      const combateCount = cuenta('combate');
+      const itemCount    = cuenta('item');
+      const lugarCount   = cuenta('lugar');
+      const loreCount    = cuenta('historia');
+      const fotoCount    = notes.filter(n => n.image).length;
       const sueltasCount = notes.filter(n => !n.cat).length;
+      const plural = (n, sing, plur) => n === 1 ? sing : plur;
       const stats = [];
-      if (npcMentioned.size) stats.push({ label: 'NPCs', val: npcMentioned.size });
-      if (questsActive) stats.push({ label: 'Misiones activas', val: questsActive });
-      if (questsResolved) stats.push({ label: 'Misiones resueltas', val: questsResolved });
-      if (itemCount) stats.push({ label: 'Ítems', val: itemCount });
-      if (combateCount) stats.push({ label: 'Combates', val: combateCount });
-      if (sueltasCount) stats.push({ label: 'Notas sueltas', val: sueltasCount });
+      if (npcMentioned.size) stats.push({ label: plural(npcMentioned.size, 'NPC', 'NPCs'), val: npcMentioned.size });
+      if (questsActive) stats.push({ label: plural(questsActive, 'Misión activa', 'Misiones activas'), val: questsActive });
+      if (questsResolved) stats.push({ label: plural(questsResolved, 'Misión resuelta', 'Misiones resueltas'), val: questsResolved });
+      if (lugarCount) stats.push({ label: plural(lugarCount, 'Lugar', 'Lugares'), val: lugarCount });
+      if (itemCount) stats.push({ label: plural(itemCount, 'Ítem', 'Ítems'), val: itemCount });
+      if (combateCount) stats.push({ label: plural(combateCount, 'Combate', 'Combates'), val: combateCount });
+      if (loreCount) stats.push({ label: 'Historia', val: loreCount });
+      if (fotoCount) stats.push({ label: plural(fotoCount, 'Foto', 'Fotos'), val: fotoCount });
+      if (sueltasCount) stats.push({ label: plural(sueltasCount, 'Nota suelta', 'Notas sueltas'), val: sueltasCount });
       return stats;
     };
 
