@@ -199,7 +199,13 @@
         }
         render(snap.data(), token);
       } catch (e) {
-        error('No se pudo cargar', 'Revisá tu conexión e intentá de nuevo.');
+        // permission-denied significa que las reglas de Firestore todavía no
+        // permiten leer /shared; es un problema de configuración, no de red.
+        if (e && e.code === 'permission-denied') {
+          error('Ficha no disponible', 'Este enlace no está habilitado para verse.');
+        } else {
+          error('No se pudo cargar', 'Revisá tu conexión e intentá de nuevo.');
+        }
       }
     })();
   </script>
