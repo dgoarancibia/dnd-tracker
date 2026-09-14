@@ -1771,6 +1771,145 @@ const App = (() => {
 
   // Modal del pouch: se consulta una vez antes de la sesión (armar los dados
   // físicos), no necesita estar ocupando espacio permanente en Combate.
+  /* ══════════════════════════════════════════════════════
+     PREPARACIÓN DE SESIÓN
+
+     Todo lo que se revisa antes de sentarse a jugar, que hoy está
+     repartido en cuatro pestañas: dónde quedamos (resumen de la última
+     sesión), con qué llegás (HP, slots, recursos), qué tenés preparado,
+     qué quedó pendiente y qué dados llevar.
+  ══════════════════════════════════════════════════════ */
+
+  function _prepUltimaSesion() {
+    const sesiones = (_char.sessions || []).slice()
+      .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+    // La última CERRADA: si hay una abierta es la de hoy, no la anterior.
+    return sesiones.find(s => s.endedAt) || sesiones[0] || null;
+  }
+
+  function _prepEstadoHTML() {
+    const filas = [];
+    const hp = _char.hp || { current: 0, max: 0 };
+    const hpPct = hp.max ? Math.round((hp.current / hp.max) * 100) : 0;
+    const hpClase = hpPct >= 100 ? 'ok' : (hpPct >= 50 ? 'warn' : 'bad');
+    filas.push(`<div class="prep-stat ${hpClase}"><span class="ps-lbl">HP</span><span class="ps-val">${hp.current}/${hp.max}</span></div>`);
+
+    // Slots por nivel: muestra los que no están llenos como advertencia.
+    const slotsTxt = [];
+    let slotsIncompletos = false;
+    for (let i = 1; i <= 9; i++) {
+      const sl = _char.spellSlots && _char.spellSlots[i];
+      if (!sl || !sl.max) continue;
+      const usados = sl.max - (sl.current != null ? sl.current : sl.max);
+      if (usados > 0) slotsIncompletos = true;
+      slotsTxt.push(`<span class="ps-slot${usados ? ' gastado' : ''}">N${i} ${sl.current != null ? sl.current : sl.max}/${sl.max}</span>`);
+    }
+    if (slotsTxt.length) {
+      filas.push(`<div class="prep-stat ${slotsIncompletos ? 'warn' : 'ok'}"><span class="ps-lbl">Slots</span><span class="ps-val ps-slots">${slotsTxt.join('')}</span></div>`);
+    }
+
+    const dg = _char.hitDice;
+    if (dg && dg.max) {
+      filas.push(`<div class="prep-stat ${dg.current < dg.max ? 'warn' : 'ok'}"><span class="ps-lbl">Dados de golpe</span><span class="ps-val">${dg.current}/${dg.max}</span></div>`);
+    }
+
+    (_char.resources || []).filter(r => r.max > 0).forEach(r => {
+      const cur = r.current != null ? r.current : r.max;
+      filas.push(`<div class="prep-stat ${cur < r.max ? 'warn' : 'ok'}"><span class="ps-lbl">${(r.name || r.id).replace(/</g,'&lt;')}</span><span class="ps-val">${cur}/${r.max}</span></div>`);
+    });
+
+    return filas.join('');
+  }
+
+  function _prepPendientesHTML() {
+    const activas = (_char.entities || []).filter(e => e.type === 'quest' && e.status !== 'resolved');
+    if (!activas.length) return '<div class="prep-empty">Sin misiones activas.</div>';
+    return activas.map(q => `<div class="prep-quest">⚔️ ${q.name.replace(/</g,'&lt;')}</div>`).join('');
+  }
+
+  function openPrepSesion() {
+    if (!_char) return;
+    let overlay = document.getElementById('prepSesionOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'prepSesionOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      overlay.onclick = (e) => { if (e.target === overlay) closePrepSesion(); };
+      document.body.appendChild(overlay);
+    }
+
+    const sesion = _prepUltimaSesion();
+    const nSes = sesion ? _sessionNumber(sesion.id) : null;
+    let dondeHTML;
+    if (sesion && sesion.resumen) {
+      const titulo = sesion.label ? ` · ${sesion.label.replace(/</g,'&lt;')}` : '';
+      dondeHTML = `<div class="prep-resumen-hd">Sesión ${nSes}${titulo}</div>
+                   <div class="prep-resumen">${sesion.resumen.replace(/</g,'&lt;')}</div>`;
+    } else if (sesion) {
+      // Sin resumen generado: se muestran las últimas notas, que es lo
+      // que hay. Mejor eso que una sección vacía.
+      const ultimas = (_char.diary || [])
+        .filter(e => e.sessionId === sesion.id)
+        .slice(-4)
+        .map(e => `<div class="prep-nota">${e.text.replace(/</g,'&lt;').slice(0, 90)}</div>`)
+        .join('');
+      dondeHTML = `<div class="prep-resumen-hd">Sesión ${nSes} · últimas notas</div>
+                   ${ultimas || '<div class="prep-empty">Sin notas.</div>'}
+                   <div class="prep-tip">Generá el resumen desde 📓 Diario → 📅 Sesiones para verlo acá.</div>`;
+    } else {
+      dondeHTML = '<div class="prep-empty">Todavía no hay sesiones registradas.</div>';
+    }
+
+    const prepCount = (_char.preparedToday || []).length;
+    const prepMax = (typeof Characters !== 'undefined' && Characters.getPreparedMax)
+      ? Characters.getPreparedMax(_char) : 0;
+
+    overlay.innerHTML = `
+      <div class="modal prep-modal">
+        <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>🎯 Antes de jugar</span>
+          <span class="ref-close" onclick="App.closePrepSesion()">✕</span>
+        </div>
+        <div class="modal-body prep-body">
+          <div class="prep-sec">
+            <div class="prep-sec-hd">📖 Dónde quedamos</div>
+            ${dondeHTML}
+          </div>
+          <div class="prep-sec">
+            <div class="prep-sec-hd">💪 Con qué llegás</div>
+            <div class="prep-stats">${_prepEstadoHTML()}</div>
+          </div>
+          <div class="prep-sec">
+            <div class="prep-sec-hd">✨ Conjuros preparados
+              ${prepMax ? `<span class="prep-count${prepCount < prepMax ? ' warn' : ''}">${prepCount}/${prepMax}</span>` : ''}
+            </div>
+            ${prepMax && prepCount < prepMax
+              ? `<div class="prep-aviso">Te faltan ${prepMax - prepCount} por preparar.</div>`
+              : '<div class="prep-ok">Todo preparado.</div>'}
+            <button class="prep-link" onclick="App.closePrepSesion();App.switchTab('conjuros')">Ir a Conjuros →</button>
+          </div>
+          <div class="prep-sec">
+            <div class="prep-sec-hd">⚔️ Misiones abiertas</div>
+            ${_prepPendientesHTML()}
+          </div>
+          <div class="prep-sec">
+            <div class="prep-sec-hd">🎲 Dados para hoy</div>
+            ${_renderDicePouch(_char)}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="ref-ok-btn" onclick="App.closePrepSesion()">Listo, a jugar</button>
+        </div>
+      </div>`;
+    overlay.style.display = 'flex';
+  }
+
+  function closePrepSesion() {
+    const overlay = document.getElementById('prepSesionOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
   function openDicePouchModal() {
     if (!_char) return;
     let overlay = document.getElementById('dicePouchOverlay');
@@ -10012,6 +10151,7 @@ ${notesText}`;
     openFeatureDetail, closeFeatureDetail,
     toggleHideFeature, toggleShowHidden, showAllHiddenFeatures,
     togglePouchDetail, openDicePouchModal, closeDicePouchModal,
+    openPrepSesion, closePrepSesion,
 
     // Monedas
     addCoin, consolidateCurrency,
