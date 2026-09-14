@@ -8757,3 +8757,9 @@ mark.diary-highlight {
 .ai-imp-resumen .ai-imp-note { display: block; margin-top: 4px; line-height: 1.6; }
 
 .tl-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Lugares como entidad ────────────────────────────────────────────
+   En las notas reales los lugares eran la segunda categoría más usada y
+   no tenían ficha ni backlinks: solo existían como texto. */
+.mtxt-lugar { color:#8fb98a; background:rgba(143,185,138,0.14); border-radius:4px; padding:0 3px; }
+.related-chip.lugar { color:#8fb98a; background:rgba(143,185,138,0.12); border-color:rgba(143,185,138,0.3); }

@@ -750,8 +750,9 @@ const App = (() => {
     if (!cont) return;
     const entities = (_char.entities || []);
     const diary = (_char.diary || []);
-    const npcs   = entities.filter(en => en.type === 'npc');
-    const quests = entities.filter(en => en.type === 'quest');
+    const npcs    = entities.filter(en => en.type === 'npc');
+    const quests  = entities.filter(en => en.type === 'quest');
+    const lugares = entities.filter(en => en.type === 'lugar');
 
     const entityById = (id) => entities.find(en => en.id === id);
 
@@ -790,8 +791,8 @@ const App = (() => {
         const chips = entity.relatedTo.map(r => {
           const other = entityById(r.id);
           if (!other) return '';
-          const chipCls = r.type === 'npc' ? 'related-chip npc' : 'related-chip';
-          const emoji = r.type === 'npc' ? '🧑' : '⚔️';
+          const chipCls = r.type === 'npc' ? 'related-chip npc' : (r.type === 'lugar' ? 'related-chip lugar' : 'related-chip');
+          const emoji = r.type === 'npc' ? '🧑' : (r.type === 'lugar' ? '📍' : '⚔️');
           return `<span class="${chipCls}">${emoji} ${other.name.replace(/</g,'&lt;')}</span>`;
         }).join('');
         if (chips) relatedHtml = `<div class="related-row">${chips}</div>`;
@@ -837,6 +838,10 @@ const App = (() => {
     html += quests.length
       ? quests.map(card).join('')
       : `<div class="codex-empty">Sin misiones. Usa /quest en una nota del diario para crear una.</div>`;
+    html += `<div class="codex-section-hd" style="margin-top:14px;">📍 Lugares <span class="codex-count">${lugares.length}</span></div>`;
+    html += lugares.length
+      ? lugares.map(card).join('')
+      : `<div class="codex-empty">Sin lugares. Escribí el nombre de un sitio en una nota y se detecta solo.</div>`;
     cont.innerHTML = html;
   }
 
@@ -8001,21 +8006,27 @@ ${notesText}`;
       questCount++;
     });
 
-    // Lugares — no son entidades tipadas en _char.entities (solo npc/quest existen como tipo),
-    // así que se agregan como notas de diario con cat 'lugar'.
+    // Lugares — ahora sí son entidades tipadas, con ficha y backlinks
+    // propios en el Codex igual que NPCs y misiones.
+    let lugarCount = 0;
     (checked('lugares')).forEach(i => {
       const item = (_aiImportParsed.lugares || [])[i];
       if (!item || !item.name) return;
+      let entity = _aiImportFindExisting(item.name, 'lugar');
+      if (!entity) {
+        entity = { id: _aiImportNewId(), type: 'lugar', name: item.name, createdAt: nowIso() };
+        _char.entities.push(entity);
+      }
       _char.diary.push({
         id: newDiaryId(),
         timestamp: nowIso(),
         text: item.note ? `${item.name}: ${item.note}` : item.name,
         cat: 'lugar',
-        mentions: [],
+        mentions: [{ type: 'lugar', id: entity.id, name: entity.name }],
         tags: [],
         sessionId: _aiImportSessionId,
       });
-      noteCount++;
+      lugarCount++;
     });
 
     // Notas sueltas
@@ -8040,6 +8051,7 @@ ${notesText}`;
     if (resumenGuardado) partes.push('resumen');
     if (npcCount) partes.push(`${npcCount} ${npcCount === 1 ? 'NPC' : 'NPCs'}`);
     if (questCount) partes.push(`${questCount} ${questCount === 1 ? 'misión' : 'misiones'}`);
+    if (lugarCount) partes.push(`${lugarCount} ${lugarCount === 1 ? 'lugar' : 'lugares'}`);
     if (noteCount) partes.push(`${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`);
     showToast(partes.length ? `✓ Importado: ${partes.join(', ')}` : '✓ Nada que importar', 'success', 4000);
 
@@ -8312,7 +8324,7 @@ ${notesText}`;
     const sorted = mentions.slice().sort((a, b) => (b.name || '').length - (a.name || '').length);
     sorted.forEach(m => {
       if (!m.name) return;
-      const cls = m.type === 'npc' ? 'mtxt-npc' : 'mtxt-quest';
+      const cls = m.type === 'npc' ? 'mtxt-npc' : (m.type === 'lugar' ? 'mtxt-lugar' : 'mtxt-quest');
       const esc = m.name.replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const escRe = esc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const re = new RegExp(escRe, 'gi');
@@ -8371,7 +8383,7 @@ ${notesText}`;
         const re = new RegExp(`(${_diarySearch.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
         textHtml = textHtml.replace(re, '<mark class="diary-highlight">$1</mark>');
       }
-      const pinBtn = `<button class="diary-pin-btn${e.pinned ? ' pinned' : ''}" onclick="App.togglePinDiary('${e.id}')" title="${e.pinned ? 'Desfijar' : 'Fijar arriba'}">📌</button>`;
+      const pinBtn = `<button class="diary-pin-btn${e.pinned ? ' pinned' : ''}" onclick="App.togglePinDiary('${e.id}')" title="${e.pinned ? 'Quitar de importantes' : 'Marcar como importante'}">📌</button>`;
       const tagsHtml = (e.tags && e.tags.length)
         ? `<span class="diary-bubble-tags">${e.tags.map(t => `<span class="tag-pill">#${t.replace(/</g,'&lt;')}</span>`).join(' ')}</span>`
         : '';
@@ -8394,7 +8406,7 @@ ${notesText}`;
     // Entradas fijadas arriba (solo si no hay búsqueda/filtro activo, para no confundir).
     const pinned = entries.filter(e => e.pinned);
     if (pinned.length && !_diaryCatFilter && !_diarySearch) {
-      html += `<div class="diary-day-sep pinned-sep"><span>📌 Fijadas</span></div>`;
+      html += `<div class="diary-day-sep pinned-sep"><span>📌 Importante</span></div>`;
       // Fijadas más recientes primero
       pinned.slice().sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(e => { html += bubble(e); });
     }
@@ -8486,7 +8498,9 @@ ${notesText}`;
     // en el dropdown, se crea (o reusa) la entidad con la primera palabra
     // del texto. Sin esto el Codex queda vacío salvo que se toque el menú.
     const mentions = [..._pendingMentions];
-    const autoTipo = (catFinal === 'npc' || catFinal === 'quest') ? catFinal : null;
+    // Los lugares también son entidades: en las notas reales eran la
+    // segunda categoría más usada y no tenían ficha ni backlinks.
+    const autoTipo = (catFinal === 'npc' || catFinal === 'quest' || catFinal === 'lugar') ? catFinal : null;
     if (autoTipo && !mentions.some(m => m.type === autoTipo)) {
       // Nombre entre comillas al inicio → nombre compuesto explícito.
       // Si no: un NPC se identifica por su nombre propio (primera
@@ -8497,8 +8511,14 @@ ${notesText}`;
       let nombre;
       if (comillas) {
         nombre = comillas[1].trim();
-      } else if (autoTipo === 'quest') {
-        nombre = limpio.split(/[.;\n]/)[0].trim().split(/\s+/).slice(0, 6).join(' ');
+      } else if (autoTipo === 'quest' || autoTipo === 'lugar') {
+        let frase = limpio.split(/[.;,\n]/)[0].trim();
+        if (autoTipo === 'lugar') {
+          // El nombre termina donde arranca la descripción: "La posada del
+          // Dragón tiene sótano" es el lugar "La posada del Dragón".
+          frase = frase.split(/\s+(?:tiene|es|está|esta|era|donde|lugar|con|que|y|de donde)\b/i)[0].trim();
+        }
+        nombre = frase.split(/\s+/).slice(0, 6).join(' ');
       } else if (catAuto) {
         // Categoría deducida: el nombre es la racha inicial de palabras
         // capitalizadas, así "Kaleen Giaco" no se guarda como "Kaleen"
@@ -8782,7 +8802,7 @@ ${notesText}`;
     _renderDiaryEntries();
     // Al fijar, la nota SALTA a la sección "📌 Fijadas" de arriba y
     // desaparece de donde estaba: sin aviso parece que se borró.
-    showToast(e.pinned ? '📌 Fijada arriba del diario' : 'Nota desfijada');
+    showToast(e.pinned ? '📌 Marcada como importante — queda arriba del diario' : 'Ya no está entre las importantes');
   }
 
   function filterDiary() { /* no-op, kept for compat */ }
