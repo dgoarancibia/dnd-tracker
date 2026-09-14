@@ -8309,6 +8309,7 @@ ${notesText}`;
       return `<div class="diary-bubble${e.pinned ? ' pinned' : ''}" data-id="${e.id}" style="${catBg !== 'transparent' ? `border-left:3px solid ${catBg.replace('0.18','0.6')}` : ''}">
         ${catTag}
         <div class="diary-bubble-text" ondblclick="App.editDiaryEntry('${e.id}',this)" title="Doble click para editar">${textHtml}</div>
+        ${e.image ? `<div class="diary-bubble-img" data-img="${e.image.imgId}" data-map="${e.image.mapId || ''}" onclick="App.openDiaryImage('${e.image.imgId}','${e.image.mapId || ''}')" title="Abrir para ver y anotar">📎 ${(e.image.name || 'Imagen').replace(/</g,'&lt;')}</div>` : ''}
         <div class="diary-bubble-meta">
           <span class="diary-bubble-time">${time}${e.editedAt ? ' · editada' : ''}</span>
           ${tagsHtml}
@@ -8344,14 +8345,41 @@ ${notesText}`;
       html += bubble(e);
     });
     container.innerHTML = html;
+    _cargarMiniaturasDiario(container);
     // Auto-scroll al fondo (más reciente) solo si no hay filtros activos
     if (!_diaryCatFilter && !_diarySearch) container.scrollTop = container.scrollHeight;
+  }
+
+  /* Carga las miniaturas de las notas con imagen. Va aparte del render
+     porque leer IndexedDB es asíncrono y el HTML se arma en sincrónico. */
+  async function _cargarMiniaturasDiario(container) {
+    if (typeof Maps === 'undefined' || !Maps.getImageBlob) return;
+    const nodos = container.querySelectorAll('.diary-bubble-img[data-img]');
+    for (const nodo of nodos) {
+      const imgId = nodo.dataset.img;
+      if (!imgId || nodo.dataset.cargada) continue;
+      nodo.dataset.cargada = '1';
+      try {
+        const blob = await Maps.getImageBlob(imgId);
+        if (!blob) { nodo.classList.add('missing'); nodo.textContent = '📎 imagen no encontrada'; continue; }
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.src = url;
+        img.alt = nodo.textContent.trim();
+        img.onload = () => URL.revokeObjectURL(url);
+        nodo.textContent = '';
+        nodo.appendChild(img);
+      } catch (e) { nodo.classList.add('missing'); }
+    }
   }
 
   function addDiaryEntry() {
     const textarea = document.getElementById('diaryInput');
     let text = textarea.value.trim();
-    if (!text) return;
+    // Una foto sola es una nota válida: en la mesa se saca la imagen del
+    // mapa y se describe después (o nunca).
+    if (!text && !_pendingImage) return;
+    if (!text && _pendingImage) text = _pendingImage.name;
 
     // Remover shortcut del inicio si lo hay
     const matched = Object.keys(_DIARY_SHORTCUTS).find(k => text.toLowerCase().startsWith(k + ' ') || text.toLowerCase() === k);
@@ -8441,6 +8469,9 @@ ${notesText}`;
       text,
       cat: catFinal,
       catAuto: catAuto || undefined,
+      image: _pendingImage
+        ? { imgId: _pendingImage.imgId, mapId: _pendingImage.mapId, name: _pendingImage.name }
+        : undefined,
       mentions,
       tags,
       sessionId: openSession ? openSession.id : null,
@@ -8473,6 +8504,7 @@ ${notesText}`;
     _char.diary.push(entry);
     _pendingMentions = [];
     _pendingTags = [];
+    if (_pendingImage) { if (_pendingImage.url) URL.revokeObjectURL(_pendingImage.url); _pendingImage = null; _renderAttachPreview(); }
     _saveChar();
 
     // Avisar qué se dedujo, para que se pueda corregir de inmediato si
@@ -8586,6 +8618,74 @@ ${notesText}`;
       if (e.key === 'Escape') { e.preventDefault(); cerrar(false); }
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); cerrar(true); }
     });
+  }
+
+  /* ══════════════════════════════════════════════════════
+     ADJUNTAR IMAGEN A UNA NOTA
+
+     Antes, para guardar un mapa había que salir del diario, ir a la
+     pestaña Mapas y volver: en plena partida eso significa perder la
+     escena. Ahora la foto se adjunta desde el compositor, y además
+     queda en Mapas para poder anotarla.
+  ══════════════════════════════════════════════════════ */
+  let _pendingImage = null; // {imgId, mapId, name, url}
+
+  function triggerDiaryImage() {
+    document.getElementById('diaryImageInput')?.click();
+  }
+
+  async function handleDiaryImage(input) {
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { showToast('Solo se admiten imágenes'); return; }
+    if (file.size > 20 * 1024 * 1024)   { showToast('Imagen demasiado grande (máx 20 MB)'); return; }
+    if (typeof Maps === 'undefined' || !Maps.addMapFromBlob) { showToast('Mapas no disponible'); return; }
+
+    // Nombre por defecto sin preguntar: en la mesa no hay tiempo. Se
+    // puede renombrar después desde la pestaña Mapas.
+    const hora = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+    const nombre = `Foto ${hora}`;
+    try {
+      const rec = await Maps.addMapFromBlob(file, nombre, _char && _char.id);
+      if (!rec) { showToast('No se pudo guardar la imagen'); return; }
+      if (_pendingImage && _pendingImage.url) URL.revokeObjectURL(_pendingImage.url);
+      _pendingImage = { imgId: rec.imgId, mapId: rec.id, name: nombre, url: URL.createObjectURL(file) };
+      _renderAttachPreview();
+    } catch (e) {
+      showToast('No se pudo guardar la imagen');
+    }
+  }
+
+  function _renderAttachPreview() {
+    const cont = document.getElementById('diaryAttachPreview');
+    if (!cont) return;
+    if (!_pendingImage) { cont.style.display = 'none'; cont.innerHTML = ''; return; }
+    cont.style.display = 'flex';
+    cont.innerHTML =
+      `<img src="${_pendingImage.url}" alt="adjunto">` +
+      `<span class="dap-name">${_pendingImage.name}</span>` +
+      `<button class="dap-remove" onclick="App.clearDiaryImage()" title="Quitar adjunto">✕</button>`;
+  }
+
+  function clearDiaryImage() {
+    // Solo se quita de la nota: la imagen sigue en Mapas, que es donde
+    // el usuario esperaría encontrarla.
+    if (_pendingImage && _pendingImage.url) URL.revokeObjectURL(_pendingImage.url);
+    _pendingImage = null;
+    _renderAttachPreview();
+  }
+
+  // Muestra la imagen de una nota, cargándola de IndexedDB bajo demanda.
+  async function openDiaryImage(imgId, mapId) {
+    if (typeof Maps !== 'undefined' && mapId && Maps.openMap) {
+      // Abrir el mapa da además las herramientas de anotación.
+      const panel = document.getElementById('notebookPanel');
+      if (panel) panel.classList.remove('open');
+      Maps.openMap(mapId);
+      return;
+    }
+    showToast('La imagen ya no está disponible');
   }
 
   // Entrada de edición desde el botón ✎: en táctil no hay doble click,
@@ -9794,7 +9894,7 @@ ${notesText}`;
 
     // Notebook (diario + log + stats)
     toggleNotebook, switchNotebookTab, toggleCombatPanel,
-    toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, editDiaryEntryById, deleteDiaryEntry, togglePinDiary, filterDiary, exportDiary,
+    toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, editDiaryEntryById, deleteDiaryEntry, triggerDiaryImage, handleDiaryImage, clearDiaryImage, openDiaryImage, togglePinDiary, filterDiary, exportDiary,
     openQuickNote, closeQuickNote, setQNCat, onQNInput, saveQuickNote,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
     toggleCombatLog, clearCombatLog, exportCombatLog,

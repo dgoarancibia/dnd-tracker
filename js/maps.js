@@ -538,10 +538,40 @@ const Maps = (() => {
     setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
   }
 
+  /* Crea un mapa desde fuera (el diario), reusando la misma IndexedDB.
+     Así la foto adjuntada a una nota aparece también en la pestaña Mapas
+     y se puede anotar, en vez de vivir duplicada en otro lado. */
+  async function addMapFromBlob(blob, name, charId) {
+    if (!blob) return null;
+    // Puede llamarse desde el diario sin haber abierto nunca la pestaña
+    // Mapas, así que init() puede no haber corrido todavía.
+    if (charId) _charId = charId;
+    if (!_db) await _openDB();
+    if (!_charId) return null;
+    const id    = 'map-' + Date.now();
+    const imgId = 'img-' + Date.now();
+    await _dbPut(STORE_IMGS, { id: imgId, blob });
+    await _dbPut(STORE_MAPS, {
+      id, charId: _charId, name: name || 'Foto de sesión',
+      imgId, annotations: [], createdAt: new Date().toISOString(),
+    });
+    await _loadMaps();
+    renderList();
+    return { id, imgId };
+  }
+
+  // Devuelve el blob de una imagen guardada, para previsualizarla.
+  async function getImageBlob(imgId) {
+    if (!_db) await _openDB();
+    const rec = await _dbGet(STORE_IMGS, imgId);
+    return rec ? rec.blob : null;
+  }
+
   // ── API pública ───────────────────────────────────────
 
   return {
     init, renderList, onSearch,
+    addMapFromBlob, getImageBlob,
     triggerAddMap, triggerCamera, handleFileSelect, deleteMap,
     openMap, closeMap,
     setTool, setColor, setSize,

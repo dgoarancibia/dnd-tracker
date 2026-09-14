@@ -8690,3 +8690,49 @@ mark.diary-highlight {
 .detail-row { display:flex; justify-content:space-between; font-size:11.5px; padding:5px 8px; background:var(--bg3); border-radius:6px; }
 .detail-row .dr-name { color: var(--text-mid); }
 .detail-row .dr-dice { color: var(--gold-light); font-family:'Cinzel',serif; }
+
+/* ── Adjuntar imagen a una nota del diario ──────────────────────────
+   Antes había que salir del diario, ir a Mapas y volver; en partida eso
+   significa perder la escena. El clip vive en el compositor. */
+.diary-attach-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 15px; padding: 6px 8px; border-radius: 6px;
+  min-width: 40px; min-height: 40px;
+  opacity: 0.75; transition: all 0.15s;
+}
+.diary-attach-btn:hover { opacity: 1; background: rgba(201,151,58,0.12); }
+
+.diary-attach-preview {
+  display: flex; align-items: center; gap: 8px;
+  margin: 6px 0; padding: 6px 8px;
+  background: rgba(201,151,58,0.08);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+}
+.diary-attach-preview img {
+  width: 40px; height: 40px; object-fit: cover;
+  border-radius: 4px; flex: 0 0 auto;
+}
+.diary-attach-preview .dap-name {
+  flex: 1; min-width: 0; font-size: 12px; color: var(--text-mid);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.diary-attach-preview .dap-remove {
+  background: none; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 13px;
+  min-width: 40px; min-height: 40px; border-radius: 6px;
+}
+.diary-attach-preview .dap-remove:hover { color: var(--red-light); }
+
+/* Miniatura dentro de la burbuja: se toca para abrir el mapa y anotarlo. */
+.diary-bubble-img {
+  margin-top: 6px; cursor: pointer; border-radius: 6px;
+  overflow: hidden; max-width: 220px; line-height: 0;
+  border: 1px solid var(--border); transition: border-color 0.15s;
+}
+.diary-bubble-img:hover { border-color: var(--gold); }
+.diary-bubble-img img { width: 100%; height: auto; display: block; max-height: 180px; object-fit: cover; }
+.diary-bubble-img.missing {
+  line-height: 1.4; padding: 6px 8px; font-size: 11px;
+  color: var(--text-dim); font-style: italic; cursor: default;
+}
