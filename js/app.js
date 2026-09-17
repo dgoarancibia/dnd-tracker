@@ -371,6 +371,8 @@ const App = (() => {
       return;
     }
 
+    _cargarCombatLog();
+
     // ── Migración y sync de datos del personaje ─────────────────────────────
     // Solo se guarda en local: subirlo acá pisaría en Firestore cualquier
     // versión más nueva que todavía no bajó (el pull/listener corre después
@@ -658,16 +660,23 @@ const App = (() => {
      COMBAT LOG
   ══════════════════════════════════════════════════════ */
 
-  function _logCombat(text, type = 'info') {
+  /* El log vive en el personaje, no en memoria: antes se perdía entero al
+     recargar, y con él las estadísticas de campaña (que además leían el
+     texto con regex). Ahora cada entrada guarda `amount` y `name` como
+     datos, así las stats no dependen de cómo esté escrito el texto. */
+  function _logCombat(text, type = 'info', extra) {
     const entry = {
       id: 'cl-' + Date.now() + '-' + Math.random().toString(36).slice(2,5),
       round: _combatActive ? _combatRound : 0,
       text,
       type,  // 'dmg' | 'heal' | 'spell' | 'resource' | 'cond' | 'rest' | 'info'
-      ts: Date.now()
+      ts: Date.now(),
+      sessionId: (_getOpenSession() || {}).id || null,
+      ...(extra || {}),
     };
     _combatLog.unshift(entry);
     if (_combatLog.length > COMBAT_LOG_MAX) _combatLog.pop();
+    if (_char) { _char.combatLog = _combatLog; _saveChar(true); }
     // Update badge
     const badge = document.getElementById('nbLogBadge');
     if (badge) badge.textContent = _combatLog.length > 0 ? _combatLog.length : '';
@@ -961,8 +970,19 @@ const App = (() => {
     }).join('');
   }
 
+  // Trae el log guardado del personaje a memoria. Se llama al cargar y al
+  // cambiar de personaje: cada uno tiene el suyo.
+  function _cargarCombatLog() {
+    _combatLog = (_char && Array.isArray(_char.combatLog)) ? _char.combatLog : [];
+    const badge = document.getElementById('nbLogBadge');
+    if (badge) badge.textContent = _combatLog.length > 0 ? _combatLog.length : '';
+    const fab = document.getElementById('combatLogFab');
+    if (fab) fab.setAttribute('data-count', String(_combatLog.length));
+  }
+
   function clearCombatLog() {
     _combatLog = [];
+    if (_char) { _char.combatLog = []; _saveChar(true); }
     const fab = document.getElementById('combatLogFab');
     if (fab) fab.setAttribute('data-count', '0');
     _renderCombatLog();
@@ -4103,8 +4123,8 @@ const App = (() => {
     // Combat log
     if (delta !== 0) {
       const actual = _char.hp.current - prev;
-      if (actual < 0) _logCombat(`Recibió ${Math.abs(actual)} daño → ${_char.hp.current} HP`, 'dmg');
-      else if (actual > 0) _logCombat(`Curado ${actual} HP → ${_char.hp.current} HP`, 'heal');
+      if (actual < 0) _logCombat(`Recibió ${Math.abs(actual)} daño → ${_char.hp.current} HP`, 'dmg', { amount: Math.abs(actual) });
+      else if (actual > 0) _logCombat(`Curado ${actual} HP → ${_char.hp.current} HP`, 'heal', { amount: actual });
     }
 
 
@@ -5134,7 +5154,7 @@ const App = (() => {
     if (slotLevel > 0) parts.push(`slot ${slotLevel}`);
     if (sp.concentration) parts.push('Conc');
     const logLine = parts.join(' · ');
-    _logCombat(`✨ ${logLine}`, 'spell');
+    _logCombat(`✨ ${logLine}`, 'spell', { name: sp.name, slot: slotLevel || 0 });
 
     // Refresh right column to show updated slot dots
     _renderCombateDer();
@@ -9173,22 +9193,25 @@ ${notesText}`;
     const catCounts = { combate:0, lugar:0, historia:0, npc:0, nota:0, '':0 };
     diary.forEach(e => { catCounts[e.cat || '']++; });
 
-    // Hechizos más lanzados (desde el combat log)
+    /* Antes esto leía el texto del log con regex: buscaba «🔮 Nombre (» y
+       «−N», que no coinciden con lo que se escribe («✨ Nombre · slot N»),
+       y filtraba por type 'damage' cuando se guarda 'dmg'. Resultado: todos
+       los contadores en cero. Ahora se usan los campos `amount` y `name`.
+       El fallback por regex queda para las entradas viejas del log. */
     const spellUsage = {};
     log.forEach(e => {
-      if (e.type === 'spell' && e.text) {
-        const match = e.text.match(/🔮\s+(.+?)\s+\(/);
-        if (match) spellUsage[match[1]] = (spellUsage[match[1]] || 0) + 1;
-      }
+      if (e.type !== 'spell') return;
+      const nombre = e.name || (e.text ? (e.text.match(/[✨🔮]\s+([^·(]+)/) || [])[1] : null);
+      if (nombre) { const n = nombre.trim(); spellUsage[n] = (spellUsage[n] || 0) + 1; }
     });
     const topSpells = Object.entries(spellUsage).sort((a,b) => b[1]-a[1]).slice(0, 3);
 
     // HP total perdido (desde log)
     let totalDmg = 0;
     log.forEach(e => {
-      if (e.type === 'damage') {
-        const m = e.text.match(/−(\d+)/);
-        if (m) totalDmg += parseInt(m[1]);
+      if (e.type === 'dmg' || e.type === 'damage') {
+        if (typeof e.amount === 'number') totalDmg += e.amount;
+        else { const m = (e.text || '').match(/(\d+)\s*daño/); if (m) totalDmg += parseInt(m[1]); }
       }
     });
 
@@ -9196,7 +9219,8 @@ ${notesText}`;
     let totalHeal = 0;
     log.forEach(e => {
       if (e.type === 'heal') {
-        const m = e.text.match(/\+(\d+)/);
+        if (typeof e.amount === 'number') { totalHeal += e.amount; return; }
+        const m = (e.text || '').match(/Curado\s+(\d+)/);
         if (m) totalHeal += parseInt(m[1]);
       }
     });
@@ -10329,6 +10353,7 @@ ${notesText}`;
     getActiveChar() { return _char; },
     reloadChar(char) {
       _char = char || Storage.getActiveChar();
+      _cargarCombatLog();
       if (_char && _char.id !== 'lursey-brumaclara') {
         // Aplicar migraciones y sync de subclassSpells también en carga desde Firebase
         const syncChanged = _syncCharData(_char);
