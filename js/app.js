@@ -10100,6 +10100,25 @@ ${notesText}`;
     }
   }
 
+  // Hoja resumen: se dibuja desde cero, sin la plantilla oficial de 13,7 MB.
+  // Muestra todo (habilidades, slots, conjuros, recursos) en vez de los 11
+  // renglones de conjuro que tiene la hoja oficial.
+  async function exportResumenPDF() {
+    if (!_char) { showToast('No hay personaje activo'); return; }
+    if (typeof ExportResumen === 'undefined') {
+      showToast('Módulo no cargado, intentá de nuevo');
+      return;
+    }
+    showToast('Generando hoja resumen…');
+    try {
+      await ExportResumen.download(_char);
+      showToast('Hoja resumen descargada');
+    } catch (e) {
+      console.error('Resumen PDF error:', e);
+      showToast('Error: ' + e.message);
+    }
+  }
+
   async function exportCharForPDF() {
     if (!_char) { showToast('No hay personaje activo'); return; }
     if (typeof ExportPDF === 'undefined') {
@@ -10278,6 +10297,7 @@ ${notesText}`;
     togglePouchDetail, openDicePouchModal, closeDicePouchModal,
     openPrepSesion, closePrepSesion,
     openShareModal, closeShareModal, publishShare, revokeShare, copyShareUrl,
+    exportResumenPDF,
 
     // Monedas
     addCoin, consolidateCurrency,
