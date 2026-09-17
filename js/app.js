@@ -7390,6 +7390,10 @@ const App = (() => {
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">✕</span><span>Condiciones eliminadas</span></div>`;
     if (c.concentration)
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">◆</span><span>Concentración rota</span></div>`;
+    const _buffs = c.statBuffs || {};
+    const _nBuffs = ['ca','attack','save','spellDc'].reduce((t,k) => t + ((_buffs[k]||[]).length), 0);
+    if (_nBuffs)
+      summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">✕</span><span>${_nBuffs} buff${_nBuffs===1?'':'s'} temporal${_nBuffs===1?'':'es'} eliminado${_nBuffs===1?'':'s'}</span></div>`;
     if (c.exhaustion > 0) {
       const newEx = Math.max(0, c.exhaustion - 1);
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">😴</span><span>Agotamiento ${c.exhaustion} → ${newEx}</span></div>`;
@@ -7426,6 +7430,9 @@ const App = (() => {
     c.turn = { action: false, bonus: false, reaction: false, movement: false };
     c.concentration = null;
     c.conditions = [];
+    // Los buffs manuales (escudo, bendición, etc.) son temporales: sin esto
+    // quedaban aplicados para siempre, inflando CA/ataque/CD.
+    c.statBuffs = { ca: [], attack: [], save: [], spellDc: [] };
     // Descanso largo reduce exhaustion en 1 (PHB 2024)
     if (c.exhaustion > 0) c.exhaustion = Math.max(0, c.exhaustion - 1);
 

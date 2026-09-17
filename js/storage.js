@@ -9,7 +9,7 @@ const Storage = (() => {
   const BACKUP_TS    = 'dnd_backup_ts_v1';
   const DELETED_KEY  = 'dnd_deleted_ids_v1'; // IDs eliminados — persiste en localStorage
   const TRASH_KEY    = 'dnd_trash_v1';        // Papelera — personajes borrados recuperables
-  const DATA_VERSION = 15;  // Incrementar al cambiar el esquema
+  const DATA_VERSION = 16;  // Incrementar al cambiar el esquema
   const LURSEY_ID    = 'lursey-brumaclara'; // personaje de demo — sus features vienen de buildLursey()
 
   // ── IndexedDB shadow backup ──────────────────────────────────────────────
