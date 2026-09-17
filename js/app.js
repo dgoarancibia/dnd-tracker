@@ -4706,7 +4706,7 @@ const App = (() => {
     if (!_char) return;
     if (spellId) {
       const sp = (_char.spells || []).find(s => s.id === spellId);
-      _logCombat(`◆ Concentración: ${sp ? sp.name : spellId}`, 'spell');
+      _logCombat(`◆ Concentración: ${sp ? sp.name : spellId}`, 'cond');
       _char.concentrationRound = _combatActive ? _combatRound : 0;
     } else if (_char.concentration) {
       _logCombat('◇ Concentración rota', 'cond');
@@ -9226,8 +9226,13 @@ ${notesText}`;
     });
 
     // Slots gastados (estimado desde log)
+    // Solo cuenta lo que gastó slot: los trucos y las entradas sin slot no.
     let slotsUsed = 0;
-    log.forEach(e => { if (e.type === 'spell') slotsUsed++; });
+    log.forEach(e => {
+      if (e.type !== 'spell') return;
+      if (typeof e.slot === 'number') { if (e.slot > 0) slotsUsed++; }
+      else slotsUsed++;  // entradas viejas sin el dato
+    });
 
     // Recursos usados
     let resourcesUsed = 0;
