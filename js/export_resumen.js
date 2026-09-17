@@ -38,8 +38,22 @@ const ExportResumen = (() => {
 
   /* ── Primitivas de dibujo ──────────────────────────────────────── */
 
+  // Las fuentes estándar de PDF usan WinAnsi, que no codifica símbolos como
+  // ◆ ■ † ni emoji. Los nombres de conjuros y rasgos vienen de los datos, así
+  // que se limpian antes de dibujar: sin esto, un solo carácter raro hace
+  // fallar la generación entera.
+  function limpia(s) {
+    return String(s == null ? '' : s)
+      .normalize('NFC')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/\u2026/g, '...')
+      .replace(/[^\x20-\x7E\xA0-\xFF]/g, '');
+  }
+
   function txt(page, s, x, y, size, font, color) {
-    page.drawText(String(s == null ? '' : s), {
+    page.drawText(limpia(s), {
       x, y, size, font, color: _rgb(color || TINTA),
     });
   }
@@ -49,7 +63,7 @@ const ExportResumen = (() => {
 
   // Corta el texto para que no se salga del ancho dado.
   function recorta(s, font, size, maxW) {
-    s = String(s == null ? '' : s);
+    s = limpia(s);
     if (font.widthOfTextAtSize(s, size) <= maxW) return s;
     while (s.length > 1 && font.widthOfTextAtSize(s + '…', size) > maxW) {
       s = s.slice(0, -1);
@@ -59,7 +73,7 @@ const ExportResumen = (() => {
 
   // Parte un texto largo en líneas que entren en maxW.
   function envuelve(s, font, size, maxW) {
-    const palabras = String(s || '').split(/\s+/);
+    const palabras = limpia(s).split(/\s+/);
     const lineas = [];
     let linea = '';
     for (const p of palabras) {
@@ -159,7 +173,9 @@ const ExportResumen = (() => {
     const exps  = c.skillExpertise || [];
     for (const sk of C.SKILLS_DEF) {
       const bono = C.calcSkill(c, sk.id);
-      const marca = exps.includes(sk.id) ? '◆' : (profs.includes(sk.id) ? '●' : '○');
+      // WinAnsi (fuentes estándar) no codifica ○●◆, así que se usan
+      // marcas ASCII: X pericia, x competencia, punto medio para el resto.
+      const marca = exps.includes(sk.id) ? 'X' : (profs.includes(sk.id) ? 'x' : '-');
       const color = exps.includes(sk.id) ? ORO : (profs.includes(sk.id) ? TINTA : SUAVE);
       txt(page, marca, x, y, 7.5, f.reg, color);
       txt(page, sk.name, x + 11, y, 8, profs.includes(sk.id) ? f.bold : f.reg,
@@ -180,7 +196,7 @@ const ExportResumen = (() => {
     const profs = c.savingThrows || [];
     for (const [k, nom] of stats) {
       const tiene = profs.includes(k);
-      txt(page, tiene ? '●' : '○', x, y, 7.5, f.reg, tiene ? TINTA : SUAVE);
+      txt(page, tiene ? 'x' : '-', x, y, 7.5, f.reg, tiene ? TINTA : SUAVE);
       txt(page, nom, x + 11, y, 8, tiene ? f.bold : f.reg, tiene ? TINTA : SUAVE);
       const b = fmt(C.calcSave(c, k));
       txt(page, b, x + ancho - f.bold.widthOfTextAtSize(b, 8.5), y, 8.5, f.bold);
@@ -257,10 +273,10 @@ const ExportResumen = (() => {
         }
         // Los trucos siempre están disponibles; el resto se marca si está preparado.
         const activo = nivel === 0 || prep.has(sp.id) || sp.domain || sp.mi;
-        txt(page, activo ? '■' : '□', x + 4, y, 7, f.reg, activo ? ORO : SUAVE);
+        txt(page, activo ? '*' : '-', x + 4, y, 7, f.reg, activo ? ORO : SUAVE);
         let nom = sp.name || '';
-        if (sp.domain) nom += ' ◆';
-        if (sp.mi) nom += ' †';
+        if (sp.domain) nom += ' [Dom]';
+        if (sp.mi) nom += ' [MI]';
         if (sp.concentration) nom += ' (C)';
         txt(page, recorta(nom, f.reg, 8, ancho - 18), x + 15, y, 8,
             activo ? f.reg : f.reg, activo ? TINTA : SUAVE);
