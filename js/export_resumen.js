@@ -248,6 +248,7 @@ const ExportResumen = (() => {
     if (!spells.length) return { y, page };
     const prep = new Set(c.preparedToday || []);
 
+    if (y < M + 60) { page = doc.addPage([W, H]); y = H - M; }
     y = titulo(page, 'Conjuros', x, y, f, ancho);
     if (c.spellcastingStat) {
       const info = `CD ${C.calcCD(c)}  ·  Ataque ${fmt(C.calcAtaqueBonus(c))}  ·  ${(C.STAT_NAMES || {})[c.spellcastingStat] || ''}`;
@@ -290,6 +291,9 @@ const ExportResumen = (() => {
   function rasgos(page, c, f, C, x, y, ancho, doc) {
     const feats = (c.features || []).filter(ft => ft && ft.name);
     if (!feats.length) return { y, page };
+    // Si no queda espacio ni para el título más una entrada, se salta de
+    // página ANTES de escribirlo: si no, el título cae fuera del papel.
+    if (y < M + 60) { page = doc.addPage([W, H]); y = H - M; }
     y = titulo(page, 'Rasgos y aptitudes', x, y, f, ancho);
     for (const ft of feats) {
       if (y < M + 30) { page = doc.addPage([W, H]); y = H - M; }
