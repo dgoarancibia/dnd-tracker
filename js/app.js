@@ -103,18 +103,26 @@ const App = (() => {
         // SUBCLASES_CONFIG tiene como keys los nombres reales ('Aberrant Mind', etc.)
         // Buscamos la key cuyo valor tenga coincidencia, o buscamos en CHOICES_CONFIG el name
         // Buscar el nombre real del choiceId recorriendo TODAS las opciones de subclase
-        let foundName = null;
-        Object.values(Characters.CHOICES_CONFIG || {}).forEach(list => {
-          list.forEach(ch => {
+        /* Se busca el nombre Y la clase dueña: distintas clases comparten la
+           misma clave (Guerrero y Explorador usan las dos 'subclase-3'), así
+           que asignarla a classes[0] ponía Beast Master en la clase
+           equivocada en un Guerrero 1 / Explorador 5. */
+        let foundName = null, ownerClase = null;
+        Object.entries(Characters.CHOICES_CONFIG || {}).forEach(([clase, list]) => {
+          (list || []).forEach(ch => {
             if (ch.id && ch.id.startsWith('subclase-') && ch.options) {
               const opt = ch.options.find(o => o.id === choiceId);
-              if (opt && !foundName) foundName = opt.name;
+              if (opt && !foundName) { foundName = opt.name; ownerClase = clase; }
             }
           });
         });
         if (foundName) {
           c.subclase = foundName;
-          if (c.classes && c.classes[0]) c.classes[0].subclass = foundName;
+          if (Array.isArray(c.classes) && c.classes.length) {
+            const dueña = c.classes.find(x => x && x.name === ownerClase);
+            if (dueña) dueña.subclass = foundName;
+            else if (c.classes[0]) c.classes[0].subclass = foundName;
+          }
           changed = true;
         }
       }
@@ -2176,7 +2184,7 @@ const App = (() => {
     <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>`;
 
     // Primal Companion (Beast Master) — arriba del todo, debajo de Guía de Combate
-    if (c.subclase === 'Beast Master') {
+    if (esBeastMaster(c)) {
       html += _renderCompanionHTML(c);
     }
 
@@ -3761,9 +3769,33 @@ const App = (() => {
 
   // ── Primal Companion rendering ──────────────────────────────────────────────
 
+  /* ── Helpers del Primal Companion ────────────────────────────────────
+     La bestia escala con el nivel de EXPLORADOR, no con el nivel total del
+     personaje: un Guerrero 1 / Explorador 5 tiene una bestia de Explorador 5.
+     El Bono de Competencia, en cambio, sí usa el nivel total (regla general
+     de multiclase).                                                        */
+  function getRangerLevel(c) {
+    if (!c) return 0;
+    if (Array.isArray(c.classes) && c.classes.length) {
+      const r = c.classes.find(x => x && x.name === 'Explorador');
+      if (r) return r.level || 0;
+      // Tiene classes[] pero ninguna es Explorador: no hay nivel de Ranger.
+      return 0;
+    }
+    return c.nivel || 0;
+  }
+
+  // Beast Master puede estar en c.subclase (monoclase) o dentro de classes[]
+  // (multiclase), así que se mira en ambos lados.
+  function esBeastMaster(c) {
+    if (!c) return false;
+    if (c.subclase === 'Beast Master') return true;
+    return Array.isArray(c.classes) && c.classes.some(x => x && x.subclass === 'Beast Master');
+  }
+
   function _renderCompanionHTML(c) {
-    const nivel = c.nivel;
-    const pb    = Characters.calcProfBonus(nivel);
+    const nivelRanger = getRangerLevel(c);      // la bestia escala con esto
+    const pb    = Characters.calcProfBonus(c.nivel);  // PB: nivel total (multiclase)
     const wisMod = Characters.calcMod(c.stats.sab);
 
     const companion = c.companion || {};
@@ -3795,7 +3827,7 @@ const App = (() => {
     // Competencia (eso era Tasha's 2020). CA = 13 + mod SAB, y el daño suma
     // mod SAB. El ataque usa el modificador de ataque de conjuro (PB + SAB).
     const ac    = 13 + wisMod;
-    const maxHp = beast.calcMaxHP(nivel);
+    const maxHp = beast.calcMaxHP(nivelRanger);
     const curHp = companion.hp != null ? companion.hp : maxHp;
     const hitBonus = wisMod + pb;
     const hitStr   = (hitBonus >= 0 ? '+' : '') + hitBonus;
@@ -3811,12 +3843,13 @@ const App = (() => {
       </div>`;
     }).join('');
 
-    // Attacks
+    // Attacks — dmgFuerza se define acá porque la línea de ataque lo usa.
+    const dmgFuerza = companion.forceDamage === true;
     const attacksHTML = beast.attacks.map(a => `
       <div class="companion-attack">
         <span class="companion-atk-name">${a.name}</span>
         <span class="companion-atk-bonus">${hitStr}</span>
-        <span class="companion-atk-dmg">${a.damageDie}+${a.damageBonus + wisMod} ${a.damageType}</span>
+        <span class="companion-atk-dmg">${a.damageDie}+${a.damageBonus + wisMod} ${dmgFuerza ? 'fuerza' : a.damageType}${nivelRanger >= 11 ? ' ×2' : ''}</span>
       </div>`).join('');
 
     // Traits
@@ -3830,22 +3863,67 @@ const App = (() => {
     const hpPct  = Math.max(0, Math.min(100, (curHp / maxHp) * 100));
     const hpColor = hpPct > 60 ? '#4caf50' : hpPct > 25 ? '#f0c040' : '#e05c2a';
 
+    /* Extras que desbloquean los niveles de subclase. Solo informativo:
+       recuerdan qué puede hacer la bestia, sin tirar nada. */
+    let extrasNivelHTML = '';
+    if (nivelRanger >= 7) {
+      extrasNivelHTML += `
+      <div class="companion-extra-row">
+        <span class="companion-extra-lbl">Nv7 · con su Acción Adicional:</span>
+        <span class="companion-extra-chip">Dash</span>
+        <span class="companion-extra-chip">Disengage</span>
+        <span class="companion-extra-chip">Dodge</span>
+        <span class="companion-extra-chip">Help</span>
+        <button class="companion-extra-toggle ${dmgFuerza ? 'active' : ''}"
+                onclick="App.toggleCompanionForceDamage()"
+                title="Exceptional Training: puede cambiar su daño a fuerza">
+          Daño: ${dmgFuerza ? 'fuerza' : 'normal'}
+        </button>
+      </div>`;
+    }
+    if (nivelRanger >= 11) {
+      // Hunter's Mark activo como concentración → recordar el extra de Bestial Fury.
+      const hmSpell = (c.spells || []).find(sp => sp.id === c.concentration);
+      const hmActiva = hmSpell && /hunter'?s mark/i.test(hmSpell.name || '');
+      extrasNivelHTML += `
+      <div class="companion-extra-row">
+        <span class="companion-extra-lbl">Nv11 · Bestial Fury:</span>
+        <span class="companion-extra-chip strong">Beast's Strike ×2</span>
+        ${hmActiva ? `<span class="companion-extra-chip mark">+1d6 fuerza (1ª vez/turno)</span>` : ''}
+      </div>`;
+    }
+
+    const caida = curHp <= 0;
     return `
-    <div class="equip-section companion-section" style="margin-top:14px;">
+    <div class="equip-section companion-section${caida ? ' companion-down' : ''}" style="margin-top:14px;">
       <div class="rc-header" style="margin-bottom:6px;">
         <span class="rc-name">🐾 Primal Companion</span>
+        ${caida ? '<span class="companion-down-tag">Caída</span>' : ''}
       </div>
+      ${caida ? `<div class="companion-revive-row">
+        <span class="companion-revive-txt">Tu bestia cayó.</span>
+        <button class="companion-revive-btn" onclick="App.openCompanionRevive()">Restaurar (gasta slot)</button>
+      </div>` : ''}
 
       <!-- Beast selector chips — toca la activa para desconjurar, otra para cambiar -->
       <div class="companion-beast-chips" style="margin-bottom:8px;">${beastChips}</div>
 
-      <!-- Header de la bestia -->
+      <!-- Header: nombre y animal son editables (se guardan en companion) -->
       <div class="companion-header">
         <div class="companion-title">
           <span class="companion-emoji">${beast.emoji}</span>
-          <div>
-            <div class="companion-name">${beast.name}</div>
-            <div class="companion-meta">${beast.size} ${beast.type} · ${beast.speed}</div>
+          <div style="flex:1;min-width:0;">
+            <input class="companion-name-input" value="${(companion.name || '').replace(/"/g,'&quot;')}"
+                   placeholder="${beast.name}" maxlength="40"
+                   onchange="App.setCompanionField('name', this.value)"
+                   onclick="this.select()">
+            <div class="companion-meta">
+              <input class="companion-kind-input" value="${(companion.kind || '').replace(/"/g,'&quot;')}"
+                     placeholder="¿qué animal?" maxlength="30"
+                     onchange="App.setCompanionField('kind', this.value)"
+                     onclick="this.select()">
+              <span>${beast.size} ${beast.type} · ${beast.speed}</span>
+            </div>
           </div>
         </div>
         <div class="companion-ac-badge">
@@ -3865,6 +3943,11 @@ const App = (() => {
         <button class="companion-hp-btn" onclick="App.setCompanionHP(${maxHp})" title="Curar al máximo">♥</button>
         <button class="companion-hp-btn" onclick="App.setCompanionHP(0)" title="Derribar">☠</button>
       </div>
+      <!-- Ajuste rápido, como el tracker del PJ pero en pasos fijos -->
+      <div class="companion-hp-adj">
+        ${[-10,-5,-1,1,5,10].map(n => `<button class="companion-adj-btn ${n<0?'dmg':'heal'}"
+          onclick="App.adjustCompanionHP(${n})">${n>0?'+':''}${n}</button>`).join('')}
+      </div>
       <div class="companion-hp-bar">
         <div class="companion-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div>
       </div>
@@ -3872,16 +3955,26 @@ const App = (() => {
       <!-- Stats -->
       <div class="companion-stats">${statsHTML}</div>
 
+      <!-- Cómo la comandás este turno (informativo, sin tiradas) -->
+      <div class="companion-order-row">
+        <span class="companion-order-lbl">Ordenar ataque:</span>
+        <button class="companion-order-chip" onclick="App.useCompanionOrder('bonus')"
+                title="Marca tu Acción Adicional como usada">Acción Adicional</button>
+        <button class="companion-order-chip" onclick="App.useCompanionOrder('attack')"
+                title="Sacrificás uno de tus ataques">Sacrifica 1 ataque</button>
+      </div>
+
       <!-- Ataques -->
       <div class="companion-attacks-header">Ataques · Bono de golpe ${hitStr} (SAB+PB)</div>
       <div class="companion-attacks">${attacksHTML}</div>
+      ${extrasNivelHTML}
 
       <!-- Rasgos -->
       <div class="companion-traits">${traitsHTML}</div>
 
-      <!-- Notas del nivel -->
+      <!-- Notas del nivel: la bestia escala con el nivel de EXPLORADOR -->
       <div class="companion-level-note">
-        Nivel ${nivel} Explorador · PB +${pb}${nivel >= 7 ? ' · Ataques mágicos' : ''}${nivel >= 11 ? ' · Doble ataque' : ''}
+        Explorador Nv ${nivelRanger} · PB +${pb}${nivelRanger >= 7 ? ' · Entrenamiento excepcional' : ''}${nivelRanger >= 11 ? ' · Doble ataque' : ''}
       </div>
     </div>`;
   }
@@ -3894,14 +3987,20 @@ const App = (() => {
     const currently = companion.beast;
     const summoned  = companion.summoned !== false && currently !== null;
 
+    /* Se conserva el resto del objeto (name, kind, forceDamage): antes se
+       reconstruía desde cero y el jugador perdía el nombre que le puso.
+       El HP usa el nivel de EXPLORADOR, no el total del personaje. */
     if (currently === beastId && summoned) {
       // Tap on active beast → desconjurar (collapse to chips only)
-      _char.companion = { beast: beastId, hp: companion.hp, summoned: false };
+      _char.companion = { ...companion, beast: beastId, summoned: false };
     } else {
       // Tap on inactive or different beast → conjurar
-      const maxHp = beast.calcMaxHP(_char.nivel);
+      const maxHp = beast.calcMaxHP(getRangerLevel(_char));
       const hp = (currently === beastId && companion.hp != null) ? companion.hp : maxHp;
-      _char.companion = { beast: beastId, hp, summoned: true };
+      const base = { ...companion, beast: beastId, hp, summoned: true };
+      // Al cambiar de bestia se limpia el estado de caída de la anterior.
+      if (currently !== beastId) delete base.deathAt;
+      _char.companion = base;
     }
     _saveChar();
     _renderCombateDer();
@@ -3914,13 +4013,128 @@ const App = (() => {
     _renderCombateDer();
   }
 
+  // Nombre y tipo de animal los pone el jugador; si los deja vacíos se usa
+  // el nombre del bloque como fallback.
+  function setCompanionField(campo, valor) {
+    if (!_char || !_char.companion) return;
+    const v = String(valor || '').trim().slice(0, 40);
+    if (v) _char.companion[campo] = v;
+    else delete _char.companion[campo];
+    _saveChar();
+    _renderCombateDer();
+  }
+
+  // Marca cómo comandaste a la bestia. Solo afecta el tracker del turno.
+  function useCompanionOrder(modo) {
+    if (!_char) return;
+    if (modo === 'bonus') {
+      if (!_char.turn) _char.turn = {};
+      _char.turn.bonus = true;
+      _saveChar();
+      _renderCombateTab();
+      showToast('Acción Adicional usada — la bestia ataca');
+    } else {
+      showToast('Sacrificás uno de tus ataques para que ataque la bestia');
+    }
+  }
+
+  function toggleCompanionForceDamage() {
+    if (!_char || !_char.companion) return;
+    _char.companion.forceDamage = !_char.companion.forceDamage;
+    _saveChar();
+    _renderCombateDer();
+  }
+
+  function adjustCompanionHP(delta) {
+    if (!_char || !_char.companion) return;
+    const cur = _char.companion.hp;
+    const beast = Characters.PRIMAL_COMPANION_BEASTS[_char.companion.beast];
+    const max = beast ? beast.calcMaxHP(getRangerLevel(_char)) : 0;
+    setCompanionHP((cur != null ? cur : max) + delta);
+  }
+
   function setCompanionHP(val) {
     if (!_char || !_char.companion) return;
     const beast  = Characters.PRIMAL_COMPANION_BEASTS[_char.companion.beast];
-    const maxHp  = beast ? beast.calcMaxHP(_char.nivel) : 0;
+    const maxHp  = beast ? beast.calcMaxHP(getRangerLevel(_char)) : 0;
+    const antes = _char.companion.hp;
     _char.companion.hp = Math.max(0, Math.min(maxHp, val));
+    // Se anota cuándo cayó para poder avisar si pasó más de 1 hora (en 2024
+    // revivirla cuesta un slot y se hace fuera de combate).
+    if (_char.companion.hp === 0 && antes !== 0) _char.companion.deathAt = Date.now();
+    if (_char.companion.hp > 0) delete _char.companion.deathAt;
     _saveChar();
     _renderCombateDer();
+  }
+
+  /* ── Restaurar el compañero caído gastando un espacio de conjuro ──── */
+  function openCompanionRevive() {
+    if (!_char || !_char.companion) return;
+    const disponibles = [];
+    for (let i = 1; i <= 9; i++) {
+      const sl = _char.spellSlots && _char.spellSlots[i];
+      if (sl && sl.max > 0 && sl.current > 0) disponibles.push({ nivel: i, ...sl });
+    }
+    let overlay = document.getElementById('compReviveOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'compReviveOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      overlay.onclick = (e) => { if (e.target === overlay) closeCompanionRevive(); };
+      document.body.appendChild(overlay);
+    }
+
+    const deathAt = _char.companion.deathAt;
+    const horas = deathAt ? (Date.now() - deathAt) / 3600000 : 0;
+    const aviso = (deathAt && horas >= 1)
+      ? `<div class="comp-revive-warn">Cayó hace ${horas < 24 ? Math.floor(horas) + ' h' : Math.floor(horas/24) + ' días'}.
+         Revivirla requiere gastar 1 hora con el cuerpo de la bestia.</div>`
+      : '';
+
+    const cuerpo = disponibles.length
+      ? `<div class="comp-revive-slots">${disponibles.map(sl =>
+          `<button class="comp-revive-slot" onclick="App.reviveCompanion(${sl.nivel})">
+             <span class="crs-lvl">Nivel ${sl.nivel}</span>
+             <span class="crs-left">${sl.current}/${sl.max}</span>
+           </button>`).join('')}</div>`
+      : `<div class="comp-revive-empty">No te quedan espacios de conjuro.</div>`;
+
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:380px;width:100%;">
+        <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>🐾 Restaurar compañero</span>
+          <span class="ref-close" onclick="App.closeCompanionRevive()">✕</span>
+        </div>
+        <div class="modal-body">
+          ${aviso}
+          <div class="comp-revive-note">Gastá un espacio de conjuro para que vuelva con todos sus HP.</div>
+          ${cuerpo}
+        </div>
+      </div>`;
+    overlay.style.display = 'flex';
+  }
+
+  function closeCompanionRevive() {
+    const o = document.getElementById('compReviveOverlay');
+    if (o) o.style.display = 'none';
+  }
+
+  function reviveCompanion(nivelSlot) {
+    if (!_char || !_char.companion) return;
+    const sl = _char.spellSlots && _char.spellSlots[nivelSlot];
+    if (!sl || sl.current <= 0) { showToast('Ese espacio ya está gastado'); return; }
+    const beast = Characters.PRIMAL_COMPANION_BEASTS[_char.companion.beast];
+    if (!beast) return;
+    sl.current -= 1;
+    const max = beast.calcMaxHP(getRangerLevel(_char));
+    _char.companion.hp = max;
+    delete _char.companion.deathAt;
+    _saveChar();
+    closeCompanionRevive();
+    _renderCombateTab();
+    _logCombat(`🐾 Compañero restaurado (slot ${nivelSlot}) · ${max} HP`, 'resource');
+    showToast(`🐾 Compañero restaurado con ${max} HP`);
   }
 
   function _renderChoicesHistoryHTML(c) {
@@ -7410,6 +7624,18 @@ const App = (() => {
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">✕</span><span>Condiciones eliminadas</span></div>`;
     if (c.concentration)
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">◆</span><span>Concentración rota</span></div>`;
+    // Compañero del Beast Master: se cura al máximo con el descanso largo.
+    if (c.companion && c.companion.beast && esBeastMaster(c)) {
+      const _b = Characters.PRIMAL_COMPANION_BEASTS[c.companion.beast];
+      if (_b) {
+        const _max = _b.calcMaxHP(getRangerLevel(c));
+        const _cur = c.companion.hp != null ? c.companion.hp : _max;
+        if (_cur < _max) {
+          const _nom = (c.companion.name || _b.name);
+          summaryHtml += `<div class="lr-row"><span class="lr-icon">🐾</span><span>${_nom.replace(/</g,'&lt;')} <strong>${_cur} → ${_max}</strong> HP</span></div>`;
+        }
+      }
+    }
     const _buffs = c.statBuffs || {};
     const _nBuffs = ['ca','attack','save','spellDc'].reduce((t,k) => t + ((_buffs[k]||[]).length), 0);
     if (_nBuffs)
@@ -7456,12 +7682,27 @@ const App = (() => {
     // Descanso largo reduce exhaustion en 1 (PHB 2024)
     if (c.exhaustion > 0) c.exhaustion = Math.max(0, c.exhaustion - 1);
 
+    // El compañero recupera todos sus HP y deja de estar caído.
+    let compAntes = null, compMax = null;
+    if (c.companion && c.companion.beast && esBeastMaster(c)) {
+      const b = Characters.PRIMAL_COMPANION_BEASTS[c.companion.beast];
+      if (b) {
+        compMax  = b.calcMaxHP(getRangerLevel(c));
+        compAntes = c.companion.hp != null ? c.companion.hp : compMax;
+        c.companion.hp = compMax;
+        delete c.companion.deathAt;
+      }
+    }
+
     closeLongRest();
     _saveChar(true);
     _renderHeader();
     _renderCombateTab();
     _updateCombatHUD();
     _logCombat(`✦ Descanso largo · HP ${hpBefore}→${c.hp.max} · Slots recargados`, 'rest');
+    if (compMax != null && compAntes !== compMax) {
+      _logCombat(`🐾 Compañero ${compAntes}→${compMax} HP`, 'rest');
+    }
     showToast('✦ Descanso largo — Todo recargado');
   }
 
@@ -10284,6 +10525,8 @@ ${notesText}`;
 
     // Companion (Beast Master)
     setCompanionBeast, clearCompanionBeast, setCompanionHP,
+    adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
+    openCompanionRevive, closeCompanionRevive, reviveCompanion,
 
     // Subclase
     openSubclaseModal, _selectSubclaseChip, _toggleManeuver, saveSubclase, closeSubclaseModal,

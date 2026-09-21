@@ -2148,20 +2148,20 @@ const Characters = (() => {
       resources: () => [],
       features: (nivel) => [
         { id:'bm-ranger-companion', name:'Primal Companion',
-          source:'Beast Master · Nv3', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
-          desc:'Invocas una bestia primigenia (Tierra, Mar o Cielo) que actúa en tu iniciativa. Acción bonus para ordenarle atacar.',
+          source:'Beast Master · Nv3', type:'active', action:'Acción Mágica', range:'Personal', recharge:null,
+          desc:'Acción Mágica para invocar la bestia (Tierra, Mar o Cielo); actúa en tu iniciativa. Para que ataque: Acción Adicional, o sacrificá uno de tus ataques al usar la acción de Ataque. Si no la comandás, solo Esquiva. Vuelve a invocarse tras un Descanso Largo, y ahí podés cambiar de bestia.',
           fullDesc:'A nivel 3 lanzas Summon Beast sin gastar slot ni componentes para invocar tu compañero: eliges el bloque de estadísticas Bestia de la Tierra, del Mar o del Cielo, y decides qué animal es. La bestia actúa justo después de ti en la iniciativa y puede moverse y usar su reacción sola; para que ataque o realice otra acción, usás tu acción bonus. Sus estadísticas escalan con tu nivel de Explorador y tu modificador de Sabiduría. Si muere, vuelve con una hora de trabajo o al relanzar el conjuro; puedes reinvocarla gratis una vez por descanso largo.' },
         ...(nivel >= 7 ? [{ id:'bm-exceptional-training', name:'Exceptional Training',
           source:'Beast Master · Nv7', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
-          desc:'Como bonus action, puedes ordenarle a tu compañero que haga Dash, Disengage, Dodge o Help.',
+          desc:'Cuando usás tu Acción Adicional para comandar a la bestia, esta también puede hacer Dash, Disengage, Dodge o Help con su propia Acción Adicional. Además, sus ataques pueden infligir daño de fuerza en lugar de su tipo normal.',
           fullDesc:'A nivel 7, en cualquiera de tus turnos cuando tu compañero no ataque, puedes usar una acción adicional para ordenarle que haga la acción Dash, Disengage, Dodge o Help. Además los ataques de tu compañero ahora cuentan como mágicos.' }] : []),
         ...(nivel >= 11 ? [{ id:'bm-bestial-fury', name:'Bestial Fury',
           source:'Beast Master · Nv11', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Tu compañero puede hacer dos ataques cuando tú usas tu acción para ordenarle que ataque.',
+          desc:"Cuando comandás Beast's Strike, la bestia lo usa dos veces. Además, la primera vez en cada turno que golpea a una criatura marcada con tu Hunter's Mark, inflige daño de fuerza extra igual al daño adicional de ese conjuro.",
           fullDesc:'A nivel 11, cuando ordenas a tu compañero usar Beast\'s Strike, puede hacerlo dos veces. Además, si tienes Hunter\'s Mark activo sobre el objetivo, los ataques de la bestia también aplican el daño extra de la marca.' }] : []),
         ...(nivel >= 15 ? [{ id:'bm-share-spells', name:'Share Spells',
           source:'Beast Master · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Cuando te lanzas un conjuro a ti mismo, puede afectar también a tu compañero si está a 9 m.',
+          desc:'Cuando te lanzás un conjuro que te tiene como objetivo, podés afectar también a tu bestia si está a 30 ft (9 m) de vos.',
           fullDesc:'A nivel 15, cuando lanzas un conjuro que solo te afecta a ti, puedes hacer que también afecte a tu compañero bestial si está a 9 metros.' }] : []),
       ],
     },
@@ -5249,30 +5249,28 @@ const Characters = (() => {
       type: 'Bestia',
       speed: '40 ft · Trepa 40 ft',
       stats: { for:14, des:14, con:15, int:8, sab:14, car:11 },
-      calcAC: (nivel) => 13 + calcProfBonus(nivel), // 2024: la CA real es 13 + mod SAB (se calcula en app.js)
-      calcHP: (nivel) => 5 + 5 * nivel,
       calcMaxHP: (nivel) => 5 + 5 * nivel,
       senses: 'Percepción pasiva 14',
       languages: 'Entiende los idiomas de su Ranger pero no habla',
       attacks: [
         {
-          name: 'Maul',
+          name: "Beast's Strike",
           type: 'melee',
           // bonus to hit = WIS mod + PB (se calcula dinámicamente)
           damageDie: '1d8',
           damageBonus: 2,  // +2 fijo, más mod SAB (PHB 2024)
-          damageType: 'perforante o cortante',
-          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = mod de ataque de conjuro. Daño: 1d8 + 2 + mod SAB.',
+          damageType: 'cortante',
+          desc: 'Ataque cuerpo a cuerpo: bono de golpe = tu modificador de ataque de conjuro. Daño: 1d8 + 2 + mod SAB.',
         }
       ],
       traits: [
         {
           name: 'Charge',
-          desc: 'Si se mueve al menos 6 m en línea recta hacia un objetivo y lo golpea, el objetivo debe superar un save de FUE (CD = tu CD de conjuros) o quedar tumbado. Si cae, la bestia puede hacer un ataque adicional de bonificación.',
+          desc: 'Si se mueve al menos 6 m (20 ft) en línea recta hacia un objetivo y lo golpea en el mismo turno, inflige 1d6 de daño perforante extra y el objetivo debe superar una salvación de FUE (CD = tu CD de conjuros) o queda Derribado.',
         },
         {
           name: 'Primal Bond',
-          desc: 'Agrega el Bono de Competencia del Ranger a tiradas de ataque, daño, checks de habilidad y tiradas de salvación. Actúa en la iniciativa del Ranger.',
+          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica y tirada de salvación que haga la bestia (no a sus tiradas de ataque ni a su daño). Actúa en tu iniciativa.',
         },
       ],
       cr: '—',
@@ -5286,19 +5284,17 @@ const Characters = (() => {
       type: 'Bestia',
       speed: '5 ft · Nada 60 ft',
       stats: { for:14, des:14, con:15, int:8, sab:14, car:11 },
-      calcAC: (nivel) => 13 + calcProfBonus(nivel), // 2024: la CA real es 13 + mod SAB (se calcula en app.js)
-      calcHP: (nivel) => 5 + 5 * nivel,
       calcMaxHP: (nivel) => 5 + 5 * nivel,
       senses: 'Percepción pasiva 14',
       languages: 'Entiende los idiomas de su Ranger pero no habla',
       attacks: [
         {
-          name: 'Binding Strike',
+          name: "Beast's Strike",
           type: 'melee',
           damageDie: '1d6',
           damageBonus: 2,
-          damageType: 'contundente o perforante',
-          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = mod de ataque de conjuro. Daño: 1d6 + 2 + mod SAB. El objetivo queda agarrado (Escape CD = tu CD de conjuros). Mientras esté agarrado puede repetir el ataque automáticamente.',
+          damageType: 'perforante o contundente',
+          desc: 'Ataque cuerpo a cuerpo: bono de golpe = tu modificador de ataque de conjuro. Daño: 1d6 + 2 + mod SAB. Si el objetivo es Grande o menor, queda Apresado (CD de escape = tu CD de salvación de conjuros).',
         }
       ],
       traits: [
@@ -5308,7 +5304,7 @@ const Characters = (() => {
         },
         {
           name: 'Primal Bond',
-          desc: 'Agrega el Bono de Competencia del Ranger a tiradas de ataque, daño, checks de habilidad y tiradas de salvación. Actúa en la iniciativa del Ranger.',
+          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica y tirada de salvación que haga la bestia (no a sus tiradas de ataque ni a su daño). Actúa en tu iniciativa.',
         },
       ],
       cr: '—',
@@ -5322,19 +5318,17 @@ const Characters = (() => {
       type: 'Bestia',
       speed: '10 ft · Vuela 60 ft',
       stats: { for:6, des:16, con:13, int:8, sab:14, car:11 },
-      calcAC: (nivel) => 13 + calcProfBonus(nivel), // 2024: la CA real es 13 + mod SAB (se calcula en app.js)
-      calcHP: (nivel) => 4 + 4 * nivel,
       calcMaxHP: (nivel) => 4 + 4 * nivel,
       senses: 'Percepción pasiva 14',
       languages: 'Entiende los idiomas de su Ranger pero no habla',
       attacks: [
         {
-          name: 'Shred',
+          name: "Beast's Strike",
           type: 'melee',
           damageDie: '1d4',
           damageBonus: 3,  // DEX mod base (+3 DES=16)
           damageType: 'cortante',
-          desc: 'Ataque de arma cuerpo a cuerpo: bono de golpe = mod de ataque de conjuro. Daño: 1d4 + 3 + mod SAB.',
+          desc: 'Ataque cuerpo a cuerpo: bono de golpe = tu modificador de ataque de conjuro. Daño: 1d4 + 3 + mod SAB.',
         }
       ],
       traits: [
@@ -5344,7 +5338,7 @@ const Characters = (() => {
         },
         {
           name: 'Primal Bond',
-          desc: 'Agrega el Bono de Competencia del Ranger a tiradas de ataque, daño, checks de habilidad y tiradas de salvación. Actúa en la iniciativa del Ranger.',
+          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica y tirada de salvación que haga la bestia (no a sus tiradas de ataque ni a su daño). Actúa en tu iniciativa.',
         },
       ],
       cr: '—',

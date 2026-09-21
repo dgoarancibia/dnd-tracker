@@ -8886,3 +8886,115 @@ mark.diary-highlight {
 .share-btn.primary { background: var(--gold-dim); border-color: var(--gold); color: var(--bg1); font-weight: 600; }
 .share-btn.primary:hover { background: var(--gold); }
 .share-btn.danger:hover { color: var(--red); border-color: var(--red); }
+
+/* ── Primal Companion: mejoras 2024 ──────────────────────────────────
+   Sigue la estética de la tarjeta existente (oscuro/dorado, Jost). */
+
+/* Nombre y animal editables en el header */
+.companion-name-input {
+  width: 100%; background: transparent; border: none;
+  border-bottom: 1px dashed transparent;
+  font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600;
+  color: var(--gold); padding: 1px 0; outline: none;
+}
+.companion-name-input::placeholder { color: var(--gold); opacity: 0.55; }
+.companion-name-input:hover, .companion-name-input:focus { border-bottom-color: var(--gold-dim); }
+.companion-kind-input {
+  background: transparent; border: none;
+  border-bottom: 1px dashed transparent;
+  font-family: 'Jost', sans-serif; font-size: 10px;
+  color: var(--text-mid); padding: 0; outline: none; width: 90px;
+}
+.companion-kind-input::placeholder { color: var(--text-dim); font-style: italic; }
+.companion-kind-input:hover, .companion-kind-input:focus { border-bottom-color: var(--border); }
+
+/* Ajuste rápido de HP, en pasos fijos */
+.companion-hp-adj { display: flex; gap: 3px; margin: 5px 0 3px; }
+.companion-adj-btn {
+  flex: 1; min-height: 30px; padding: 4px 0;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 11px;
+  cursor: pointer; transition: all 0.12s;
+}
+.companion-adj-btn.dmg:hover  { color: #e05c2a; border-color: #e05c2a; }
+.companion-adj-btn.heal:hover { color: #4caf50; border-color: #4caf50; }
+
+/* Cómo comandás a la bestia este turno */
+.companion-order-row {
+  display: flex; align-items: center; gap: 5px;
+  flex-wrap: wrap; margin: 7px 0 4px;
+}
+.companion-order-lbl { font-size: 10px; color: var(--text-dim); }
+.companion-order-chip {
+  padding: 4px 9px; min-height: 28px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 10px;
+  cursor: pointer; transition: all 0.12s;
+}
+.companion-order-chip:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* Extras que desbloquean los niveles 7 y 11 */
+.companion-extra-row {
+  display: flex; align-items: center; gap: 4px;
+  flex-wrap: wrap; margin-top: 5px;
+}
+.companion-extra-lbl { font-size: 9.5px; color: var(--text-dim); }
+.companion-extra-chip {
+  padding: 2px 7px; border-radius: 10px; font-size: 9.5px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border); color: var(--text-mid);
+}
+.companion-extra-chip.strong { color: var(--gold); border-color: var(--gold-dim); }
+.companion-extra-chip.mark   { color: #c98a4a; border-color: rgba(201,138,74,0.4); }
+.companion-extra-toggle {
+  padding: 3px 8px; min-height: 26px; border-radius: 10px;
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text-mid); font-family: 'Jost', sans-serif;
+  font-size: 9.5px; cursor: pointer; transition: all 0.12s;
+}
+.companion-extra-toggle.active { color: var(--gold); border-color: var(--gold); background: rgba(201,151,58,0.12); }
+
+/* Bestia caída: la tarjeta se apaga y aparece el botón de restaurar */
+.companion-section.companion-down { opacity: 0.62; filter: grayscale(0.7); }
+.companion-section.companion-down .companion-revive-row { opacity: 1; filter: none; }
+.companion-down-tag {
+  font-size: 9.5px; color: #e05c2a; border: 1px solid rgba(224,92,42,0.45);
+  border-radius: 9px; padding: 1px 7px; margin-left: 6px;
+}
+.companion-revive-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap; margin-bottom: 8px; padding: 7px 9px;
+  background: rgba(224,92,42,0.10);
+  border: 1px solid rgba(224,92,42,0.32); border-radius: 6px;
+}
+.companion-revive-txt { font-size: 11px; color: var(--text-mid); }
+.companion-revive-btn {
+  min-height: 32px; padding: 6px 12px;
+  background: var(--gold-dim); border: 1px solid var(--gold);
+  border-radius: 5px; color: var(--bg1);
+  font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 600;
+  cursor: pointer;
+}
+.companion-revive-btn:hover { background: var(--gold); }
+
+/* Modal de restaurar: elegir qué espacio de conjuro gastar */
+.comp-revive-note { font-size: 12px; color: var(--text-mid); margin-bottom: 10px; line-height: 1.55; }
+.comp-revive-warn {
+  font-size: 11px; color: var(--gold); line-height: 1.5;
+  background: rgba(201,151,58,0.09); border-left: 2px solid var(--gold-dim);
+  border-radius: 0 5px 5px 0; padding: 7px 9px; margin-bottom: 10px;
+}
+.comp-revive-empty { font-size: 12px; color: var(--text-dim); font-style: italic; }
+.comp-revive-slots { display: flex; flex-direction: column; gap: 5px; }
+.comp-revive-slot {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 44px; padding: 9px 12px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; transition: all 0.12s;
+  font-family: 'Jost', sans-serif;
+}
+.comp-revive-slot:hover { border-color: var(--gold); background: rgba(201,151,58,0.08); }
+.comp-revive-slot .crs-lvl  { font-size: 13px; color: var(--text); }
+.comp-revive-slot .crs-left { font-size: 11px; color: var(--text-dim); }
