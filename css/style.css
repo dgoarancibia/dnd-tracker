@@ -8998,3 +8998,77 @@ mark.diary-highlight {
 .comp-revive-slot:hover { border-color: var(--gold); background: rgba(201,151,58,0.08); }
 .comp-revive-slot .crs-lvl  { font-size: 13px; color: var(--text); }
 .comp-revive-slot .crs-left { font-size: 11px; color: var(--text-dim); }
+
+/* ── Maestrías de arma (PHB 2024) ────────────────────────────────────
+   Misma estética que la tarjeta del compañero: oscuro, dorado, Jost. */
+.mastery-count {
+  font-size: 10px; padding: 1px 7px; border-radius: 9px;
+  background: rgba(106,154,91,0.18); color: #8fb98a;
+}
+.mastery-count.warn { background: rgba(201,151,58,0.18); color: var(--gold); }
+
+.mastery-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.mastery-chip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 5px 9px; min-height: 38px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; transition: all 0.12s;
+  font-family: 'Jost', sans-serif; text-align: left;
+}
+.mastery-chip:hover { border-color: var(--gold-dim); }
+.mastery-chip .mc-weapon { font-size: 11px; color: var(--text); }
+.mastery-chip .mc-prop   { font-size: 9.5px; color: var(--gold); letter-spacing: .3px; }
+
+.mastery-hint { font-size: 11px; color: var(--gold); margin-bottom: 6px; }
+.mastery-edit-btn {
+  width: 100%; min-height: 34px; padding: 7px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 11px;
+  cursor: pointer; transition: all 0.12s;
+}
+.mastery-edit-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* Recordatorio en la tarjeta del ataque */
+.mastery-badge {
+  font-size: 9px; padding: 1px 6px; border-radius: 8px;
+  background: rgba(201,151,58,0.14); color: var(--gold);
+  border: 1px solid var(--gold-dim); cursor: pointer;
+  font-family: 'Jost', sans-serif; letter-spacing: .3px;
+}
+.mastery-badge:hover { background: rgba(201,151,58,0.26); }
+.mastery-reminder {
+  font-size: 10px; color: var(--gold); opacity: 0.85;
+  margin-top: 2px; line-height: 1.4;
+}
+
+/* Selector de maestrías, agrupado por propiedad */
+.mp-intro { font-size: 12px; color: var(--text-mid); margin-bottom: 12px; line-height: 1.55; }
+.mp-count { font-size: 11px; padding: 1px 7px; border-radius: 9px; background: rgba(106,154,91,0.18); color: #8fb98a; }
+.mp-count.warn { background: rgba(201,151,58,0.18); color: var(--gold); }
+
+.mp-group { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.mp-group:last-child { border-bottom: none; }
+.mp-group-hd { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.mp-prop  { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold); }
+.mp-short { font-size: 11px; color: var(--text-mid); }
+.mp-desc  { font-size: 11px; color: var(--text-dim); line-height: 1.55; margin: 4px 0 7px; }
+
+.mp-weapons { display: flex; flex-wrap: wrap; gap: 5px; }
+.mp-weapon {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; min-height: 36px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 11px;
+  cursor: pointer; transition: all 0.12s;
+}
+.mp-weapon:hover { border-color: var(--gold-dim); color: var(--text); }
+.mp-weapon.selected { background: rgba(201,151,58,0.14); border-color: var(--gold); color: var(--gold); }
+.mp-weapon.disabled { opacity: 0.38; cursor: not-allowed; }
+.mp-weapon .mp-die { font-size: 9.5px; color: var(--text-dim); }
+.mp-weapon.selected .mp-die { color: var(--gold-dim); }
+
+/* Detalle de una propiedad */
+.md-short { font-size: 13px; color: var(--gold); margin-bottom: 8px; }
+.md-desc  { font-size: 12px; color: var(--text-mid); line-height: 1.65; }

@@ -2203,6 +2203,9 @@ const App = (() => {
       html += _renderCompanionHTML(c);
     }
 
+    // Maestrías de arma (PHB 2024) — solo si la clase otorga alguna
+    html += _renderMasteriesHTML(c);
+
     // ── ARMAS EQUIPADAS COMO ACCIÓN DE COMBATE ───────────────────────────────
     // Solo armas reales (kind:'weapon'); si offHand es escudo u otro ítem, no se muestra.
     const eq = c.equipment || {};
@@ -2212,17 +2215,36 @@ const App = (() => {
     ].filter(w => eq[w.slot] && eq[w.slot].kind === 'weapon');
 
     if (weaponSlots.length) {
+      // Maestría activa del arma: solo si el personaje la eligió. Es lo que
+      // más se olvida en mesa, así que va en la tarjeta del ataque.
+      const _masterias = Array.isArray(c.weaponMasteries) ? c.weaponMasteries : [];
+      const _opcMastery = _masterias.length ? Characters.getWeaponMasteryOptions() : [];
+      const _masteryDe = (item) => {
+        if (!_masterias.length || !item) return null;
+        const nombre = (item.name || '').toLowerCase();
+        // El ítem equipado puede tener nombre propio ("Maza +1"), así que se
+        // busca por coincidencia con el arma base.
+        const w = _opcMastery.find(o => _masterias.includes(o.id) &&
+          (nombre === o.name.toLowerCase() || nombre.includes(o.name.toLowerCase())));
+        return w ? w.mastery : null;
+      };
+
       const weaponCards = weaponSlots.map(w => {
         const item = eq[w.slot];
         const typeLabel = item.type === 'ranged' ? 'Distancia' : 'Cuerpo a cuerpo';
+        const prop = _masteryDe(item);
+        const m = prop ? (Characters.WEAPON_MASTERIES[prop] || {}) : null;
         return `
         <div class="ability-card">
           <div class="ability-card-top">
             <div class="ability-card-info">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
                 <span class="ability-card-name">⚔️ ${item.name}</span>
+                ${prop ? `<button class="mastery-badge" onclick="event.stopPropagation();App.openMasteryDetail('${prop}')"
+                  title="${(m.short||'').replace(/"/g,'&quot;')}">${prop}</button>` : ''}
               </div>
               <div class="ability-card-desc">${w.label} · ${typeLabel}</div>
+              ${prop ? `<div class="mastery-reminder">${m.short || ''}</div>` : ''}
             </div>
             <button class="cast-btn" onclick="App.attackWithWeapon('${w.slot}')">Atacar</button>
           </div>
@@ -3783,6 +3805,164 @@ const App = (() => {
   }
 
   // ── Primal Companion rendering ──────────────────────────────────────────────
+
+  /* Selector de maestrías: se agrupan por propiedad para que se entienda
+     qué gana con cada arma, no solo el nombre del arma. */
+  function openMasteryPicker() {
+    if (!_char) return;
+    let ov = document.getElementById('masteryOverlay');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'masteryOverlay';
+      ov.className = 'modal-overlay';
+      ov.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      ov.onclick = (e) => { if (e.target === ov) closeMasteryPicker(); };
+      document.body.appendChild(ov);
+    }
+    _renderMasteryPicker();
+    ov.style.display = 'flex';
+  }
+
+  function _renderMasteryPicker() {
+    const ov = document.getElementById('masteryOverlay');
+    if (!ov || !_char) return;
+    const max = Characters.getWeaponMasteryCount(_char);
+    const elegidas = Array.isArray(_char.weaponMasteries) ? _char.weaponMasteries : [];
+    const opciones = Characters.getWeaponMasteryOptions();
+
+    // Agrupar por propiedad de maestría
+    const grupos = {};
+    opciones.forEach(o => { (grupos[o.mastery] = grupos[o.mastery] || []).push(o); });
+
+    const cuerpo = Object.keys(grupos).sort().map(prop => {
+      const m = Characters.WEAPON_MASTERIES[prop] || {};
+      const armas = grupos[prop].map(w => {
+        const sel = elegidas.includes(w.id);
+        const lleno = !sel && elegidas.length >= max;
+        return `<button class="mp-weapon ${sel ? 'selected' : ''} ${lleno ? 'disabled' : ''}"
+                  onclick="App.toggleMastery('${w.id}')">${w.name}<span class="mp-die">${w.die}</span></button>`;
+      }).join('');
+      return `<div class="mp-group">
+        <div class="mp-group-hd">
+          <span class="mp-prop">${prop}</span>
+          <span class="mp-short">${m.short || ''}</span>
+        </div>
+        <div class="mp-desc">${m.desc || ''}</div>
+        <div class="mp-weapons">${armas}</div>
+      </div>`;
+    }).join('');
+
+    ov.innerHTML = `
+      <div class="modal" style="max-width:560px;width:100%;">
+        <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>⚔️ Maestrías de arma <span class="mp-count${elegidas.length < max ? ' warn' : ''}">${elegidas.length}/${max}</span></span>
+          <span class="ref-close" onclick="App.closeMasteryPicker()">✕</span>
+        </div>
+        <div class="modal-body" style="max-height:66vh;overflow-y:auto;">
+          <div class="mp-intro">Elegí ${max} arma${max === 1 ? '' : 's'}: al atacar con ellas podés usar su propiedad de maestría.</div>
+          ${cuerpo}
+        </div>
+        <div class="modal-footer">
+          <button class="ref-ok-btn" onclick="App.closeMasteryPicker()">Listo</button>
+        </div>
+      </div>`;
+  }
+
+  function closeMasteryPicker() {
+    const ov = document.getElementById('masteryOverlay');
+    if (ov) ov.style.display = 'none';
+    _renderCombateIzq();
+  }
+
+  function toggleMastery(weaponId) {
+    if (!_char) return;
+    if (!Array.isArray(_char.weaponMasteries)) _char.weaponMasteries = [];
+    const max = Characters.getWeaponMasteryCount(_char);
+    const i = _char.weaponMasteries.indexOf(weaponId);
+    if (i >= 0) {
+      _char.weaponMasteries.splice(i, 1);
+    } else {
+      if (_char.weaponMasteries.length >= max) {
+        showToast(`Máximo ${max} maestrías`);
+        return;
+      }
+      _char.weaponMasteries.push(weaponId);
+    }
+    _saveChar();
+    _renderMasteryPicker();
+  }
+
+  // Detalle de una propiedad, al tocar un chip
+  function openMasteryDetail(prop) {
+    const m = Characters.WEAPON_MASTERIES[prop];
+    if (!m) return;
+    let ov = document.getElementById('masteryDetailOverlay');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'masteryDetailOverlay';
+      ov.className = 'modal-overlay';
+      ov.style.cssText = 'display:flex;align-items:center;z-index:1200;';
+      ov.onclick = (e) => { if (e.target === ov) closeMasteryDetail(); };
+      document.body.appendChild(ov);
+    }
+    ov.innerHTML = `
+      <div class="modal" style="max-width:400px;width:100%;">
+        <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>⚔️ ${m.name}</span>
+          <span class="ref-close" onclick="App.closeMasteryDetail()">✕</span>
+        </div>
+        <div class="modal-body">
+          <div class="md-short">${m.short}</div>
+          <div class="md-desc">${m.desc}</div>
+        </div>
+        <div class="modal-footer">
+          <button class="ref-ok-btn" onclick="App.closeMasteryDetail()">Listo</button>
+        </div>
+      </div>`;
+    ov.style.display = 'flex';
+  }
+
+  function closeMasteryDetail() {
+    const ov = document.getElementById('masteryDetailOverlay');
+    if (ov) ov.style.display = 'none';
+  }
+
+  /* ── Maestrías de arma (PHB 2024) ──────────────────────────────────
+     Cada arma tiene su propiedad fija; el personaje elige con cuáles
+     puede usarla. La cantidad depende de clase y nivel.                */
+  function _renderMasteriesHTML(c) {
+    const max = Characters.getWeaponMasteryCount(c);
+    if (!max) return '';   // clase sin maestrías
+
+    const elegidas = Array.isArray(c.weaponMasteries) ? c.weaponMasteries : [];
+    const opciones = Characters.getWeaponMasteryOptions();
+    const porId = new Map(opciones.map(o => [o.id, o]));
+
+    const chips = elegidas.map(id => {
+      const w = porId.get(id);
+      if (!w) return '';
+      const m = Characters.WEAPON_MASTERIES[w.mastery] || {};
+      return `<button class="mastery-chip" onclick="App.openMasteryDetail('${w.mastery}')"
+                title="${(m.short || '').replace(/"/g,'&quot;')}">
+                <span class="mc-weapon">${w.name}</span>
+                <span class="mc-prop">${w.mastery}</span>
+              </button>`;
+    }).join('');
+
+    const faltan = max - elegidas.length;
+    return `
+    <div class="equip-section mastery-section" style="margin-top:12px;">
+      <div class="rc-header" style="margin-bottom:6px;">
+        <span class="rc-name">⚔️ Maestrías de arma</span>
+        <span class="mastery-count${faltan > 0 ? ' warn' : ''}">${elegidas.length}/${max}</span>
+      </div>
+      ${chips ? `<div class="mastery-chips">${chips}</div>` : ''}
+      ${faltan > 0 ? `<div class="mastery-hint">Te ${faltan === 1 ? 'falta' : 'faltan'} ${faltan} por elegir.</div>` : ''}
+      <button class="mastery-edit-btn" onclick="App.openMasteryPicker()">
+        ${elegidas.length ? 'Cambiar armas' : 'Elegir armas'}
+      </button>
+    </div>`;
+  }
 
   /* ── Helpers del Primal Companion ────────────────────────────────────
      La bestia escala con el nivel de EXPLORADOR, no con el nivel total del
@@ -10549,6 +10729,8 @@ ${notesText}`;
     setCompanionBeast, clearCompanionBeast, setCompanionHP,
     adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
+    openMasteryPicker, closeMasteryPicker, toggleMastery,
+    openMasteryDetail, closeMasteryDetail,
 
     // Subclase
     openSubclaseModal, _selectSubclaseChip, _toggleManeuver, saveSubclase, closeSubclaseModal,

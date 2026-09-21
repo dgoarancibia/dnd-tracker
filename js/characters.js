@@ -5862,6 +5862,91 @@ const Characters = (() => {
   /* ── WEAPONS_DB: PHB 2024 + armas mágicas comunes ────────────────────────── */
   // Campos: id, name, die, type(melee/ranged), properties[], mastery, statUsed(str/dex/choice)
   // extraDie + extraType: daño adicional mágico (ej: '1d6','fire')
+  /* ── Maestrías de arma (PHB 2024) ─────────────────────────────────────
+     Cada arma tiene una propiedad de maestría fija (ya está en WEAPONS_DB).
+     Lo que el personaje elige es con QUÉ armas puede usarla: el número
+     depende de la clase y sube con el nivel.                              */
+  const WEAPON_MASTERIES = {
+    Cleave: {
+      name: 'Cleave',
+      short: 'Golpe extra a un segundo enemigo adyacente',
+      desc: 'Si acertás un ataque cuerpo a cuerpo contra una criatura, podés hacer un ataque con la misma arma contra otra criatura a 1,5 m de la primera y dentro de tu alcance. Ese ataque no suma el modificador de característica al daño, salvo que sea negativo. Una vez por turno.',
+    },
+    Graze: {
+      name: 'Graze',
+      short: 'Daño aunque falles',
+      desc: 'Si fallás una tirada de ataque, la criatura recibe daño igual al modificador de la característica que usaste para atacar. Ese daño es del mismo tipo que el arma y no se puede aumentar de ninguna forma.',
+    },
+    Nick: {
+      name: 'Nick',
+      short: 'Ataque ligero sin gastar la acción adicional',
+      desc: 'Cuando hacés el ataque extra de la propiedad Light, podés hacerlo como parte de la acción de Ataque en vez de usar tu Acción Adicional. Una vez por turno.',
+    },
+    Push: {
+      name: 'Push',
+      short: 'Empuja 3 m',
+      desc: 'Si acertás, podés empujar a la criatura hasta 3 m en línea recta alejándose de vos, siempre que sea Grande o más chica.',
+    },
+    Sap: {
+      name: 'Sap',
+      short: 'Desventaja en su próximo ataque',
+      desc: 'Si acertás, la criatura tiene desventaja en su próxima tirada de ataque antes del comienzo de tu siguiente turno.',
+    },
+    Slow: {
+      name: 'Slow',
+      short: '−3 m de velocidad',
+      desc: 'Si acertás y la criatura es Enorme o más chica, su velocidad baja 3 m hasta el comienzo de tu siguiente turno. Si recibe varios golpes, el efecto no se acumula.',
+    },
+    Topple: {
+      name: 'Topple',
+      short: 'Salvación de CON o Derribado',
+      desc: 'Si acertás, la criatura debe superar una salvación de Constitución (CD 8 + modificador de la característica del ataque + tu Bono de Competencia) o queda Derribada.',
+    },
+    Vex: {
+      name: 'Vex',
+      short: 'Ventaja en tu próximo ataque contra ese objetivo',
+      desc: 'Si acertás y el ataque causa daño, tenés ventaja en tu próxima tirada de ataque contra esa misma criatura, antes del final de tu siguiente turno.',
+    },
+  };
+
+  /* Cuántas armas con maestría puede usar cada clase, por nivel de clase.
+     Índice = nivel - 1. Las clases que no aparecen no tienen maestrías. */
+  const WEAPON_MASTERY_COUNT = {
+    // Guerrero: 3 a nv1, 4 a nv4, 5 a nv10, 6 a nv16
+    'Guerrero':  [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,6,6,6,6,6],
+    // Bárbaro: 2 a nv1, 3 a nv4, 4 a nv10
+    'Bárbaro':   [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
+    // Paladín y Explorador: 2 a nv1, 3 a nv9
+    'Paladín':   [2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3],
+    'Explorador':[2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3],
+    // Pícaro y Monje: 2, sin aumento
+    'Pícaro':    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    'Monje':     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+  };
+
+  // Cuántas maestrías le corresponden al personaje (suma multiclase).
+  function getWeaponMasteryCount(char) {
+    if (!char) return 0;
+    const deClase = (nombre, nivel) => {
+      const tabla = WEAPON_MASTERY_COUNT[nombre];
+      if (!tabla) return 0;
+      return tabla[Math.min(Math.max(nivel, 1), 20) - 1] || 0;
+    };
+    if (Array.isArray(char.classes) && char.classes.length) {
+      // En multiclase se toma el mayor, no la suma: la cantidad la fija la
+      // clase que más otorga, no se acumulan entre sí.
+      return char.classes.reduce((mx, c) => Math.max(mx, deClase(c.name, c.level || 1)), 0);
+    }
+    return deClase(char.clase, char.nivel || 1);
+  }
+
+  // Armas que el personaje puede elegir para maestría (las que tienen una).
+  function getWeaponMasteryOptions() {
+    return WEAPONS_DB
+      .filter(w => w.mastery && WEAPON_MASTERIES[w.mastery])
+      .map(w => ({ id: w.id, name: w.name, mastery: w.mastery, die: w.die, type: w.type }));
+  }
+
   const WEAPONS_DB = [
     // ── ARMAS SIMPLES CUERPO A CUERPO ─────────────────────────────────────────
     { id:'club',          name:'Club',              die:'1d4',  type:'melee',   properties:['Light'],              mastery:'Slow',   statUsed:'str' },
@@ -5986,6 +6071,9 @@ const Characters = (() => {
     applyTrasfondo,
     getMagicInitiateChoices,
     applyMagicInitiateSpells,
+    WEAPON_MASTERIES,
+    getWeaponMasteryCount,
+    getWeaponMasteryOptions,
     applySubraza,
     applySubclase,
     buildLursey,
