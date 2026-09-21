@@ -3855,6 +3855,16 @@ const Characters = (() => {
       { id:'healing-word-d', name:'Healing Word',  level:1, castTime:'Acción bonus', range:'18 m', duration:'Inst.',    concentration:false, combat:false, desc:'1d4+SAB HP. Escala +1d4 por nivel superior.' },
       { id:'faerie-fire', name:'Faerie Fire',       level:1, castTime:'Acción',       range:'18 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Save DES o brillan → ventaja en ataques contra ellos.' },
       { id:'thunderwave-d', name:'Thunderwave',    level:1, castTime:'Acción',       range:'Uno mismo (15ft)', duration:'Inst.', concentration:false, combat:true, desc:'Cubo 15ft · save CON · 2d8 trueno y empuja 10ft.' },
+      { id:'cure-wounds-d', name:'Cure Wounds',    level:1, castTime:'Acción',       range:'Toque', duration:'Inst.',   concentration:false, combat:false, desc:'Cura 2d8+SAB HP. Escala +2d8 por nivel superior.' },
+      { id:'goodberry',   name:'Goodberry',         level:1, castTime:'Acción',       range:'Toque', duration:'24 h',    concentration:false, combat:false, desc:'10 bayas · cada una cura 1 HP y alimenta por un día.' },
+      { id:'speak-with-animals-d', name:'Speak with Animals', level:1, castTime:'Acción', range:'Uno mismo', duration:'10 min', concentration:false, combat:false, ritual:true, desc:'Hablás con bestias. Ritual.' },
+      { id:'detect-magic-d', name:'Detect Magic',   level:1, castTime:'Acción',       range:'Uno mismo (9 m)', duration:'10 min', concentration:true, combat:false, ritual:true, desc:'Percibís magia a 9 m y su escuela. Ritual.' },
+      { id:'animal-friendship', name:'Animal Friendship', level:1, castTime:'Acción', range:'9 m', duration:'24 h',  concentration:false, combat:false, desc:'Save SAB o la bestia queda Encantada. No sirve con INT 4+.' },
+      { id:'charm-person-d', name:'Charm Person',   level:1, castTime:'Acción',       range:'9 m',  duration:'1 h',    concentration:false, combat:false, desc:'Save SAB o Encantado. Con ventaja si estás peleando con él.' },
+      { id:'create-or-destroy-water', name:'Create or Destroy Water', level:1, castTime:'Acción', range:'9 m', duration:'Inst.', concentration:false, combat:false, desc:'Creás o destruís hasta 40 litros de agua.' },
+      { id:'fog-cloud-d', name:'Fog Cloud',         level:1, castTime:'Acción',       range:'36 m', duration:'1 h',    concentration:true,  combat:true,  desc:'Esfera de niebla de 6 m · zona muy oscurecida.' },
+      { id:'jump-d',      name:'Jump',              level:1, castTime:'Acción bonus', range:'Toque', duration:'10 min', concentration:false, combat:false, desc:'Distancia de salto ×3 (hasta 3 criaturas).' },
+      { id:'longstrider-d', name:'Longstrider',     level:1, castTime:'Acción',       range:'Toque', duration:'1 h',   concentration:false, combat:false, desc:'+3 m de velocidad (hasta 3 criaturas).' },
       { id:'spike-growth',name:'Spike Growth',     level:2, castTime:'Acción',       range:'45 m', duration:'10 min',   concentration:true,  combat:true,  desc:'Área difícil 20ft radio · 2d4 perforante por 5ft caminados.' },
       { id:'moonbeam',    name:'Moonbeam',          level:2, castTime:'Acción',       range:'36 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Cilindro 5ft · save CON · 2d10 radiante por turno.' },
       { id:'flaming-sphere', name:'Flaming Sphere', level:2, castTime:'Acción',      range:'18 m', duration:'1 min',    concentration:true,  combat:true,  desc:'Esfera 5ft · 2d6 fuego save DES · movible bonus action.' },
@@ -5563,6 +5573,89 @@ const Characters = (() => {
   // Devuelve las elecciones pendientes para un char dado un nivel objetivo.
   // fromLevel: nivel ANTES de subir (por defecto char.nivel, pero se puede pasar explícitamente
   //            porque applyLevelUp() ya modifica char.nivel antes de llamar aquí)
+  /* ── Magic Initiate ──────────────────────────────────────────────────
+     Tres trasfondos (Acólito, Erudito, Guía) otorgan Magic Initiate, que
+     da 2 trucos y 1 conjuro de nivel 1 de una lista concreta. Hasta ahora
+     el feat se guardaba solo como texto descriptivo y nunca se pedían los
+     conjuros, así que no llegaban a la ficha.                            */
+
+  // De qué lista saca los conjuros cada versión del feat.
+  const MAGIC_INITIATE_LISTA = {
+    'Magic Initiate (Clérigo)': 'Clérigo',
+    'Magic Initiate (Mago)':    'Mago',
+    'Magic Initiate (Druida)':  'Druida',
+  };
+
+  function getMagicInitiateChoices(char) {
+    const cfg = TRASFONDOS_CONFIG[char.trasfondo];
+    const lista = cfg && MAGIC_INITIATE_LISTA[cfg.feat];
+    if (!lista) return [];
+
+    const pool = CLASE_SPELLS[lista] || [];
+    const aOpcion = (sp) => ({
+      id: sp.id,
+      name: sp.name.replace(/\s*[†◆●]\s*$/, '').trim(),
+      desc: sp.desc || '',
+    });
+    const trucos   = pool.filter(sp => sp.level === 0).map(aOpcion);
+    const nivel1   = pool.filter(sp => sp.level === 1).map(aOpcion);
+    if (!trucos.length && !nivel1.length) return [];
+
+    const out = [];
+    if (trucos.length) {
+      out.push({
+        id: 'mi-cantrips', level: 1, type: 'pickMultiple', count: 2,
+        label: `Magic Initiate (${lista}): trucos`,
+        prompt: `Elegí 2 trucos de la lista de ${lista}. Los podés lanzar a voluntad:`,
+        options: trucos,
+        source: 'trasfondo',
+      });
+    }
+    if (nivel1.length) {
+      out.push({
+        id: 'mi-spell', level: 1, type: 'pick1',
+        label: `Magic Initiate (${lista}): conjuro de nivel 1`,
+        prompt: `Elegí 1 conjuro de nivel 1 de ${lista}. Lo lanzás gratis 1×/descanso largo:`,
+        options: nivel1,
+        source: 'trasfondo',
+      });
+    }
+    return out;
+  }
+
+  // Mete en la ficha los conjuros elegidos para Magic Initiate, marcados
+  // con mi:true para que no cuenten contra el tope de preparados.
+  function applyMagicInitiateSpells(char) {
+    const cfg = TRASFONDOS_CONFIG[char.trasfondo];
+    const lista = cfg && MAGIC_INITIATE_LISTA[cfg.feat];
+    if (!lista) return false;
+    const pool = CLASE_SPELLS[lista] || [];
+    const elegidos = [];
+    const ch = char.choices || {};
+    if (Array.isArray(ch['mi-cantrips'])) elegidos.push(...ch['mi-cantrips']);
+    else if (ch['mi-cantrips']) elegidos.push(ch['mi-cantrips']);
+    if (ch['mi-spell']) elegidos.push(ch['mi-spell']);
+    if (!elegidos.length) return false;
+
+    if (!Array.isArray(char.spells)) char.spells = [];
+    let cambio = false;
+    for (const id of elegidos) {
+      const base = pool.find(sp => sp.id === id);
+      if (!base) continue;
+      if (char.spells.some(sp => sp.id === base.id)) continue;
+      const limpio = base.name.replace(/\s*[†◆●]\s*$/, '').trim();
+      char.spells.push({
+        ...base,
+        name: limpio + ' †',           // † marca los de Magic Initiate
+        mi: true,
+        // Los trucos de MI no cuentan contra el tope de trucos de la clase.
+        ...(base.level === 0 ? { cantrip_racial: true } : {}),
+      });
+      cambio = true;
+    }
+    return cambio;
+  }
+
   function getPendingChoices(char, targetLevel, fromLevel) {
     const claseCfg = CHOICES_CONFIG[char.clase] || [];
     const existing = char.choices || {};
@@ -5575,6 +5668,12 @@ const Characters = (() => {
     const staticChoices = claseCfg.filter(c =>
       c.level > desde && c.level <= targetLevel && !existing[c.id]
     );
+
+    // Magic Initiate del trasfondo: se pide una sola vez, al crear el
+    // personaje o la primera vez que se detecta sin resolver.
+    getMagicInitiateChoices(char).forEach(mc => {
+      if (!existing[mc.id]) staticChoices.push(mc);
+    });
 
     // Para known casters (Hechicero, Bardo, Brujo): generar elecciones de hechizo por nivel
     const cfg = CLASES_CONFIG[char.clase];
@@ -5639,6 +5738,11 @@ const Characters = (() => {
   function applyChoice(char, choiceId, value) {
     if (!char.choices) char.choices = {};
     char.choices[choiceId] = value;
+
+    // Magic Initiate: al elegir, los conjuros entran a la ficha.
+    if (choiceId === 'mi-cantrips' || choiceId === 'mi-spell') {
+      applyMagicInitiateSpells(char);
+    }
 
     // Si es ASI, aplicar al stat directamente (máximo 20) o agregar feat
     if (choiceId.startsWith('asi-')) {
@@ -5880,6 +5984,8 @@ const Characters = (() => {
     applyChoice,
     applyRaza,
     applyTrasfondo,
+    getMagicInitiateChoices,
+    applyMagicInitiateSpells,
     applySubraza,
     applySubclase,
     buildLursey,

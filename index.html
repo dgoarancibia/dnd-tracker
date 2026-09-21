@@ -1368,6 +1368,27 @@
         </div>
         <div id="wizRazaFixedList" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;"></div>
       </div>
+
+      <!-- BLOQUE MAGIC INITIATE — trasfondos que otorgan conjuros -->
+      <div class="wiz-prof-block" id="wizMIBlock" style="margin-top:12px;display:none;">
+        <div class="wiz-prof-block-header">
+          <span class="wiz-prof-block-icon">✨</span>
+          <span class="wiz-prof-block-title" id="wizMITitle">Magic Initiate</span>
+          <span class="wiz-prof-block-hint" id="wizMIHint"></span>
+        </div>
+        <div id="wizMICantripsSection" style="margin-top:6px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:4px;">
+            Trucos <span id="wizMICantripsCount"></span>
+          </div>
+          <div id="wizMICantripsList" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+        </div>
+        <div id="wizMISpellSection" style="margin-top:8px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:4px;">
+            Conjuro de nivel 1 <span id="wizMISpellCount"></span>
+          </div>
+          <div id="wizMISpellList" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- PASO 5: Stats -->
@@ -1438,7 +1459,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=58"></script>
-<script src="js/characters.js?v=110"></script>
+<script src="js/characters.js?v=111"></script>
 <script type="module" src="js/firebase.js?v=36"></script>
 <script>
 // ═══════════════════════════════════════════════════
@@ -2372,6 +2393,67 @@ function _wizBuildSkillsStep() {
   } else {
     razaBlock.style.display = 'none';
   }
+
+  _wizRenderMagicInitiate();
+}
+
+/* ── Magic Initiate en el wizard ──────────────────────────────────────
+   Acólito, Erudito y Guía dan 2 trucos y 1 conjuro de nivel 1. Antes el
+   feat se guardaba como texto y los conjuros nunca se elegían. */
+let _wizMICantrips = [];   // ids de los 2 trucos
+let _wizMISpell    = null; // id del conjuro de nivel 1
+
+function _wizRenderMagicInitiate() {
+  const block = document.getElementById('wizMIBlock');
+  if (!block) return;
+  const fake = { trasfondo: _selectedTrasfondo, choices: {} };
+  const choices = (_selectedTrasfondo && Characters.getMagicInitiateChoices)
+    ? Characters.getMagicInitiateChoices(fake) : [];
+  if (!choices.length) { block.style.display = 'none'; return; }
+
+  block.style.display = '';
+  const cfgTras = Characters.TRASFONDOS_CONFIG[_selectedTrasfondo] || {};
+  document.getElementById('wizMITitle').textContent = cfgTras.feat || 'Magic Initiate';
+  document.getElementById('wizMIHint').textContent = '(del trasfondo)';
+
+  const cantrips = choices.find(c => c.id === 'mi-cantrips');
+  const spell    = choices.find(c => c.id === 'mi-spell');
+
+  const secC = document.getElementById('wizMICantripsSection');
+  if (cantrips) {
+    secC.style.display = '';
+    document.getElementById('wizMICantripsCount').textContent =
+      `(${_wizMICantrips.length}/${cantrips.count} elegidos)`;
+    document.getElementById('wizMICantripsList').innerHTML = cantrips.options.map(o =>
+      `<button class="skill-choice-btn ${_wizMICantrips.includes(o.id) ? 'selected' : ''}"
+         onclick="wizToggleMICantrip('${o.id}')" title="${(o.desc||'').replace(/"/g,'&quot;')}">${o.name}</button>`
+    ).join('');
+  } else secC.style.display = 'none';
+
+  const secS = document.getElementById('wizMISpellSection');
+  if (spell) {
+    secS.style.display = '';
+    document.getElementById('wizMISpellCount').textContent = _wizMISpell ? '(elegido)' : '(elegí 1)';
+    document.getElementById('wizMISpellList').innerHTML = spell.options.map(o =>
+      `<button class="skill-choice-btn ${_wizMISpell === o.id ? 'selected' : ''}"
+         onclick="wizPickMISpell('${o.id}')" title="${(o.desc||'').replace(/"/g,'&quot;')}">${o.name}</button>`
+    ).join('');
+  } else secS.style.display = 'none';
+}
+
+function wizToggleMICantrip(id) {
+  const i = _wizMICantrips.indexOf(id);
+  if (i >= 0) _wizMICantrips.splice(i, 1);
+  else {
+    if (_wizMICantrips.length >= 2) { showToast('Solo 2 trucos'); return; }
+    _wizMICantrips.push(id);
+  }
+  _wizRenderMagicInitiate();
+}
+
+function wizPickMISpell(id) {
+  _wizMISpell = (_wizMISpell === id) ? null : id;
+  _wizRenderMagicInitiate();
 }
 
 function wizToggleSkill(skillId, el) {
@@ -2506,6 +2588,7 @@ function openCreateModal() {
   _selectedTrasfondo = '';
   _multiclaseCount   = 0;
   _wizSelectedSkills = [];
+  _wizMICantrips = []; _wizMISpell = null;
   _wizArrayAssign    = {};
   _wizStatsMethod    = 'array';
   _wizManualStats    = null;
@@ -2538,6 +2621,7 @@ function openEditModal(id) {
   _selectedTrasfondo = c.trasfondo  || '';
   _multiclaseCount   = 0;
   _wizSelectedSkills = [];
+  _wizMICantrips = []; _wizMISpell = null;
   _wizArrayAssign    = {};
   _wizStatsMethod    = 'manual';
   _wizManualStats    = c.stats || null;
@@ -2639,6 +2723,14 @@ function saveCreateModal() {
 
     // Trasfondo
     if (_selectedTrasfondo) Characters.applyTrasfondo(newChar, _selectedTrasfondo);
+
+    // Conjuros de Magic Initiate elegidos en el paso de proficiencias
+    if (_wizMICantrips.length || _wizMISpell) {
+      if (!newChar.choices) newChar.choices = {};
+      if (_wizMICantrips.length) newChar.choices['mi-cantrips'] = [..._wizMICantrips];
+      if (_wizMISpell) newChar.choices['mi-spell'] = _wizMISpell;
+      Characters.applyMagicInitiateSpells(newChar);
+    }
 
     // Skills opcionales elegidas en el wizard
     const razaCfg  = Characters.RAZAS_CONFIG && Characters.RAZAS_CONFIG[_selectedRaza];
@@ -2875,7 +2967,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 404;
+var _SW_EXPECTED_IDX = 405;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
