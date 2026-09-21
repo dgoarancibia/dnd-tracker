@@ -2124,10 +2124,11 @@ const Characters = (() => {
       clase: 'Explorador',
       resources: () => [],
       features: (nivel) => [
-        { id:'hunter-prey', name:'Hunter\'s Prey',
+        // Guarda de nivel: la subclase se elige a nivel 3 (ver Beast Master).
+        ...(nivel >= 3 ? [{ id:'hunter-prey', name:'Hunter\'s Prey',
           source:'Hunter · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Eliges una presa: Colossus Slayer (+1d8 si herido), Giant Killer (reacción al fallar), o Horde Breaker (atacar criatura extra adyacente).',
-          fullDesc:'Al nivel 3 ganas una de estas ventajas:\n\n• Colossus Slayer: cuando golpeas a una criatura que ya está herida, haces +1d8 de daño adicional (1/turno).\n• Giant Killer: cuando una criatura de tamaño Grande+ adyacente a ti falla un ataque, puedes usar tu reacción para atacarla.\n• Horde Breaker: una vez por turno, cuando hagas un ataque, puedes hacer otro ataque sin coste de acción contra una criatura diferente dentro de alcance y adyacente al objetivo original.' },
+          fullDesc:'Al nivel 3 ganas una de estas ventajas:\n\n• Colossus Slayer: cuando golpeas a una criatura que ya está herida, haces +1d8 de daño adicional (1/turno).\n• Giant Killer: cuando una criatura de tamaño Grande+ adyacente a ti falla un ataque, puedes usar tu reacción para atacarla.\n• Horde Breaker: una vez por turno, cuando hagas un ataque, puedes hacer otro ataque sin coste de acción contra una criatura diferente dentro de alcance y adyacente al objetivo original.'}] : []),
         ...(nivel >= 7 ? [{ id:'hunter-defensive', name:'Defensive Tactics',
           source:'Hunter · Nv7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Eliges: Escape the Horde (sin ataques de oportunidad en Disengage), Multiattack Defense (+4 CA contra misma criatura que ya atacó), o Steel Will (ventaja en saves contra Miedo).',
@@ -2147,10 +2148,13 @@ const Characters = (() => {
       clase: 'Explorador',
       resources: () => [],
       features: (nivel) => [
-        { id:'bm-ranger-companion', name:'Primal Companion',
+        // Guarda de nivel: la subclase se elige a nivel 3. Sin esto la feature
+        // aparecía desde nivel 1 y el modal de subida a 3 no la mostraba como
+        // ganada (el diff entre niveles daba vacío).
+        ...(nivel >= 3 ? [{ id:'bm-ranger-companion', name:'Primal Companion',
           source:'Beast Master · Nv3', type:'active', action:'Acción Mágica', range:'Personal', recharge:null,
           desc:'Acción Mágica para invocar la bestia (Tierra, Mar o Cielo); actúa en tu iniciativa. Para que ataque: Acción Adicional, o sacrificá uno de tus ataques al usar la acción de Ataque. Si no la comandás, solo Esquiva. Vuelve a invocarse tras un Descanso Largo, y ahí podés cambiar de bestia.',
-          fullDesc:'A nivel 3 lanzas Summon Beast sin gastar slot ni componentes para invocar tu compañero: eliges el bloque de estadísticas Bestia de la Tierra, del Mar o del Cielo, y decides qué animal es. La bestia actúa justo después de ti en la iniciativa y puede moverse y usar su reacción sola; para que ataque o realice otra acción, usás tu acción bonus. Sus estadísticas escalan con tu nivel de Explorador y tu modificador de Sabiduría. Si muere, vuelve con una hora de trabajo o al relanzar el conjuro; puedes reinvocarla gratis una vez por descanso largo.' },
+          fullDesc:'A nivel 3 usás una Acción Mágica para invocar tu compañero sin gastar espacio de conjuro: elegís el bloque Bestia de la Tierra, del Mar o del Cielo, y decidís qué animal es. La bestia actúa en tu iniciativa y se mueve y usa su reacción por su cuenta; si no la comandás, solo toma la acción de Esquivar. Para que ataque usás tu Acción Adicional, o sacrificás uno de tus ataques cuando tomás la acción de Ataque. Sus PG y su daño escalan con tu nivel de Explorador y tu modificador de Sabiduría. Si muere, podés revivirla tocándola con una Acción Mágica y gastando un espacio de conjuro. Vuelve a invocarse gratis al terminar un Descanso Largo, y ahí podés cambiar de bloque de bestia.' }] : []),
         ...(nivel >= 7 ? [{ id:'bm-exceptional-training', name:'Exceptional Training',
           source:'Beast Master · Nv7', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
           desc:'Cuando usás tu Acción Adicional para comandar a la bestia, esta también puede hacer Dash, Disengage, Dodge o Help con su propia Acción Adicional. Además, sus ataques pueden infligir daño de fuerza en lugar de su tipo normal.',
@@ -2181,14 +2185,15 @@ const Characters = (() => {
           note:'Primeras 2 rondas de combate: velocidad +3m, ataque extra +1d8 daño' },
       ],
       features: (nivel) => [
-        { id:'gs-umbral-sight', name:'Umbral Sight',
+        // Guarda de nivel: la subclase se elige a nivel 3 (ver Beast Master).
+        ...(nivel >= 3 ? [{ id:'gs-umbral-sight', name:'Umbral Sight',
           source:'Gloom Stalker · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Visión en oscuridad total (no requiere Darkvision). Criaturas con Darkvision no pueden verte en oscuridad.',
           fullDesc:'A nivel 3 adquieres visión en la oscuridad total hasta 18 metros. Si ya tienes Darkvision, su alcance aumenta 18 metros. Las criaturas con Darkvision no tienen ventaja especial para detectarte en oscuridad.' },
         { id:'gs-dread-ambusher', name:'Dread Ambusher',
           source:'Gloom Stalker · Nv3', type:'active', action:'Iniciativa', range:'Personal', recharge:'long',
           desc:'Primeras 2 rondas de combate: velocidad +3 m. En la primera ronda: 1 ataque extra que hace +1d8 daño.',
-          fullDesc:'A nivel 3 dominas las emboscadas. En la primera ronda de cada combate tu velocidad aumenta 3 metros. Si atacas antes de que tu objetivo tome su primer turno: un ataque extra que hace 1d8 de daño adicional. A partir de nivel 11 también puedes aturdir a la criatura.' },
+          fullDesc:'A nivel 3 dominas las emboscadas. En la primera ronda de cada combate tu velocidad aumenta 3 metros. Si atacas antes de que tu objetivo tome su primer turno: un ataque extra que hace 1d8 de daño adicional. A partir de nivel 11 también puedes aturdir a la criatura.'}] : []),
         ...(nivel >= 7 ? [{ id:'gs-iron-mind', name:'Iron Mind',
           source:'Gloom Stalker · Nv7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Proficiencia en saves de SAB. Si ya la tienes, en saves de INT o CAR.',

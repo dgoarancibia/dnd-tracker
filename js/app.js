@@ -68,6 +68,21 @@ const App = (() => {
   // ── _syncCharData: aplica migraciones y syncs al personaje activo ───────────
   // Se llama tanto en init() como en reloadChar() para que los personajes que
   // llegan desde Firebase también reciban las migraciones correctamente.
+  /* Devuelve [nombreSubclase, nivelDeEsaClase] para cada subclase que tenga
+     el personaje. En multiclase c.subclase queda vacío y la subclase vive en
+     classes[], así que buscar solo por c.subclase dejaba a un Guerrero 1 /
+     Explorador 5 sin las features ni los recursos de Beast Master. El nivel
+     que se devuelve es el de la clase dueña, no el total. */
+  function _subclasesDe(c) {
+    if (!c) return [];
+    if (Array.isArray(c.classes) && c.classes.length) {
+      return c.classes
+        .filter(x => x && x.subclass)
+        .map(x => [x.subclass, x.level || 0]);
+    }
+    return c.subclase ? [[c.subclase, c.nivel || 1]] : [];
+  }
+
   function _syncCharData(c) {
     if (!c || c.id === 'lursey-brumaclara') return false;
 
@@ -163,11 +178,11 @@ const App = (() => {
     }
 
     // 3. Re-sync recursos de subclase (dependen de stats: CON mod, Prof Bonus, etc.)
-    if (c.subclase) {
-      const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[c.subclase];
+    for (const [_subNombre, _subNivel] of _subclasesDe(c)) {
+      const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_subNombre];
       if (subConf && typeof subConf.resources === 'function') {
         if (!c.resources) c.resources = [];
-        const nivel = c.nivel || 1;
+        const nivel = _subNivel || 1;
         const subResrcs = subConf.resources(nivel, c);
         subResrcs.forEach(newR => {
           const existing = c.resources.find(r => r.id === newR.id);
@@ -193,10 +208,10 @@ const App = (() => {
     }
 
     // 4. Re-sync subclassSpells (spells de dominio/juramento/psiónicos)
-    if (c.subclase) {
-      const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[c.subclase];
+    for (const [_subNombre, _subNivel] of _subclasesDe(c)) {
+      const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_subNombre];
       if (subConf && typeof subConf.subclassSpells === 'function') {
-        const nivel = c.nivel || 1;
+        const nivel = _subNivel || 1;
         const subclSpells = subConf.subclassSpells(nivel);
         if (!c.spells) c.spells = [];
         subclSpells.forEach(s => {
@@ -3785,12 +3800,19 @@ const App = (() => {
     return c.nivel || 0;
   }
 
-  // Beast Master puede estar en c.subclase (monoclase) o dentro de classes[]
-  // (multiclase), así que se mira en ambos lados.
+  /* Beast Master puede estar en c.subclase (monoclase) o dentro de classes[]
+     (multiclase), así que se mira en ambos lados. Se exige ADEMÁS tener
+     niveles de Explorador: la subclase es exclusiva del Ranger, y sin esta
+     condición un personaje con datos inconsistentes mostraría el compañero
+     sin ser Ranger. */
   function esBeastMaster(c) {
     if (!c) return false;
-    if (c.subclase === 'Beast Master') return true;
-    return Array.isArray(c.classes) && c.classes.some(x => x && x.subclass === 'Beast Master');
+    if (getRangerLevel(c) <= 0) return false;
+    if (Array.isArray(c.classes) && c.classes.length) {
+      // En multiclase la subclase debe estar en la entrada de Explorador.
+      return c.classes.some(x => x && x.name === 'Explorador' && x.subclass === 'Beast Master');
+    }
+    return c.clase === 'Explorador' && c.subclase === 'Beast Master';
   }
 
   function _renderCompanionHTML(c) {
@@ -6738,10 +6760,10 @@ const App = (() => {
 
     if (changed) {
       // Re-sincronizar recursos de subclase que dependen de stats (ej. Echo Knight CON mod)
-      if (_char.subclase) {
-        const sub = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
+      for (const [_sn, _slv] of _subclasesDe(_char)) {
+        const sub = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_sn];
         if (sub && typeof sub.resources === 'function') {
-          const updatedResrcs = sub.resources(_char.nivel, _char);
+          const updatedResrcs = sub.resources(_slv || 1, _char);
           updatedResrcs.forEach(newR => {
             const existing = (_char.resources || []).find(r => r.id === newR.id);
             if (existing) {
@@ -7835,8 +7857,8 @@ const App = (() => {
 
     // Features de subclase también
     let subFeatures = [];
-    if (_char.subclase) {
-      const subCfg = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_char.subclase];
+    for (const [_sn] of _subclasesDe(_char)) {
+      const subCfg = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_sn];
       if (subCfg && typeof subCfg.features === 'function') {
         const subNew = subCfg.features(newLevel);
         const subOld = subCfg.features(oldLevel);
