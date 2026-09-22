@@ -9108,3 +9108,47 @@ mark.diary-highlight {
   background: rgba(201,151,58,0.16); border-color: var(--gold); color: var(--gold);
 }
 .feat-pick-option.feat-obsoleto { opacity: 0.55; }
+
+/* ── Economía de acciones del turno ──────────────────────────────────
+   Sin contador de rondas a propósito: solo el turno actual. */
+.turn-tracker { margin-bottom: 10px; }
+.tt-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.tt-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 11px; min-height: 36px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 16px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 11px;
+  cursor: pointer; transition: all 0.12s;
+}
+.tt-chip .tt-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #6a9a5b; transition: background 0.12s;
+}
+.tt-chip.usado { color: var(--text-dim); border-color: var(--border); opacity: 0.6; }
+.tt-chip.usado .tt-dot { background: var(--text-dim); }
+.tt-chip:hover { border-color: var(--gold-dim); }
+
+.tt-new {
+  margin-left: auto; min-height: 36px; padding: 6px 12px;
+  background: var(--bg3); border: 1px solid var(--gold-dim);
+  border-radius: 16px; color: var(--gold);
+  font-family: 'Jost', sans-serif; font-size: 11px; cursor: pointer;
+}
+.tt-new:hover { background: rgba(201,151,58,0.12); }
+
+.tt-attacks { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+.tt-atk-lbl { font-size: 10px; color: var(--text-dim); }
+.tt-atk-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--gold); border: 1px solid var(--gold-dim);
+}
+.tt-atk-dot.usado { background: transparent; }
+.tt-atk-btn {
+  min-height: 28px; padding: 3px 9px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 11px; cursor: pointer;
+}
+.tt-atk-btn:disabled { opacity: 0.3; cursor: default; }
+.tt-atk-btn:not(:disabled):hover { color: var(--gold); border-color: var(--gold-dim); }

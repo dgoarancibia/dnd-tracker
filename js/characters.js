@@ -6055,6 +6055,51 @@ const Characters = (() => {
     return 2 + placeholders;
   }
 
+  /* ── Economía de acciones (HU-44) ─────────────────────────────────────
+     Qué consume cada cosa al usarse. No se duplica el dato: se deriva de
+     los campos que ya existen (castTime en conjuros, action en features),
+     que además usan vocabularios distintos ("Acción bonus" vs "Acción
+     adicional"). Así el Turn Assistant no necesita saber de conjuros
+     concretos: pregunta por la activación.                               */
+  const ACTIVATION = {
+    ACTION:  'action',
+    BONUS:   'bonusAction',
+    REACTION:'reaction',
+    ATTACK_REPLACE: 'attackReplacement',
+    PASSIVE: 'passive',
+    OTHER:   'other',
+  };
+
+  // Acepta un conjuro, feature o recurso y devuelve qué consume.
+  function getActivation(item) {
+    if (!item) return ACTIVATION.OTHER;
+    // Prioridad al dato explícito si algún día se agrega a mano.
+    if (item.activation && item.activation.type) return item.activation.type;
+
+    const txt = String(item.castTime || item.action || '').toLowerCase();
+    if (!txt) return item.bonus ? ACTIVATION.BONUS : ACTIVATION.OTHER;
+
+    // "Acción bonus" (conjuros) y "Acción adicional" (features) son lo mismo.
+    if (/bonus|adicional/.test(txt))  return ACTIVATION.BONUS;
+    if (/reacci[óo]n/.test(txt))      return ACTIVATION.REACTION;
+    if (/pasiva/.test(txt))           return ACTIVATION.PASSIVE;
+    if (/^acci[óo]n\b/.test(txt))     return ACTIVATION.ACTION;
+    // Rituales y conjuros de 1 min / 10 min / 1 h no consumen economía de
+    // turno: se lanzan fuera de combate.
+    if (/min|h$|hora|24/.test(txt))   return ACTIVATION.OTHER;
+    return ACTIVATION.OTHER;
+  }
+
+  // Etiqueta corta para mostrar en la UI.
+  const ACTIVATION_LABEL = {
+    action: 'Acción',
+    bonusAction: 'Acción adicional',
+    reaction: 'Reacción',
+    attackReplacement: 'Reemplaza un ataque',
+    passive: 'Pasiva',
+    other: '',
+  };
+
   const WEAPONS_DB = [
     // ── ARMAS SIMPLES CUERPO A CUERPO ─────────────────────────────────────────
     { id:'club',          name:'Club',              die:'1d4',  type:'melee',   properties:['Light'],              mastery:'Slow',   statUsed:'str' },
@@ -6179,6 +6224,9 @@ const Characters = (() => {
     applyTrasfondo,
     getMagicInitiateChoices,
     applyMagicInitiateSpells,
+    ACTIVATION,
+    ACTIVATION_LABEL,
+    getActivation,
     WEAPON_MASTERIES,
     LANGUAGES_STANDARD,
     LANGUAGES_RARE,

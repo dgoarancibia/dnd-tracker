@@ -2211,6 +2211,7 @@ const App = (() => {
     // Iniciar combate / ronda / turno / iniciativa: ahora viven en el panel
     // flotante (FAB ⚔️), no en el flujo normal de esta columna.
     let html = `
+    <div id="turnTracker" class="turn-tracker"></div>
     <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>`;
 
     // Primal Companion (Beast Master) — arriba del todo, debajo de Guía de Combate
@@ -2619,6 +2620,7 @@ const App = (() => {
     }
 
     colDer.innerHTML = html;
+    _renderTurnTracker();
     _renderInitTracker();
     } catch(e) {
       console.error('[_renderCombateDer] Error:', e);
@@ -3947,6 +3949,122 @@ const App = (() => {
   function closeMasteryDetail() {
     const ov = document.getElementById('masteryDetailOverlay');
     if (ov) ov.style.display = 'none';
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ECONOMÍA DE ACCIONES (HU-20, HU-45)
+
+     Lleva qué usaste de tu turno: acción, acción adicional, reacción y
+     ataques. Es estado EFÍMERO — vive en el personaje para sobrevivir a
+     un refresco accidental, pero se reinicia con "Nuevo turno", nunca
+     con un descanso.
+
+     No cuenta rondas a propósito: en mesa se olvida pasarlas, así que un
+     contador de rondas mentiría. Solo representa el turno actual.
+  ══════════════════════════════════════════════════════════════════ */
+
+  // Cuántos ataques da la acción de Ataque a este nivel.
+  function _ataquesDelTurno(c) {
+    if (!c) return 1;
+    const feats = (c.features || []).map(f => (f.name || '').toLowerCase());
+    // Extra Attack: la mayoría de clases da 2; Guerrero escala a 3 y 4.
+    if (!feats.some(n => /extra attack|ataque extra/.test(n))) return 1;
+    const nivelGuerrero = (Array.isArray(c.classes) && c.classes.length)
+      ? (c.classes.find(x => x && x.name === 'Guerrero') || {}).level || 0
+      : (c.clase === 'Guerrero' ? (c.nivel || 0) : 0);
+    if (nivelGuerrero >= 20) return 4;
+    if (nivelGuerrero >= 11) return 3;
+    return 2;
+  }
+
+  function _turnoDe(c) {
+    if (!c.turn || typeof c.turn !== 'object') {
+      c.turn = { action: false, bonus: false, reaction: false, movement: false };
+    }
+    if (typeof c.turn.attacksUsed !== 'number') c.turn.attacksUsed = 0;
+    return c.turn;
+  }
+
+  /* Marca un recurso del turno como usado. `forzar` lo aplica aunque ya
+     estuviera usado — sirve cuando el DM permite algo fuera de lo normal.
+     Devuelve true si se aplicó. */
+  function usarRecursoTurno(tipo, forzar) {
+    if (!_char) return false;
+    const t = _turnoDe(_char);
+    const campo = { action: 'action', bonusAction: 'bonus', reaction: 'reaction' }[tipo];
+    if (!campo) return false;
+    if (t[campo] && !forzar) return false;   // ya usado
+    t[campo] = true;
+    _saveChar(true);
+    _renderTurnTracker();
+    return true;
+  }
+
+  function toggleRecursoTurno(campo) {
+    if (!_char) return;
+    const t = _turnoDe(_char);
+    t[campo] = !t[campo];
+    _saveChar(true);
+    _renderTurnTracker();
+    _renderCombateDer();
+  }
+
+  function usarAtaque(n) {
+    if (!_char) return;
+    const t = _turnoDe(_char);
+    const max = _ataquesDelTurno(_char);
+    t.attacksUsed = Math.max(0, Math.min(max, (t.attacksUsed || 0) + (n || 1)));
+    // Usar un ataque implica haber tomado la acción de Ataque.
+    if (t.attacksUsed > 0) t.action = true;
+    _saveChar(true);
+    _renderTurnTracker();
+    _renderCombateDer();
+  }
+
+  /* Nuevo turno: reinicia SOLO lo del turno. Nunca toca HP, slots, usos
+     de Hunter's Mark ni condiciones — eso es de los descansos. */
+  function nuevoTurno() {
+    if (!_char) return;
+    _char.turn = { action: false, bonus: false, reaction: false, movement: false, attacksUsed: 0 };
+    // Banderas por turno de otras features (Charge, Bestial Fury…).
+    if (_char.companion) delete _char.companion.chargeReady;
+    _saveChar(true);
+    _renderTurnTracker();
+    _renderCombateDer();
+    showToast('Nuevo turno');
+  }
+
+  function _renderTurnTracker() {
+    const cont = document.getElementById('turnTracker');
+    if (!cont || !_char) return;
+    const t = _turnoDe(_char);
+    const maxAtq = _ataquesDelTurno(_char);
+
+    const pastilla = (campo, etiqueta) => `
+      <button class="tt-chip ${t[campo] ? 'usado' : ''}"
+              onclick="App.toggleRecursoTurno('${campo}')"
+              title="${t[campo] ? 'Usado — tocá para devolver' : 'Disponible — tocá para marcar'}">
+        <span class="tt-dot"></span>${etiqueta}
+      </button>`;
+
+    const puntos = maxAtq > 1
+      ? `<div class="tt-attacks">
+           <span class="tt-atk-lbl">Ataques</span>
+           ${Array.from({ length: maxAtq }, (_, i) =>
+             `<span class="tt-atk-dot ${i < (t.attacksUsed || 0) ? 'usado' : ''}"></span>`).join('')}
+           <button class="tt-atk-btn" onclick="App.usarAtaque(1)" ${(t.attacksUsed || 0) >= maxAtq ? 'disabled' : ''}>−1</button>
+           <button class="tt-atk-btn" onclick="App.usarAtaque(-1)" ${!(t.attacksUsed || 0) ? 'disabled' : ''}>+1</button>
+         </div>`
+      : '';
+
+    cont.innerHTML = `
+      <div class="tt-row">
+        ${pastilla('action', 'Acción')}
+        ${pastilla('bonus', 'Adicional')}
+        ${pastilla('reaction', 'Reacción')}
+        <button class="tt-new" onclick="App.nuevoTurno()">↻ Nuevo turno</button>
+      </div>
+      ${puntos}`;
   }
 
   /* ── Maestrías de arma (PHB 2024) ──────────────────────────────────
@@ -5510,6 +5628,9 @@ const App = (() => {
 
   // Punto de entrada desde las tarjetas de conjuro: el modal de detalle es
   // ahora la única pantalla de lanzamiento (elegir slot y lanzar ocurren ahí).
+  // Evita que el aviso de conflicto se repita al reintentar tras confirmar.
+  let _conflictoConfirmado = false;
+
   function castSpell(spellId, slotLevel) {
     if (!_char) return;
     const sp = (_char.spells || []).find(s => s.id === spellId);
@@ -5518,6 +5639,22 @@ const App = (() => {
     // Sin nivel explícito → abrir el modal unificado para que el usuario elija.
     if (slotLevel === undefined) {
       openSpellDetail(spellId);
+      return;
+    }
+
+    /* Conflicto de economía de acciones (HU-32): si el recurso que pide
+       el conjuro ya se usó este turno, se avisa antes de gastar nada. No
+       bloquea: el DM puede permitirlo, o el jugador puede estar
+       corrigiendo un registro anterior. */
+    const _actConf = Characters.getActivation(sp);
+    const _t = _turnoDe(_char);
+    const _yaUsado = { action: _t.action, bonusAction: _t.bonus, reaction: _t.reaction }[_actConf];
+    if (_yaUsado && !_conflictoConfirmado) {
+      const etiqueta = Characters.ACTIVATION_LABEL[_actConf] || _actConf;
+      _confirm(
+        `Ya usaste tu ${etiqueta} este turno.\n\n¿Lanzar ${sp.name} igual?`,
+        () => { _conflictoConfirmado = true; castSpell(spellId, slotLevel); _conflictoConfirmado = false; }
+      );
       return;
     }
 
@@ -5593,6 +5730,12 @@ const App = (() => {
     if (sp.concentration) parts.push('Conc');
     const logLine = parts.join(' · ');
     _logCombat(`✨ ${logLine}`, 'spell', { name: sp.name, slot: slotLevel || 0 });
+
+    // Consumir el recurso de turno que corresponda al tiempo de lanzamiento.
+    const _act = Characters.getActivation(sp);
+    if (_act === 'action' || _act === 'bonusAction' || _act === 'reaction') {
+      usarRecursoTurno(_act, true);
+    }
 
     // Refresh right column to show updated slot dots
     _renderCombateDer();
@@ -10794,6 +10937,7 @@ ${notesText}`;
     setCompanionBeast, clearCompanionBeast, setCompanionHP,
     adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
+    usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
     openMasteryPicker, closeMasteryPicker, toggleMastery,
     openMasteryDetail, closeMasteryDetail,
 
