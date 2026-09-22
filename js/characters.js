@@ -1515,8 +1515,8 @@ const Characters = (() => {
         {
           id: 'favored-enemy', name: 'Favored Enemy',
           source: 'Explorador · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Hunter\'s Mark no requiere concentración y puedes lanzarlo sin slot (usos por Long Rest).',
-          fullDesc: 'D&D 2024: Favored Enemy ya no es una lista de tipos para elegir. En su lugar, el Explorador tiene Hunter\'s Mark integrado:\n\n• Lanzas Hunter\'s Mark sin gastar slot de conjuro.\n• Usos gratuitos por Long Rest: 1 (nv1), 2 (nv9), 3 (nv17).\n• A nivel 1: Hunter\'s Mark no requiere concentración.\n• El daño extra (+1d6) se aplica a cualquier criatura que marques, sin restricción de tipo.',
+          desc: 'Hunter\'s Mark sin gastar espacio de conjuro (usos por Descanso Largo). Sigue requiriendo concentración.',
+          fullDesc: 'D&D 2024: Favored Enemy ya no es una lista de tipos para elegir. En su lugar, el Explorador tiene Hunter\'s Mark integrado:\n\n• Lanzas Hunter\'s Mark sin gastar slot de conjuro.\n• Usos gratuitos por Long Rest: 1 (nv1), 2 (nv9), 3 (nv17).\n• Hunter\'s Mark SIGUE requiriendo concentración: lo que cambia es que no gasta espacio de conjuro.\n• El daño extra (+1d6) se aplica a cualquier criatura que marques, sin restricción de tipo.',
         },
         { id:'weapon-mastery-ranger', name:'Maestría con Armas',
           source:'Explorador · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
@@ -6007,6 +6007,36 @@ const Characters = (() => {
       .map(w => ({ id: w.id, name: w.name, mastery: w.mastery, die: w.die, type: w.type }));
   }
 
+  /* ── Idiomas (PHB 2024) ───────────────────────────────────────────────
+     Todos empiezan con Común más dos a elección; algunas especies suman
+     uno fijo. Las razas guardan textos como "Un idioma a elección" que
+     hay que resolver al crear el personaje.                              */
+  const LANGUAGES_STANDARD = [
+    'Común', 'Enano', 'Élfico', 'Gigante', 'Gnómico', 'Goblin',
+    'Mediano', 'Orco', 'Dracónico', 'Common Sign Language',
+  ];
+  const LANGUAGES_RARE = [
+    'Abisal', 'Celestial', 'Infracomún', 'Infernal', 'Primordial',
+    'Silvano', 'Druídico', 'Jerga de Ladrones',
+  ];
+
+  function getAllLanguages() {
+    return [...LANGUAGES_STANDARD, ...LANGUAGES_RARE];
+  }
+
+  // Idiomas que ya tiene fijos por especie, sin los placeholders.
+  function getFixedLanguages(char) {
+    const raw = Array.isArray(char && char.languages) ? char.languages : [];
+    return raw.filter(l => !/elecci[óo]n|adicional/i.test(l));
+  }
+
+  // Cuántos le faltan elegir: 2 de origen + los "a elección" de la especie.
+  function getPendingLanguageCount(char) {
+    const raw = Array.isArray(char && char.languages) ? char.languages : [];
+    const placeholders = raw.filter(l => /elecci[óo]n|adicional/i.test(l)).length;
+    return 2 + placeholders;
+  }
+
   const WEAPONS_DB = [
     // ── ARMAS SIMPLES CUERPO A CUERPO ─────────────────────────────────────────
     { id:'club',          name:'Club',              die:'1d4',  type:'melee',   properties:['Light'],              mastery:'Slow',   statUsed:'str' },
@@ -6132,6 +6162,11 @@ const Characters = (() => {
     getMagicInitiateChoices,
     applyMagicInitiateSpells,
     WEAPON_MASTERIES,
+    LANGUAGES_STANDARD,
+    LANGUAGES_RARE,
+    getAllLanguages,
+    getFixedLanguages,
+    getPendingLanguageCount,
     getWeaponMasteryCount,
     getWeaponMasteryOptions,
     applySubraza,

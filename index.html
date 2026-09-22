@@ -1369,6 +1369,17 @@
         <div id="wizRazaFixedList" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;"></div>
       </div>
 
+      <!-- BLOQUE IDIOMAS — Común + 2 de origen, más los de la especie -->
+      <div class="wiz-prof-block" id="wizLangBlock" style="margin-top:12px;">
+        <div class="wiz-prof-block-header">
+          <span class="wiz-prof-block-icon">🗣️</span>
+          <span class="wiz-prof-block-title">Idiomas</span>
+          <span class="wiz-prof-block-hint" id="wizLangHint"></span>
+        </div>
+        <div id="wizLangFixed" style="display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 7px;"></div>
+        <div id="wizLangList" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+      </div>
+
       <!-- BLOQUE MAGIC INITIATE — trasfondos que otorgan conjuros -->
       <div class="wiz-prof-block" id="wizMIBlock" style="margin-top:12px;display:none;">
         <div class="wiz-prof-block-header">
@@ -1459,7 +1470,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=58"></script>
-<script src="js/characters.js?v=117"></script>
+<script src="js/characters.js?v=118"></script>
 <script type="module" src="js/firebase.js?v=36"></script>
 <script>
 // ═══════════════════════════════════════════════════
@@ -2394,7 +2405,47 @@ function _wizBuildSkillsStep() {
     razaBlock.style.display = 'none';
   }
 
+  _wizRenderIdiomas();
   _wizRenderMagicInitiate();
+}
+
+/* ── Idiomas en el wizard ─────────────────────────────────────────────
+   Las razas traen textos como "Un idioma a elección" que quedaban sin
+   resolver en la ficha. */
+let _wizLangs = [];
+
+function _wizRenderIdiomas() {
+  const block = document.getElementById('wizLangBlock');
+  if (!block) return;
+  const razaCfg = Characters.RAZAS_CONFIG && Characters.RAZAS_CONFIG[_selectedRaza];
+  const fake = { languages: (razaCfg && razaCfg.languages) || ['Común'] };
+  const fijos = Characters.getFixedLanguages(fake);
+  const max   = Characters.getPendingLanguageCount(fake);
+
+  document.getElementById('wizLangHint').textContent = `(${_wizLangs.length}/${max} elegidos)`;
+  document.getElementById('wizLangFixed').innerHTML = fijos.map(l =>
+    `<span style="padding:4px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text);">${l}</span>`).join('');
+
+  const todos = Characters.getAllLanguages().filter(l => !fijos.includes(l));
+  document.getElementById('wizLangList').innerHTML = todos.map(l => {
+    const sel = _wizLangs.includes(l);
+    const lleno = !sel && _wizLangs.length >= max;
+    return `<button class="skill-choice-btn ${sel ? 'selected' : ''}" ${lleno ? 'style="opacity:.4"' : ''}
+      onclick="wizToggleLang('${l.replace(/'/g, "\\'")}')">${l}</button>`;
+  }).join('');
+}
+
+function wizToggleLang(lang) {
+  const razaCfg = Characters.RAZAS_CONFIG && Characters.RAZAS_CONFIG[_selectedRaza];
+  const fake = { languages: (razaCfg && razaCfg.languages) || ['Común'] };
+  const max = Characters.getPendingLanguageCount(fake);
+  const i = _wizLangs.indexOf(lang);
+  if (i >= 0) _wizLangs.splice(i, 1);
+  else {
+    if (_wizLangs.length >= max) { showToast(`Máximo ${max} idiomas`); return; }
+    _wizLangs.push(lang);
+  }
+  _wizRenderIdiomas();
 }
 
 /* ── Magic Initiate en el wizard ──────────────────────────────────────
@@ -2588,7 +2639,7 @@ function openCreateModal() {
   _selectedTrasfondo = '';
   _multiclaseCount   = 0;
   _wizSelectedSkills = [];
-  _wizMICantrips = []; _wizMISpell = null;
+  _wizMICantrips = []; _wizMISpell = null; _wizLangs = [];
   _wizArrayAssign    = {};
   _wizStatsMethod    = 'array';
   _wizManualStats    = null;
@@ -2621,7 +2672,7 @@ function openEditModal(id) {
   _selectedTrasfondo = c.trasfondo  || '';
   _multiclaseCount   = 0;
   _wizSelectedSkills = [];
-  _wizMICantrips = []; _wizMISpell = null;
+  _wizMICantrips = []; _wizMISpell = null; _wizLangs = [];
   _wizArrayAssign    = {};
   _wizStatsMethod    = 'manual';
   _wizManualStats    = c.stats || null;
@@ -2723,6 +2774,14 @@ function saveCreateModal() {
 
     // Trasfondo
     if (_selectedTrasfondo) Characters.applyTrasfondo(newChar, _selectedTrasfondo);
+
+    // Idiomas: se quitan los placeholders ("Un idioma a elección") y se
+    // ponen los que el jugador eligió.
+    {
+      const base = Array.isArray(newChar.languages) ? newChar.languages : ['Común'];
+      const fijos = base.filter(l => !/elecci[óo]n|adicional/i.test(l));
+      newChar.languages = [...new Set([...fijos, ..._wizLangs])];
+    }
 
     // Conjuros de Magic Initiate elegidos en el paso de proficiencias
     if (_wizMICantrips.length || _wizMISpell) {
@@ -2967,7 +3026,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 413;
+var _SW_EXPECTED_IDX = 414;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
