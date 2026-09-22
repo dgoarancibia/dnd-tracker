@@ -5672,6 +5672,14 @@ const Characters = (() => {
         }
       }
     }
+
+    /* Se reordena por nivel: los de Magic Initiate se agregan al final del
+       array, así que sin esto aparecían después de los conjuros de nivel 5
+       y había que bajar hasta el fondo de la lista para encontrarlos. */
+    if (cambio) {
+      char.spells.sort((a, b) => (a.level || 0) - (b.level || 0) ||
+        String(a.name || '').localeCompare(String(b.name || '')));
+    }
     return cambio;
   }
 
