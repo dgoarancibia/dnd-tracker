@@ -7277,15 +7277,34 @@ const App = (() => {
       const list = feats.filter(f => f.category === cat);
       return `
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:10px 0 4px;">${cat}</div>
-        ${list.map(f => `
-          <label class="choice-option feat-pick-option">
+        ${list.map(f => {
+          // Casi todos los feats de 2024 dan +1 a una característica. Si
+          // ofrece varias, el jugador elige cuál; si es una sola, se
+          // muestra para que sepa qué va a subir.
+          const asi = Array.isArray(f.asi) ? f.asi : [];
+          let asiHTML = '';
+          if (asi.length === 1) {
+            asiHTML = `<span class="feat-asi-fixed">+1 ${STAT_LABELS[asi[0]]}</span>`;
+          } else if (asi.length > 1) {
+            asiHTML = `<div class="feat-asi-pick" id="asiPick-${f.id}">
+              <span class="feat-asi-lbl">+1 a:</span>
+              ${asi.map(st => `<button type="button" class="feat-asi-btn"
+                data-feat="${f.id}" data-stat="${st}"
+                onclick="event.preventDefault();event.stopPropagation();App._pickFeatASI('${f.id}','${st}')">${STAT_LABELS[st]}</button>`).join('')}
+            </div>`;
+          }
+          return `
+          <label class="choice-option feat-pick-option${f.obsoleto2014 ? ' feat-obsoleto' : ''}">
             <input type="radio" name="asiFeat" value="${f.id}" onchange="App._onASIFeatChange(this)">
             <div class="choice-opt-content">
-              <strong>${f.name}</strong>
+              <strong>${f.name}</strong>${asiHTML && asi.length === 1 ? ' ' + asiHTML : ''}
+              ${f.obsoleto2014 ? '<span style="font-size:10px;color:var(--red-light,#e05c2a);display:block;">No existe en el PHB 2024</span>' : ''}
               ${f.prereq ? `<span style="font-size:10px;color:var(--gold-dim);display:block;">Req: ${f.prereq}</span>` : ''}
               <span class="choice-opt-desc">${f.desc}</span>
+              ${asi.length > 1 ? asiHTML : ''}
             </div>
-          </label>`).join('')}`;
+          </label>`;
+        }).join('')}`;
     }).join('');
 
     bodyEl.innerHTML = `
@@ -7490,9 +7509,26 @@ const App = (() => {
     });
   }
 
+  // Característica elegida para el +1 del feat, cuando ofrece varias.
+  let _featASIStat = null;
+
+  function _pickFeatASI(featId, stat) {
+    _featASIStat = stat;
+    // Seleccionar también el feat, para no obligar a dos toques.
+    const radio = document.querySelector(`[name="asiFeat"][value="${featId}"]`);
+    if (radio && !radio.checked) { radio.checked = true; _onASIFeatChange(radio); }
+    document.querySelectorAll(`#asiPick-${featId} .feat-asi-btn`).forEach(b =>
+      b.classList.toggle('active', b.dataset.stat === stat));
+  }
+
   function _onASIFeatChange(radio) {
     document.querySelectorAll('#asiFeatSection .choice-option').forEach(el => el.classList.remove('selected'));
     radio.closest('.choice-option').classList.add('selected');
+    // Al cambiar de feat se olvida la característica del anterior.
+    const f = (Characters.GENERAL_FEATS || []).find(x => x.id === radio.value);
+    const asi = (f && Array.isArray(f.asi)) ? f.asi : [];
+    _featASIStat = (asi.length === 1) ? asi[0] : null;
+    document.querySelectorAll('.feat-asi-btn.active').forEach(b => b.classList.remove('active'));
   }
 
   function _onASISingleChange(radio) {
@@ -7553,7 +7589,14 @@ const App = (() => {
       } else if (mode === 'feat') {
         const radio = document.querySelector('[name="asiFeat"]:checked');
         if (!radio) { showToast('Elegí un feat'); return; }
+        const featDef = (Characters.GENERAL_FEATS || []).find(f => f.id === radio.value);
+        const asiOpts = (featDef && Array.isArray(featDef.asi)) ? featDef.asi : [];
+        if (asiOpts.length > 1 && !_featASIStat) {
+          showToast('Elegí a qué característica va el +1');
+          return;
+        }
         value = { mode:'feat', featId: radio.value };
+        if (asiOpts.length) value.asiStat = _featASIStat || asiOpts[0];
       }
     } else if (choice.type === 'pickSkills') {
       const checks = Array.from(document.querySelectorAll('[name="pickSkill"]:checked:not(:disabled)'));
@@ -10759,7 +10802,7 @@ ${notesText}`;
 
     // Elecciones de personaje
     openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice, reopenChoice,
-    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _onPickSkillChange, _onPickMultipleChange, _renderPickMultiple,
+    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _pickFeatASI, _onPickSkillChange, _onPickMultipleChange, _renderPickMultiple,
     _filterSpellPickList, _onSpellPickChange,
 
     // Descansos

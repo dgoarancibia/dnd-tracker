@@ -9072,3 +9072,29 @@ mark.diary-highlight {
 /* Detalle de una propiedad */
 .md-short { font-size: 13px; color: var(--gold); margin-bottom: 8px; }
 .md-desc  { font-size: 12px; color: var(--text-mid); line-height: 1.65; }
+
+/* ── Selector de característica del feat ──────────────────────────────
+   En 2024 casi todos los feats generales dan +1 a una característica;
+   cuando ofrecen varias, el jugador elige cuál. */
+.feat-asi-fixed {
+  font-size: 10px; padding: 1px 6px; border-radius: 8px;
+  background: rgba(106,154,91,0.18); color: #8fb98a;
+  margin-left: 4px; white-space: nowrap;
+}
+.feat-asi-pick {
+  display: flex; align-items: center; gap: 4px;
+  flex-wrap: wrap; margin-top: 6px;
+}
+.feat-asi-lbl { font-size: 10px; color: var(--text-dim); }
+.feat-asi-btn {
+  min-height: 30px; padding: 4px 10px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 10.5px;
+  cursor: pointer; transition: all 0.12s;
+}
+.feat-asi-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
+.feat-asi-btn.active {
+  background: rgba(201,151,58,0.16); border-color: var(--gold); color: var(--gold);
+}
+.feat-pick-option.feat-obsoleto { opacity: 0.55; }
