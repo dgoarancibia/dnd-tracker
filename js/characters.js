@@ -5601,8 +5601,15 @@ const Characters = (() => {
     const nivel1   = pool.filter(sp => sp.level === 1).map(aOpcion);
     if (!trucos.length && !nivel1.length) return [];
 
+    /* Un personaje creado antes de que esto existiera puede tener ya los
+       conjuros en la ficha sin el registro en `choices`. Se mira lo que
+       realmente tiene para no volver a pedírselo. */
+    const yaTiene = (char.spells || []).filter(sp => sp.mi);
+    const yaTieneTrucos  = yaTiene.filter(sp => sp.level === 0).length >= 2;
+    const yaTieneConjuro = yaTiene.some(sp => sp.level === 1);
+
     const out = [];
-    if (trucos.length) {
+    if (trucos.length && !yaTieneTrucos) {
       out.push({
         id: 'mi-cantrips', level: 1, type: 'pickMultiple', count: 2,
         label: `Magic Initiate (${lista}): trucos`,
@@ -5611,7 +5618,7 @@ const Characters = (() => {
         source: 'trasfondo',
       });
     }
-    if (nivel1.length) {
+    if (nivel1.length && !yaTieneConjuro) {
       out.push({
         id: 'mi-spell', level: 1, type: 'pick1',
         label: `Magic Initiate (${lista}): conjuro de nivel 1`,
