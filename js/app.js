@@ -207,6 +207,16 @@ const App = (() => {
       }
     }
 
+    /* 3b. Magic Initiate: los conjuros elegidos podían quedar registrados en
+       `choices` sin llegar nunca a spells[] — applyMagicInitiateSpells solo
+       corría al elegir en el wizard, no al abrir una ficha ya creada. Es
+       idempotente: si ya están, no hace nada. */
+    if (c.trasfondo && Characters.applyMagicInitiateSpells) {
+      try {
+        if (Characters.applyMagicInitiateSpells(c)) changed = true;
+      } catch (e) { console.warn('[sync] Magic Initiate:', e.message); }
+    }
+
     // 4. Re-sync subclassSpells (spells de dominio/juramento/psiónicos)
     for (const [_subNombre, _subNivel] of _subclasesDe(c)) {
       const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_subNombre];
