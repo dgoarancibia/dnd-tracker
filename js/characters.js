@@ -5630,6 +5630,22 @@ const Characters = (() => {
     return out;
   }
 
+  // El conjuro de nivel 1 se lanza gratis 1×/descanso largo: necesita su
+  // propio recurso para poder marcar ese uso.
+  function _asegurarRecursoMI(char, base, limpio) {
+    if (!Array.isArray(char.resources)) char.resources = [];
+    const resId = base.id + '-mi';
+    if (char.resources.some(r => r.id === resId)) return;
+    char.resources.push({
+      id: resId,
+      name: limpio + ' (MI)',
+      current: 1,
+      max: 1,
+      recharge: 'long',
+      note: 'Uso gratis de Magic Initiate · después gasta slot',
+    });
+  }
+
   // Mete en la ficha los conjuros elegidos para Magic Initiate, marcados
   // con mi:true para que no cuenten contra el tope de preparados.
   function applyMagicInitiateSpells(char) {
@@ -5646,11 +5662,34 @@ const Characters = (() => {
 
     if (!Array.isArray(char.spells)) char.spells = [];
     let cambio = false;
+
+    // Símbolo viejo (†) → nuevo (○) en conjuros ya guardados.
+    char.spells.forEach(sp => {
+      if (sp.mi && / †$/.test(sp.name || '')) {
+        sp.name = sp.name.replace(/ †$/, ' ○');
+        cambio = true;
+      }
+    });
     for (const id of elegidos) {
       const base = pool.find(sp => sp.id === id);
       if (!base) continue;
-      if (char.spells.some(sp => sp.id === base.id)) continue;
       const limpio = base.name.replace(/\s*[†◆●○]\s*$/, '').trim();
+
+      /* El conjuro puede estar YA en la ficha como conjuro normal de la
+         clase (ej. Goodberry está tanto en Druida como en Explorador). En
+         ese caso no se duplica: se marca el que hay como Magic Initiate,
+         que es lo que cambia — se lanza gratis y no ocupa preparación. */
+      const existente = char.spells.find(sp => sp.id === base.id);
+      if (existente) {
+        if (!existente.mi) {
+          existente.mi = true;
+          existente.name = limpio + (base.level === 0 ? ' ○' : ' ○');
+          if (base.level === 0) existente.cantrip_racial = true;
+          cambio = true;
+        }
+        if (base.level === 1) _asegurarRecursoMI(char, base, limpio);
+        continue;
+      }
       char.spells.push({
         ...base,
         name: limpio + ' ○',           // ○ marca los de Magic Initiate
@@ -5664,20 +5703,7 @@ const Characters = (() => {
          necesita un recurso propio para poder marcarlo como usado. Sin
          esto el conjuro aparecía en la lista pero no había dónde llevar
          la cuenta del uso gratuito. */
-      if (base.level === 1) {
-        if (!Array.isArray(char.resources)) char.resources = [];
-        const resId = base.id + '-mi';
-        if (!char.resources.some(r => r.id === resId)) {
-          char.resources.push({
-            id: resId,
-            name: limpio + ' (MI)',
-            current: 1,
-            max: 1,
-            recharge: 'long',
-            note: 'Uso gratis de Magic Initiate · después gasta slot',
-          });
-        }
-      }
+      if (base.level === 1) _asegurarRecursoMI(char, base, limpio);
     }
 
     /* Se reordena por nivel: los de Magic Initiate se agregan al final del
