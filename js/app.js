@@ -25,14 +25,19 @@ const App = (() => {
       const n = String(f);
       return { id: n.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-'), name:n, source:c.clase, type:'passive', action:null, range:null, recharge:null, desc:'', fullDesc:'' };
     });
-    // Solo conservar features cuyo source menciona explícitamente la subclase
-    const subFeatures = (c.features || []).filter(f =>
-      f.source && c.subclase && f.source.toLowerCase().includes(c.subclase.toLowerCase())
-    );
-    const subIds = new Set(subFeatures.map(f => f.id));
+    // Conservar las features que NO vienen del catálogo de clase: las de
+    // subclase y las de trasfondo (Magic Initiate, Wanderer…). Antes solo
+    // se salvaban las de subclase, así que un refresco borraba las del
+    // trasfondo y el jugador perdía su feat de origen.
+    const esDeSubclase = (f) =>
+      f.source && c.subclase && f.source.toLowerCase().includes(c.subclase.toLowerCase());
+    const esDeTrasfondo = (f) =>
+      (f.source && /trasfondo/i.test(f.source)) || (f.id && f.id.startsWith('bg-'));
+    const conservadas = (c.features || []).filter(f => esDeSubclase(f) || esDeTrasfondo(f));
+    const conservadasIds = new Set(conservadas.map(f => f.id));
     c.features = [
-      ...claseFeatList.filter(f => !subIds.has(f.id)),
-      ...subFeatures,
+      ...claseFeatList.filter(f => !conservadasIds.has(f.id)),
+      ...conservadas,
     ];
 
     // Re-aplicar features derivadas de choices (feats tomados en ASI, metamagias elegidas)
