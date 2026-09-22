@@ -5652,6 +5652,25 @@ const Characters = (() => {
         ...(base.level === 0 ? { cantrip_racial: true } : {}),
       });
       cambio = true;
+
+      /* El conjuro de nivel 1 se lanza gratis 1×/descanso largo, así que
+         necesita un recurso propio para poder marcarlo como usado. Sin
+         esto el conjuro aparecía en la lista pero no había dónde llevar
+         la cuenta del uso gratuito. */
+      if (base.level === 1) {
+        if (!Array.isArray(char.resources)) char.resources = [];
+        const resId = base.id + '-mi';
+        if (!char.resources.some(r => r.id === resId)) {
+          char.resources.push({
+            id: resId,
+            name: limpio + ' (MI)',
+            current: 1,
+            max: 1,
+            recharge: 'long',
+            note: 'Uso gratis de Magic Initiate · después gasta slot',
+          });
+        }
+      }
     }
     return cambio;
   }

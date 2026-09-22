@@ -2203,8 +2203,6 @@ const App = (() => {
       html += _renderCompanionHTML(c);
     }
 
-    // Maestrías de arma (PHB 2024) — solo si la clase otorga alguna
-    html += _renderMasteriesHTML(c);
 
     // ── ARMAS EQUIPADAS COMO ACCIÓN DE COMBATE ───────────────────────────────
     // Solo armas reales (kind:'weapon'); si offHand es escudo u otro ítem, no se muestra.
@@ -2589,6 +2587,11 @@ const App = (() => {
     }
 
     html += `</div>`;
+
+    /* Maestrías de arma al final: es una configuración que se toca poco,
+       no algo que se consulte en cada turno. El recordatorio de qué hace
+       cada una vive en la tarjeta del ataque, que sí está arriba. */
+    html += _renderMasteriesHTML(c);
 
     // Tips de combate
     const tips = c.combatTips || [];
