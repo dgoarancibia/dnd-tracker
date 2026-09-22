@@ -2726,6 +2726,7 @@ const App = (() => {
       ${isKnownCasterCtx ? `<button class="sf-chip${tag==='known'?' active':''}" data-tag="known" onclick="App.setSpellFilter('known')">Conocidos</button>` : `<button class="sf-chip${tag==='prep'?' active':''}" data-tag="prep" onclick="App.setSpellFilter('prep')">Preparados</button>`}
       <button class="sf-chip${tag==='conc'?' active':''}" data-tag="conc" onclick="App.setSpellFilter('conc')">Conc</button>
       <button class="sf-chip${tag==='bonus'?' active':''}" data-tag="bonus" onclick="App.setSpellFilter('bonus')">Bonus</button>
+      ${(c.spells || []).some(s => s.mi) ? `<button class="sf-chip${tag==='mi'?' active':''}" data-tag="mi" onclick="App.setSpellFilter('mi')">○ Trasfondo</button>` : ''}
       ${levels.map(l => `<button class="sf-chip sf-lvl${tag==='lvl'&&level===l?' active':''}" data-tag="lvl" data-level="${l}" onclick="App.setSpellFilter('lvl',${l})">Nvl ${l}</button>`).join('')}
     </div>`;
 
@@ -2735,6 +2736,9 @@ const App = (() => {
     else if (tag === 'prep')   spells = spells.filter(s => s.level === 0 || s.domain || s.mi || prepared.includes(s.id));
     else if (tag === 'conc')   spells = spells.filter(s => s.concentration);
     else if (tag === 'bonus')  spells = spells.filter(s => s.bonus);
+    // Los de Magic Initiate se pierden entre los de la clase: con 66 conjuros
+    // en la lista, el de nivel 1 quedaba en la posición 17.
+    else if (tag === 'mi')     spells = spells.filter(s => s.mi);
     else if (tag === 'lvl')    spells = spells.filter(s => s.level === level);
 
     // Buscador: con 45+ conjuros, encontrar uno requería scrollear 13 pantallas.
