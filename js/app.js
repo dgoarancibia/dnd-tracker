@@ -4629,7 +4629,7 @@ const App = (() => {
     const concSpell = _char.concentration
       ? (_char.spells || []).find(s => s.id === _char.concentration)
       : null;
-    const concName = concSpell ? concSpell.name.replace(/\s*[◆†●]/g,'') : null;
+    const concName = concSpell ? concSpell.name.replace(/\s*[◆†●○]/g,'') : null;
 
     // Key resources (first 2 non-zero resources)
     const keyResources = (_char.resources || []).filter(r => r.max > 0).slice(0, 2);
@@ -9800,7 +9800,7 @@ ${notesText}`;
 
     document.getElementById('sdmBadge').textContent = levelLabel;
     document.getElementById('sdmBadge').className = `sdm-level-badge ${badgeClass}`;
-    document.getElementById('sdmName').textContent = sp.name.replace(/\s*[◆†]/g, '');
+    document.getElementById('sdmName').textContent = sp.name.replace(/\s*[◆†○]/g, '');
     document.getElementById('sdmCastTime').textContent = sp.castTime || '—';
     document.getElementById('sdmDuration').textContent = sp.duration || '—';
     document.getElementById('sdmRange').textContent = fmtDistGrid(sp.range) || '—';

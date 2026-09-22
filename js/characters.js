@@ -896,7 +896,7 @@ const Characters = (() => {
       desc:'Bonus action · 18 m · conc 10 min · +2 CA · excelente en aliado frente-a-frente o en ti misma', tags:['conc'],
       fullDesc:'Un campo de energía protectora rodea a una criatura a 18 m, otorgándole +2 CA mientras dure la concentración. Acción de bonus, muy eficiente. Ideal para el aliado de primera línea.' },
     // ── NVL 1 MAGIC INITIATE ──
-    { id:'guiding-bolt', name:'Guiding Bolt †',   level:1, concentration:false, domain:false, mi:true,  bonus:false, ritual:false,
+    { id:'guiding-bolt', name:'Guiding Bolt ○',   level:1, concentration:false, domain:false, mi:true,  bonus:false, ritual:false,
       castTime:'Acción', range:'36 m', duration:'1 turno', damage:'4d6 radiante', upcast:'1d6 adicional por nivel de slot sobre 1.',
       desc:'Acción · 36 m · ataque de conjuro (+7) · 4d6 radiante · el próximo ataque vs ese enemigo tiene ventaja · gratis 1×/día, luego slot 1', tags:['mi'],
       fullDesc:'Ataque de conjuro a distancia (+7). Si impacta: 4d6 radiante y la siguiente tirada de ataque contra él antes del final de tu próximo turno tiene ventaja. Gratis 1×/día largo (Magic Initiate); usos extra consumen slot 1. Slot 2 = 5d6, slot 3 = 6d6.' },
@@ -5594,7 +5594,7 @@ const Characters = (() => {
     const pool = CLASE_SPELLS[lista] || [];
     const aOpcion = (sp) => ({
       id: sp.id,
-      name: sp.name.replace(/\s*[†◆●]\s*$/, '').trim(),
+      name: sp.name.replace(/\s*[†◆●○]\s*$/, '').trim(),
       desc: sp.desc || '',
     });
     const trucos   = pool.filter(sp => sp.level === 0).map(aOpcion);
@@ -5643,10 +5643,10 @@ const Characters = (() => {
       const base = pool.find(sp => sp.id === id);
       if (!base) continue;
       if (char.spells.some(sp => sp.id === base.id)) continue;
-      const limpio = base.name.replace(/\s*[†◆●]\s*$/, '').trim();
+      const limpio = base.name.replace(/\s*[†◆●○]\s*$/, '').trim();
       char.spells.push({
         ...base,
-        name: limpio + ' †',           // † marca los de Magic Initiate
+        name: limpio + ' ○',           // ○ marca los de Magic Initiate
         mi: true,
         // Los trucos de MI no cuentan contra el tope de trucos de la clase.
         ...(base.level === 0 ? { cantrip_racial: true } : {}),
