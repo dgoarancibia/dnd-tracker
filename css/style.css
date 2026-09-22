@@ -1011,11 +1011,22 @@ input[type=number] { -moz-appearance: textfield; }
   min-width: 0;
   overflow: hidden;
   position: relative;
+  /* Columna flex para que el panel ocupe lo que queda DESPUÉS de la barra
+     de pestañas. Antes el panel pedía height:100% del contenedor entero y
+     los dos juntos sumaban más que el alto disponible: el excedente (la
+     altura de la barra) quedaba cortado por el overflow:hidden y era
+     inalcanzable, además de desfasar el scroll interno. */
+  display: flex;
+  flex-direction: column;
 }
+.app-content-tabs > .tab-nav { flex: 0 0 auto; }
 
 .tab-panel {
   display: none;
-  height: 100%;
+  /* min-height:0 es necesario para que un hijo flex pueda encogerse y
+     dejar que su propio contenido scrollee en vez de desbordar. */
+  min-height: 0;
+  flex: 1 1 auto;
   overflow: hidden;
 }
 
@@ -1100,10 +1111,9 @@ input[type=number] { -moz-appearance: textfield; }
   margin-top: 16px;
   border-top: 1px solid var(--border);
   padding-top: 10px;
-  max-height: 60vh;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--gold-dim) transparent;
+  /* Sin scroll propio: la columna (#col-combate-stack) ya scrollea, y dos
+     scrolls anidados hacían que la rueda quedara atrapada en el bloque de
+     referencia y no se pudiera seguir bajando en la columna. */
 }
 .combat-ref-title {
   font-family: 'Cinzel', serif;
