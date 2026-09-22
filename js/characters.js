@@ -1505,18 +1505,22 @@ const Characters = (() => {
     },
     'Explorador': {
       resources: (nivel) => [
+        /* PHB 2024: 2 usos desde nivel 1, y sube a 3/4/5/6 en los niveles
+           5/9/13/17 — coincide con el Bono de Competencia de un Explorador
+           puro. Antes la tabla decía 1/2/3, que era la lógica de Favored
+           Foe de Tasha's. */
         { id:'hunters-mark-uses', name:"Hunter's Mark",
-          current: nivel >= 17 ? 3 : nivel >= 9 ? 2 : 1,
-          max:     nivel >= 17 ? 3 : nivel >= 9 ? 2 : 1,
+          current: nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : 2,
+          max:     nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : 2,
           recharge:'long',
-          note:'Lanzalo sin gastar slot (usos por Long Rest)' },
+          note:'Lanzalo sin gastar espacio de conjuro (usos por Descanso Largo)' },
       ],
       features: (nivel) => [
         {
           id: 'favored-enemy', name: 'Favored Enemy',
           source: 'Explorador · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
           desc: 'Hunter\'s Mark sin gastar espacio de conjuro (usos por Descanso Largo). Sigue requiriendo concentración.',
-          fullDesc: 'D&D 2024: Favored Enemy ya no es una lista de tipos para elegir. En su lugar, el Explorador tiene Hunter\'s Mark integrado:\n\n• Lanzas Hunter\'s Mark sin gastar slot de conjuro.\n• Usos gratuitos por Long Rest: 1 (nv1), 2 (nv9), 3 (nv17).\n• Hunter\'s Mark SIGUE requiriendo concentración: lo que cambia es que no gasta espacio de conjuro.\n• El daño extra (+1d6) se aplica a cualquier criatura que marques, sin restricción de tipo.',
+          fullDesc: 'D&D 2024: Favored Enemy ya no es una lista de tipos para elegir. En su lugar, el Explorador tiene Hunter\'s Mark integrado:\n\n• Lanzas Hunter\'s Mark sin gastar slot de conjuro.\n• Usos gratuitos por Descanso Largo: 2 (nv1), 3 (nv5), 4 (nv9), 5 (nv13), 6 (nv17).\n• Hunter\'s Mark SIGUE requiriendo concentración: lo que cambia es que no gasta espacio de conjuro.\n• El daño extra (+1d6) se aplica a cualquier criatura que marques, sin restricción de tipo.',
         },
         { id:'weapon-mastery-ranger', name:'Maestría con Armas',
           source:'Explorador · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
