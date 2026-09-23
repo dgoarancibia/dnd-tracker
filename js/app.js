@@ -2211,10 +2211,9 @@ const App = (() => {
     // Iniciar combate / ronda / turno / iniciativa: ahora viven en el panel
     // flotante (FAB ⚔️), no en el flujo normal de esta columna.
     let html = `
-    <div id="turnTracker" class="turn-tracker"></div>
-    <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:12px;padding:8px;" onclick="App.openIfttt()">⚔️ Guía de Combate</button>`;
+    <div id="turnTracker" class="turn-tracker"></div>`;
 
-    // Primal Companion (Beast Master) — arriba del todo, debajo de Guía de Combate
+    // Primal Companion (Beast Master) — arriba del todo
     if (esBeastMaster(c)) {
       html += _renderCompanionHTML(c);
     }
@@ -4037,6 +4036,9 @@ const App = (() => {
   function _renderTurnTracker() {
     const cont = document.getElementById('turnTracker');
     if (!cont || !_char) return;
+    /* Solo durante combate: fuera de él ocupa espacio sin aportar, porque
+       la economía de acciones solo importa cuando hay turnos. */
+    if (!_combatActive) { cont.innerHTML = ''; return; }
     const t = _turnoDe(_char);
     const maxAtq = _ataquesDelTurno(_char);
 

@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 421;
+const _SW_EXPECTED = 422;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -245,6 +245,10 @@ const _SW_EXPECTED = 421;
 
       <button class="hm-btn" onclick="App.openPrepSesion();App.closeHeaderMenu()" title="Repaso antes de sentarse a jugar">
         🎯 Antes de jugar
+      </button>
+
+      <button class="hm-btn" onclick="App.openIfttt();App.closeHeaderMenu()" title="Tus reglas de combate">
+        ⚔️ Guía de Combate
       </button>
 
       <button class="hm-btn" onclick="App.openShareModal();App.closeHeaderMenu()" title="Link de solo lectura para el DM">
@@ -1273,7 +1277,7 @@ const _SW_EXPECTED = 421;
 <script src="js/characters.js?v=121"></script>
 <script src="js/export_pdf.js?v=7"></script>
 <script src="js/export_resumen.js?v=3"></script>
-<script src="js/app.js?v=236"></script>
+<script src="js/app.js?v=237"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>
