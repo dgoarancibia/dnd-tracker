@@ -5722,6 +5722,70 @@ const Characters = (() => {
     return cambio;
   }
 
+  /* ── Druidic Warrior (HU-18) ──────────────────────────────────────────
+     Es una opción del Fighting Style del Ranger, no un feat: da 2 trucos
+     de Druida que se lanzan con Sabiduría y cuentan como conjuros de
+     Explorador. Los trucos nunca cuentan contra el tope de preparados,
+     que solo aplica a conjuros de nivel 1+.                             */
+  function getDruidicWarriorChoice(char) {
+    if (!char || !char.choices) return null;
+    // Se activa solo si eligió esa opción del Fighting Style.
+    const fs = char.choices['fighting-style-r'];
+    if (fs !== 'fs-druidic-warrior') return null;
+    // Si ya tiene los 2 trucos en la ficha, no vuelve a pedirlos.
+    const yaTiene = (char.spells || []).filter(sp => sp.dw).length;
+    if (yaTiene >= 2) return null;
+
+    const trucos = (CLASE_SPELLS['Druida'] || [])
+      .filter(sp => sp.level === 0)
+      .map(sp => ({
+        id: sp.id,
+        name: sp.name.replace(/\s*[†◆●○]\s*$/, '').trim(),
+        desc: sp.desc || '',
+      }));
+    if (!trucos.length) return null;
+
+    return {
+      id: 'dw-cantrips', level: 2, type: 'pickMultiple', count: 2,
+      label: 'Druidic Warrior: trucos',
+      prompt: 'Elegí 2 trucos de Druida. Los lanzás con Sabiduría y cuentan como conjuros de Explorador:',
+      options: trucos,
+      source: 'fighting-style',
+    };
+  }
+
+  // Mete en la ficha los trucos elegidos para Druidic Warrior.
+  function applyDruidicWarriorSpells(char) {
+    const elegidos = (char.choices || {})['dw-cantrips'];
+    if (!Array.isArray(elegidos) || !elegidos.length) return false;
+    const pool = CLASE_SPELLS['Druida'] || [];
+    if (!Array.isArray(char.spells)) char.spells = [];
+    let cambio = false;
+    for (const id of elegidos) {
+      const base = pool.find(sp => sp.id === id);
+      if (!base) continue;
+      const limpio = base.name.replace(/\s*[†◆●○]\s*$/, '').trim();
+      const existente = char.spells.find(sp => sp.id === base.id);
+      if (existente) {
+        if (!existente.dw) { existente.dw = true; existente.cantrip_racial = true; cambio = true; }
+        continue;
+      }
+      char.spells.push({
+        ...base,
+        name: limpio + ' ◈',            // ◈ marca los de Druidic Warrior
+        dw: true,
+        // No cuentan contra el tope de trucos de la clase.
+        cantrip_racial: true,
+      });
+      cambio = true;
+    }
+    if (cambio) {
+      char.spells.sort((a, b) => (a.level || 0) - (b.level || 0) ||
+        String(a.name || '').localeCompare(String(b.name || '')));
+    }
+    return cambio;
+  }
+
   function getPendingChoices(char, targetLevel, fromLevel) {
     const claseCfg = CHOICES_CONFIG[char.clase] || [];
     const existing = char.choices || {};
@@ -5740,6 +5804,10 @@ const Characters = (() => {
     getMagicInitiateChoices(char).forEach(mc => {
       if (!existing[mc.id]) staticChoices.push(mc);
     });
+
+    // Druidic Warrior: solo si eligió esa opción del Fighting Style.
+    const dw = getDruidicWarriorChoice(char);
+    if (dw && !existing[dw.id]) staticChoices.push(dw);
 
     // Para known casters (Hechicero, Bardo, Brujo): generar elecciones de hechizo por nivel
     const cfg = CLASES_CONFIG[char.clase];
@@ -5808,6 +5876,9 @@ const Characters = (() => {
     // Magic Initiate: al elegir, los conjuros entran a la ficha.
     if (choiceId === 'mi-cantrips' || choiceId === 'mi-spell') {
       applyMagicInitiateSpells(char);
+    }
+    if (choiceId === 'dw-cantrips') {
+      applyDruidicWarriorSpells(char);
     }
 
     // Si es ASI, aplicar al stat directamente (máximo 20) o agregar feat
@@ -6239,6 +6310,8 @@ const Characters = (() => {
     applyRaza,
     applyTrasfondo,
     getMagicInitiateChoices,
+    getDruidicWarriorChoice,
+    applyDruidicWarriorSpells,
     applyMagicInitiateSpells,
     ACTIVATION,
     ACTIVATION_LABEL,

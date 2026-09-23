@@ -222,6 +222,13 @@ const App = (() => {
       } catch (e) { console.warn('[sync] Magic Initiate:', e.message); }
     }
 
+    // Lo mismo para los trucos de Druidic Warrior.
+    if (Characters.applyDruidicWarriorSpells) {
+      try {
+        if (Characters.applyDruidicWarriorSpells(c)) changed = true;
+      } catch (e) { console.warn('[sync] Druidic Warrior:', e.message); }
+    }
+
     // 4. Re-sync subclassSpells (spells de dominio/juramento/psiónicos)
     for (const [_subNombre, _subNivel] of _subclasesDe(c)) {
       const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_subNombre];
@@ -2203,7 +2210,7 @@ const App = (() => {
     const isKnownCasterCtx = Characters.isKnownCaster(c);
     const keySells = (c.spells || []).filter(s => {
       if (s.level === 0) return true;          // cantrips: siempre mostrar los elegidos
-      if (s.mi || s.domain) return true;       // siempre preparados: siempre
+      if (s.mi || s.dw || s.domain) return true; // siempre disponibles
       if (isKnownCasterCtx) return true;       // known caster: todos sus conocidos
       return (c.preparedToday || []).includes(s.id);
     });
@@ -2646,6 +2653,7 @@ const App = (() => {
     // no se veía cuando la tarjeta venía del catálogo de clase.
     if (sp.domain) tags += '<span class="tag tag-dom">◆ Dominio</span>';
     if (sp.mi) tags += '<span class="tag tag-mi">MI</span>';
+    if (sp.dw) tags += '<span class="tag tag-dw">DW</span>';
     if (sp.ritual) tags += '<span class="tag tag-r">Ritual</span>';
     return tags;
   }
@@ -2742,7 +2750,7 @@ const App = (() => {
       ${isKnownCasterCtx ? `<button class="sf-chip${tag==='known'?' active':''}" data-tag="known" onclick="App.setSpellFilter('known')">Conocidos</button>` : `<button class="sf-chip${tag==='prep'?' active':''}" data-tag="prep" onclick="App.setSpellFilter('prep')">Preparados</button>`}
       <button class="sf-chip${tag==='conc'?' active':''}" data-tag="conc" onclick="App.setSpellFilter('conc')">Conc</button>
       <button class="sf-chip${tag==='bonus'?' active':''}" data-tag="bonus" onclick="App.setSpellFilter('bonus')">Bonus</button>
-      ${(c.spells || []).some(s => s.mi) ? `<button class="sf-chip${tag==='mi'?' active':''}" data-tag="mi" onclick="App.setSpellFilter('mi')">○ Trasfondo</button>` : ''}
+      ${(c.spells || []).some(s => s.mi || s.dw) ? `<button class="sf-chip${tag==='mi'?' active':''}" data-tag="mi" onclick="App.setSpellFilter('mi')">○ Extra</button>` : ''}
       ${levels.map(l => `<button class="sf-chip sf-lvl${tag==='lvl'&&level===l?' active':''}" data-tag="lvl" data-level="${l}" onclick="App.setSpellFilter('lvl',${l})">Nvl ${l}</button>`).join('')}
     </div>`;
 
@@ -2754,7 +2762,7 @@ const App = (() => {
     else if (tag === 'bonus')  spells = spells.filter(s => s.bonus);
     // Los de Magic Initiate se pierden entre los de la clase: con 66 conjuros
     // en la lista, el de nivel 1 quedaba en la posición 17.
-    else if (tag === 'mi')     spells = spells.filter(s => s.mi);
+    else if (tag === 'mi')     spells = spells.filter(s => s.mi || s.dw);
     else if (tag === 'lvl')    spells = spells.filter(s => s.level === level);
 
     // Buscador: con 45+ conjuros, encontrar uno requería scrollear 13 pantallas.
