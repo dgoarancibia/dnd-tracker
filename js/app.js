@@ -5642,6 +5642,23 @@ const App = (() => {
       return;
     }
 
+    /* Conflicto de concentración (HU-38): lanzar un conjuro de
+       concentración teniendo otro activo rompe el anterior. Antes solo se
+       avisaba DESPUÉS, con un toast, cuando el slot ya estaba gastado.
+       Ahora se pregunta antes para poder cancelar. */
+    if (sp.concentration && _char.concentration && _char.concentration !== sp.id
+        && !_conflictoConfirmado) {
+      const prev = (_char.spells || []).find(x => x.id === _char.concentration);
+      const prevNombre = prev ? prev.name.replace(/\s*[◆○●]\s*$/, '') : _char.concentration;
+      _confirmChoice(
+        '◆ Ya estás concentrado',
+        `Lanzar ${sp.name} va a romper tu concentración en ${prevNombre}.`,
+        `Lanzar y romper ${prevNombre}`, 'Cancelar',
+        () => { _conflictoConfirmado = true; castSpell(spellId, slotLevel); _conflictoConfirmado = false; }
+      );
+      return;
+    }
+
     /* Conflicto de economía de acciones (HU-32): si el recurso que pide
        el conjuro ya se usó este turno, se avisa antes de gastar nada. No
        bloquea: el DM puede permitirlo, o el jugador puede estar
@@ -5651,8 +5668,12 @@ const App = (() => {
     const _yaUsado = { action: _t.action, bonusAction: _t.bonus, reaction: _t.reaction }[_actConf];
     if (_yaUsado && !_conflictoConfirmado) {
       const etiqueta = Characters.ACTIVATION_LABEL[_actConf] || _actConf;
-      _confirm(
+      // _confirmChoice en vez de _confirm: este último es el diálogo de
+      // borrado y su botón dice "Eliminar", que acá no tiene sentido.
+      _confirmChoice(
+        '⚠ Economía de acciones',
         `Ya usaste tu ${etiqueta} este turno.\n\n¿Lanzar ${sp.name} igual?`,
+        'Lanzar igual', 'Cancelar',
         () => { _conflictoConfirmado = true; castSpell(spellId, slotLevel); _conflictoConfirmado = false; }
       );
       return;
