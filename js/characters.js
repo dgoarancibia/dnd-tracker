@@ -5404,6 +5404,8 @@ const Characters = (() => {
       // habilidades es una feature aparte a nivel 9.
       { id:'expertise-1',     level:2,  type:'pickSkills', count:1, label:'Deft Explorer: Expertise (×1)',
         prompt:'Elige 1 habilidad para tener Expertise (doble Prof Bonus):' },
+      { id:'deft-languages', level:2, type:'pickLanguages', count:2, label:'Deft Explorer: idiomas',
+        prompt:'Deft Explorer también te da 2 idiomas. Elegí cuáles:' },
       { id:'fighting-style-r', level:2, type:'pick1',     label:'Fighting Style',
         prompt:'Elige tu estilo de combate:',
         options: FIGHTING_STYLES_RANGER },
@@ -5852,6 +5854,20 @@ const Characters = (() => {
           }
         }
       }
+    }
+
+    // Idiomas elegidos (Deft Explorer y futuras features que los den).
+    if (choiceId === 'deft-languages' && Array.isArray(value)) {
+      if (!Array.isArray(char.languages)) char.languages = ['Común'];
+      // Los placeholders de la especie ("Un idioma a elección") se
+      // reemplazan por los elegidos en vez de quedar como texto muerto.
+      const placeholders = char.languages.filter(l => /elecci[óo]n|adicional/i.test(l)).length;
+      if (placeholders) {
+        char.languages = char.languages.filter(l => !/elecci[óo]n|adicional/i.test(l));
+      }
+      value.forEach(l => {
+        if (!char.languages.includes(l)) char.languages.push(l);
+      });
     }
 
     // Si es expertise, aplicar a skillExpertise

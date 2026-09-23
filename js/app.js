@@ -7402,6 +7402,8 @@ const App = (() => {
       _renderASI(bodyEl, choice);
     } else if (choice.type === 'pickSkills') {
       _renderPickSkills(bodyEl, choice);
+    } else if (choice.type === 'pickLanguages') {
+      _renderPickLanguages(bodyEl, choice);
     } else if (choice.type === 'pickMultiple') {
       _renderPickMultiple(bodyEl, choice);
     } else if (choice.type === 'spellPick') {
@@ -7539,10 +7541,27 @@ const App = (() => {
   function _renderPickSkills(bodyEl, choice) {
     const count = choice.count || 2;
     const alreadyExpert = (_char && _char.skillExpertise) || [];
+    const profs = (_char && _char.skillProfs) || [];
+
+    /* Expertise solo puede ir a una habilidad en la que YA seas competente
+       (PHB 2024). Antes se listaban las 18 y se podía elegir una sin
+       competencia, dejando la ficha en un estado imposible. */
+    const elegibles = Characters.SKILLS_DEF.filter(sk => profs.includes(sk.id));
+
+    if (!elegibles.length) {
+      bodyEl.innerHTML = `
+        <p class="choice-prompt">${choice.prompt || 'Elegí habilidades'}</p>
+        <div class="choice-empty">Todavía no tenés competencia en ninguna habilidad.
+        Elegí primero tus competencias de clase y trasfondo.</div>`;
+      return;
+    }
+
+    const disponibles = elegibles.filter(sk => !alreadyExpert.includes(sk.id));
     bodyEl.innerHTML = `
       <p class="choice-prompt">${choice.prompt || `Elegí ${count} skills:`} (elegí ${count})</p>
+      <p class="choice-subprompt">Solo las habilidades en las que ya sos competente.</p>
       <div class="choice-options-list">
-        ${Characters.SKILLS_DEF.map(sk => {
+        ${elegibles.map(sk => {
           const isExpert = alreadyExpert.includes(sk.id);
           return `
           <label class="choice-option ${isExpert ? 'disabled' : ''}">
@@ -7551,11 +7570,43 @@ const App = (() => {
                    onchange="App._onPickSkillChange(this, ${count})">
             <div class="choice-opt-content">
               <strong>${sk.name}</strong>
-              ${isExpert ? '<span class="choice-opt-desc">Ya tienes Expertise</span>' : ''}
+              ${isExpert ? '<span class="choice-opt-desc">Ya tenés Expertise</span>' : ''}
             </div>
           </label>`;
         }).join('')}
+      </div>
+      ${disponibles.length < count
+        ? `<div class="choice-warn">Solo te quedan ${disponibles.length} habilidad${disponibles.length === 1 ? '' : 'es'} elegible${disponibles.length === 1 ? '' : 's'}.</div>`
+        : ''}`;
+  }
+
+  /* Idiomas (Deft Explorer y futuras features que los den). Solo muestra
+     los que el personaje NO conoce, para no permitir duplicados. */
+  function _renderPickLanguages(bodyEl, choice) {
+    const count = choice.count || 1;
+    const conocidos = (_char && Array.isArray(_char.languages))
+      ? _char.languages.filter(l => !/elecci[óo]n|adicional/i.test(l))
+      : [];
+    const todos = Characters.getAllLanguages();
+    const disponibles = todos.filter(l => !conocidos.includes(l));
+
+    bodyEl.innerHTML = `
+      <p class="choice-prompt">${choice.prompt || `Elegí ${count} idiomas`}</p>
+      ${conocidos.length ? `<p class="choice-subprompt">Ya conocés: ${conocidos.join(', ')}</p>` : ''}
+      <div class="choice-options-list">
+        ${disponibles.map(l => `
+          <label class="choice-option">
+            <input type="checkbox" name="pickLang" value="${l.replace(/"/g, '&quot;')}"
+                   onchange="App._onPickLangChange(this, ${count})">
+            <div class="choice-opt-content"><strong>${l}</strong></div>
+          </label>`).join('')}
       </div>`;
+  }
+
+  function _onPickLangChange(cb, max) {
+    const checked = document.querySelectorAll('[name="pickLang"]:checked');
+    if (checked.length > max) { cb.checked = false; showToast(`Máximo ${max} idiomas`); return; }
+    cb.closest('.choice-option').classList.toggle('selected', cb.checked);
   }
 
   function _renderPickMultiple(bodyEl, choice) {
@@ -7764,6 +7815,11 @@ const App = (() => {
         value = { mode:'feat', featId: radio.value };
         if (asiOpts.length) value.asiStat = _featASIStat || asiOpts[0];
       }
+    } else if (choice.type === 'pickLanguages') {
+      const checks = Array.from(document.querySelectorAll('[name="pickLang"]:checked'));
+      const count = choice.count || 1;
+      if (checks.length !== count) { showToast(`Elegí exactamente ${count} idiomas`); return; }
+      value = checks.map(c => c.value);
     } else if (choice.type === 'pickSkills') {
       const checks = Array.from(document.querySelectorAll('[name="pickSkill"]:checked:not(:disabled)'));
       const count = choice.count || 2;
@@ -10969,7 +11025,7 @@ ${notesText}`;
 
     // Elecciones de personaje
     openChoicesQueue, _processNextChoice, _saveChoice, _skipChoice, _promptChoice, reopenChoice,
-    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _pickFeatASI, _onPickSkillChange, _onPickMultipleChange, _renderPickMultiple,
+    _onPick1Change, _setASIMode, _onASISingleChange, _onASISplitChange, _onASIFeatChange, _pickFeatASI, _onPickSkillChange, _onPickLangChange, _onPickMultipleChange, _renderPickMultiple,
     _filterSpellPickList, _onSpellPickChange,
 
     // Descansos
