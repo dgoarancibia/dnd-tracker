@@ -4601,7 +4601,7 @@ const Characters = (() => {
     { id:'feat-resilient',        name:'Resilient',             category:'Combate', prereq:'Nivel 4+ · elegí una salvación SIN competencia', asi:['for','des','con','int','sab','car'], desc:'+1 a un stat a elección + proficiencia en saves de ese stat.', fullDesc:'' },
     // Magia
     { id:'feat-elemental-adept',  name:'Elemental Adept',       category:'Magia', prereq:'Nivel 4+, capacidad de lanzar conjuros', asi:['int','sab','car'], desc:'Eliges un tipo de daño (ácido/frío/fuego/rayo/trueno). Tus conjuros de ese tipo ignoran resistencia. Los 1 en dados de ese daño se tratan como 2.', fullDesc:'' },
-    { id:'feat-spell-sniper',     name:'Spell Sniper',          category:'Magia', prereq:'Nivel 4+, capacidad de lanzar conjuros', asi:['int','sab','car'], desc:'El alcance de conjuros de ataque se duplica. Ignoras cobertura media y tres cuartos con conjuros de ataque. Aprendes 1 cantrip de ataque de cualquier lista.', fullDesc:'' },
+    { id:'feat-spell-sniper',     name:'Spell Sniper',          category:'Magia', prereq:'Nivel 4+, rasgo de Lanzamiento de Conjuros o Magia de Pacto', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Tus conjuros de ataque ignoran cobertura media y de tres cuartos. Sin desventaja al lanzarlos en cuerpo a cuerpo. +60 pies de alcance a los conjuros de ataque de 10 pies o más.', fullDesc:'' },
     { id:'feat-metamagic-adept',  name:'Metamagic Adept',       category:'Magia', prereq:'Capacidad de lanzar conjuros', desc:'Aprendes 2 opciones de Metamagic y ganas 2 Sorcery Points para usarlas (se recuperan en Long Rest). (Tasha\'s)', fullDesc:'' },
     { id:'feat-artificer-init',   name:'Artificer Initiate',    category:'Magia', prereq:null, desc:'Aprendes 1 cantrip de Artificer + 1 conjuro de nivel 1 (lanzable 1/día). Proficiencia en herramientas de artesano a elección.', fullDesc:'' },
     { id:'feat-ritual-caster',    name:'Ritual Caster',         category:'Magia', prereq:'Nivel 4+, INT, SAB o CAR 13+', asi:['int','sab','car'], desc:'Adquirís un libro de rituales con 2 conjuros de nivel 1 que tengan la etiqueta ritual. Puedes agregar más rituales al libro. Puedes lanzarlos como ritual sin gastar slot.', fullDesc:'' },
@@ -4614,16 +4614,28 @@ const Characters = (() => {
     { id:'feat-linguist',         name:'Linguist',              category:'Utilidad', prereq:null, desc:'+1 INT. Aprendes 3 idiomas. Puedes crear cifrados escritos; solo tú y quienes enseñes pueden leerlos (Investigación para romperlo, CD = 8+INT mod+PB).', fullDesc:'' },
     { id:'feat-observant',        name:'Observant',             category:'Utilidad', prereq:'Nivel 4+, INT o SAB 13+', asi:['int','sab'], desc:'+1 INT o SAB. Puedes leer labios. +5 a Percepción pasiva e Investigación pasiva.', fullDesc:'' },
     { id:'feat-prodigy',          name:'Prodigy',               category:'Utilidad', prereq:'Half-human o humano', desc:'Proficiencia en 1 skill, 1 herramienta y 1 idioma. Ganas Expertise en 1 skill de las que ya tienes proficiencia. (Xanathar\'s)', fullDesc:'' },
-    { id:'feat-skulker',          name:'Skulker',               category:'Utilidad', prereq:'Nivel 4+, DES 13+', asi:['des'], desc:'Puedes ocultarte cuando estés ligeramente cubierto. Si fallas un ataque oculto, no te revelás. Estar en luz tenue no es desventaja en Sigilo.', fullDesc:'' },
+    { id:'feat-skulker',          name:'Skulker',               category:'Utilidad', prereq:'Nivel 4+, DES 13+', asi:['des'], desc:'+1 DES. Visión ciega de 10 pies. Ventaja en Sigilo al usar la acción Esconderse en combate. Fallar un ataque estando escondido no revela tu posición.', fullDesc:'' },
     { id:'feat-inspiring-leader', name:'Inspiring Leader',      category:'Utilidad', prereq:'Nivel 4+, SAB o CAR 13+', asi:['sab','car'], desc:'10 min de inspiración a hasta 6 aliados que te puedan escuchar. Cada uno gana Temp HP = tu nivel + mod CAR. 1 uso por Short/Long Rest.', fullDesc:'' },
     { id:'feat-lucky',            name:'Lucky',                 category:'Utilidad', prereq:null, origin:true, desc:'3 puntos de suerte (se recuperan en Long Rest). Gastas uno para tirar un d20 adicional en ataque/check/save y eliges cuál resultado usar. También puedes forzar a que el atacante tire de vuelta y te quedas con el resultado más bajo.', fullDesc:'' },
     { id:'feat-alert',            name:'Alert',                 category:'Utilidad', prereq:null, origin:true, desc:'+5 a iniciativa. No puedes ser sorprendido mientras estés consciente. Los enemigos ocultos no ganan ventaja en ataques contra ti.', fullDesc:'' },
     { id:'feat-tough',            name:'Tough',                 category:'Utilidad', prereq:null, origin:true, desc:'HP máximo aumenta en 2 × tu nivel (retroactivo). En cada nivel futuro HP máximo aumenta 2 puntos extra adicionales.', fullDesc:'' },
     { id:'feat-skilled',          name:'Skilled',               category:'Utilidad', prereq:null, origin:true, desc:'Ganas proficiencia en 3 skills o herramientas a elección (cualquier combinación).', fullDesc:'' },
-    { id:'feat-telekinetic',      name:'Telekinetic',           category:'Utilidad', prereq:'Nivel 4+', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Aprendes Mage Hand (invisible). Bonus Action: empujas/atraes a criatura a 5 ft (STR save CD 8+PB+stat mod). (Tasha\'s)', fullDesc:'' },
-    { id:'feat-telepathic',       name:'Telepathic',            category:'Utilidad', prereq:'Nivel 4+', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Puedes hablar telepáticamente con alguien a 60 ft (no necesita compartir idioma). 1/día: Detect Thoughts sin slot. (Tasha\'s)', fullDesc:'' },
-    { id:'feat-fey-touched',      name:'Fey Touched',           category:'Magia', prereq:'Nivel 4+', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Aprendes Misty Step + 1 conjuro de nivel 1 de las escuelas de Adivinación o Encantamiento. Cada uno lanzable 1/día gratis. (Tasha\'s)', fullDesc:'' },
-    { id:'feat-shadow-touched',   name:'Shadow Touched',        category:'Magia', prereq:'Nivel 4+', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Aprendes Invisibility + 1 conjuro de nivel 1 de las escuelas de Ilusión o Necromancia. Cada uno lanzable 1/día gratis. (Tasha\'s)', fullDesc:'' },
+    { id:'feat-telekinetic',      name:'Telekinetic',           category:'Utilidad', prereq:'Nivel 4+', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Conocés Mano de Mago sin componentes verbales ni somáticos, invisible y con +30 pies de alcance. Acción adicional: empujás o atraés 5 pies a una criatura (salvación de FUE).', fullDesc:'' },
+    { id:'feat-telepathic',       name:'Telepathic',            category:'Utilidad', prereq:'Nivel 4+', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Hablás telepáticamente con criaturas a 60 pies en un idioma que conozcas. Detectar Pensamientos siempre preparado, gratis 1/descanso largo.', fullDesc:'' },
+    { id:'feat-fey-touched',      name:'Fey Touched',           category:'Magia', prereq:'Nivel 4+', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Obtenés Paso Brumoso y un conjuro de nivel 1 de Adivinación o Encantamiento. Siempre preparados; uno gratis por descanso largo cada uno.', fullDesc:'' },
+    { id:'feat-shadow-touched',   name:'Shadow Touched',        category:'Magia', prereq:'Nivel 4+', asi:['int','sab','car'], desc:'+1 INT/SAB/CAR. Obtenés Invisibilidad y un conjuro de nivel 1 de Ilusión o Nigromancia. Siempre preparados; uno gratis por descanso largo cada uno.', fullDesc:'' },
+    { id:'feat-chef',             name:'Chef',                  category:'Utilidad', prereq:'Nivel 4+', asi:['con','sab'], desc:'+1 CON o SAB. Competencia con utensilios de cocina. En descanso corto preparás comida para 4 + PB criaturas (+1d8 PG extra al gastar Dados de Golpe). Además creás golosinas que dan PG temporales.', fullDesc:'' },
+    { id:'feat-crusher',          name:'Crusher',               category:'Combate', prereq:'Nivel 4+', asi:['for','con'], desc:'+1 FUE o CON. Una vez por turno, al causar daño contundente movés al objetivo 5 pies. En crítico contundente, los ataques contra esa criatura tienen ventaja hasta tu siguiente turno.', fullDesc:'' },
+    { id:'feat-piercer',          name:'Piercer',               category:'Combate', prereq:'Nivel 4+', asi:['for','des'], desc:'+1 FUE o DES. Una vez por turno relanzás un dado de daño perforante. En crítico perforante tirás un dado de daño adicional.', fullDesc:'' },
+    { id:'feat-slasher',          name:'Slasher',               category:'Combate', prereq:'Nivel 4+', asi:['for','des'], desc:'+1 FUE o DES. Una vez por turno, al causar daño cortante reducís 10 pies la velocidad del objetivo. En crítico cortante, la criatura tiene desventaja en sus ataques.', fullDesc:'' },
+    { id:'feat-martial-weapon-training', name:'Martial Weapon Training', category:'Combate', prereq:'Nivel 4+', asi:['for','des'], desc:'+1 FUE o DES. Ganás competencia con todas las armas marciales.', fullDesc:'' },
+    { id:'feat-mounted-combatant', name:'Mounted Combatant',    category:'Combate', prereq:'Nivel 4+', asi:['for','des','sab'], desc:'+1 FUE, DES o SAB. Ventaja al atacar criaturas sin montura más pequeñas que tu montura. Tu montura evita daño en salvaciones de DES y podés redirigir hacia vos los ataques que la impacten.', fullDesc:'' },
+    { id:'feat-poisoner',         name:'Poisoner',              category:'Combate', prereq:'Nivel 4+', asi:['des','int'], desc:'+1 DES o INT. Tu daño de veneno ignora resistencia. Competencia con equipo de envenenador: fabricás dosis que aplican 2d8 de veneno y condición Envenenado (salvación de CON).', fullDesc:'' },
+    { id:'feat-skill-expert',     name:'Skill Expert',          category:'Utilidad', prereq:'Nivel 4+', asi:['for','des','con','int','sab','car'], desc:'+1 a cualquier característica. Ganás competencia en una habilidad a elección y Pericia (Expertise) en otra en la que ya seas competente.', fullDesc:'' },
+    { id:'feat-crafter',          name:'Crafter',               category:'Utilidad', prereq:null, origin:true, desc:'Competencia con tres herramientas de artesano y 20% de descuento en objetos no mágicos. Tras un descanso largo fabricás rápido un objeto de la tabla de Fabricación Rápida.', fullDesc:'' },
+    { id:'feat-healer',           name:'Healer',                category:'Utilidad', prereq:null, origin:true, desc:'Con un kit de sanador, como acción Utilizar hacés que un aliado adyacente gaste un Dado de Golpe y recupere lo tirado + tu bono de competencia. Relanzás cualquier 1 en dados de curación.', fullDesc:'' },
+    { id:'feat-musician',         name:'Musician',              category:'Utilidad', prereq:null, origin:true, desc:'Competencia con tres instrumentos musicales. Tras un descanso corto o largo otorgás Inspiración Heroica a tantos aliados como tu bono de competencia.', fullDesc:'' },
+    { id:'feat-tavern-brawler',   name:'Tavern Brawler',        category:'Combate', prereq:null, origin:true, desc:'Tu Golpe Desarmado hace 1d4 + modificador de FUE y relanzás los 1. Competencia con armas improvisadas y empujás 5 pies una vez por turno.', fullDesc:'' },
     { id:'feat-custom',           name:'Feat personalizado',    category:'Otro', prereq:null, desc:'Agrega una descripción manual del feat en tus features después de crearlo.', fullDesc:'' },
   ];
 
@@ -6105,6 +6117,46 @@ const Characters = (() => {
     return deClase(char.clase, char.nivel || 1);
   }
 
+  /* Dados de golpe del compañero (HU-35). El tipo sale del tamaño de la
+     bestia, y la cantidad de su nivel de Explorador, igual que un PJ. */
+  function getCompanionHitDice(char) {
+    if (!char || !char.companion || !char.companion.beast) return null;
+    const beast = PRIMAL_COMPANION_BEASTS[char.companion.beast];
+    if (!beast) return null;
+    const nivelRanger = (Array.isArray(char.classes) && char.classes.length)
+      ? ((char.classes.find(x => x && x.name === 'Explorador') || {}).level || 0)
+      : (char.clase === 'Explorador' ? (char.nivel || 1) : 0);
+    const die = beast.size === 'Pequeña' ? 6 : beast.size === 'Grande' ? 10 : 8;
+    return { die, max: Math.max(1, nivelRanger) };
+  }
+
+  /* Munición (HU-40). Un arma con la propiedad "Ammunition" gasta una pieza
+     por disparo; al terminar el combate se recupera la mitad de lo gastado
+     (PHB 2024). El tipo depende del arma: arcos → flechas, ballestas →
+     virotes, honda → balas. */
+  const AMMO_TYPES = {
+    'shortbow':       { key:'arrow',  label:'Flechas' },
+    'longbow':        { key:'arrow',  label:'Flechas' },
+    'light-crossbow': { key:'bolt',   label:'Virotes' },
+    'hand-crossbow':  { key:'bolt',   label:'Virotes' },
+    'heavy-crossbow': { key:'bolt',   label:'Virotes' },
+    'sling':          { key:'bullet', label:'Balas de honda' },
+    'blowgun':        { key:'needle', label:'Dardos de cerbatana' },
+  };
+
+  // Devuelve el tipo de munición de un arma equipada, o null si no usa.
+  function getAmmoType(item) {
+    if (!item || item.kind !== 'weapon' || !item.id) return null;
+    const direct = AMMO_TYPES[item.id];
+    if (direct) return direct;
+    // Arma homebrew/mágica: mirar la propiedad en el catálogo base.
+    const base = WEAPONS_DB.find(w => w.id === item.id);
+    if (base && (base.properties || []).some(p => /^Ammunition/.test(p))) {
+      return { key:'arrow', label:'Munición' };
+    }
+    return null;
+  }
+
   // Armas que el personaje puede elegir para maestría (las que tienen una).
   function getWeaponMasteryOptions() {
     return WEAPONS_DB
@@ -6322,8 +6374,10 @@ const Characters = (() => {
     getAllLanguages,
     getFixedLanguages,
     getPendingLanguageCount,
+    getCompanionHitDice,
     getWeaponMasteryCount,
     getWeaponMasteryOptions,
+    AMMO_TYPES, getAmmoType,
     applySubraza,
     applySubclase,
     buildLursey,

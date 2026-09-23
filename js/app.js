@@ -2269,6 +2269,7 @@ const App = (() => {
             </div>
             <button class="cast-btn" onclick="App.attackWithWeapon('${w.slot}')">Atacar</button>
           </div>
+          ${_bloqueMunicion(c, w.slot)}
         </div>`;
       }).join('');
       html += `<div class="section-hd" style="margin-top:14px;">⚔️ Ataques</div><div class="ability-cards-grid">${weaponCards}</div>`;
@@ -5806,10 +5807,98 @@ const App = (() => {
 
   // Card de "Atacar" con arma equipada — abre el popup de referencia con la
   // fórmula de ataque/daño calculada del arma real (equipment.mainHand/offHand).
+  /* ── Munición (HU-40) ──────────────────────────────────────────────────
+     Se guarda en c.ammo[key] = { current, max, spent }. `spent` cuenta lo
+     gastado desde el último descanso para poder recuperar la mitad (PHB
+     2024: tras el combate recuperas la mitad de la munición disparada). */
+  function _ensureAmmo(c) {
+    if (!c.ammo) c.ammo = {};
+    return c.ammo;
+  }
+
+  function _ammoDeSlot(c, slot) {
+    const item = c.equipment && c.equipment[slot];
+    const tipo = Characters.getAmmoType && Characters.getAmmoType(item);
+    if (!tipo) return null;
+    const a = _ensureAmmo(c)[tipo.key] || { current: 0, max: 0, spent: 0 };
+    return { tipo, ...a };
+  }
+
+  function setAmmo(key, field, val) {
+    if (!_char) return;
+    const a = _ensureAmmo(_char);
+    const cur = a[key] || { current: 0, max: 0, spent: 0 };
+    const n = Math.max(0, parseInt(val) || 0);
+    cur[field] = n;
+    if (field === 'max' && cur.current > n) cur.current = n;
+    if (field === 'current' && cur.max < n) cur.max = n;
+    a[key] = cur;
+    _saveChar();
+    _renderCombateTab();
+  }
+
+  function adjustAmmo(key, delta) {
+    if (!_char) return;
+    const a = _ensureAmmo(_char);
+    const cur = a[key] || { current: 0, max: 0, spent: 0 };
+    const antes = cur.current;
+    cur.current = Math.max(0, Math.min(cur.max || 999, cur.current + delta));
+    // Solo cuenta como gastada la que realmente salió del carcaj.
+    if (delta < 0) cur.spent = (cur.spent || 0) + (antes - cur.current);
+    a[key] = cur;
+    _saveChar();
+    _renderCombateTab();
+  }
+
+  // Tras el combate se recupera la mitad de lo disparado (redondeo abajo).
+  function recuperarMunicion(key) {
+    if (!_char) return;
+    const a = _ensureAmmo(_char);
+    const cur = a[key];
+    if (!cur || !cur.spent) return;
+    const recuperadas = Math.floor(cur.spent / 2);
+    cur.current = Math.min(cur.max || 999, cur.current + recuperadas);
+    cur.spent = 0;
+    a[key] = cur;
+    _saveChar();
+    _renderCombateTab();
+    showToast(recuperadas > 0 ? `Recuperadas ${recuperadas}` : 'Nada que recuperar');
+  }
+
+  function _bloqueMunicion(c, slot) {
+    const m = _ammoDeSlot(c, slot);
+    if (!m) return '';
+    const k = m.tipo.key;
+    const vacio = m.max > 0 && m.current === 0;
+    return `
+      <div class="ammo-row ${vacio ? 'ammo-empty' : ''}">
+        <span class="ammo-label">🏹 ${m.tipo.label}</span>
+        <button class="ammo-btn" onclick="event.stopPropagation();App.adjustAmmo('${k}',-1)" ${m.current <= 0 ? 'disabled' : ''}>−</button>
+        <input type="number" class="ammo-input" value="${m.current}" min="0"
+               onclick="event.stopPropagation()"
+               onchange="App.setAmmo('${k}','current',this.value)">
+        <span class="ammo-sep">/</span>
+        <input type="number" class="ammo-input ammo-max" value="${m.max}" min="0" title="Total que llevas"
+               onclick="event.stopPropagation()"
+               onchange="App.setAmmo('${k}','max',this.value)">
+        <button class="ammo-btn" onclick="event.stopPropagation();App.adjustAmmo('${k}',1)" ${m.max && m.current >= m.max ? 'disabled' : ''}>+</button>
+        ${m.spent > 0 ? `<button class="ammo-recover" title="Recuperas la mitad de lo disparado"
+          onclick="event.stopPropagation();App.recuperarMunicion('${k}')">↺ ${Math.floor(m.spent / 2)}</button>` : ''}
+      </div>`;
+  }
+
   function attackWithWeapon(slot) {
     if (!_char) return;
     const w = _char.equipment && _char.equipment[slot];
     if (!w || w.kind !== 'weapon') return;
+
+    // Munición: se descuenta una pieza por disparo; si no queda, se avisa
+    // pero no se bloquea (puede tener flechas sueltas sin registrar).
+    const _mun = _ammoDeSlot(_char, slot);
+    if (_mun && _mun.max > 0) {
+      if (_mun.current > 0) adjustAmmo(_mun.tipo.key, -1);
+      else showToast(`Sin ${_mun.tipo.label.toLowerCase()}`);
+    }
 
     const atkBonus = Characters.calcWeaponAttackBonus(_char);
     const dmgBonus = (w.bonuses && Number(w.bonuses.damage)) || 0;
@@ -8220,6 +8309,7 @@ const App = (() => {
     document.getElementById('srDiceQty').max = max;
     document.getElementById('srDiceQty').value = Math.min(1, max);
     document.getElementById('srDiceResult').value = '';
+    _srSetupCompanion();
     _updateShortRestPreview();
     document.getElementById('shortRestModal').classList.add('show');
   }
@@ -8233,6 +8323,44 @@ const App = (() => {
 
   function closeShortRest() {
     document.getElementById('shortRestModal').classList.remove('show');
+  }
+
+  function _srSetupCompanion() {
+    const step = document.getElementById('srCompanionStep');
+    if (!step) return;
+    const hd = Characters.getCompanionHitDice && Characters.getCompanionHitDice(_char);
+    const comp = _char.companion;
+    if (!hd || !comp || !comp.beast || !esBeastMaster(_char)) { step.style.display = 'none'; return; }
+    const beast = Characters.PRIMAL_COMPANION_BEASTS[comp.beast];
+    if (!beast) { step.style.display = 'none'; return; }
+
+    const avail = Math.max(0, hd.max - (comp.hitDiceUsed || 0));
+    const hpMax = beast.calcMaxHP(getRangerLevel(_char));
+    const hpCur = comp.hp != null ? comp.hp : hpMax;
+    const nombre = comp.name || beast.name || 'Compañero';
+
+    step.style.display = (avail > 0 && hpCur < hpMax && hpCur > 0) ? '' : 'none';
+    if (step.style.display === 'none') return;
+
+    document.getElementById('srCompanionLabel').textContent = `${nombre} · ${hpCur}/${hpMax} HP`;
+    document.getElementById('srCompanionHint').textContent =
+      `Dados disponibles ${avail}/${hd.max} d${hd.die} · tíralos y anota la suma`;
+    const qty = document.getElementById('srCompanionQty');
+    qty.max = avail; qty.value = 0;
+    document.getElementById('srCompanionResult').value = '';
+  }
+
+  function _srCompanionPlan() {
+    const step = document.getElementById('srCompanionStep');
+    if (!step || step.style.display === 'none') return null;
+    const comp = _char.companion || {};
+    const beast = Characters.PRIMAL_COMPANION_BEASTS[comp.beast];
+    if (!beast) return null;
+    const qty    = parseInt(document.getElementById('srCompanionQty').value) || 0;
+    const result = parseInt(document.getElementById('srCompanionResult').value) || 0;
+    const hpMax = beast.calcMaxHP(getRangerLevel(_char));
+    const hpCur = comp.hp != null ? comp.hp : hpMax;
+    return { qty, result, heal: Math.max(0, Math.min(result, hpMax - hpCur)), hpCur, hpMax };
   }
 
   function _updateShortRestPreview() {
@@ -8260,6 +8388,16 @@ const App = (() => {
           <span class="sr-f-item"><span class="sr-f-label">CON ${conStr} × ${qty}</span><span class="sr-f-val">${conBonus >= 0 ? '+' : ''}${conBonus}</span></span>
           <span class="sr-f-op">=</span>
           <span class="sr-f-item sr-f-total"><span class="sr-f-label">Curación</span><span class="sr-f-val">${result ? heal : '?'} HP</span></span>
+        </div>`;
+    }
+    const cp = _srCompanionPlan();
+    if (cp && cp.qty > 0) {
+      const nombre = (_char.companion && _char.companion.name) || 'Compañero';
+      previewHtml += `
+        <div class="sr-formula" style="margin-top:8px;">
+          <span class="sr-f-item"><span class="sr-f-label">🐾 ${nombre}</span><span class="sr-f-val">${cp.qty} dado${cp.qty > 1 ? 's' : ''}</span></span>
+          <span class="sr-f-op">→</span>
+          <span class="sr-f-item sr-f-total"><span class="sr-f-label">Curación</span><span class="sr-f-val">${cp.result ? '+' + cp.heal : '?'} HP</span></span>
         </div>`;
     }
     document.getElementById('srPreview').innerHTML = previewHtml;
@@ -8296,6 +8434,16 @@ const App = (() => {
     // Consumir dados
     _char.hitDice.current = Math.max(0, _char.hitDice.current - qty);
 
+    // Compañero: gastar sus dados de golpe (sin mod. CON, tope HP máx)
+    const cp = _srCompanionPlan();
+    let compHeal = 0;
+    if (cp && cp.qty > 0) {
+      const comp = _char.companion;
+      comp.hitDiceUsed = (comp.hitDiceUsed || 0) + cp.qty;
+      compHeal = cp.heal;
+      if (compHeal > 0) comp.hp = Math.min(cp.hpMax, cp.hpCur + compHeal);
+    }
+
     // Curar
     if (heal > 0) adjustHP(heal);
 
@@ -8306,13 +8454,13 @@ const App = (() => {
     closeShortRest();
     _renderCombateTab();
     _updateCombatHUD();
-    _logCombat(`↺ Descanso corto · +${heal} HP`, 'rest');
+    _logCombat(`↺ Descanso corto · +${heal} HP${compHeal > 0 ? ` · compañero +${compHeal} HP` : ''}`, 'rest');
     // Mensaje: listar qué recursos recargados (máx 2 nombres)
     const recharged = (_char.resources || []).filter(r => r.recharge === 'short' && r.max > 0).map(r => r.name);
     const rechargeLabel = recharged.length
       ? ` · ${recharged.slice(0, 2).join(', ')} recargado${recharged.length > 1 ? 's' : ''}`
       : '';
-    showToast(`Descanso corto · +${heal} HP${rechargeLabel}`);
+    showToast(`Descanso corto · +${heal} HP${compHeal > 0 ? ` · 🐾 +${compHeal}` : ''}${rechargeLabel}`);
   }
 
   function longRest() {
@@ -8422,9 +8570,19 @@ const App = (() => {
         compMax  = b.calcMaxHP(getRangerLevel(c));
         compAntes = c.companion.hp != null ? c.companion.hp : compMax;
         c.companion.hp = compMax;
+        c.companion.hitDiceUsed = 0;
         delete c.companion.deathAt;
       }
     }
+
+    // Munición: al recoger el campo de batalla se recupera la mitad de lo
+    // disparado que quedó pendiente desde el último combate.
+    Object.values(c.ammo || {}).forEach(a => {
+      if (a && a.spent) {
+        a.current = Math.min(a.max || 999, (a.current || 0) + Math.floor(a.spent / 2));
+        a.spent = 0;
+      }
+    });
 
     closeLongRest();
     _saveChar(true);
@@ -11260,6 +11418,7 @@ ${notesText}`;
     adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
+    setAmmo, adjustAmmo, recuperarMunicion,
     toggleRecursoBestia, comandarBestia,
     toggleCharge, registrarGrapple, liberarGrapple, verRasgoBestia,
     marcarObjetivo, usarBonusHM,
@@ -11276,6 +11435,7 @@ ${notesText}`;
 
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,
+    srPreview: _updateShortRestPreview,
     longRest, closeLongRest, applyLongRest,
 
     // Level up
