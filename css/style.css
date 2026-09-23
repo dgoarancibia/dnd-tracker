@@ -9170,3 +9170,37 @@ mark.diary-highlight {
 
 /* Trucos de Druidic Warrior: verde, para distinguirlos del MI del trasfondo. */
 .tag-dw { background: rgba(106,154,91,0.18); color: #8fb98a; border: 1px solid rgba(106,154,91,0.32); }
+
+/* ── Economía de acciones de la bestia (HU-23) ───────────────────────
+   Separada de la del Ranger: lo que él gasta para comandarla no es lo
+   mismo que lo que ella ejecuta. */
+.companion-senses {
+  font-size: 9.5px; color: var(--text-dim); margin-top: 2px;
+}
+.beast-economy {
+  margin: 8px 0 6px; padding: 7px 9px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+.be-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.be-row + .be-row { margin-top: 6px; }
+.be-lbl { font-size: 10px; color: var(--text-dim); min-width: 62px; }
+.be-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 9px; min-height: 30px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 10px; cursor: pointer;
+}
+.be-chip .be-dot { width: 6px; height: 6px; border-radius: 50%; background: #6a9a5b; }
+.be-chip.usado { opacity: 0.55; }
+.be-chip.usado .be-dot { background: var(--text-dim); }
+.be-cmd {
+  padding: 5px 10px; min-height: 30px;
+  background: var(--bg3); border: 1px solid var(--gold-dim);
+  border-radius: 14px; color: var(--gold);
+  font-family: 'Jost', sans-serif; font-size: 10px; cursor: pointer;
+}
+.be-cmd:hover { background: rgba(201,151,58,0.12); }
+.be-default { font-size: 9.5px; color: var(--text-dim); font-style: italic; margin-top: 5px; }
+.be-ready { font-size: 10px; color: #8fb98a; margin-top: 5px; }

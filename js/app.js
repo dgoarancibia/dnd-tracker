@@ -3989,7 +3989,51 @@ const App = (() => {
       c.turn = { action: false, bonus: false, reaction: false, movement: false };
     }
     if (typeof c.turn.attacksUsed !== 'number') c.turn.attacksUsed = 0;
+    // La bestia tiene su propia economía: lo que gasta el Ranger para
+    // comandarla es distinto de lo que la bestia ejecuta (HU-23).
+    if (!c.turn.beast || typeof c.turn.beast !== 'object') {
+      c.turn.beast = { action: false, bonus: false, reaction: false };
+    }
     return c.turn;
+  }
+
+  function toggleRecursoBestia(campo) {
+    if (!_char) return;
+    const t = _turnoDe(_char);
+    t.beast[campo] = !t.beast[campo];
+    _saveChar(true);
+    _renderCombateDer();
+  }
+
+  /* Comandar a la bestia. En 2024 hay dos formas y consumen cosas
+     distintas del Ranger, pero ambas habilitan su acción. */
+  function comandarBestia(via) {
+    if (!_char) return;
+    const t = _turnoDe(_char);
+    if (via === 'bonus') {
+      if (t.bonus) {
+        _confirmChoice(
+          '⚠ Economía de acciones',
+          'Ya usaste tu Acción adicional este turno.\n\nSi te quedan ataques, podés comandarla sacrificando uno.',
+          'Comandar igual', 'Cancelar',
+          () => { t.bonus = true; t.beast.action = true; _saveChar(true); _renderCombateDer(); }
+        );
+        return;
+      }
+      t.bonus = true;
+    } else if (via === 'attack') {
+      const max = _ataquesDelTurno(_char);
+      if ((t.attacksUsed || 0) >= max) {
+        showToast('No te quedan ataques para sacrificar');
+        return;
+      }
+      t.attacksUsed = (t.attacksUsed || 0) + 1;
+      t.action = true;   // sacrificar un ataque implica la acción de Ataque
+    }
+    t.beast.action = true;
+    _saveChar(true);
+    _renderCombateDer();
+    showToast(via === 'bonus' ? 'Comandada con Acción adicional' : 'Comandada sacrificando un ataque');
   }
 
   /* Marca un recurso del turno como usado. `forzar` lo aplica aunque ya
@@ -4032,7 +4076,8 @@ const App = (() => {
      de Hunter's Mark ni condiciones — eso es de los descansos. */
   function nuevoTurno() {
     if (!_char) return;
-    _char.turn = { action: false, bonus: false, reaction: false, movement: false, attacksUsed: 0 };
+    _char.turn = { action: false, bonus: false, reaction: false, movement: false, attacksUsed: 0,
+                   beast: { action: false, bonus: false, reaction: false } };
     // Banderas por turno de otras features (Charge, Bestial Fury…).
     if (_char.companion) delete _char.companion.chargeReady;
     _saveChar(true);
@@ -4246,6 +4291,7 @@ const App = (() => {
     }
 
     const caida = curHp <= 0;
+    const companionTurn = (_char.turn && _char.turn.beast) || { action: false, bonus: false, reaction: false };
     return `
     <div class="equip-section companion-section${caida ? ' companion-down' : ''}" style="margin-top:14px;">
       <div class="rc-header" style="margin-bottom:6px;">
@@ -4274,8 +4320,9 @@ const App = (() => {
                      placeholder="¿qué animal?" maxlength="30"
                      onchange="App.setCompanionField('kind', this.value)"
                      onclick="this.select()">
-              <span>${beast.size} ${beast.type} · ${beast.speed}</span>
+              <span>${beast.size} ${beast.type} · ${fmtDist(beast.speed)}</span>
             </div>
+            <div class="companion-senses">${beast.senses} · CD ${Characters.calcCD(c)}</div>
           </div>
         </div>
         <div class="companion-ac-badge">
@@ -4307,14 +4354,31 @@ const App = (() => {
       <!-- Stats -->
       <div class="companion-stats">${statsHTML}</div>
 
-      <!-- Cómo la comandás este turno (informativo, sin tiradas) -->
-      <div class="companion-order-row">
-        <span class="companion-order-lbl">Ordenar ataque:</span>
-        <button class="companion-order-chip" onclick="App.useCompanionOrder('bonus')"
-                title="Marca tu Acción Adicional como usada">Acción Adicional</button>
-        <button class="companion-order-chip" onclick="App.useCompanionOrder('attack')"
-                title="Sacrificás uno de tus ataques">Sacrifica 1 ataque</button>
-      </div>
+      <!-- Economía de acciones de la bestia (HU-23): lo que gasta el
+           Ranger para comandarla es distinto de lo que ella ejecuta. -->
+      ${_combatActive ? `
+      <div class="beast-economy">
+        <div class="be-row">
+          <span class="be-lbl">La bestia:</span>
+          ${['action:Acción', 'bonus:Adicional', 'reaction:Reacción'].map(par => {
+            const [campo, etiqueta] = par.split(':');
+            // La acción adicional de la bestia solo existe desde nivel 7.
+            if (campo === 'bonus' && nivelRanger < 7) return '';
+            const usado = (companionTurn[campo] === true);
+            return `<button class="be-chip ${usado ? 'usado' : ''}"
+                      onclick="App.toggleRecursoBestia('${campo}')">
+                      <span class="be-dot"></span>${etiqueta}</button>`;
+          }).join('')}
+        </div>
+        ${!companionTurn.action ? `
+        <div class="be-row">
+          <span class="be-lbl">Comandar:</span>
+          <button class="be-cmd" onclick="App.comandarBestia('bonus')">Acción adicional</button>
+          <button class="be-cmd" onclick="App.comandarBestia('attack')">Sacrificar ataque</button>
+        </div>
+        <div class="be-default">Si no la comandás, solo Esquiva.</div>`
+        : `<div class="be-ready">✓ Comandada — puede usar Beast's Strike</div>`}
+      </div>` : ''}
 
       <!-- Ataques -->
       <div class="companion-attacks-header">Ataques · Bono de golpe ${hitStr} (SAB+PB)</div>
@@ -11025,6 +11089,7 @@ ${notesText}`;
     adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
+    toggleRecursoBestia, comandarBestia,
     openMasteryPicker, closeMasteryPicker, toggleMastery,
     openMasteryDetail, closeMasteryDetail,
 
