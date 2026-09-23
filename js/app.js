@@ -3837,6 +3837,96 @@ const App = (() => {
 
   // ── Primal Companion rendering ──────────────────────────────────────────────
 
+  /* ── Rasgos que necesitan seguimiento (HU-25, 26, 27) ────────────────
+     Los dados son físicos, así que la app nunca sabe si un ataque
+     impactó: todo lo que se marca acá lo marca el jugador.            */
+  function _especialDeBestia(c, beast, companion) {
+    if (beast.id === 'land')  return _bloqueCharge(companion);
+    if (beast.id === 'sea')   return _bloqueGrapple(c, companion);
+    if (beast.id === 'sky')   return _bloqueFlyby(beast);
+    return '';
+  }
+
+  // Land · Charge: recordatorio de la condición, no de posición.
+  function _bloqueCharge(companion) {
+    const listo = companion.chargeReady === true;
+    return `
+      <div class="beast-special ${listo ? 'activo' : ''}">
+        <button class="bs-toggle ${listo ? 'on' : ''}" onclick="App.toggleCharge()">
+          ${listo ? '⚡ CHARGE LISTO' : 'Se movió 6 m (20 ft) en línea recta'}
+        </button>
+        ${listo ? `<div class="bs-note">Si Beast's Strike impacta: +1d6 perforante y salvación de FUE o Derribado.</div>` : ''}
+      </div>`;
+  }
+
+  // Sea · Grapple: quién está apresado y con qué CD escapa.
+  function _bloqueGrapple(c, companion) {
+    const objetivo = companion.grappling;
+    const cd = Characters.calcCD(c);
+    if (!objetivo) {
+      return `
+        <div class="beast-special">
+          <button class="bs-toggle" onclick="App.registrarGrapple()">Registrar presa</button>
+          <div class="bs-note">Beast's Strike apresa si el objetivo es Grande o menor.</div>
+        </div>`;
+    }
+    return `
+      <div class="beast-special activo">
+        <div class="bs-grapple">
+          <span class="bs-target">🩸 Apresado: <b>${objetivo.replace(/</g,'&lt;')}</b></span>
+          <span class="bs-dc">Escape CD ${cd}</span>
+        </div>
+        <div class="bs-actions">
+          <button class="bs-mini" onclick="App.registrarGrapple()">Cambiar</button>
+          <button class="bs-mini" onclick="App.liberarGrapple()">Liberar</button>
+        </div>
+      </div>`;
+  }
+
+  // Sky · Flyby: no tiene estado, solo hay que recordarlo.
+  function _bloqueFlyby(beast) {
+    const t = (beast.traits || []).find(x => x.name === 'Flyby');
+    return `
+      <div class="beast-special">
+        <button class="bs-toggle badge" onclick="App.verRasgoBestia('Flyby')">🪽 FLYBY</button>
+        <div class="bs-note">${t ? t.desc : ''}</div>
+      </div>`;
+  }
+
+  function toggleCharge() {
+    if (!_char || !_char.companion) return;
+    _char.companion.chargeReady = !_char.companion.chargeReady;
+    _saveChar(true);
+    _renderCombateDer();
+  }
+
+  function registrarGrapple() {
+    if (!_char || !_char.companion) return;
+    const actual = _char.companion.grappling || '';
+    const v = prompt('¿A quién apresó? (nombre corto)', actual);
+    if (v === null) return;
+    const nombre = v.trim().slice(0, 40);
+    if (nombre) _char.companion.grappling = nombre;
+    else delete _char.companion.grappling;
+    _saveChar();
+    _renderCombateDer();
+  }
+
+  function liberarGrapple() {
+    if (!_char || !_char.companion) return;
+    delete _char.companion.grappling;
+    _saveChar();
+    _renderCombateDer();
+    showToast('Presa liberada');
+  }
+
+  function verRasgoBestia(nombre) {
+    const b = _char && _char.companion && Characters.PRIMAL_COMPANION_BEASTS[_char.companion.beast];
+    const t = b && (b.traits || []).find(x => x.name === nombre);
+    if (!t) return;
+    _abrirDetalleSimple(`🐾 ${t.name}`, '', t.desc);
+  }
+
   /* Selector de maestrías: se agrupan por propiedad para que se entienda
      qué gana con cada arma, no solo el nombre del arma. */
   function openMasteryPicker() {
@@ -3924,9 +4014,19 @@ const App = (() => {
   }
 
   // Detalle de una propiedad, al tocar un chip
+  // Modal de detalle reutilizable: maestrías de arma y rasgos de bestia.
+  function _abrirDetalleSimple(titulo, corto, largo) {
+    const m = { name: titulo, short: corto, desc: largo };
+    _pintarDetalle(m);
+  }
+
   function openMasteryDetail(prop) {
     const m = Characters.WEAPON_MASTERIES[prop];
     if (!m) return;
+    _pintarDetalle(m);
+  }
+
+  function _pintarDetalle(m) {
     let ov = document.getElementById('masteryDetailOverlay');
     if (!ov) {
       ov = document.createElement('div');
@@ -3943,7 +4043,7 @@ const App = (() => {
           <span class="ref-close" onclick="App.closeMasteryDetail()">✕</span>
         </div>
         <div class="modal-body">
-          <div class="md-short">${m.short}</div>
+          ${m.short ? `<div class="md-short">${m.short}</div>` : ''}
           <div class="md-desc">${m.desc}</div>
         </div>
         <div class="modal-footer">
@@ -4379,6 +4479,8 @@ const App = (() => {
         <div class="be-default">Si no la comandás, solo Esquiva.</div>`
         : `<div class="be-ready">✓ Comandada — puede usar Beast's Strike</div>`}
       </div>` : ''}
+
+      ${_combatActive ? _especialDeBestia(c, beast, companion) : ''}
 
       <!-- Ataques -->
       <div class="companion-attacks-header">Ataques · Bono de golpe ${hitStr} (SAB+PB)</div>
@@ -11090,6 +11192,7 @@ ${notesText}`;
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
     toggleRecursoBestia, comandarBestia,
+    toggleCharge, registrarGrapple, liberarGrapple, verRasgoBestia,
     openMasteryPicker, closeMasteryPicker, toggleMastery,
     openMasteryDetail, closeMasteryDetail,
 

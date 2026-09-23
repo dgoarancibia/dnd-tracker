@@ -9204,3 +9204,33 @@ mark.diary-highlight {
 .be-cmd:hover { background: rgba(201,151,58,0.12); }
 .be-default { font-size: 9.5px; color: var(--text-dim); font-style: italic; margin-top: 5px; }
 .be-ready { font-size: 10px; color: #8fb98a; margin-top: 5px; }
+
+/* ── Rasgos con seguimiento: Charge, Grapple, Flyby (HU-25/26/27) ──── */
+.beast-special {
+  margin: 7px 0; padding: 7px 9px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+.beast-special.activo { background: rgba(201,151,58,0.09); border-color: var(--gold-dim); }
+.bs-toggle {
+  width: 100%; min-height: 32px; padding: 6px 10px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 10.5px; cursor: pointer;
+  transition: all 0.12s;
+}
+.bs-toggle:hover { border-color: var(--gold-dim); color: var(--gold); }
+.bs-toggle.on { background: rgba(201,151,58,0.18); border-color: var(--gold); color: var(--gold); font-weight: 600; }
+.bs-toggle.badge { width: auto; border-color: var(--gold-dim); color: var(--gold); }
+.bs-note { font-size: 9.5px; color: var(--text-dim); line-height: 1.5; margin-top: 5px; }
+.bs-grapple { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.bs-target { font-size: 11px; color: var(--text); }
+.bs-dc { font-size: 10px; color: var(--gold); }
+.bs-actions { display: flex; gap: 5px; margin-top: 6px; }
+.bs-mini {
+  padding: 4px 9px; min-height: 28px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; color: var(--text-mid);
+  font-family: 'Jost', sans-serif; font-size: 10px; cursor: pointer;
+}
+.bs-mini:hover { color: var(--gold); border-color: var(--gold-dim); }
