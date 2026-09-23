@@ -1063,8 +1063,10 @@ const Characters = (() => {
         {
           id: 'channel-divinity',
           name: 'Channel Divinity',
-          current: 2, max: 2,
-          recharge: 'short',
+          current: 3, max: 3,
+          recharge: 'short1',
+          action: 'Acción',
+          desc: 'Elegí una: Divine Spark (2d8 daño radiante o curación, save SAB), Turn Undead (no-muertos huyen 1 min) o Balm of Peace (te movés sin provocar y curás 2d6+SAB a quien pases al lado).',
           note: 'Balm of Peace · Divine Spark · Turn Undead'
         },
         {
@@ -1072,6 +1074,8 @@ const Characters = (() => {
           name: 'Emboldening Bond',
           current: 3, max: 3,
           recharge: 'long',
+          action: 'Acción adicional',
+          desc: 'Vinculás hasta 3 criaturas dispuestas (incluida vos) por 10 min. Mientras dos vinculadas estén a 9 m, cualquiera puede sumar 1d4 a un ataque, salvación o prueba.',
           note: '1d4 en ataque/save/check · 9 m · 10 min · hasta 3 criaturas'
         },
         {
@@ -1079,6 +1083,8 @@ const Characters = (() => {
           name: 'Guiding Bolt (MI)',
           current: 1, max: 1,
           recharge: 'long',
+          action: 'Lanzar · Acción',
+          desc: '4d6 de daño radiante. El siguiente ataque contra ese objetivo tiene ventaja. Uso gratis del feat Magic Initiate.',
           note: '4d6 rad + ventaja al siguiente ataque'
         },
         {
@@ -1086,6 +1092,8 @@ const Characters = (() => {
           name: 'Servirse del Poder Divino',
           current: 2, max: 2,
           recharge: 'long',
+          action: 'Acción adicional',
+          desc: 'Gastás un uso de Channel Divinity para recuperar un espacio de conjuro gastado de nivel 2 o menor.',
           note: 'Recupera 1 slot gastado (máx nv2) · acción bonus'
         },
       ],
@@ -1135,46 +1143,46 @@ const Characters = (() => {
         {
           id: 'emboldening-bond',
           name: 'Emboldening Bond',
-          source: 'Dominio de la Paz · Nivel 1',
+          source: 'Dominio de la Paz · Nivel 1 (Tasha\'s)',
           type: 'active',
           recharge: 'long',
           action: 'Acción',
           range: '9 m',
-          desc: 'Crea un vínculo entre hasta Prof.Bonus criaturas (3 a nivel 6).',
-          fullDesc: 'Como acción, eliges hasta tu Bono de Competencia (3) en criaturas que puedas ver a 9 m de ti, incluido tú mismo. Las criaturas vinculadas añaden 1d4 a todas sus tiradas de ataque, checks de habilidad y tiradas de salvación mientras permanezcan a 9 m entre sí. El efecto dura 10 minutos. Cada criatura solo puede estar vinculada una vez a la vez. Se recarga con descanso largo.'
+          desc: 'Vinculás hasta 3 criaturas: 1d4 a ataque/prueba/salvación, 1 vez por turno cada una.',
+          fullDesc: 'Como acción, elegís hasta tu Bono de Competencia (3) en criaturas dispuestas que puedas ver a 9 m, incluida vos. El vínculo dura 10 minutos o hasta que vuelvas a usar el rasgo.\n\nMientras una criatura vinculada esté a 9 m de otra criatura vinculada, puede tirar 1d4 y sumarlo a UNA tirada de ataque, prueba de característica o salvación — máximo una vez por turno por criatura.\n\nUsos = tu Bono de Competencia, recarga con descanso largo. NO gasta Channel Divinity.\n\nNota: Peace Domain es material de Tasha\'s (2014). WotC no lo convirtió al PHB 2024, así que este texto sigue las reglas de Tasha\'s.'
         },
         {
           id: 'cd-balm',
           name: 'Balm of Peace',
-          source: 'Channel Divinity · Dominio de la Paz',
+          source: 'Channel Divinity · Dominio de la Paz (Tasha\'s)',
           type: 'active',
-          recharge: 'short',
+          recharge: 'short1',
           action: 'Acción',
-          range: 'Movimiento',
-          desc: 'Muévete sin provocar OA y cura a cada aliado que pases a 1,5 m.',
-          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Hasta el final de tu turno, tu movimiento no provoca ataques de oportunidad. Cuando te mueves a 1,5 m de cualquier criatura durante este movimiento, puedes curarla por 2d6 + tu modificador de Sabiduría (+4) HP. Solo puedes curar a cada criatura una vez por uso. No requiere que las criaturas estén inconscientes ni que sean aliadas — puedes elegir a quién curar al moverte.'
+          range: '1,5 m al moverte',
+          desc: 'Te movés sin provocar OA y curás 2d6+4 a cada criatura que pases al lado (una vez cada una).',
+          fullDesc: 'Usás tu acción y gastás un uso de Channel Divinity. Te movés hasta tu velocidad sin provocar ataques de oportunidad.\n\nAl pasar a 1,5 m de una criatura durante ese movimiento, podés curarla 2d6 + tu modificador de Sabiduría (+4), mínimo 1 HP. Cada criatura solo una vez por uso, pero no hay límite de cuántas alcances al moverte.\n\nNota: Peace Domain es material de Tasha\'s (2014), no convertido al PHB 2024.'
         },
         {
           id: 'cd-spark',
           name: 'Divine Spark',
           source: 'Channel Divinity · Clérigo base',
           type: 'active',
-          recharge: 'short',
+          recharge: 'short1',
           action: 'Acción',
-          range: '18 m',
-          desc: 'Cura o daña a una criatura por MOD SAB dados (d8).',
-          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Apuntas a una criatura a 18 m que puedas ver. Lanzas un número de dados igual a tu modificador de Sabiduría (+4), usando d8. Puedes elegir curar a la criatura por ese total, o infligirle daño radiante o necrótico por ese total (tu elección al activar). A nivel 7 el número de dados aumenta en 1 (total 5d8). A nivel 11 aumenta otros 2 (total 7d8).'
+          range: '9 m',
+          desc: 'Cura 1d8+4, o daño radiante/necrótico con save de CON (mitad si tiene éxito).',
+          fullDesc: 'Usás tu acción (Mágica) y gastás un uso de Channel Divinity. Apuntás tu Símbolo Sagrado a otra criatura a 9 m y tirás 1d8 + tu modificador de Sabiduría (+4). Elegís:\n\n• CURAR a la criatura esa cantidad, o\n• DAÑARLA: hace salvación de Constitución contra tu CD (15). Si falla recibe el total en daño Necrótico o Radiante (vos elegís el tipo); si tiene éxito, la mitad redondeando abajo.\n\nEscala: 2d8 a nivel 7, 3d8 a nivel 13, 4d8 a nivel 18.\n\nCorregido: la versión anterior decía "dados = mod SAB" y alcance 18 m, que son datos de 2014.'
         },
         {
           id: 'cd-undead',
           name: 'Turn Undead',
           source: 'Channel Divinity · Clérigo base',
           type: 'active',
-          recharge: 'short',
+          recharge: 'short1',
           action: 'Acción',
           range: '9 m (área)',
-          desc: 'Expulsa no-muertos cercanos que fallen su save de SAB.',
-          fullDesc: 'Usas tu acción y gastas un uso de Channel Divinity. Cada no-muerto que puedas ver a 9 m de ti debe hacer una tirada de salvación de Sabiduría contra tu CD de conjuro (15). Si falla, queda Expulsado durante 1 minuto. Un no-muerto expulsado debe usar su movimiento para alejarse de ti lo máximo posible, no puede acercarse voluntariamente a ti, y no puede realizar reacciones. Solo puede usar la acción Dash o intentar escapar de un efecto que le impida moverse. Si no tiene adonde huir, puede usar la acción Dodge. A nivel 5 (Destroy Undead), no-muertos de CR 1/2 o menos son destruidos directamente.'
+          desc: 'No-muertos que elijas y fallen save de SAB quedan Asustados e Incapacitados 1 min. Sear Undead suma daño radiante.',
+          fullDesc: 'Usás tu acción (Mágica) y gastás un uso de Channel Divinity. Cada no-muerto que elijas a 9 m debe hacer una salvación de Sabiduría contra tu CD de conjuro (15). Si falla, queda Asustado e Incapacitado durante 1 minuto, y en sus turnos huye lo más lejos posible de vos.\n\nEl efecto termina antes si la criatura recibe CUALQUIER daño, si vos quedás Incapacitada o si morís.\n\nSear Undead (nivel 5): tirás d8 igual a tu modificador de Sabiduría (mínimo 1d8) y cada no-muerto que falle la salvación recibe ese total en daño radiante. Ojo: ese daño NO termina el efecto de Turn.'
         },
         {
           id: 'protective-bond',
@@ -1333,10 +1341,12 @@ const Characters = (() => {
   const CLASE_FEATURES = {
     'Clérigo': {
       resources: (nivel) => [
+        // PHB 2024: llega a nv2 con 2 usos, 3 a nv6, 4 a nv18. El descanso
+        // corto devuelve UN uso; el largo, todos.
         { id:'channel-divinity', name:'Channel Divinity',
-          current: nivel >= 6 ? 3 : nivel >= 2 ? 2 : 1,
-          max:     nivel >= 6 ? 3 : nivel >= 2 ? 2 : 1,
-          recharge:'short', note:'Turn Undead · Divine Spark · Balm of Peace' }
+          current: nivel >= 18 ? 4 : nivel >= 6 ? 3 : nivel >= 2 ? 2 : 0,
+          max:     nivel >= 18 ? 4 : nivel >= 6 ? 3 : nivel >= 2 ? 2 : 0,
+          recharge:'short1', note:'Turn Undead · Divine Spark' }
       ],
       features: (nivel) => [
         { id:'cleric-spellcasting', name:'Spellcasting (SAB)', source:'Clérigo · Nivel 1', type:'passive', action:'Varía', range:'Varía', recharge:null,
@@ -1345,14 +1355,19 @@ const Characters = (() => {
           desc:`${nivel>=6?3:nivel>=2?2:1} uso${nivel>=6?'s':nivel>=2?'s':''} por Short Rest. Turn Undead · Divine Spark.`, fullDesc:'' },
         ...(nivel >= 2 ? [{ id:'harness-divine-power', name:'Harness Divine Power', source:'Clérigo · Nivel 2', type:'active', action:'Acción bonus', range:'Personal', recharge:'long',
           desc:'Recuperas un slot de conjuro gastado (máx nivel = mitad Prof Bonus). 1 uso/Long Rest.', fullDesc:'' }] : []),
-        ...(nivel >= 3 ? [{ id:'cleric-subclass', name:'Subclase (Divine Order)', source:'Clérigo · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Eliges tu dominio divino que otorga features adicionales.', fullDesc:'' }] : []),
+        // Divine Order es nivel 1 en 2024 y es una elección propia, distinta
+        // de la subclase (que llega a nivel 3).
+        { id:'divine-order', name:'Divine Order', source:'Clérigo · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Elegís Protector (armas marciales + armadura pesada) o Taumaturgo (1 truco extra y +mod SAB a pruebas de INT de Arcanos/Religión, mín +1).',
+          fullDesc:'Divine Order (PHB 2024 · Clérigo nivel 1)\n\nElegís una de estas dos orientaciones sagradas:\n\n• PROTECTOR — Ganás competencia con armas marciales y entrenamiento con armadura pesada.\n\n• TAUMATURGO — Aprendés un truco adicional de la lista de Clérigo. Además, sumás tu modificador de Sabiduría (mínimo +1) a las pruebas de Inteligencia (Arcanos) e Inteligencia (Religión).\n\nOjo: el bono de Taumaturgo aplica a pruebas de INTELIGENCIA, no de Sabiduría.' },
+        ...(nivel >= 3 ? [{ id:'cleric-subclass', name:'Subclase (Dominio Divino)', source:'Clérigo · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Elegís tu dominio divino, que otorga rasgos y conjuros siempre preparados.', fullDesc:'' }] : []),
         ...(nivel >= 4 ? [{ id:'cleric-asi-4', name:'Ability Score Improvement', source:'Clérigo · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'+2 a un stat o +1 a dos stats. Puedes tomar un Feat en su lugar.', fullDesc:'' }] : []),
-        ...(nivel >= 5 ? [{ id:'destroy-undead', name:'Destroy Undead', source:'Clérigo · Nivel 5', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:`Turn Undead destruye automáticamente no-muertos con CR ≤ ${nivel>=17?4:nivel>=14?3:nivel>=11?2:nivel>=8?1:0.5}.`, fullDesc:'' }] : []),
+        ...(nivel >= 5 ? [{ id:'sear-undead', name:'Sear Undead', source:'Clérigo · Nivel 5', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Al usar Turn Undead, tirás d8 = tu mod. SAB (mín 1d8). Cada no-muerto que falle la salvación recibe ese total en daño radiante. El daño NO termina el efecto de Turn.', fullDesc:'Sear Undead (PHB 2024 · Clérigo nivel 5)\n\nSiempre que uses Turn Undead, podés tirar un número de d8 igual a tu modificador de Sabiduría (mínimo 1d8). Suma los dados: cada No-muerto que FALLE la salvación de ese Turn Undead recibe esa cantidad de daño Radiante.\n\nEl daño no termina el efecto de Turn Undead sobre la criatura.\n\nReemplaza a Destroy Undead, que no existe en 2024: en vez de destruir por umbral de CR, hace daño a todo no-muerto que falle sin importar su CR.' }] : []),
         ...(nivel >= 6 ? [{ id:'channel-divinity-2', name:'Channel Divinity (3 usos)', source:'Clérigo · Nivel 6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Channel Divinity ahora tiene 3 usos por Short Rest.', fullDesc:'' }] : []),
+          desc:'Channel Divinity pasa a 3 usos (4 a nivel 18). Un descanso corto devuelve 1 uso; el largo, todos.', fullDesc:'' }] : []),
         ...(nivel >= 7 ? [{ id:'blessed-strikes', name:'Blessed Strikes', source:'Clérigo · Nivel 7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Cuando causas daño con conjuro o ataque de arma: +1d8 daño radiante (1 vez por turno).', fullDesc:'' }] : []),
         ...(nivel >= 8 ? [{ id:'cleric-asi-8', name:'Ability Score Improvement', source:'Clérigo · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
@@ -2292,10 +2307,10 @@ const Characters = (() => {
       clase: 'Clérigo',
       resources: (nivel) => [
         { id:'channel-divinity', name:'Channel Divinity',
-          current: nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
-          max:     nivel >= 18 ? 3 : nivel >= 6 ? 2 : 1,
-          recharge:'short',
-          note:'Balm of Peace · Emboldening Bond · Turn Undead' },
+          current: nivel >= 18 ? 4 : nivel >= 6 ? 3 : nivel >= 2 ? 2 : 0,
+          max:     nivel >= 18 ? 4 : nivel >= 6 ? 3 : nivel >= 2 ? 2 : 0,
+          recharge:'short1',
+          note:'Balm of Peace · Divine Spark · Turn Undead' },
         { id:'bond', name:'Emboldening Bond',
           current: nivel >= 9 ? 4 : nivel >= 5 ? 3 : nivel >= 2 ? 2 : 1,
           max:     nivel >= 9 ? 4 : nivel >= 5 ? 3 : nivel >= 2 ? 2 : 1,
@@ -2314,7 +2329,23 @@ const Characters = (() => {
         { id:'greater-restoration', name:'Greater Restoration ◆', level:5, castTime:'Acción',  range:'Toque',  duration:'Inst.',       concentration:false, combat:false, domain:true, desc:'Reduce agotamiento, elimina encantamiento/maldición/petrificación, restaura HP max. Siempre preparado.' },
         { id:'rary-telepathic-bond', name:"Rary's Telepathic Bond ◆", level:5, castTime:'Acción',range:'9 m', duration:'1 h',         concentration:false, combat:false, domain:true, desc:'Hasta 8 criaturas se comunican telepáticamente sin concentración. Siempre preparado.' },
       ],
-      features: () => [],
+      /* Peace Domain es de Tasha's (2014): WotC no lo convirtió al PHB 2024.
+         Los niveles son los de Tasha's. Antes esto estaba vacío y un Clérigo
+         de Paz creado desde cero no veía ninguna feature del dominio. */
+      features: (nivel) => [
+        { id:'implement-of-peace', name:'Implement of Peace', source:'Dominio de la Paz · Nivel 1 (Tasha\'s)', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Competencia en Perspicacia, Interpretación o Persuasión (a elección).', fullDesc:'' },
+        { id:'emboldening-bond', name:'Emboldening Bond', source:'Dominio de la Paz · Nivel 1 (Tasha\'s)', type:'active', action:'Acción', range:'9 m', recharge:'long',
+          desc:'Vinculás hasta PB criaturas por 10 min: 1d4 a ataque/prueba/salvación, 1 vez por turno cada una, mientras estén a 9 m entre sí.', fullDesc:'' },
+        ...(nivel >= 2 ? [{ id:'cd-balm', name:'Balm of Peace', source:'Channel Divinity · Dominio de la Paz (Tasha\'s)', type:'active', action:'Acción', range:'1,5 m al moverte', recharge:'short1',
+          desc:'Gastás Channel Divinity: te movés sin provocar OA y curás 2d6+SAB a cada criatura que pases al lado (una vez cada una).', fullDesc:'' }] : []),
+        ...(nivel >= 6 ? [{ id:'protective-bond', name:'Protective Bond', source:'Dominio de la Paz · Nivel 6 (Tasha\'s)', type:'active', action:'Reacción', range:'9 m', recharge:null,
+          desc:'Una criatura vinculada puede usar su reacción para teleportarse junto a otra vinculada que vaya a recibir daño y recibirlo en su lugar.', fullDesc:'' }] : []),
+        ...(nivel >= 8 ? [{ id:'peace-potent-spellcasting', name:'Potent Spellcasting', source:'Dominio de la Paz · Nivel 8 (Tasha\'s)', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Sumás tu mod. SAB al daño de tus trucos de Clérigo. OJO: se solapa con Blessed Strikes (nv7 en 2024) — el PHB 2024 dice elegir solo una.', fullDesc:'' }] : []),
+        ...(nivel >= 17 ? [{ id:'expansive-bond', name:'Expansive Bond', source:'Dominio de la Paz · Nivel 17 (Tasha\'s)', type:'passive', action:'Pasiva', range:'18 m', recharge:null,
+          desc:'El alcance de ambos vínculos sube a 18 m, y quien use Protective Bond tiene resistencia al daño que recibe por otro.', fullDesc:'' }] : []),
+      ],
     },
 
     'Life Domain': {

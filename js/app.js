@@ -434,6 +434,36 @@ const App = (() => {
     // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
     if (_cleanSpells(_char)) Storage.saveCharRaw(_char);
 
+  /* Agrega al personaje los conjuros de su clase que aún no tenga.
+     Solo prepare casters (Clérigo, Druida, Mago, Paladín, Explorador): los
+     known casters (Hechicero, Bardo, Brujo) eligen a mano y auto-agregar
+     les rompería el límite de conocidos. */
+  function _syncSpellCatalog(c) {
+    const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase]) || [];
+    if (!catalog.length || Characters.isKnownCaster(c)) return 0;
+
+    const savedPrepared = c.preparedToday || [];
+    const existingIds   = new Set((c.spells || []).map(s => s.id));
+    // También por nombre: el mismo hechizo aparece con ids distintos según
+    // la fuente (ej. 'toll-dead' en la lista de Lursey vs 'toll-the-dead'
+    // en el catálogo de clase), y comparar solo por id lo duplicaba.
+    const normName = n => (n || '').toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, '');
+    const existingNames = new Set((c.spells || []).map(s => normName(s.name)));
+    // Solo hasta el nivel de slot que el personaje realmente tiene: un
+    // Clérigo nv7 llega a slots de nivel 4, así que agregar conjuros de
+    // nivel 5+ le ensuciaba la lista con cosas que no puede lanzar.
+    const maxLvl = Characters.getMaxSpellLevel
+      ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1)
+      : 9;
+    const newSpells = catalog
+      .filter(s => s.level > 0 && s.level <= maxLvl
+                && !existingIds.has(s.id) && !existingNames.has(normName(s.name)))
+      .map(s => ({ ...s }));
+    if (newSpells.length) c.spells = [...(c.spells || []), ...newSpells];
+    c.preparedToday = savedPrepared;
+    return newSpells.length;
+  }
+
     // ── Sincronizar datos maestros desde characters.js ──────────────────────
     // Preserva: spellSlots usados, preparedToday, cantidades de consumables
     // Aplica a TODOS los personajes (no solo Lursey)
@@ -448,6 +478,10 @@ const App = (() => {
         return { ...freshSpell, prepared: saved ? saved.prepared : freshSpell.prepared };
       });
       _char.preparedToday = savedPrepared;
+      // Su lista propia es la base, pero el catálogo de Clérigo tiene
+      // conjuros que ella no tenía; antes esta rama se lo saltaba y quedaba
+      // congelada en los 35 de buildLursey().
+      _syncSpellCatalog(_char);
 
       if (!_char.ifttt || _char.ifttt.length === 0) _char.ifttt = freshLursey.ifttt;
       _char.features     = freshLursey.features;
@@ -466,6 +500,9 @@ const App = (() => {
         const saved = (_char.resources || []).find(r => r.id === fresh.id);
         if (saved) {
           saved.name = fresh.name; saved.max = fresh.max; saved.note = fresh.note;
+          // action/desc se agregaron después: sin esto los recursos ya
+          // guardados nunca aparecían como tarjeta activable.
+          saved.action = fresh.action; saved.desc = fresh.desc;
           if (saved.current > saved.max) saved.current = saved.max;
         }
       });
@@ -474,34 +511,7 @@ const App = (() => {
 
     } else {
       // Otros personajes: sync de catálogo de spells por clase
-      // Solo añade conjuros de NIVEL 1+ que no existan aún — los cantrips los elige el jugador con el picker
-      const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[_char.clase]) || [];
-      if (catalog.length > 0 && !Characters.isKnownCaster(_char)) {
-        // Solo prepare casters (Clérigo, Druida, Mago, Paladín, Explorador) sincronizan
-        // el catálogo completo al init. Known casters (Hechicero, Bardo, Brujo) eligen
-        // sus conjuros manualmente — no auto-agregar para no sobrepasar el límite.
-        const savedPrepared = _char.preparedToday || [];
-        const existingIds   = new Set((_char.spells || []).map(s => s.id));
-        // También por nombre: el mismo hechizo aparece con ids distintos según
-        // la fuente (ej. 'toll-dead' en la lista de Lursey vs 'toll-the-dead'
-        // en el catálogo de clase), y comparar solo por id lo duplicaba.
-        const normName = n => (n || '').toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, '');
-        const existingNames = new Set((_char.spells || []).map(s => normName(s.name)));
-        // Solo hasta el nivel de slot que el personaje realmente tiene: un
-        // Clérigo nv7 llega a slots de nivel 4, así que agregar conjuros de
-        // nivel 5+ le ensuciaba la lista con cosas que no puede lanzar.
-        const maxLvl = Characters.getMaxSpellLevel
-          ? Characters.getMaxSpellLevel(_char.clase, _char.nivel || 1)
-          : 9;
-        const newSpells = catalog
-          .filter(s => s.level > 0 && s.level <= maxLvl
-                    && !existingIds.has(s.id) && !existingNames.has(normName(s.name)))
-          .map(s => ({ ...s }));
-        if (newSpells.length > 0) {
-          _char.spells = [...(_char.spells || []), ...newSpells];
-        }
-        _char.preparedToday = savedPrepared;
-      }
+      _syncSpellCatalog(_char);
       Storage.saveCharRaw(_char);
 
       // _syncCharData ya se encargó del sync de recursos (clase + subclase + raza)
@@ -1686,8 +1696,11 @@ const App = (() => {
     // 3. RECURSOS con max > 0 — grilla 3 columnas
     html += `</div><div class="resources-grid resources-grid--3col">`;
     (c.resources || []).filter(r => r.max > 0).forEach(r => {
-      const rechargeLabel = { short: '↺ Corto', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
-      const isCustom = !['channel-divinity','bond','guiding-bolt-mi'].includes(r.id);
+      const rechargeLabel = { short: '↺ Corto', short1: '↺ Corto (+1)', long: '↺ Largo', dawn: '↺ Amanecer', never: '—' }[r.recharge] || r.recharge;
+      // Borrable solo si lo creó el jugador. Antes era una lista fija de ids
+      // de Lursey, que además omitía 'servirse-poder-divino' — ese sí salía
+      // con ✕ y los otros no. Ahora se marca el origen en el propio recurso.
+      const isCustom = r.custom === true || !_esRecursoDeCatalogo(r.id);
       let dotsHtml = '';
       for (let d = 0; d < r.max; d++) {
         const used = d >= r.current;
@@ -1701,6 +1714,29 @@ const App = (() => {
     document.getElementById('col-combate-izq').innerHTML = html;
     _updateRoundDisplay();
     _updateConcBlock();
+  }
+
+  /* Ids de recursos que provienen de CLASE_FEATURES / SUBCLASES_CONFIG.
+     Se calcula una vez sobre todas las clases y subclases porque el set no
+     cambia en runtime. */
+  let _catalogResourceIds = null;
+  function _esRecursoDeCatalogo(id) {
+    if (!_catalogResourceIds) {
+      _catalogResourceIds = new Set();
+      const recolecta = (cfg) => {
+        if (!cfg || typeof cfg.resources !== 'function') return;
+        // Nivel 20: la definición más amplia, incluye recursos que solo
+        // aparecen en niveles altos.
+        try {
+          (cfg.resources(20) || []).forEach(r => r && r.id && _catalogResourceIds.add(r.id));
+        } catch (e) { /* preset que exige más contexto: se ignora */ }
+      };
+      Object.values(Characters.CLASE_FEATURES || {}).forEach(recolecta);
+      Object.values(Characters.SUBCLASES_CONFIG || {}).forEach(recolecta);
+      // Recursos de Lursey que no vienen de un preset de clase.
+      ['guiding-bolt-mi', 'servirse-poder-divino'].forEach(id => _catalogResourceIds.add(id));
+    }
+    return _catalogResourceIds.has(id);
   }
 
   function _buildDeathSavesHTML(c) {
@@ -2281,7 +2317,7 @@ const App = (() => {
     const activables = (c.resources || []).filter(r => r.action || r.desc);
     const isEchoKnight = c.subclase === 'Echo Knight';
     if (activables.length || isEchoKnight) {
-      const rechargeLabel = rc => ({ short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[rc] || rc || '');
+      const rechargeLabel = rc => ({ short:'↺ Corto', short1:'↺ Corto (+1)', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[rc] || rc || '');
 
       const abilityCards = activables.map(r => {
         const hasUses = r.max > 0;
@@ -8409,9 +8445,12 @@ const App = (() => {
     const conMod = Characters.calcMod(_char.stats.con);
     const heal = Math.max(0, result + conMod * qty);
 
-    // Recargar recursos de descanso corto (Rage, Ki, Channel Divinity, etc.)
+    // Recargar recursos de descanso corto (Rage, Ki, etc.). 'short1' es el
+    // caso del Channel Divinity 2024: el descanso corto devuelve UN uso, no
+    // todos — todos se recuperan solo con el descanso largo.
     (_char.resources || []).forEach(r => {
-      if (r.recharge === 'short') r.current = r.max;
+      if (r.recharge === 'short')  r.current = r.max;
+      if (r.recharge === 'short1') r.current = Math.min(r.max, (r.current || 0) + 1);
     });
 
     // Brujo: Pact Magic — todos sus spell slots recargan en descanso corto
@@ -8456,7 +8495,9 @@ const App = (() => {
     _updateCombatHUD();
     _logCombat(`↺ Descanso corto · +${heal} HP${compHeal > 0 ? ` · compañero +${compHeal} HP` : ''}`, 'rest');
     // Mensaje: listar qué recursos recargados (máx 2 nombres)
-    const recharged = (_char.resources || []).filter(r => r.recharge === 'short' && r.max > 0).map(r => r.name);
+    const recharged = (_char.resources || [])
+      .filter(r => (r.recharge === 'short' || r.recharge === 'short1') && r.max > 0)
+      .map(r => r.name);
     const rechargeLabel = recharged.length
       ? ` · ${recharged.slice(0, 2).join(', ')} recargado${recharged.length > 1 ? 's' : ''}`
       : '';
@@ -10710,7 +10751,7 @@ ${notesText}`;
   function openAbilityDetail(resourceId) {
     const r = (_char.resources || []).find(r => r.id === resourceId);
     if (!r) return;
-    const rechargeLabel = { short:'↺ Corto', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[r.recharge] || r.recharge || '';
+    const rechargeLabel = { short:'↺ Corto', short1:'↺ Corto (+1)', long:'↺ Largo', dawn:'↺ Amanecer', never:'—' }[r.recharge] || r.recharge || '';
     const badge = `<span class="feat-badge feat-active" style="font-size:11px;padding:2px 8px;">Activa</span>`;
     document.getElementById('fdmBadge').innerHTML = badge;
     document.getElementById('fdmName').textContent = r.name;

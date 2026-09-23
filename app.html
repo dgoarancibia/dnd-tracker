@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 428;
+const _SW_EXPECTED = 429;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 428;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=121">
+<link rel="stylesheet" href="css/style.css?v=122">
 </head>
 <body>
 
@@ -1081,6 +1081,7 @@ const _SW_EXPECTED = 428;
         <label>Se recarga con</label>
         <select id="crRecharge">
           <option value="short">Descanso Corto</option>
+          <option value="short1">Descanso Corto (+1 uso)</option>
           <option value="long">Descanso Largo</option>
           <option value="dawn">Al Amanecer</option>
           <option value="never">No se recarga</option>
@@ -1288,10 +1289,10 @@ const _SW_EXPECTED = 428;
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=58"></script>
-<script src="js/characters.js?v=124"></script>
+<script src="js/characters.js?v=125"></script>
 <script src="js/export_pdf.js?v=7"></script>
 <script src="js/export_resumen.js?v=3"></script>
-<script src="js/app.js?v=243"></script>
+<script src="js/app.js?v=244"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>
