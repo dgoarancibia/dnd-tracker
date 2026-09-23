@@ -2218,7 +2218,8 @@ const App = (() => {
     // Iniciar combate / ronda / turno / iniciativa: ahora viven en el panel
     // flotante (FAB ⚔️), no en el flujo normal de esta columna.
     let html = `
-    <div id="turnTracker" class="turn-tracker"></div>`;
+    <div id="turnTracker" class="turn-tracker"></div>
+    ${_combatActive ? _bloqueMarkTarget(c) : ''}`;
 
     // Primal Companion (Beast Master) — arriba del todo
     if (esBeastMaster(c)) {
@@ -3893,6 +3894,43 @@ const App = (() => {
       </div>`;
   }
 
+  /* ── Hunter's Mark: objetivo marcado (HU-28) ──────────────────────
+     Registrar a quién marcaste permite que Bestial Fury y otras features
+     sepan de qué criatura hablan. El nombre es opcional. */
+  function _bloqueMarkTarget(c) {
+    if (!_esHuntersMark(c)) return '';
+    const objetivo = c.markTarget;
+    const nv = getRangerLevel(c);
+    return `
+      <div class="mark-target ${objetivo ? 'activo' : ''}">
+        <span class="mt-lbl">🎯 Hunter's Mark</span>
+        ${objetivo
+          ? `<span class="mt-name">${objetivo.replace(/</g,'&lt;')}</span>
+             <button class="mt-btn" onclick="App.marcarObjetivo()">Cambiar</button>`
+          : `<button class="mt-btn" onclick="App.marcarObjetivo()">¿A quién marcaste?</button>`}
+        ${nv >= 13 ? '<span class="mt-rh">Relentless Hunter: el daño no rompe la concentración</span>' : ''}
+      </div>`;
+  }
+
+  function usarBonusHM() {
+    if (!_char) return;
+    const t = _turnoDe(_char);
+    t.beast.hmBonusUsado = true;
+    _saveChar(true);
+    _renderCombateDer();
+  }
+
+  function marcarObjetivo() {
+    if (!_char) return;
+    const v = prompt('¿A quién marcaste? (nombre corto, opcional)', _char.markTarget || '');
+    if (v === null) return;
+    const nombre = v.trim().slice(0, 40);
+    if (nombre) _char.markTarget = nombre;
+    else delete _char.markTarget;
+    _saveChar();
+    _renderCombateDer();
+  }
+
   function toggleCharge() {
     if (!_char || !_char.companion) return;
     _char.companion.chargeReady = !_char.companion.chargeReady;
@@ -4177,7 +4215,7 @@ const App = (() => {
   function nuevoTurno() {
     if (!_char) return;
     _char.turn = { action: false, bonus: false, reaction: false, movement: false, attacksUsed: 0,
-                   beast: { action: false, bonus: false, reaction: false } };
+                   beast: { action: false, bonus: false, reaction: false, hmBonusUsado: false } };
     // Banderas por turno de otras features (Charge, Bestial Fury…).
     if (_char.companion) delete _char.companion.chargeReady;
     _saveChar(true);
@@ -4379,15 +4417,26 @@ const App = (() => {
       </div>`;
     }
     if (nivelRanger >= 11) {
-      // Hunter's Mark activo como concentración → recordar el extra de Bestial Fury.
-      const hmSpell = (c.spells || []).find(sp => sp.id === c.concentration);
-      const hmActiva = hmSpell && /hunter'?s mark/i.test(hmSpell.name || '');
+      /* Bestial Fury (HU-30/31): dos ataques, y la primera vez por turno
+         que la bestia golpea al objetivo marcado suma el daño de
+         Hunter's Mark como fuerza. La app no sabe si impactó — lo marca
+         el jugador. */
+      const hmActiva = _esHuntersMark(c);
+      const yaAplicado = (c.turn && c.turn.beast && c.turn.beast.hmBonusUsado) === true;
+      const objetivo = c.markTarget;
       extrasNivelHTML += `
       <div class="companion-extra-row">
         <span class="companion-extra-lbl">Nv11 · Bestial Fury:</span>
         <span class="companion-extra-chip strong">Beast's Strike ×2</span>
-        ${hmActiva ? `<span class="companion-extra-chip mark">+1d6 fuerza (1ª vez/turno)</span>` : ''}
       </div>`;
+      if (hmActiva && _combatActive) {
+        extrasNivelHTML += yaAplicado
+          ? `<div class="bf-hm usado">✓ Bonus de Hunter's Mark ya usado este turno</div>`
+          : `<div class="bf-hm">
+               <span>+1d6 fuerza al primer golpe${objetivo ? ` contra ${objetivo.replace(/</g,'&lt;')}` : ''}</span>
+               <button class="bf-btn" onclick="App.usarBonusHM()">Impactó — aplicar</button>
+             </div>`;
+      }
     }
 
     const caida = curHp <= 0;
@@ -5434,6 +5483,15 @@ const App = (() => {
     return Math.max(0, _combatRound - _char.concentrationRound) + 1;
   }
 
+  // ¿La concentración actual es Hunter's Mark? Lo usan el target tracker
+  // y Relentless Hunter.
+  function _esHuntersMark(c, spellId) {
+    const id = spellId !== undefined ? spellId : (c && c.concentration);
+    if (!id) return false;
+    const sp = ((c && c.spells) || []).find(x => x.id === id);
+    return /hunter'?s mark/i.test((sp && sp.name) || id);
+  }
+
   function setConc(spellId) {
     if (!_char) return;
     if (spellId) {
@@ -5444,6 +5502,8 @@ const App = (() => {
       _logCombat('◇ Concentración rota', 'cond');
       _char.concentrationRound = 0;
     }
+    // El objetivo marcado vive mientras dure la concentración.
+    if (!spellId || !_esHuntersMark(_char, spellId)) delete _char.markTarget;
     _char.concentration = spellId;
     _saveChar();
     // Re-render completo del bloque (más simple y correcto)
@@ -5940,6 +6000,15 @@ const App = (() => {
 
   function _checkConcAlert(damage) {
     if (!_char || !_char.concentration) return;
+
+    /* Relentless Hunter (Explorador nv13): el daño no puede romper tu
+       concentración en Hunter's Mark. Solo aplica a ese conjuro: con
+       cualquier otro, el aviso normal sigue. */
+    if (_esHuntersMark(_char) && getRangerLevel(_char) >= 13) {
+      showToast('Relentless Hunter — el daño no rompe Hunter\'s Mark');
+      return;
+    }
+
     const spell = (_char.spells || []).find(s => s.id === _char.concentration);
     const name = spell ? spell.name : _char.concentration;
     const dc = Math.max(10, Math.floor(damage / 2));
@@ -11193,6 +11262,7 @@ ${notesText}`;
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
     toggleRecursoBestia, comandarBestia,
     toggleCharge, registrarGrapple, liberarGrapple, verRasgoBestia,
+    marcarObjetivo, usarBonusHM,
     openMasteryPicker, closeMasteryPicker, toggleMastery,
     openMasteryDetail, closeMasteryDetail,
 
