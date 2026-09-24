@@ -1066,7 +1066,7 @@ const Characters = (() => {
           current: 3, max: 3,
           recharge: 'short1',
           action: 'Acción',
-          desc: 'Elegí una: Divine Spark (2d8 daño radiante o curación, save SAB), Turn Undead (no-muertos huyen 1 min) o Balm of Peace (te movés sin provocar y curás 2d6+SAB a quien pases al lado).',
+          desc: 'Elegí una: Divine Spark (1d8+4 curación, o daño radiante/necrótico con save de CON), Turn Undead (Asustados e Incapacitados 1 min + Sear Undead) o Balm of Peace (te movés sin provocar OA y curás 2d6+4 a quien pases al lado).',
           note: 'Balm of Peace · Divine Spark · Turn Undead'
         },
         {

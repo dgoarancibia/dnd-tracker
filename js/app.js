@@ -2255,7 +2255,8 @@ const App = (() => {
     // flotante (FAB ⚔️), no en el flujo normal de esta columna.
     let html = `
     <div id="turnTracker" class="turn-tracker"></div>
-    ${_combatActive ? _bloqueMarkTarget(c) : ''}`;
+    ${_combatActive ? _bloqueMarkTarget(c) : ''}
+    ${_combatActive ? _bloqueVinculos(c) : ''}`;
 
     // Primal Companion (Beast Master) — arriba del todo
     if (esBeastMaster(c)) {
@@ -3949,6 +3950,104 @@ const App = (() => {
       </div>`;
   }
 
+  /* ── Emboldening Bond · criaturas vinculadas (Peace Domain) ──────────────
+     El dominio vincula hasta PB criaturas por 10 min; cada una puede sumar
+     1d4 a un ataque, prueba o salvación, máximo una vez por turno. Sin
+     registro de a quiénes vinculaste, Protective Bond es injugable.
+     Se guarda en c.bonded = [{ id, nombre, d4Usado }]. */
+  function _esPeaceDomain(c) {
+    if (!c) return false;
+    const subs = _subclasesDe(c);
+    return subs.some(([nombre]) => /paz|peace/i.test(nombre || ''));
+  }
+
+  function _maxVinculos(c) {
+    // Usos = Bono de Competencia (Tasha's).
+    return Characters.calcProfBonus ? Characters.calcProfBonus(c.nivel || 1) : 3;
+  }
+
+  function _bonded(c) {
+    if (!Array.isArray(c.bonded)) c.bonded = [];
+    return c.bonded;
+  }
+
+  function _bloqueVinculos(c) {
+    if (!_esPeaceDomain(c)) return '';
+    const lista = _bonded(c);
+    const max = _maxVinculos(c);
+    const bond = (c.resources || []).find(r => r.id === 'bond');
+    const usosRestantes = bond ? bond.current : null;
+    const nv = (_subclasesDe(c).find(([n]) => /paz|peace/i.test(n || '')) || [])[1] || 0;
+
+    const chips = lista.map(b => `
+      <div class="bond-chip ${b.d4Usado ? 'usado' : ''}">
+        <button class="bond-d4" onclick="App.toggleD4Vinculo('${b.id}')"
+          title="${b.d4Usado ? 'Ya usó su d4 este turno' : 'Marcar que usó su 1d4'}">${b.d4Usado ? '✓' : 'd4'}</button>
+        <span class="bond-name">${(b.nombre || '').replace(/</g, '&lt;')}</span>
+        <button class="bond-x" onclick="App.quitarVinculo('${b.id}')" title="Quitar del vínculo">✕</button>
+      </div>`).join('');
+
+    return `
+      <div class="bond-block ${lista.length ? 'activo' : ''}">
+        <div class="bond-hd">
+          <span class="bond-lbl">🤝 Emboldening Bond</span>
+          <span class="bond-count">${lista.length}/${max}${usosRestantes != null ? ` · ${usosRestantes} usos` : ''}</span>
+        </div>
+        ${lista.length ? `<div class="bond-chips">${chips}</div>` : '<div class="bond-empty">Nadie vinculado</div>'}
+        <div class="bond-actions">
+          ${lista.length < max ? `<button class="bond-btn" onclick="App.agregarVinculo()">+ Vincular</button>` : ''}
+          ${lista.length ? `<button class="bond-btn ghost" onclick="App.romperVinculos()">Romper vínculo</button>` : ''}
+        </div>
+        ${lista.length ? `<div class="bond-hint">1d4 a ataque, prueba o salvación · 1 vez por turno cada uno · a 9 m entre sí</div>` : ''}
+        ${nv >= 6 && lista.length ? `<div class="bond-hint prot">Protective Bond: una vinculada puede gastar su reacción para teleportarse junto a otra y recibir el daño en su lugar</div>` : ''}
+      </div>`;
+  }
+
+  function agregarVinculo() {
+    if (!_char) return;
+    const lista = _bonded(_char);
+    if (lista.length >= _maxVinculos(_char)) return;
+    const v = prompt('¿A quién vinculaste? (nombre corto)', '');
+    if (v === null) return;
+    const nombre = v.trim().slice(0, 30);
+    if (!nombre) return;
+    // El uso del rasgo se gasta al crear el vínculo, no por cada criatura:
+    // una sola activación vincula a todas. Solo se descuenta al pasar de
+    // cero vinculadas a la primera.
+    if (lista.length === 0) {
+      const bond = (_char.resources || []).find(r => r.id === 'bond');
+      if (bond && bond.current > 0) bond.current -= 1;
+    }
+    lista.push({ id: 'b' + Date.now().toString(36), nombre, d4Usado: false });
+    _saveChar();
+    _renderCombateDer();
+    _refreshResourceDots('bond');
+  }
+
+  function quitarVinculo(id) {
+    if (!_char) return;
+    _char.bonded = _bonded(_char).filter(b => b.id !== id);
+    _saveChar();
+    _renderCombateDer();
+  }
+
+  function toggleD4Vinculo(id) {
+    if (!_char) return;
+    const b = _bonded(_char).find(x => x.id === id);
+    if (!b) return;
+    b.d4Usado = !b.d4Usado;
+    _saveChar(true);
+    _renderCombateDer();
+  }
+
+  function romperVinculos() {
+    if (!_char) return;
+    _char.bonded = [];
+    _saveChar();
+    _renderCombateDer();
+    showToast('Vínculo roto');
+  }
+
   function usarBonusHM() {
     if (!_char) return;
     const t = _turnoDe(_char);
@@ -4255,6 +4354,8 @@ const App = (() => {
                    beast: { action: false, bonus: false, reaction: false, hmBonusUsado: false } };
     // Banderas por turno de otras features (Charge, Bestial Fury…).
     if (_char.companion) delete _char.companion.chargeReady;
+    // Cada criatura vinculada vuelve a tener su 1d4 disponible.
+    (Array.isArray(_char.bonded) ? _char.bonded : []).forEach(b => { b.d4Usado = false; });
     _saveChar(true);
     _renderTurnTracker();
     _renderCombateDer();
@@ -8488,6 +8589,8 @@ const App = (() => {
 
     // Reset turno
     _char.turn = { action: false, bonus: false, reaction: false, movement: false };
+    // Emboldening Bond dura 10 min: cualquier descanso lo supera.
+    if (Array.isArray(_char.bonded) && _char.bonded.length) _char.bonded = [];
 
     _saveChar(true);
     closeShortRest();
@@ -8615,6 +8718,8 @@ const App = (() => {
         delete c.companion.deathAt;
       }
     }
+
+    if (Array.isArray(c.bonded) && c.bonded.length) c.bonded = [];
 
     // Munición: al recoger el campo de batalla se recupera la mitad de lo
     // disparado que quedó pendiente desde el último combate.
@@ -11460,6 +11565,7 @@ ${notesText}`;
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
     setAmmo, adjustAmmo, recuperarMunicion,
+    agregarVinculo, quitarVinculo, toggleD4Vinculo, romperVinculos,
     toggleRecursoBestia, comandarBestia,
     toggleCharge, registrarGrapple, liberarGrapple, verRasgoBestia,
     marcarObjetivo, usarBonusHM,
