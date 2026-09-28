@@ -521,7 +521,7 @@ const App = (() => {
 
     _applyTheme(localStorage.getItem('dnd_theme') || 'dark');
     _applyDistUnit(localStorage.getItem('dnd_dist_unit') || 'm');
-    document.documentElement.setAttribute('data-layout', localStorage.getItem('dnd_layout') || 'sidebar');
+    document.documentElement.setAttribute('data-layout', _layoutEfectivo());
     const layoutLabel = document.getElementById('layoutModeLabel');
     if (layoutLabel) layoutLabel.textContent = (localStorage.getItem('dnd_layout') === 'classic') ? 'Clásica' : 'Barra lateral';
     _renderHeader();
@@ -1119,12 +1119,30 @@ const App = (() => {
      LAYOUT — barra lateral fija (tipo DnDBeyond) vs. clásico por pestañas
   ══════════════════════════════════════════════════════ */
 
+  /* En ventana angosta (iPad con la app en 1/3 de pantalla) la barra lateral
+     de skills no cabe: con su mínimo de 300px dejaba ~75px a las pestañas.
+     Ahí se usa el modo clásico (skills dentro de Habilidades) sin tocar la
+     preferencia guardada, que vuelve sola al agrandar la ventana. */
+  const _MQ_ANGOSTA = window.matchMedia('(max-width: 560px)');
+
+  function _layoutEfectivo() {
+    return _MQ_ANGOSTA.matches ? 'classic' : (localStorage.getItem('dnd_layout') || 'sidebar');
+  }
+
+  function _aplicarLayoutEfectivo() {
+    const antes = document.documentElement.getAttribute('data-layout');
+    const ahora = _layoutEfectivo();
+    document.documentElement.setAttribute('data-layout', ahora);
+    // Re-renderizar para que Stats/Saves/Skills aparezcan en el contenedor correcto.
+    if (_char && antes !== ahora) { _renderStatsSidebar(); _renderActiveTab(); }
+  }
+  _MQ_ANGOSTA.addEventListener('change', () => _aplicarLayoutEfectivo());
+
   function _applyLayout(mode) {
-    document.documentElement.setAttribute('data-layout', mode);
     localStorage.setItem('dnd_layout', mode);
     const label = document.getElementById('layoutModeLabel');
     if (label) label.textContent = mode === 'classic' ? 'Clásica' : 'Barra lateral';
-    // Re-renderizar para que Stats/Saves/Skills aparezcan en el contenedor correcto.
+    _aplicarLayoutEfectivo();
     if (_char) _renderStatsSidebar();
   }
 

@@ -9618,3 +9618,68 @@ mark.diary-highlight {
   .nb-tabs { flex-wrap: wrap; overflow-x: visible; row-gap: 2px; }
   .nb-tab { padding: 6px 8px; letter-spacing: 0.4px; min-height: 40px; }
 }
+
+/* ══ iPad con la app en 1/3 de pantalla, o teléfono (≤ 620px) ═══════════════
+   La cabecera apilaba nombre, HP y botones en 4 filas (~320px de alto, un
+   tercio de la pantalla). Se compacta igual que a media pantalla. */
+@media (max-width: 620px) {
+  .app-header { flex-wrap: nowrap; align-items: flex-start; padding: 6px 8px; min-height: 0; gap: 6px; }
+  .app-header-left { display: none; }
+  .char-avatar-wrap, .char-avatar-circle { width: 44px; height: 44px; }
+  .stats-strip { flex: 1 1 auto; gap: 4px; justify-content: flex-start; }
+  .stats-strip .stat-divider { display: none; }
+  .stat-box { padding: 3px 6px; min-width: 40px; }
+  .stat-box .sl { font-size: 10px; margin-bottom: 1px; }
+  .stat-box .sv { font-size: 16px; }
+  .hp-header-block { min-width: 0; flex: 1 1 180px; gap: 2px; }
+  .hp-header-cur { font-size: 24px; }
+  .hp-hdr-btn, .hp-hdr-free { min-height: 40px; padding: 4px 8px; }
+  .insp-btn { width: 38px; height: 38px; font-size: 15px; }
+  .hdr-rest-btns { flex-direction: row; }
+  .hdr-rest-btn { min-height: 38px; padding: 4px 8px; letter-spacing: 0; }
+  #appVersionBadge { display: none; }
+}
+
+/* ≤ 560px: la app pasa sola al modo clásico (ver _layoutEfectivo en app.js):
+   sin barra lateral, las skills viven en la pestaña Habilidades. Las
+   pestañas de dos columnas se apilan en un solo scroll. */
+@media (max-width: 560px) {
+  .tab-panel.active.two-col { display: block; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .two-col-left, .two-col-right { overflow: visible; height: auto; border-right: none; }
+  .tab-btn { padding: 10px 4px; font-size: 9.5px; letter-spacing: 0.3px; }
+  /* El cuaderno a ancho completo: con su mínimo de 340px no entraba y el
+     botón de cerrar quedaba cortado. */
+  .diary-panel { width: 100%; min-width: 0; }
+}
+@media (max-width: 560px) {
+  /* En modo clásico el bloque de stats/skills se armaba en FILA (display:flex
+     sin dirección) y las stats quedaban como barras altas al costado. */
+  [data-layout="classic"] #col-hab-izq { flex-direction: column; }
+  #col-hab-izq .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  #col-hab-izq .stat-block { padding: 6px 4px; }
+  /* Skills compactas como a media pantalla: sin el bonus manual. */
+  .skills-list { column-gap: 10px; }
+  .skill-row .bonus-input-sm { display: none; }
+  .skill-name { font-size: 14px; }
+  .skill-stat { font-size: 10px; }
+  .skill-val { font-size: 17px; min-width: 26px; }
+}
+@media (max-width: 400px) {
+  .skills-list { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  /* Recursos: en tres columnas se salía "Guiding Bolt (MI) ↺ Largo". */
+  .resources-grid--3col { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .resource-card .rc-top { flex-wrap: wrap; row-gap: 2px; }
+}
+@media (max-width: 400px) {
+  /* A 320px el bloque de HP no entraba junto a CA y la cabecera iba a 5 filas. */
+  .hp-header-block { flex-basis: 150px; }
+  .hp-hdr-free { width: 48px; }
+  .hp-hdr-btn { padding: 4px 6px; }
+}
+@media (max-width: 620px) {
+  /* XP: "Nivel 6 → Nivel 7 · Faltan 9,000" se salía de la tarjeta. */
+  .xp-row { flex-wrap: wrap; row-gap: 6px; }
+  .xp-info { min-width: 140px; }
+}
