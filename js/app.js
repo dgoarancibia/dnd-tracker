@@ -806,7 +806,7 @@ const App = (() => {
   }
   const _hojasOk = () => typeof Hojas !== 'undefined';
   let _hojasIniciado = false;
-  function _hojasFlush() { if (_hojasOk()) Hojas.flush(); }
+  function _hojasFlush() { if (_hojasOk()) Hojas.salir(); }
 
   function switchNotebookTab(tab) {
     _hojasFlush();

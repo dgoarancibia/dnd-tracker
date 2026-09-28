@@ -9570,17 +9570,19 @@ mark.diary-highlight {
   .app-header { padding: 6px 10px; min-height: 0; gap: 8px; }
   .app-header-left { display: none; }
   .char-avatar-wrap, .char-avatar-circle { width: 48px; height: 48px; }
-  .stats-strip { flex: 1 1 auto; gap: 5px; }
+  /* Sin el nombre, las stats arrancan junto al avatar: antes quedaban
+     pegadas a la derecha y dejaban un hueco vacío. */
+  .stats-strip { flex: 1 1 auto; gap: 4px; justify-content: flex-start; }
   .stats-strip .stat-divider { display: none; }
-  .stat-box { padding: 3px 7px; min-width: 44px; }
+  .stat-box { padding: 3px 6px; min-width: 40px; }
   .stat-box .sl { font-size: 10px; margin-bottom: 1px; }
   .stat-box .sv { font-size: 16px; }
-  .hp-header-block { min-width: 196px; gap: 2px; }
+  .hp-header-block { min-width: 186px; gap: 2px; }
   .hp-header-cur { font-size: 24px; }
   .hp-hdr-btn, .hp-hdr-free { min-height: 36px; padding: 4px 8px; }
   .insp-btn { width: 38px; height: 38px; font-size: 15px; }
   .hdr-rest-btns { flex-direction: row; }
-  .hdr-rest-btn { min-height: 38px; padding: 4px 10px; }
+  .hdr-rest-btn { min-height: 38px; padding: 4px 8px; letter-spacing: 0; }
 
   /* Skills: se oculta el bonus manual (se edita en pantalla completa) para
      que entren las dos columnas con sus valores a la vista. */
@@ -9591,6 +9593,13 @@ mark.diary-highlight {
   .skill-stat { font-size: 10px; }
   .skill-val { font-size: 17px; min-width: 26px; }
 
+  /* Las 6 estadísticas en su fila sin desbordar: bajo ~760px no cabían. */
+  .stats-strip-bar .stats-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .stats-strip-bar .stat-block { padding: 8px 3px; gap: 5px; min-width: 0; }
+  .stats-strip-bar .stat-block-name { font-size: 12px; letter-spacing: 0.5px; }
+  .stats-strip-bar .stat-block-val { font-size: 19px; }
+  .stats-strip-bar .stat-block-mod { font-size: 14px; }
+
   /* Recursos en dos columnas: en tres se cortaba el nombre y la recarga. */
   .resources-grid--3col { grid-template-columns: 1fr 1fr; }
 }
@@ -9598,4 +9607,13 @@ mark.diary-highlight {
 /* Más angosto que el iPad a media pantalla: dos columnas ya no entran. */
 @media (min-width: 621px) and (max-width: 759px) {
   .skills-list { grid-template-columns: 1fr; }
+}
+
+/* Cuaderno en ventana angosta: el panel queda en ~340px y de sus 7
+   pestañas solo se veían 3; Hojas, Mapas, Sesiones y Stats quedaban
+   fuera de la vista (se podían deslizar, pero nada lo indicaba). */
+@media (max-width: 1000px) {
+  .diary-header { padding: 8px 10px; align-items: flex-start; }
+  .nb-tabs { flex-wrap: wrap; overflow-x: visible; row-gap: 2px; }
+  .nb-tab { padding: 6px 8px; letter-spacing: 0.4px; min-height: 32px; }
 }

@@ -1018,6 +1018,19 @@ const Hojas = (() => {
     window.addEventListener('pagehide', () => flush());
   }
 
+  // Al cerrar el cuaderno o cambiar de pestaña: guardar y no dejar una
+  // nota vacía abandonada (volver() ya lo hacía, cerrar el panel no).
+  function salir() {
+    flush();
+    if (!C()) return;
+    const eraNota = _vista.kind === 'page';
+    _limpiarSiVacia();
+    if (eraNota && !_pages().some(p => p.id === _vista.id)) {
+      _destruirEditor();
+      _vista = _pila.pop() || { kind: 'index' };
+    }
+  }
+
   // Al cambiar de personaje: la vista abierta ya no aplica.
   function reset() {
     flush();
@@ -1029,7 +1042,7 @@ const Hojas = (() => {
   }
 
   return {
-    init, render, reset, flush,
+    init, render, reset, flush, salir,
     nuevaNota, abrirNota, abrirEntidad, volver, borrarNota,
     renombrar, cambiarTipo, buscar, deshacer, rehacer,
     _elegir, _abrirMencion,

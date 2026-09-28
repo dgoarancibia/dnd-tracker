@@ -1,10 +1,13 @@
-const CACHE = 'dnd-tracker-v435';
+const CACHE = 'dnd-tracker-v436';
 
 // IMPORTANTE: app.html e index.html NO se cachean aquí intencionalmente.
 // Si se cachean, el SW viejo puede servir el HTML viejo y el nuevo SW nunca
 // llega a detectarse. El HTML siempre va a red → el SW nuevo se instala → reload.
 self.addEventListener('install', e => {
   e.waitUntil(
+    // Solo archivos livianos y garantizados: si UNO falta, addAll falla
+    // entero y el SW nunca se instala (sin offline ni actualizaciones).
+    // La plantilla PDF oficial (14 MB) se descarga al exportar, no aquí.
     caches.open(CACHE).then(cache => cache.addAll([
       './manifest.json',
       './css/style.css',
@@ -17,7 +20,6 @@ self.addEventListener('install', e => {
       './js/biblioteca.js',
       './js/maps.js',
       './js/export_pdf.js',
-      './CharacterSheet_template.pdf',
       './icons/favicon.png',
     ])).then(() => self.skipWaiting())
   );
@@ -31,7 +33,7 @@ self.addEventListener('activate', e => {
       .then(() => {
         // Notificar a todos los clientes que el SW nuevo está activo
         self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 435 }));
+          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 436 }));
         });
       })
   );
@@ -42,7 +44,7 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
   // Cliente pregunta la versión del SW activo
   if (e.data && e.data.type === 'GET_VERSION') {
-    e.source.postMessage({ type: 'SW_VERSION', version: 435 });
+    e.source.postMessage({ type: 'SW_VERSION', version: 436 });
   }
 });
 
