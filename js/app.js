@@ -2399,7 +2399,7 @@ const App = (() => {
             <div class="ability-card-info" onclick="App.openAbilityDetail('${r.id}')">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
                 <span class="ability-card-name">${r.name}</span>
-                ${r.action ? `<span class="ability-action-tag">${r.action}</span>` : ''}
+                ${r.action ? `<span class="ability-action-tag">${_tagDoble(r.action, _accionCorta(r.action))}</span>` : ''}
                 ${r.recharge ? `<span class="ability-recharge-tag">${rechargeLabel(r.recharge)}</span>` : ''}
               </div>
               ${r.desc ? `<div class="ability-card-desc">${fmtDesc(r.desc)}</div>` : ''}
@@ -2475,7 +2475,7 @@ const App = (() => {
           <div class="spell-info">
             <div class="spell-top">
               <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
-              <span class="spell-name" onclick="event.stopPropagation();App.openSpellDetail('${sp.id}')">${sp.name}</span>${tags}
+              <span class="spell-name" onclick="event.stopPropagation();App.openSpellDetail('${sp.id}')">${_nombreConjuro(sp)}</span>${tags}
             </div>
             <div class="spell-desc">${fmtDesc(sp.desc)}</div>
           </div>
@@ -2718,27 +2718,65 @@ const App = (() => {
     }
   }
 
+  /* Chips de un conjuro. Cada chip lleva versión larga y corta: en
+     ventanas angostas (iPad a media pantalla) el CSS muestra la corta
+     (A, AA, R, C, "18m", solo los dados) para que no pisen el botón. */
+  function _tagDoble(largo, corto) {
+    return corto && corto !== largo
+      ? `<span class="t-full">${largo}</span><span class="t-short">${corto}</span>`
+      : largo;
+  }
+
+  function _tiempoLanzamiento(ct) {
+    const t = String(ct || '').trim();
+    if (!t) return null;
+    if (/bonus|adicional/i.test(t)) return { largo: 'Bonus', corto: 'AA', bonus: true };
+    if (/^reacci[óo]n/i.test(t))    return { largo: 'Reac',  corto: 'R' };
+    if (/^(1\s+)?acci[óo]n$/i.test(t)) return { largo: 'Acc', corto: 'A' };
+    return { largo: t, corto: t.replace(/minutos?/i, 'min').replace(/horas?/i, 'h') };
+  }
+
+  // "Acción adicional" → AA, "Lanzar · Acción" → A, "Reacción" → R.
+  function _accionCorta(accion) {
+    const t = String(accion || '');
+    if (/adicional|bonus/i.test(t)) return 'AA';
+    if (/reacci[óo]n/i.test(t)) return 'R';
+    if (/acci[óo]n/i.test(t)) return 'A';
+    return t;
+  }
+
   function _buildTagsHTML(sp) {
     let tags = '';
-    if (sp.castTime || sp.range) {
-      const ct = sp.castTime ? sp.castTime.replace('Acción bonus','Bonus').replace('1 acción','Acc').replace('Acción','Acc').replace('Reacción','Reac') : '';
-      const rng = sp.range ? fmtDist(sp.range) : '';
-      const quick = [ct, rng].filter(Boolean).join(' · ');
-      if (quick) tags += `<span class="tag tag-quick">${quick}</span>`;
+    const ct = _tiempoLanzamiento(sp.castTime);
+    const rng = sp.range ? fmtDist(sp.range) : '';
+    if (ct || rng) {
+      const largo = [ct && ct.largo, rng].filter(Boolean).join(' · ');
+      const corto = [ct && ct.corto, rng && rng.replace(/(\d)\s+(m|ft)\b/g, '$1$2')].filter(Boolean).join(' · ');
+      tags += `<span class="tag tag-quick">${_tagDoble(largo, corto)}</span>`;
     }
     if (sp.desc) {
       const dmgMatch = sp.desc.match(/(\d+d\d+(?:[+\-]\w+)?)\s*(radiante|necrótico|fuego|frío|rayo|trueno|ácido|veneno|psíquico|fuerza|HP)?/i);
-      if (dmgMatch) tags += `<span class="tag tag-quick" style="color:var(--gold-light)">${dmgMatch[0].trim()}</span>`;
+      if (dmgMatch) tags += `<span class="tag tag-quick" style="color:var(--gold-light)">${_tagDoble(dmgMatch[0].trim(), dmgMatch[1])}</span>`;
     }
-    if (sp.concentration) tags += '<span class="tag tag-c">Conc</span>';
-    if (sp.bonus) tags += '<span class="tag tag-b">Bonus</span>';
-    // Dominio: antes el ◆ solo existía dentro del nombre en la ficha, así que
-    // no se veía cuando la tarjeta venía del catálogo de clase.
+    if (sp.concentration) tags += `<span class="tag tag-c">${_tagDoble('Conc', 'C')}</span>`;
+    // "Bonus" aparte solo si el tiempo de lanzamiento no lo dice ya.
+    if (sp.bonus && !(ct && ct.bonus)) tags += `<span class="tag tag-b">${_tagDoble('Bonus', 'AA')}</span>`;
+    // Dominio: en escritorio va como chip; en ventana angosta el CSS lo
+    // oculta y el ◆ queda solo en el nombre (ver _nombreConjuro).
     if (sp.domain) tags += '<span class="tag tag-dom">◆ Dominio</span>';
     if (sp.mi) tags += '<span class="tag tag-mi">MI</span>';
     if (sp.dw) tags += '<span class="tag tag-dw">DW</span>';
-    if (sp.ritual) tags += '<span class="tag tag-r">Ritual</span>';
+    if (sp.ritual) tags += `<span class="tag tag-r">${_tagDoble('Ritual', 'Rit')}</span>`;
     return tags;
+  }
+
+  /* El nombre de Lursey ya trae el ◆; los del catálogo de clase no. Para
+     esos se agrega un ◆ que solo se ve en ventana angosta, donde el chip
+     "Dominio" se oculta. En escritorio el nombre queda como estaba. */
+  function _nombreConjuro(sp) {
+    const nombre = String(sp.name || '');
+    if (!sp.domain || /◆/.test(nombre)) return nombre;
+    return `${nombre}<span class="spell-dom" title="Siempre preparado por tu dominio">&nbsp;◆</span>`;
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2937,7 +2975,7 @@ const App = (() => {
             <div class="spell-info" onclick="App.openSpellDetail('${actionId}')" style="cursor:pointer;">
               <div class="spell-top">
                 <span class="spell-lvl">${sp.level === 0 ? 'C' : sp.level}</span>
-                <span class="spell-name">${sp.name}</span>${tags}
+                <span class="spell-name">${_nombreConjuro(knownVersion || sp)}</span>${tags}
               </div>
               <div class="spell-desc">${fmtDesc(sp.desc)}</div>
             </div>
@@ -3077,7 +3115,7 @@ const App = (() => {
         <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
           <div class="spell-top">
             <span class="spell-lvl">${sp.level}</span>
-            <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
+            <span class="spell-name">${_nombreConjuro(sp)}</span>${_buildTagsHTML(sp)}
           </div>
           <div class="spell-desc">${sp.desc}</div>
         </div>
@@ -3102,7 +3140,7 @@ const App = (() => {
             <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
               <div class="spell-top">
                 <span class="spell-lvl">${sp.level}</span>
-                <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
+                <span class="spell-name">${_nombreConjuro(sp)}</span>${_buildTagsHTML(sp)}
               </div>
               <div class="spell-desc">${fmtDesc(sp.desc)}</div>
             </div>
@@ -3134,7 +3172,7 @@ const App = (() => {
             <div class="spell-info" onclick="App.openSpellDetail('${sp.id}')" style="cursor:pointer;">
               <div class="spell-top">
                 <span class="spell-lvl">${sp.level}</span>
-                <span class="spell-name">${sp.name}</span>${_buildTagsHTML(sp)}
+                <span class="spell-name">${_nombreConjuro(sp)}</span>${_buildTagsHTML(sp)}
               </div>
               <div class="spell-desc">${fmtDesc(sp.desc)}</div>
             </div>

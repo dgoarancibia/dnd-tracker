@@ -9533,3 +9533,69 @@ mark.diary-highlight {
 
 /* Codex → página de la entidad en Hojas */
 .entity-name.link { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(201,168,75,0.35); text-underline-offset: 3px; }
+
+/* ══ iPad a media pantalla y vertical (≈ 621–1000px) ═══════════════════════
+   Los breakpoints llegaban solo a 620px: con el iPad en Split View la app
+   queda en ~800px, dos columnas apretadas, y se cortaban skills, pestañas y
+   chips. Aquí lo que se desbordaba; los ajustes de diseño van aparte. */
+
+/* Globales: no cambian el escritorio, solo evitan desbordes. */
+.ability-cards-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.ability-card-info > div:first-child { flex-wrap: wrap; row-gap: 3px; }
+.spell-top { flex-wrap: wrap; row-gap: 4px; }
+.spell-name { min-width: 0; }
+.spell-dom { display: none; white-space: nowrap; color: var(--green-light, #6ab87a); }
+.t-short { display: none; }
+
+/* Pestañas: que entren las cinco sin desplazarse. */
+@media (max-width: 1200px) {
+  .tab-nav { padding: 0 6px; gap: 0; }
+  .tab-btn { padding: 10px 8px; letter-spacing: 1px; }
+}
+@media (max-width: 1000px) {
+  .tab-btn { flex: 1 1 auto; padding: 10px 6px; letter-spacing: 0.5px; }
+  .tab-btn .tab-ic { display: none; }
+  /* Chips cortos: A, AA, R, C, "18m", solo los dados. */
+  .t-full { display: none; }
+  .t-short { display: inline; }
+  /* El ◆ del nombre ya dice que es de dominio. */
+  .tag-dom { display: none; }
+  .spell-dom { display: inline; }
+  .tag { font-size: 11px; padding: 2px 7px; }
+}
+
+@media (min-width: 621px) and (max-width: 1000px) {
+  /* Cabecera: solo el avatar (el nombre se veía truncado y ocupaba ancho),
+     y los descansos en línea en vez de apilados. */
+  .app-header { padding: 6px 10px; min-height: 0; gap: 8px; }
+  .app-header-left { display: none; }
+  .char-avatar-wrap, .char-avatar-circle { width: 48px; height: 48px; }
+  .stats-strip { flex: 1 1 auto; gap: 5px; }
+  .stats-strip .stat-divider { display: none; }
+  .stat-box { padding: 3px 7px; min-width: 44px; }
+  .stat-box .sl { font-size: 10px; margin-bottom: 1px; }
+  .stat-box .sv { font-size: 16px; }
+  .hp-header-block { min-width: 196px; gap: 2px; }
+  .hp-header-cur { font-size: 24px; }
+  .hp-hdr-btn, .hp-hdr-free { min-height: 36px; padding: 4px 8px; }
+  .insp-btn { width: 38px; height: 38px; font-size: 15px; }
+  .hdr-rest-btns { flex-direction: row; }
+  .hdr-rest-btn { min-height: 38px; padding: 4px 10px; }
+
+  /* Skills: se oculta el bonus manual (se edita en pantalla completa) para
+     que entren las dos columnas con sus valores a la vista. */
+  .stats-sidebar { flex-basis: 46%; min-width: 300px; padding: 12px; }
+  .skills-list { column-gap: 10px; }
+  .skill-row .bonus-input-sm { display: none; }
+  .skill-name { font-size: 14px; }
+  .skill-stat { font-size: 10px; }
+  .skill-val { font-size: 17px; min-width: 26px; }
+
+  /* Recursos en dos columnas: en tres se cortaba el nombre y la recarga. */
+  .resources-grid--3col { grid-template-columns: 1fr 1fr; }
+}
+
+/* Más angosto que el iPad a media pantalla: dos columnas ya no entran. */
+@media (min-width: 621px) and (max-width: 759px) {
+  .skills-list { grid-template-columns: 1fr; }
+}
