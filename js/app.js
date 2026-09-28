@@ -771,12 +771,14 @@ const App = (() => {
   }
 
   function toggleNotebook() {
+    pgFlush();
     _notebookOpen = !_notebookOpen;
     const panel = document.getElementById('notebookPanel');
     if (panel) panel.classList.toggle('open', _notebookOpen);
     document.getElementById('overlayBackdrop').classList.toggle('show', _notebookOpen || _iftttOpen);
     if (_notebookOpen) {
       if (_notebookTab === 'diary') { _renderDiaryEntries(); _renderSessionBar(); }
+      else if (_notebookTab === 'pages') _renderPages();
       else _renderCombatLog();
     }
   }
@@ -792,8 +794,17 @@ const App = (() => {
 
   let _pgActual = null;   // id de la hoja abierta, o null en el índice
   let _pgBuscar = '';
-  let _pgEditando = false;
   const _pgAhora = () => new Date().toISOString();
+
+  /* El cursor se mueve también con toques y flechas, no solo al escribir:
+     selectionchange cubre todo. Y si el iPad manda la app a segundo plano
+     con texto pendiente, se escribe en ese momento. */
+  document.addEventListener('selectionchange', () => {
+    const ta = document.getElementById('pgEditor');
+    if (ta && document.activeElement === ta) _pgDetectarCursor();
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pgFlush(); });
+  window.addEventListener('pagehide', () => pgFlush());
 
   function _pgStore(c) {
     if (!Array.isArray((c || _char).pages)) (c || _char).pages = [];
@@ -815,86 +826,11 @@ const App = (() => {
     return (t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  /* Markdown mínimo: encabezados, negrita, cursiva, código, listas,
-     citas, separadores y wikilinks. No uso una librería para no sumar
-     otro archivo a la caché del service worker. */
-  function _pgMarkdown(texto) {
-    const lineas = (texto || '').split('\n');
-    let html = '';
-    let enLista = null;   // 'ul' | 'ol' | null
-
-    const cerrarLista = () => { if (enLista) { html += `</${enLista}>`; enLista = null; } };
-
-    // Lo inline se aplica DESPUÉS de escapar, para no romper el HTML.
-    const inline = (t) => {
-      let r = _pgEscape(t);
-      r = r.replace(/`([^`]+)`/g, '<code class="pg-code">$1</code>');
-      r = r.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      r = r.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
-      r = r.replace(/~~([^~]+)~~/g, '<s>$1</s>');
-      // Wikilinks: [[Nombre]] — clase distinta si la hoja no existe aún.
-      r = r.replace(/\[\[([^\]]+)\]\]/g, (m, nombre) => {
-        const limpio = nombre.trim();
-        const existe = !!_pgPorTitulo(limpio);
-        const attr = limpio.replace(/"/g, '&quot;');
-        return `<span class="pg-link${existe ? '' : ' nueva'}" onclick="App.pgAbrirPorTitulo('${attr.replace(/'/g, "\\'")}')" title="${existe ? 'Abrir hoja' : 'Crear esta hoja'}">${limpio}</span>`;
-      });
-      // Enlaces externos
-      r = r.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-        '<a href="$2" target="_blank" rel="noopener" class="pg-url">$1</a>');
-      return r;
-    };
-
-    lineas.forEach(linea => {
-      const l = linea.trimEnd();
-
-      if (!l.trim()) { cerrarLista(); return; }
-
-      const h = l.match(/^(#{1,4})\s+(.*)$/);
-      if (h) {
-        cerrarLista();
-        const n = h[1].length;
-        html += `<h${n} class="pg-h pg-h${n}">${inline(h[2])}</h${n}>`;
-        return;
-      }
-
-      if (/^\s*[-*]\s+\[[ xX]\]\s+/.test(l)) {
-        // Checkbox: se dibuja, pero el estado se edita en el texto.
-        if (enLista !== 'ul') { cerrarLista(); html += '<ul class="pg-ul">'; enLista = 'ul'; }
-        const marcado = /\[[xX]\]/.test(l);
-        const txt = l.replace(/^\s*[-*]\s+\[[ xX]\]\s+/, '');
-        html += `<li class="pg-li pg-task${marcado ? ' done' : ''}">${marcado ? '☑' : '☐'} ${inline(txt)}</li>`;
-        return;
-      }
-
-      if (/^\s*[-*]\s+/.test(l)) {
-        if (enLista !== 'ul') { cerrarLista(); html += '<ul class="pg-ul">'; enLista = 'ul'; }
-        html += `<li class="pg-li">${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`;
-        return;
-      }
-
-      if (/^\s*\d+[.)]\s+/.test(l)) {
-        if (enLista !== 'ol') { cerrarLista(); html += '<ol class="pg-ol">'; enLista = 'ol'; }
-        html += `<li class="pg-li">${inline(l.replace(/^\s*\d+[.)]\s+/, ''))}</li>`;
-        return;
-      }
-
-      cerrarLista();
-
-      if (/^>\s?/.test(l)) { html += `<blockquote class="pg-quote">${inline(l.replace(/^>\s?/, ''))}</blockquote>`; return; }
-      if (/^(-{3,}|\*{3,})$/.test(l.trim())) { html += '<hr class="pg-hr">'; return; }
-
-      html += `<p class="pg-p">${inline(l)}</p>`;
-    });
-
-    cerrarLista();
-    return html || '<p class="pg-p pg-vacio">Hoja vacía. Tocá para escribir.</p>';
-  }
-
   // Texto sin marcas de markdown, para vistas previas.
   function _pgPlano(t) {
     return (t || '')
       .replace(/\[\[([^\]]+)\]\]/g, '$1')
+      .replace(/@\[([^\]]+)\]/g, '@$1')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
       .replace(/[*_~`>#]/g, '')
       .replace(/^\s*[-*]\s+(\[[ xX]\]\s+)?/, '')
@@ -907,8 +843,7 @@ const App = (() => {
     const objetivo = norm(titulo);
     return _pgStore().filter(p => {
       if (norm(_pgTitulo(p)) === objetivo) return false;
-      const links = (p.text || '').match(/\[\[([^\]]+)\]\]/g) || [];
-      return links.some(l => norm(l.slice(2, -2)) === objetivo);
+      return _pgRefsDe(p.text).some(r => norm(r.nombre) === objetivo);
     });
   }
 
@@ -924,29 +859,32 @@ const App = (() => {
       if (back) back.style.display = '';
       if (buscador) buscador.style.display = 'none';
 
-      const backlinks = _pgBacklinks(_pgTitulo(p));
-      const blHtml = backlinks.length
-        ? `<div class="pg-backlinks">
-             <div class="pg-bl-hd">Enlazada desde</div>
-             ${backlinks.map(b => `<div class="pg-bl-item" onclick="App.pgAbrir('${b.id}')">${_pgEscape(_pgTitulo(b))}</div>`).join('')}
-           </div>`
-        : '';
+      /* La hoja es SIEMPRE un textarea: no hay modo lectura ni botón de
+         guardar, así no hay un paso intermedio donde perder texto. Detrás
+         hay una capa espejo con el mismo texto que solo pinta el fondo de
+         los [[links]], para que se distingan sin tocar el textarea. */
+      body.innerHTML = `
+        <div class="pg-sheet">
+          <div class="pg-hl" id="pgHl" aria-hidden="true"></div>
+          <textarea class="pg-editor" id="pgEditor" spellcheck="false" autocapitalize="sentences"
+            placeholder="# Título de la hoja&#10;&#10;Escribí libremente. @Nombre menciona a un personaje, [[Hoja]] enlaza otra hoja."
+            oninput="App.pgAlEscribir()" onblur="App.pgAlSalir()">${_pgEscape(p.text || '')}</textarea>
+        </div>
+        <div id="pgLinks"></div>
+        <div id="pgBacklinks"></div>
+        <button class="pg-del" onclick="App.pgBorrar('${p.id}')">Borrar hoja</button>`;
 
-      if (_pgEditando) {
-        body.innerHTML = `
-          <textarea class="pg-editor" id="pgEditor" spellcheck="false" oninput="App.pgAutoguardar()"
-            placeholder="# Título de la hoja&#10;&#10;Escribí libremente. Usá [[Nombre]] para enlazar a otra hoja.">${_pgEscape(p.text || '')}</textarea>
-          <div class="pg-edit-actions">
-            <button class="pg-btn save" onclick="App.pgGuardar()">✓ Listo</button>
-            <button class="pg-btn ghost" onclick="App.pgBorrar('${p.id}')">Borrar hoja</button>
-          </div>`;
-        const ta = document.getElementById('pgEditor');
-        if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
-      } else {
-        body.innerHTML = `
-          <div class="pg-render" onclick="App.pgEditar(event)">${_pgMarkdown(p.text)}</div>
-          ${blHtml}`;
+      const ta = document.getElementById('pgEditor');
+      _pgAjustarAlto();
+      _pgPintarResaltado();
+      _pgPintarLinks();
+      _pgPintarBacklinks();
+      _pgDetectarCursor();
+      if (_pgEnfocar && ta) {
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
       }
+      _pgEnfocar = false;
       return;
     }
 
@@ -971,20 +909,346 @@ const App = (() => {
     body.innerHTML = `<div class="pg-list">` + hojas.map(p => {
       const cuerpo = (p.text || '').split('\n').slice(1).find(l => l.trim()) || '';
       const fecha = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('es', { day: '2-digit', month: '2-digit' }) : '';
-      const nLinks = ((p.text || '').match(/\[\[([^\]]+)\]\]/g) || []).length;
+      const nLinks = _pgRefsDe(p.text).length;
       return `<div class="pg-card" onclick="App.pgAbrir('${p.id}')">
         <div class="pg-card-hd">
           <span class="pg-card-title">${_pgEscape(_pgTitulo(p))}</span>
           <span class="pg-card-date">${fecha}</span>
         </div>
         ${cuerpo ? `<div class="pg-card-prev">${_pgEscape(_pgPlano(cuerpo).slice(0, 90))}</div>` : ''}
-        ${nLinks ? `<div class="pg-card-meta">${nLinks} ${nLinks === 1 ? 'enlace' : 'enlaces'}</div>` : ''}
+        ${nLinks ? `<div class="pg-card-meta">${nLinks} ${nLinks === 1 ? 'referencia' : 'referencias'}</div>` : ''}
       </div>`;
     }).join('') + `</div>`;
   }
 
+  /* ── Hoja abierta: helpers de la vista siempre editable ─────────────── */
+
+  // El textarea crece con el texto: el scroll es del panel, no del
+  // textarea, así la capa espejo siempre calza con él.
+  function _pgAjustarAlto() {
+    const ta = document.getElementById('pgEditor');
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(ta.scrollHeight, window.innerHeight * 0.55) + 'px';
+  }
+
+  function _pgPintarResaltado() {
+    const ta = document.getElementById('pgEditor');
+    const hl = document.getElementById('pgHl');
+    if (!ta || !hl) return;
+    // Mismo texto que el textarea, transparente; solo los links llevan
+    // fondo. El espacio final evita que un salto de línea al cierre
+    // descalce la última fila.
+    // Se resalta sobre el texto crudo y se escapa cada trozo, para que
+    // las posiciones coincidan exactamente con las del textarea.
+    const txt = ta.value;
+    const re = new RegExp(_PG_REF_RE.source, 'g');
+    let html = '', ultimo = 0, m;
+    while ((m = re.exec(txt))) {
+      const prefijo = m[2] || '';
+      const iniRef = m.index + prefijo.length;
+      const nombre = (m[1] || m[3] || m[4] || '').trim();
+      const existe = !!_pgPorTitulo(nombre);
+      const cls = m[1] ? 'pg-hl-link' : 'pg-hl-at';
+      html += _pgEscape(txt.slice(ultimo, iniRef)) +
+        `<mark class="${cls}${existe ? '' : ' nueva'}">${_pgEscape(txt.slice(iniRef, re.lastIndex))}</mark>`;
+      ultimo = re.lastIndex;
+    }
+    hl.innerHTML = html + _pgEscape(txt.slice(ultimo)) + ' ';
+  }
+
+  /* Sintaxis de referencias:
+       [[Nombre]]      → enlace a hoja
+       @Nombre         → mención de personaje (una palabra)
+       @[Nombre largo] → mención con espacios
+     El @ exige inicio de línea o un separador antes, para no confundir
+     un correo con una mención. Ambas abren la hoja con ese título. */
+  const _PG_REF_RE = /\[\[([^\]\n]+)\]\]|(^|[\s(,;:¡¿"'])@(?:\[([^\]\n]+)\]|([\wáéíóúñüÁÉÍÓÚÑÜ'-]+))/g;
+  const _PG_NOMBRE_SIMPLE = /^[\wáéíóúñüÁÉÍÓÚÑÜ'-]+$/;
+
+  function _pgRefsDe(texto) {
+    const vistos = new Set();
+    const out = [];
+    const re = new RegExp(_PG_REF_RE.source, 'g');
+    let m;
+    while ((m = re.exec(texto || ''))) {
+      const tipo = m[1] ? 'link' : 'mencion';
+      const nombre = (m[1] || m[3] || m[4] || '').trim();
+      const k = tipo + ':' + nombre.toLowerCase();
+      if (nombre && !vistos.has(k)) { vistos.add(k); out.push({ tipo, nombre }); }
+    }
+    return out;
+  }
+
+  /* ¿Hay un @ a medio escribir justo antes del cursor? No lo es si el
+     cursor está DENTRO de una mención ya completa: "@[El|ara Vex]" tiene
+     su "]" más adelante, y "@Az|tram" sigue con letras. */
+  function _pgParcialAt(texto, pos) {
+    const m = texto.slice(0, pos).match(/(^|[\s(,;:¡¿"'])@(\[[^\]\n]*|[\wáéíóúñüÁÉÍÓÚÑÜ'-]*)$/);
+    if (!m) return null;
+    const despues = texto.slice(pos);
+    if (m[2].startsWith('[')) {
+      if (/^[^\n\[]*\]/.test(despues)) return null;          // bracket ya cerrado
+    } else if (/^[\wáéíóúñüÁÉÍÓÚÑÜ'-]/.test(despues)) {
+      return null;                                          // palabra continúa
+    }
+    return { query: m[2], largo: m[2].length + 1 };         // +1 por la @
+  }
+
+  /* Mientras se escribe "@El", ese fragmento todavía no es un personaje:
+     si se contara, aparecería como sugerencia y como chip de sí mismo.
+     Devuelve el texto de la hoja sin el @parcial bajo el cursor. */
+  function _pgTextoSinParcial() {
+    const ta = document.getElementById('pgEditor');
+    if (!ta) return null;
+    const pos = ta.selectionStart;
+    if (document.activeElement !== ta) return ta.value;
+    const par = _pgParcialAt(ta.value, pos);
+    if (!par) return ta.value;
+    return ta.value.slice(0, pos - par.largo) + ta.value.slice(pos);
+  }
+
+  // Cómo se escribe una mención según el nombre tenga o no espacios.
+  function _pgFormatoMencion(nombre) {
+    return _PG_NOMBRE_SIMPLE.test(nombre) ? '@' + nombre : '@[' + nombre + ']';
+  }
+
+  /* Personajes sugeribles al escribir @. Solo se LEEN nombres: NPCs del
+     Codex, los otros PJs guardados y la gente ya mencionada en hojas.
+     No se escribe nada en el Codex ni en el diario. */
+  function _pgPersonajes() {
+    const nombres = new Map();
+    const add = (n, origen) => {
+      const t = (n || '').trim();
+      if (t && !nombres.has(t.toLowerCase())) nombres.set(t.toLowerCase(), { nombre: t, origen });
+    };
+    (_char.entities || []).filter(e => e.type === 'npc').forEach(e => add(e.name, 'npc'));
+    try {
+      Object.values(Storage.getAllChars() || {}).forEach(c => {
+        if (c && c.id !== _char.id) add(c.nombre || c.name, 'pj');
+      });
+    } catch (e) { /* sin acceso a otros PJs: se sigue con el resto */ }
+    const actual = _pgTextoSinParcial();
+    _pgStore().forEach(p => {
+      const texto = (p.id === _pgActual && actual != null) ? actual : p.text;
+      _pgRefsDe(texto).forEach(r => { if (r.tipo === 'mencion') add(r.nombre, 'mencion'); });
+    });
+    return Array.from(nombres.values());
+  }
+
+  function _pgArg(t) {
+    return _pgEscape(t).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  }
+
+  function _pgChip(ref) {
+    const existe = !!_pgPorTitulo(ref.nombre);
+    const esAt = ref.tipo === 'mencion';
+    return `<button class="pg-chip${esAt ? ' at' : ''}${existe ? '' : ' nueva'}" onclick="App.pgAbrirPorTitulo('${_pgArg(ref.nombre)}')"
+      title="${existe ? 'Abrir hoja' : 'Crear esta hoja'}">${esAt ? '@' : ''}${_pgEscape(ref.nombre)}${existe ? '' : ' +'}</button>`;
+  }
+
+  function _pgPintarLinks() {
+    const cont = document.getElementById('pgLinks');
+    const p = _pgStore().find(x => x.id === _pgActual);
+    if (!cont || !p) return;
+    const actual = _pgTextoSinParcial();
+    const refs = _pgRefsDe(actual != null ? actual : p.text);
+    const gente = refs.filter(r => r.tipo === 'mencion');
+    const hojas = refs.filter(r => r.tipo === 'link');
+    cont.innerHTML =
+      (gente.length ? `<div class="pg-sec"><div class="pg-bl-hd">Personajes</div>
+         <div class="pg-chips">${gente.map(_pgChip).join('')}</div></div>` : '') +
+      (hojas.length ? `<div class="pg-sec"><div class="pg-bl-hd">Hojas enlazadas</div>
+         <div class="pg-chips">${hojas.map(_pgChip).join('')}</div></div>` : '');
+  }
+
+  function _pgPintarBacklinks() {
+    const cont = document.getElementById('pgBacklinks');
+    const p = _pgStore().find(x => x.id === _pgActual);
+    if (!cont || !p) return;
+    const bl = _pgBacklinks(_pgTitulo(p));
+    cont.innerHTML = bl.length
+      ? `<div class="pg-sec"><div class="pg-bl-hd">Enlazada desde</div>
+           <div class="pg-chips">${bl.map(b =>
+             `<button class="pg-chip back" onclick="App.pgAbrir('${b.id}')">${_pgEscape(_pgTitulo(b))}</button>`).join('')}</div></div>`
+      : '';
+  }
+
+  /* Si el cursor está dentro de un [[link]] completo, la barra superior
+     ofrece abrirlo. Si está dentro de un [[ sin cerrar, sugiere hojas
+     existentes para completar. Es el reemplazo del "clic en el link":
+     en un textarea el texto no puede ser clicable. */
+  function _pgDetectarCursor() {
+    const ta = document.getElementById('pgEditor');
+    const slot = document.getElementById('pgCursor');
+    if (!slot) return;
+    if (!ta || document.activeElement !== ta) { slot.innerHTML = ''; return; }
+
+    const pos = ta.selectionStart;
+    const txt = ta.value;
+
+    // @ escribiéndose: sugerir personajes.
+    const par = _pgParcialAt(txt, pos);
+    if (par) {
+      const at = [null, null, par.query];
+      const q = at[2].replace(/^\[/, '').toLowerCase();
+      const sugeridos = _pgPersonajes()
+        .filter(x => x.nombre.toLowerCase().includes(q))
+        .slice(0, 6);
+      const icono = { npc: '🧑', pj: '⚔️', mencion: '@' };
+      let htmlSug = sugeridos.map(x =>
+        `<button class="pg-sug at" onmousedown="event.preventDefault()"
+          onclick="App.pgCompletarMencion('${_pgArg(x.nombre)}')">${icono[x.origen] || '@'} ${_pgEscape(x.nombre)}</button>`).join('');
+      // Nombre nuevo: se puede usar tal cual, aunque no esté en ninguna lista.
+      const escrito = at[2].replace(/^\[/, '').trim();
+      if (escrito && !sugeridos.some(x => x.nombre.toLowerCase() === escrito.toLowerCase())) {
+        htmlSug += `<button class="pg-sug nuevo" onmousedown="event.preventDefault()"
+          onclick="App.pgCompletarMencion('${_pgArg(escrito)}')">+ @${_pgEscape(escrito)}</button>`;
+      }
+      // Cursor al final de un nombre completo ("@Aztram|"): en el iPad tocar
+      // una palabra deja el cursor justo ahí, así que se ofrece abrirla.
+      const exacto = escrito && (sugeridos.find(x => x.nombre.toLowerCase() === escrito.toLowerCase())
+        || (_pgPorTitulo(escrito) ? { nombre: _pgTitulo(_pgPorTitulo(escrito)) } : null));
+      if (exacto && !par.query.startsWith('[')) {
+        const existe = !!_pgPorTitulo(exacto.nombre);
+        htmlSug = `<button class="pg-open at" onmousedown="event.preventDefault()"
+          onclick="App.pgAbrirPorTitulo('${_pgArg(exacto.nombre)}')">${existe ? 'Abrir' : 'Crear'} @${_pgEscape(exacto.nombre)} →</button>`
+          + sugeridos.filter(x => x !== exacto).map(x =>
+            `<button class="pg-sug at" onmousedown="event.preventDefault()"
+              onclick="App.pgCompletarMencion('${_pgArg(x.nombre)}')">${icono[x.origen] || '@'} ${_pgEscape(x.nombre)}</button>`).join('');
+      }
+      slot.innerHTML = htmlSug;
+      return;
+    }
+
+    // Cursor sobre una @mención ya escrita: ofrecer abrirla.
+    const reAt = new RegExp(_PG_REF_RE.source, 'g');
+    let mAt;
+    while ((mAt = reAt.exec(txt))) {
+      if (mAt[1]) continue;   // es un [[link]], se maneja abajo
+      const iniRef = mAt.index + (mAt[2] || '').length;
+      if (pos >= iniRef && pos <= reAt.lastIndex) {
+        const nombre = (mAt[3] || mAt[4] || '').trim();
+        const existe = !!_pgPorTitulo(nombre);
+        slot.innerHTML = `<button class="pg-open at" onmousedown="event.preventDefault()"
+          onclick="App.pgAbrirPorTitulo('${_pgArg(nombre)}')">${existe ? 'Abrir' : 'Crear'} @${_pgEscape(nombre)} →</button>`;
+        return;
+      }
+      if (iniRef > pos) break;
+    }
+
+    const ini = txt.lastIndexOf('[[', pos);
+    const cierrePrevio = txt.lastIndexOf(']]', pos - 1);
+    const saltoPrevio = txt.lastIndexOf('\n', pos - 1);
+    if (ini === -1 || ini < cierrePrevio || ini < saltoPrevio || pos < ini + 2) { slot.innerHTML = ''; return; }
+
+    const resto = txt.slice(ini + 2);
+    const fin = resto.search(/\]\]|\n/);
+    const cerrado = fin !== -1 && resto.slice(fin, fin + 2) === ']]';
+
+    if (cerrado && pos <= ini + 2 + fin) {
+      const nombre = resto.slice(0, fin).trim();
+      if (!nombre) { slot.innerHTML = ''; return; }
+      const existe = !!_pgPorTitulo(nombre);
+      const arg = _pgEscape(nombre).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      // mousedown + preventDefault: que tocar el botón no quite el foco
+      // al textarea antes de que el clic llegue.
+      slot.innerHTML = `<button class="pg-open" onmousedown="event.preventDefault()"
+        onclick="App.pgAbrirPorTitulo('${arg}')">${existe ? 'Abrir' : 'Crear'} «${_pgEscape(nombre)}» →</button>`;
+      return;
+    }
+
+    if (!cerrado) {
+      const parcial = txt.slice(ini + 2, pos).toLowerCase();
+      const actual = _pgStore().find(x => x.id === _pgActual);
+      const sugeridas = _pgStore()
+        .filter(p => p !== actual && _pgTitulo(p).toLowerCase().includes(parcial))
+        .slice(0, 4);
+      slot.innerHTML = sugeridas.map(p => {
+        const arg = _pgEscape(_pgTitulo(p)).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        return `<button class="pg-sug" onmousedown="event.preventDefault()"
+          onclick="App.pgCompletar('${arg}')">${_pgEscape(_pgTitulo(p))}</button>`;
+      }).join('');
+      return;
+    }
+    slot.innerHTML = '';
+  }
+
+  // Completa un [[ abierto con el título elegido y cierra el link.
+  function pgCompletar(titulo) {
+    const ta = document.getElementById('pgEditor');
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const ini = ta.value.lastIndexOf('[[', pos);
+    if (ini === -1) return;
+    const antes = ta.value.slice(0, ini + 2);
+    const despues = ta.value.slice(pos).replace(/^[^\]\n]*\]\]/, '');
+    ta.value = antes + titulo + ']]' + despues;
+    const nuevoPos = (antes + titulo + ']]').length;
+    ta.setSelectionRange(nuevoPos, nuevoPos);
+    ta.focus();
+    pgAlEscribir();
+  }
+
+  // Reemplaza el @parcial bajo el cursor por la mención completa + espacio.
+  function pgCompletarMencion(nombre) {
+    const ta = document.getElementById('pgEditor');
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const antes = ta.value.slice(0, pos);
+    const m = antes.match(/@(\[[^\]\n]*|[\wáéíóúñüÁÉÍÓÚÑÜ'-]*)$/);
+    if (!m) return;
+    const iniAt = pos - m[0].length;
+    // Si había un "@[..." abierto con su "]" más adelante, se consume.
+    let despues = ta.value.slice(pos);
+    if (m[1].startsWith('[')) despues = despues.replace(/^[^\]\n]*\]/, '');
+    const insertado = _pgFormatoMencion(nombre) + (/^[\s.,;:!?)]/.test(despues) ? '' : ' ');
+    ta.value = ta.value.slice(0, iniAt) + insertado + despues;
+    const nuevoPos = iniAt + insertado.length;
+    ta.setSelectionRange(nuevoPos, nuevoPos);
+    ta.focus();
+    pgAlEscribir();
+  }
+
+  /* Guardado continuo. El texto va al modelo en cada tecla (así nada
+     vive solo en el DOM) y se persiste con un retardo corto. pgFlush
+     fuerza la escritura: se llama al salir del textarea, al navegar,
+     al cerrar el cuaderno y cuando el iPad manda la app a segundo plano. */
+  let _pgTimer = null;
+  let _pgRenderTimer = null;
+  let _pgEnfocar = false;
+
+  function pgAlEscribir() {
+    const ta = document.getElementById('pgEditor');
+    const p = _pgStore().find(x => x.id === _pgActual);
+    if (!ta || !p) return;
+    p.text = ta.value;
+    p.updatedAt = _pgAhora();
+    _pgAjustarAlto();
+    _pgPintarResaltado();
+    _pgDetectarCursor();
+    clearTimeout(_pgTimer);
+    _pgTimer = setTimeout(() => { _pgTimer = null; _saveChar(true); }, 400);
+    // Las listas de enlaces cambian poco: se repintan con más calma.
+    clearTimeout(_pgRenderTimer);
+    _pgRenderTimer = setTimeout(_pgPintarLinks, 500);
+  }
+
+  function pgAlSalir() {
+    pgFlush();
+    setTimeout(_pgDetectarCursor, 150);
+  }
+
+  function pgFlush() {
+    if (!_pgTimer) return;
+    clearTimeout(_pgTimer);
+    _pgTimer = null;
+    if (_char) _saveChar(true);
+  }
+
   function pgNueva(tituloInicial) {
     if (!_char) return;
+    pgFlush();
     const p = {
       id: 'pg' + Date.now().toString(36),
       text: tituloInicial ? `# ${tituloInicial}\n\n` : '# ',
@@ -993,61 +1257,28 @@ const App = (() => {
     };
     _pgStore().push(p);
     _pgActual = p.id;
-    _pgEditando = true;
+    _pgEnfocar = true;   // hoja nueva: listo para escribir
     _saveChar();
     _renderPages();
   }
 
   function pgAbrir(id) {
+    pgFlush();
     _pgActual = id;
-    _pgEditando = false;
     _renderPages();
+    const body = document.getElementById('pgBody');
+    if (body) body.scrollTop = 0;
   }
 
   function pgAbrirPorTitulo(nombre) {
     const existente = _pgPorTitulo(nombre);
     if (existente) { pgAbrir(existente.id); return; }
-    pgNueva(nombre);   // wikilink a hoja inexistente: la crea
+    pgNueva(nombre);   // link a hoja inexistente: la crea
   }
 
   function pgVolver() {
-    if (_pgEditando) pgGuardar();
+    pgFlush();
     _pgActual = null;
-    _pgEditando = false;
-    _renderPages();
-  }
-
-  function pgEditar(ev) {
-    // Un clic en un wikilink navega; en cualquier otro lado, edita.
-    if (ev && ev.target && ev.target.closest('.pg-link, .pg-url')) return;
-    _pgEditando = true;
-    _renderPages();
-  }
-
-  /* Autoguardado: en mesa se cierra el cuaderno sin tocar "Listo" y el
-     texto se perdía. Se escribe en el modelo en cada tecla y se persiste
-     con un pequeño retardo para no guardar 60 veces por segundo. */
-  let _pgTimer = null;
-  function pgAutoguardar() {
-    const ta = document.getElementById('pgEditor');
-    const p = _pgStore().find(x => x.id === _pgActual);
-    if (!ta || !p) return;
-    p.text = ta.value;
-    p.updatedAt = _pgAhora();
-    clearTimeout(_pgTimer);
-    _pgTimer = setTimeout(() => _saveChar(true), 600);
-  }
-
-  function pgGuardar() {
-    clearTimeout(_pgTimer);
-    const ta = document.getElementById('pgEditor');
-    const p = _pgStore().find(x => x.id === _pgActual);
-    if (ta && p) {
-      p.text = ta.value;
-      p.updatedAt = _pgAhora();
-      _saveChar();
-    }
-    _pgEditando = false;
     _renderPages();
   }
 
@@ -1055,7 +1286,6 @@ const App = (() => {
     _confirm('¿Borrar esta hoja?', () => {
       _char.pages = _pgStore().filter(p => p.id !== id);
       _pgActual = null;
-      _pgEditando = false;
       _saveChar();
       _renderPages();
       showToast('Hoja borrada');
@@ -1068,6 +1298,7 @@ const App = (() => {
   }
 
   function switchNotebookTab(tab) {
+    pgFlush();
     _notebookTab = tab;
     document.getElementById('nbTabDiary')?.classList.toggle('active', tab === 'diary');
     document.getElementById('nbTabCodex')?.classList.toggle('active', tab === 'codex');
@@ -11856,7 +12087,7 @@ ${notesText}`;
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
     setAmmo, adjustAmmo, recuperarMunicion,
     agregarVinculo, quitarVinculo, toggleD4Vinculo, romperVinculos,
-    pgNueva, pgAbrir, pgAbrirPorTitulo, pgVolver, pgEditar, pgGuardar, pgBorrar, pgBuscar, pgAutoguardar,
+    pgNueva, pgAbrir, pgAbrirPorTitulo, pgVolver, pgBorrar, pgBuscar, pgAlEscribir, pgFlush, pgCompletar, pgCompletarMencion, pgAlSalir,
     toggleRecursoBestia, comandarBestia,
     toggleCharge, registrarGrapple, liberarGrapple, verRasgoBestia,
     marcarObjetivo, usarBonusHM,

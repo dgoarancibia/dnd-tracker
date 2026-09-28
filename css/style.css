@@ -9354,14 +9354,14 @@ mark.diary-highlight {
 .bond-hint { font-size: 9.5px; color: var(--text-dim); margin-top: 6px; line-height: 1.4; }
 .bond-hint.prot { color: #8fb98a; }
 
-/* ══ HOJAS (beta) · markdown + wikilinks ═════════════════════════════════ */
+/* ══ HOJAS (beta) · hoja siempre editable, [[links]] y @menciones ══════════ */
 .nb-beta {
   font-size: 8px; letter-spacing: .04em; text-transform: uppercase;
   margin-left: 4px; padding: 1px 4px; border-radius: 6px; vertical-align: middle;
   background: rgba(126,169,201,0.18); color: #7ea9c9;
 }
 .pg-bar {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 6px; min-height: 48px;
   padding: 8px 12px; border-bottom: 1px solid var(--border); flex: 0 0 auto;
 }
 .pg-back, .pg-new {
@@ -9369,7 +9369,7 @@ mark.diary-highlight {
   background: var(--bg3); border: 1px solid var(--border); border-radius: 14px;
   color: var(--text-mid); font-family: 'Jost', sans-serif; font-size: 11px; cursor: pointer;
 }
-.pg-new { color: var(--gold); border-color: var(--gold-dim); }
+.pg-new { color: var(--gold); border-color: var(--gold-dim); margin-left: auto; }
 .pg-search {
   flex: 1 1 auto; min-width: 0; height: 32px; padding: 0 12px;
   background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
@@ -9377,8 +9377,22 @@ mark.diary-highlight {
 }
 .pg-body {
   flex: 1 1 auto; min-height: 0; overflow-y: auto;
-  padding: 14px 16px 40px; -webkit-overflow-scrolling: touch;
+  padding: 14px 16px 60px; -webkit-overflow-scrolling: touch;
 }
+
+/* Barra del cursor: "Abrir →" y sugerencias de @ / [[ */
+.pg-cursor {
+  flex: 1 1 auto; min-width: 0; display: flex; gap: 5px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.pg-cursor::-webkit-scrollbar { display: none; }
+.pg-open, .pg-sug {
+  flex: 0 0 auto; padding: 5px 11px; min-height: 32px; border-radius: 14px; cursor: pointer;
+  font-family: 'Jost', sans-serif; font-size: 11.5px; white-space: nowrap;
+  background: rgba(126,169,201,0.16); border: 1px solid rgba(126,169,201,0.5); color: #7ea9c9;
+}
+.pg-open.at, .pg-sug.at { background: rgba(143,185,138,0.16); border-color: rgba(143,185,138,0.5); color: #8fb98a; }
+.pg-sug.nuevo { background: transparent; border-style: dashed; border-color: var(--border); color: var(--text-mid); }
 
 /* Índice */
 .pg-list { display: flex; flex-direction: column; gap: 8px; }
@@ -9395,59 +9409,51 @@ mark.diary-highlight {
 .pg-empty { font-size: 12px; color: var(--text-dim); text-align: center; padding: 40px 12px; line-height: 1.5; }
 .pg-empty code { background: var(--bg3); padding: 1px 5px; border-radius: 4px; color: #7ea9c9; }
 
-/* Editor: la hoja grande */
+/* La hoja. Textarea y espejo comparten TODA la métrica de texto: si una
+   sola propiedad difiere, el resaltado se corre respecto de las letras. */
+.pg-sheet { position: relative; }
+.pg-editor, .pg-hl {
+  box-sizing: border-box; width: 100%; margin: 0;
+  padding: 16px; border: 1px solid transparent; border-radius: 8px;
+  /* 16px: con menos, Safari de iPad hace zoom al enfocar el campo. */
+  font-family: 'Jost', sans-serif; font-size: 16px; line-height: 1.65;
+  letter-spacing: 0; word-spacing: 0; tab-size: 4;
+  white-space: pre-wrap; overflow-wrap: break-word; word-break: normal;
+}
+.pg-hl {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  color: transparent; background: var(--bg2); border-color: var(--border);
+}
 .pg-editor {
-  width: 100%; min-height: 60vh; box-sizing: border-box; resize: vertical;
-  padding: 14px; border-radius: 8px;
-  background: var(--bg2); border: 1px solid var(--border); color: var(--text);
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 14px; line-height: 1.6;
-  outline: none;
+  position: relative; z-index: 1; display: block;
+  resize: none; overflow: hidden; outline: none;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; color: var(--text); caret-color: var(--gold);
 }
-.pg-editor:focus { border-color: var(--gold-dim); }
-.pg-edit-actions { display: flex; gap: 8px; margin-top: 10px; }
-.pg-btn {
-  padding: 6px 14px; min-height: 34px; border-radius: 14px; cursor: pointer;
-  font-family: 'Jost', sans-serif; font-size: 12px;
-}
-.pg-btn.save { background: rgba(201,168,75,0.16); border: 1px solid var(--gold-dim); color: var(--gold); }
-.pg-btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-dim); margin-left: auto; }
+.pg-editor:focus + .pg-hl, .pg-sheet:focus-within .pg-hl { border-color: var(--gold-dim); }
+.pg-editor::placeholder { color: var(--text-dim); }
+/* Sin padding horizontal en los resaltes: correría el texto. El borde
+   visual va con box-shadow, que no ocupa espacio. */
+.pg-hl mark { color: transparent; border-radius: 3px; padding: 0; }
+.pg-hl-link { background: rgba(126,169,201,0.20); box-shadow: 0 0 0 1px rgba(126,169,201,0.35); }
+.pg-hl-at   { background: rgba(143,185,138,0.22); box-shadow: 0 0 0 1px rgba(143,185,138,0.38); }
+.pg-hl mark.nueva { background: rgba(255,255,255,0.05); box-shadow: 0 0 0 1px rgba(255,255,255,0.14); }
 
-/* Vista renderizada */
-.pg-render { cursor: text; font-size: 14px; line-height: 1.65; color: var(--text); min-height: 40vh; }
-.pg-h { font-family: 'Cinzel', serif; color: var(--gold); margin: 16px 0 6px; line-height: 1.3; }
-.pg-h:first-child { margin-top: 0; }
-.pg-h1 { font-size: 20px; }
-.pg-h2 { font-size: 16px; }
-.pg-h3 { font-size: 14px; }
-.pg-h4 { font-size: 13px; color: var(--text-mid); }
-.pg-p { margin: 0 0 8px; }
-.pg-vacio { color: var(--text-dim); font-style: italic; }
-.pg-ul, .pg-ol { margin: 0 0 8px; padding-left: 20px; }
-.pg-li { margin: 2px 0; }
-.pg-task { list-style: none; margin-left: -16px; }
-.pg-task.done { color: var(--text-dim); text-decoration: line-through; }
-.pg-quote {
-  margin: 6px 0 10px; padding: 4px 12px;
-  border-left: 3px solid var(--gold-dim); color: var(--text-mid); font-style: italic;
-}
-.pg-hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
-.pg-code { background: var(--bg3); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
-.pg-url { color: #7ea9c9; }
-
-/* El wikilink: el corazón de la beta */
-.pg-link {
-  color: #7ea9c9; cursor: pointer; font-weight: 500;
-  border-bottom: 1px solid rgba(126,169,201,0.45);
-  padding: 0 1px;
-}
-.pg-link:hover { background: rgba(126,169,201,0.14); border-radius: 3px; }
-.pg-link.nueva { color: var(--text-dim); border-bottom-style: dashed; }
-
-/* Backlinks */
-.pg-backlinks { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); }
+/* Enlaces, personajes y backlinks bajo la hoja */
+.pg-sec { margin-top: 16px; }
 .pg-bl-hd { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-dim); margin-bottom: 6px; }
-.pg-bl-item {
-  font-size: 12px; color: #7ea9c9; padding: 5px 8px; cursor: pointer;
-  border-radius: 5px;
+.pg-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pg-chip {
+  padding: 5px 11px; min-height: 30px; border-radius: 14px; cursor: pointer;
+  font-family: 'Jost', sans-serif; font-size: 12px;
+  background: rgba(126,169,201,0.12); border: 1px solid rgba(126,169,201,0.4); color: #7ea9c9;
 }
-.pg-bl-item:hover { background: rgba(126,169,201,0.10); }
+.pg-chip.at { background: rgba(143,185,138,0.12); border-color: rgba(143,185,138,0.4); color: #8fb98a; }
+.pg-chip.nueva { background: transparent; border-style: dashed; color: var(--text-mid); border-color: var(--border); }
+.pg-chip.back { background: var(--bg3); border-color: var(--border); color: var(--text-mid); }
+.pg-del {
+  display: block; margin: 28px 0 0 auto; padding: 5px 12px; min-height: 30px;
+  background: transparent; border: 1px solid var(--border); border-radius: 14px;
+  color: var(--text-dim); font-family: 'Jost', sans-serif; font-size: 11px; cursor: pointer;
+}
+.pg-del:hover { color: var(--red-light); border-color: rgba(138,58,58,0.4); }
