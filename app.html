@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 433;
+const _SW_EXPECTED = 434;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 433;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=125">
+<link rel="stylesheet" href="css/style.css?v=126">
 </head>
 <body>
 
@@ -600,11 +600,15 @@ const _SW_EXPECTED = 433;
   <!-- SUB-TAB: HOJAS (markdown + wikilinks) · beta, datos aparte del diario -->
   <div class="nb-pane" id="nbPanePages" style="display:none">
     <div class="pg-bar">
-      <button class="pg-back" id="pgBack" onclick="App.pgVolver()" style="display:none">‹ Hojas</button>
-      <input type="text" class="pg-search" id="pgSearch" placeholder="Buscar hoja…" oninput="App.pgBuscar(this.value)">
-      <div class="pg-cursor" id="pgCursor"></div>
-      <button class="pg-new" onclick="App.pgNueva()">+ Nueva</button>
+      <button class="pg-back" id="pgBack" onclick="Hojas.volver()" style="display:none">‹ Volver</button>
+      <input type="text" class="pg-search" id="pgSearch" placeholder="Buscar notas, personajes, contexto…" oninput="Hojas.buscar(this.value)">
+      <div class="hj-undo" id="hjUndo" style="display:none">
+        <button onmousedown="event.preventDefault()" onclick="Hojas.deshacer()" title="Deshacer">↶</button>
+        <button onmousedown="event.preventDefault()" onclick="Hojas.rehacer()" title="Rehacer">↷</button>
+      </div>
+      <button class="pg-new" onclick="Hojas.nuevaNota()">+ Nota</button>
     </div>
+    <div class="hj-pop" id="hjPop" style="display:none"></div>
     <div class="pg-body" id="pgBody"></div>
   </div>
 
@@ -1304,7 +1308,9 @@ const _SW_EXPECTED = 433;
 <script src="js/characters.js?v=127"></script>
 <script src="js/export_pdf.js?v=7"></script>
 <script src="js/export_resumen.js?v=3"></script>
-<script src="js/app.js?v=247"></script>
+<script src="js/vendor/tiptap.min.js?v=1"></script>
+<script src="js/hojas.js?v=1"></script>
+<script src="js/app.js?v=248"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>
@@ -1340,7 +1346,7 @@ const _SW_EXPECTED = 433;
      luego cloud.js (classic) puede usarlo al cargarse después.
      Guard de auth: si no hay sesión activa, redirige al home. -->
 <script type="module">
-  await import('./js/firebase.js?v=3');
+  await import('./js/firebase.js?v=4');
 
   // Modo invitado ("Usar sin cuenta"): no hay ni habrá usuario de Firebase,
   // así que el guard de abajo expulsaría siempre. Se acepta y se sigue.

@@ -112,9 +112,17 @@ function _stripUndefined(obj) {
   return JSON.parse(JSON.stringify(obj, (_, v) => v === undefined ? null : v));
 }
 
+// Campos derivados que no viajan a la nube: se reconstruyen al cargar.
+// El personaje es UN documento de Firestore (límite 1 MB) y el índice de
+// menciones de Hojas duplica texto de las notas.
+function _paraNube(char) {
+  const { noteMentions, ...resto } = char;
+  return _stripUndefined(resto);
+}
+
 async function saveCharCloud(uid, char) {
   const ref = _charRef(uid, char.id);
-  const data = { ..._stripUndefined(char), _syncedAt: serverTimestamp() };
+  const data = { ..._paraNube(char), _syncedAt: serverTimestamp() };
   await setDoc(ref, data);
 }
 
@@ -163,7 +171,7 @@ async function saveCheckpointCloud(uid, charId, cpId, label, char) {
     id: cpId,
     label: label || '',
     createdAt: cpId,
-    char: _stripUndefined(char),
+    char: _paraNube(char),
     _syncedAt: serverTimestamp()
   };
   await setDoc(ref, data);
@@ -224,7 +232,7 @@ function newShareToken() {
 
 // Campos que NO viajan en la copia compartida: son privados o no le
 // sirven de nada al DM.
-const _SHARE_OMIT = ['diary', 'entities', 'sessions', 'checkpoints', '_cloudDirty', 'shareToken', 'sharedAt', 'notes', 'ifttt', 'pages'];
+const _SHARE_OMIT = ['diary', 'entities', 'sessions', 'checkpoints', '_cloudDirty', 'shareToken', 'sharedAt', 'notes', 'ifttt', 'pages', 'noteMentions'];
 
 function _stripForShare(char) {
   const copia = {};
