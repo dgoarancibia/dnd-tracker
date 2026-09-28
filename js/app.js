@@ -11514,22 +11514,6 @@ ${notesText}`;
     }
   }
 
-  async function exportCharForPDF() {
-    if (!_char) { showToast('No hay personaje activo'); return; }
-    if (typeof ExportPDF === 'undefined') {
-      showToast('Módulo PDF no cargado, intentá de nuevo');
-      return;
-    }
-    showToast('Generando PDF…');
-    try {
-      await ExportPDF.downloadPDF(_char);
-      showToast('PDF descargado');
-    } catch (e) {
-      console.error('PDF export error:', e);
-      showToast('Error generando PDF: ' + e.message);
-    }
-  }
-
   function importBackup(input) {
     const file = input.files[0];
     if (!file) return;
@@ -11711,7 +11695,7 @@ ${notesText}`;
     addCoin, consolidateCurrency,
 
     // Backup / Export
-    doBackup, importBackup, exportCharForPDF,
+    doBackup, importBackup,
 
     // Avatar
     uploadAvatar, cancelAvatarCrop, confirmAvatarCrop,

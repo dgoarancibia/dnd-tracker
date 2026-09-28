@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 436;
+const _SW_EXPECTED = 437;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -278,13 +278,9 @@ const _SW_EXPECTED = 436;
         <input type="file" accept=".json" style="display:none" onchange="App.importBackup(this);App.closeHeaderMenu()">
       </label>
 
-      <!-- Exportar hoja de personaje PDF -->
-      <button class="hm-btn" onclick="App.exportCharForPDF();App.closeHeaderMenu()" title="Exporta JSON para rellenar la hoja oficial D&D 2024">
+      <!-- Exportar hoja de personaje PDF (resumen dibujado desde cero) -->
+      <button class="hm-btn" onclick="App.exportResumenPDF();App.closeHeaderMenu()" title="Hoja resumen con habilidades, slots, conjuros y recursos">
         📄 Exportar hoja PDF
-      </button>
-
-      <button class="hm-btn" onclick="App.exportResumenPDF();App.closeHeaderMenu()" title="Hoja resumen liviana con todo lo que tenés">
-        📋 Hoja resumen (PDF liviano)
       </button>
 
       <div class="hm-divider"></div>
@@ -1306,11 +1302,10 @@ const _SW_EXPECTED = 436;
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=58"></script>
 <script src="js/characters.js?v=127"></script>
-<script src="js/export_pdf.js?v=7"></script>
 <script src="js/export_resumen.js?v=3"></script>
 <script src="js/vendor/tiptap.min.js?v=1"></script>
 <script src="js/hojas.js?v=2"></script>
-<script src="js/app.js?v=250"></script>
+<script src="js/app.js?v=251"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>

@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════
    export_resumen.js — Hoja resumen en PDF, generada desde cero.
 
-   A diferencia de export_pdf.js, que rellena la plantilla oficial de
-   D&D (13,7 MB y solo 11 espacios de conjuro), esta se dibuja con
-   pdf-lib sin plantilla: pesa unos pocos KB y muestra TODO lo que el
+   Reemplaza a la exportación sobre la plantilla oficial de D&D (13,7 MB
+   y solo 11 espacios de conjuro), que se retiró. Se dibuja con pdf-lib
+   sin plantilla: pesa unos pocos KB y muestra TODO lo que el
    personaje tiene — habilidades con su cálculo, slots por nivel,
    conjuros preparados agrupados y recursos.
 
