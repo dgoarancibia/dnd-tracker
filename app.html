@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 431;
+const _SW_EXPECTED = 432;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 431;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=123">
+<link rel="stylesheet" href="css/style.css?v=124">
 </head>
 <body>
 
@@ -519,6 +519,7 @@ const _SW_EXPECTED = 431;
       <button class="nb-tab"        id="nbTabStats"  onclick="App.switchNotebookTab('stats')">📊 Stats</button>
       <button class="nb-tab"        id="nbTabMaps"   onclick="App.switchNotebookTab('maps')">🗺 Mapas</button>
       <button class="nb-tab"        id="nbTabTimeline" onclick="App.switchNotebookTab('timeline')">📅 Sesiones</button>
+      <button class="nb-tab"        id="nbTabPages" onclick="App.switchNotebookTab('pages')">📝 Hojas<span class="nb-beta">beta</span></button>
     </div>
     <button class="diary-close-btn" onclick="App.toggleNotebook()">✕</button>
   </div>
@@ -594,6 +595,16 @@ const _SW_EXPECTED = 431;
       <button class="btn-sm" onclick="App.openAIImportModal()">📥 Importar resultado de IA</button>
     </div>
     <div class="timeline" id="timelineBody"></div>
+  </div>
+
+  <!-- SUB-TAB: HOJAS (markdown + wikilinks) · beta, datos aparte del diario -->
+  <div class="nb-pane" id="nbPanePages" style="display:none">
+    <div class="pg-bar">
+      <button class="pg-back" id="pgBack" onclick="App.pgVolver()" style="display:none">‹ Hojas</button>
+      <input type="text" class="pg-search" id="pgSearch" placeholder="Buscar hoja…" oninput="App.pgBuscar(this.value)">
+      <button class="pg-new" onclick="App.pgNueva()">+ Nueva</button>
+    </div>
+    <div class="pg-body" id="pgBody"></div>
   </div>
 
   <!-- SUB-TAB: CODEX (Gente/Misiones — agrupa entradas npc y quest) -->
@@ -1292,7 +1303,7 @@ const _SW_EXPECTED = 431;
 <script src="js/characters.js?v=127"></script>
 <script src="js/export_pdf.js?v=7"></script>
 <script src="js/export_resumen.js?v=3"></script>
-<script src="js/app.js?v=245"></script>
+<script src="js/app.js?v=246"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>
@@ -1328,7 +1339,7 @@ const _SW_EXPECTED = 431;
      luego cloud.js (classic) puede usarlo al cargarse después.
      Guard de auth: si no hay sesión activa, redirige al home. -->
 <script type="module">
-  await import('./js/firebase.js?v=2');
+  await import('./js/firebase.js?v=3');
 
   // Modo invitado ("Usar sin cuenta"): no hay ni habrá usuario de Firebase,
   // así que el guard de abajo expulsaría siempre. Se acepta y se sigue.

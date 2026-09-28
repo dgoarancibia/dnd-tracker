@@ -224,7 +224,7 @@ function newShareToken() {
 
 // Campos que NO viajan en la copia compartida: son privados o no le
 // sirven de nada al DM.
-const _SHARE_OMIT = ['diary', 'entities', 'sessions', 'checkpoints', '_cloudDirty', 'shareToken', 'sharedAt', 'notes', 'ifttt'];
+const _SHARE_OMIT = ['diary', 'entities', 'sessions', 'checkpoints', '_cloudDirty', 'shareToken', 'sharedAt', 'notes', 'ifttt', 'pages'];
 
 function _stripForShare(char) {
   const copia = {};

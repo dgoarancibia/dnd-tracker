@@ -781,6 +781,292 @@ const App = (() => {
     }
   }
 
+
+  /* ══════════════════════════════════════════════════════
+     HOJAS (beta) — editor markdown con wikilinks [[...]]
+
+     Deliberadamente aislado del diario: vive en c.pages, no toca
+     c.diary ni c.entities. Si la beta no convence, se borra esta
+     sección y la pestaña sin efectos colaterales.
+  ══════════════════════════════════════════════════════ */
+
+  let _pgActual = null;   // id de la hoja abierta, o null en el índice
+  let _pgBuscar = '';
+  let _pgEditando = false;
+  const _pgAhora = () => new Date().toISOString();
+
+  function _pgStore(c) {
+    if (!Array.isArray((c || _char).pages)) (c || _char).pages = [];
+    return (c || _char).pages;
+  }
+
+  // El título es la primera línea del texto, sin la almohadilla.
+  function _pgTitulo(p) {
+    const primera = (p.text || '').split('\n').find(l => l.trim());
+    return (primera || 'Sin título').replace(/^#+\s*/, '').trim().slice(0, 80) || 'Sin título';
+  }
+
+  function _pgPorTitulo(nombre) {
+    const norm = t => (t || '').trim().toLowerCase();
+    return _pgStore().find(p => norm(_pgTitulo(p)) === norm(nombre));
+  }
+
+  function _pgEscape(t) {
+    return (t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* Markdown mínimo: encabezados, negrita, cursiva, código, listas,
+     citas, separadores y wikilinks. No uso una librería para no sumar
+     otro archivo a la caché del service worker. */
+  function _pgMarkdown(texto) {
+    const lineas = (texto || '').split('\n');
+    let html = '';
+    let enLista = null;   // 'ul' | 'ol' | null
+
+    const cerrarLista = () => { if (enLista) { html += `</${enLista}>`; enLista = null; } };
+
+    // Lo inline se aplica DESPUÉS de escapar, para no romper el HTML.
+    const inline = (t) => {
+      let r = _pgEscape(t);
+      r = r.replace(/`([^`]+)`/g, '<code class="pg-code">$1</code>');
+      r = r.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      r = r.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+      r = r.replace(/~~([^~]+)~~/g, '<s>$1</s>');
+      // Wikilinks: [[Nombre]] — clase distinta si la hoja no existe aún.
+      r = r.replace(/\[\[([^\]]+)\]\]/g, (m, nombre) => {
+        const limpio = nombre.trim();
+        const existe = !!_pgPorTitulo(limpio);
+        const attr = limpio.replace(/"/g, '&quot;');
+        return `<span class="pg-link${existe ? '' : ' nueva'}" onclick="App.pgAbrirPorTitulo('${attr.replace(/'/g, "\\'")}')" title="${existe ? 'Abrir hoja' : 'Crear esta hoja'}">${limpio}</span>`;
+      });
+      // Enlaces externos
+      r = r.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener" class="pg-url">$1</a>');
+      return r;
+    };
+
+    lineas.forEach(linea => {
+      const l = linea.trimEnd();
+
+      if (!l.trim()) { cerrarLista(); return; }
+
+      const h = l.match(/^(#{1,4})\s+(.*)$/);
+      if (h) {
+        cerrarLista();
+        const n = h[1].length;
+        html += `<h${n} class="pg-h pg-h${n}">${inline(h[2])}</h${n}>`;
+        return;
+      }
+
+      if (/^\s*[-*]\s+\[[ xX]\]\s+/.test(l)) {
+        // Checkbox: se dibuja, pero el estado se edita en el texto.
+        if (enLista !== 'ul') { cerrarLista(); html += '<ul class="pg-ul">'; enLista = 'ul'; }
+        const marcado = /\[[xX]\]/.test(l);
+        const txt = l.replace(/^\s*[-*]\s+\[[ xX]\]\s+/, '');
+        html += `<li class="pg-li pg-task${marcado ? ' done' : ''}">${marcado ? '☑' : '☐'} ${inline(txt)}</li>`;
+        return;
+      }
+
+      if (/^\s*[-*]\s+/.test(l)) {
+        if (enLista !== 'ul') { cerrarLista(); html += '<ul class="pg-ul">'; enLista = 'ul'; }
+        html += `<li class="pg-li">${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`;
+        return;
+      }
+
+      if (/^\s*\d+[.)]\s+/.test(l)) {
+        if (enLista !== 'ol') { cerrarLista(); html += '<ol class="pg-ol">'; enLista = 'ol'; }
+        html += `<li class="pg-li">${inline(l.replace(/^\s*\d+[.)]\s+/, ''))}</li>`;
+        return;
+      }
+
+      cerrarLista();
+
+      if (/^>\s?/.test(l)) { html += `<blockquote class="pg-quote">${inline(l.replace(/^>\s?/, ''))}</blockquote>`; return; }
+      if (/^(-{3,}|\*{3,})$/.test(l.trim())) { html += '<hr class="pg-hr">'; return; }
+
+      html += `<p class="pg-p">${inline(l)}</p>`;
+    });
+
+    cerrarLista();
+    return html || '<p class="pg-p pg-vacio">Hoja vacía. Tocá para escribir.</p>';
+  }
+
+  // Texto sin marcas de markdown, para vistas previas.
+  function _pgPlano(t) {
+    return (t || '')
+      .replace(/\[\[([^\]]+)\]\]/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/[*_~`>#]/g, '')
+      .replace(/^\s*[-*]\s+(\[[ xX]\]\s+)?/, '')
+      .trim();
+  }
+
+  // Backlinks: qué otras hojas enlazan a esta.
+  function _pgBacklinks(titulo) {
+    const norm = t => (t || '').trim().toLowerCase();
+    const objetivo = norm(titulo);
+    return _pgStore().filter(p => {
+      if (norm(_pgTitulo(p)) === objetivo) return false;
+      const links = (p.text || '').match(/\[\[([^\]]+)\]\]/g) || [];
+      return links.some(l => norm(l.slice(2, -2)) === objetivo);
+    });
+  }
+
+  function _renderPages() {
+    const body = document.getElementById('pgBody');
+    if (!body || !_char) return;
+    const back = document.getElementById('pgBack');
+    const buscador = document.getElementById('pgSearch');
+
+    if (_pgActual) {
+      const p = _pgStore().find(x => x.id === _pgActual);
+      if (!p) { _pgActual = null; _renderPages(); return; }
+      if (back) back.style.display = '';
+      if (buscador) buscador.style.display = 'none';
+
+      const backlinks = _pgBacklinks(_pgTitulo(p));
+      const blHtml = backlinks.length
+        ? `<div class="pg-backlinks">
+             <div class="pg-bl-hd">Enlazada desde</div>
+             ${backlinks.map(b => `<div class="pg-bl-item" onclick="App.pgAbrir('${b.id}')">${_pgEscape(_pgTitulo(b))}</div>`).join('')}
+           </div>`
+        : '';
+
+      if (_pgEditando) {
+        body.innerHTML = `
+          <textarea class="pg-editor" id="pgEditor" spellcheck="false" oninput="App.pgAutoguardar()"
+            placeholder="# Título de la hoja&#10;&#10;Escribí libremente. Usá [[Nombre]] para enlazar a otra hoja.">${_pgEscape(p.text || '')}</textarea>
+          <div class="pg-edit-actions">
+            <button class="pg-btn save" onclick="App.pgGuardar()">✓ Listo</button>
+            <button class="pg-btn ghost" onclick="App.pgBorrar('${p.id}')">Borrar hoja</button>
+          </div>`;
+        const ta = document.getElementById('pgEditor');
+        if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+      } else {
+        body.innerHTML = `
+          <div class="pg-render" onclick="App.pgEditar(event)">${_pgMarkdown(p.text)}</div>
+          ${blHtml}`;
+      }
+      return;
+    }
+
+    // Índice de hojas
+    if (back) back.style.display = 'none';
+    if (buscador) buscador.style.display = '';
+
+    let hojas = _pgStore().slice();
+    if (_pgBuscar) {
+      const q = _pgBuscar.toLowerCase();
+      hojas = hojas.filter(p => (p.text || '').toLowerCase().includes(q));
+    }
+    hojas.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+
+    if (!hojas.length) {
+      body.innerHTML = `<div class="pg-empty">
+        ${_pgBuscar ? 'Ninguna hoja coincide.' : 'Sin hojas todavía.<br><br>Esta pestaña es una prueba: escribís en markdown y enlazás con <code>[[Nombre]]</code>.<br>El diario de siempre sigue intacto en su pestaña.'}
+      </div>`;
+      return;
+    }
+
+    body.innerHTML = `<div class="pg-list">` + hojas.map(p => {
+      const cuerpo = (p.text || '').split('\n').slice(1).find(l => l.trim()) || '';
+      const fecha = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('es', { day: '2-digit', month: '2-digit' }) : '';
+      const nLinks = ((p.text || '').match(/\[\[([^\]]+)\]\]/g) || []).length;
+      return `<div class="pg-card" onclick="App.pgAbrir('${p.id}')">
+        <div class="pg-card-hd">
+          <span class="pg-card-title">${_pgEscape(_pgTitulo(p))}</span>
+          <span class="pg-card-date">${fecha}</span>
+        </div>
+        ${cuerpo ? `<div class="pg-card-prev">${_pgEscape(_pgPlano(cuerpo).slice(0, 90))}</div>` : ''}
+        ${nLinks ? `<div class="pg-card-meta">${nLinks} ${nLinks === 1 ? 'enlace' : 'enlaces'}</div>` : ''}
+      </div>`;
+    }).join('') + `</div>`;
+  }
+
+  function pgNueva(tituloInicial) {
+    if (!_char) return;
+    const p = {
+      id: 'pg' + Date.now().toString(36),
+      text: tituloInicial ? `# ${tituloInicial}\n\n` : '# ',
+      createdAt: _pgAhora(),
+      updatedAt: _pgAhora(),
+    };
+    _pgStore().push(p);
+    _pgActual = p.id;
+    _pgEditando = true;
+    _saveChar();
+    _renderPages();
+  }
+
+  function pgAbrir(id) {
+    _pgActual = id;
+    _pgEditando = false;
+    _renderPages();
+  }
+
+  function pgAbrirPorTitulo(nombre) {
+    const existente = _pgPorTitulo(nombre);
+    if (existente) { pgAbrir(existente.id); return; }
+    pgNueva(nombre);   // wikilink a hoja inexistente: la crea
+  }
+
+  function pgVolver() {
+    if (_pgEditando) pgGuardar();
+    _pgActual = null;
+    _pgEditando = false;
+    _renderPages();
+  }
+
+  function pgEditar(ev) {
+    // Un clic en un wikilink navega; en cualquier otro lado, edita.
+    if (ev && ev.target && ev.target.closest('.pg-link, .pg-url')) return;
+    _pgEditando = true;
+    _renderPages();
+  }
+
+  /* Autoguardado: en mesa se cierra el cuaderno sin tocar "Listo" y el
+     texto se perdía. Se escribe en el modelo en cada tecla y se persiste
+     con un pequeño retardo para no guardar 60 veces por segundo. */
+  let _pgTimer = null;
+  function pgAutoguardar() {
+    const ta = document.getElementById('pgEditor');
+    const p = _pgStore().find(x => x.id === _pgActual);
+    if (!ta || !p) return;
+    p.text = ta.value;
+    p.updatedAt = _pgAhora();
+    clearTimeout(_pgTimer);
+    _pgTimer = setTimeout(() => _saveChar(true), 600);
+  }
+
+  function pgGuardar() {
+    clearTimeout(_pgTimer);
+    const ta = document.getElementById('pgEditor');
+    const p = _pgStore().find(x => x.id === _pgActual);
+    if (ta && p) {
+      p.text = ta.value;
+      p.updatedAt = _pgAhora();
+      _saveChar();
+    }
+    _pgEditando = false;
+    _renderPages();
+  }
+
+  function pgBorrar(id) {
+    _confirm('¿Borrar esta hoja?', () => {
+      _char.pages = _pgStore().filter(p => p.id !== id);
+      _pgActual = null;
+      _pgEditando = false;
+      _saveChar();
+      _renderPages();
+      showToast('Hoja borrada');
+    });
+  }
+
+  function pgBuscar(v) {
+    _pgBuscar = (v || '').trim();
+    _renderPages();
+  }
+
   function switchNotebookTab(tab) {
     _notebookTab = tab;
     document.getElementById('nbTabDiary')?.classList.toggle('active', tab === 'diary');
@@ -789,6 +1075,7 @@ const App = (() => {
     document.getElementById('nbTabStats')?.classList.toggle('active', tab === 'stats');
     document.getElementById('nbTabMaps')?.classList.toggle('active',  tab === 'maps');
     document.getElementById('nbTabTimeline')?.classList.toggle('active', tab === 'timeline');
+    document.getElementById('nbTabPages')?.classList.toggle('active', tab === 'pages');
     document.getElementById('nbPaneDiary').style.display  = tab === 'diary'  ? 'flex' : 'none';
     const codexPane = document.getElementById('nbPaneCodex');
     if (codexPane) codexPane.style.display = tab === 'codex' ? 'flex' : 'none';
@@ -797,6 +1084,9 @@ const App = (() => {
     document.getElementById('nbPaneMaps').style.display   = tab === 'maps'   ? 'flex' : 'none';
     const timelinePane = document.getElementById('nbPaneTimeline');
     if (timelinePane) timelinePane.style.display = tab === 'timeline' ? 'flex' : 'none';
+    const pagesPane = document.getElementById('nbPanePages');
+    if (pagesPane) pagesPane.style.display = tab === 'pages' ? 'flex' : 'none';
+    if (tab === 'pages')      _renderPages();
     if (tab === 'codex')      _renderCodex();
     else if (tab === 'log')   _renderCombatLog();
     else if (tab === 'stats') _renderCampaignStats();
@@ -11566,6 +11856,7 @@ ${notesText}`;
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
     setAmmo, adjustAmmo, recuperarMunicion,
     agregarVinculo, quitarVinculo, toggleD4Vinculo, romperVinculos,
+    pgNueva, pgAbrir, pgAbrirPorTitulo, pgVolver, pgEditar, pgGuardar, pgBorrar, pgBuscar, pgAutoguardar,
     toggleRecursoBestia, comandarBestia,
     toggleCharge, registrarGrapple, liberarGrapple, verRasgoBestia,
     marcarObjetivo, usarBonusHM,
