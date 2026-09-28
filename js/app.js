@@ -2417,7 +2417,7 @@ const App = (() => {
             <div class="ability-card-info" onclick="App.openAbilityDetail('${r.id}')">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
                 <span class="ability-card-name">${r.name}</span>
-                ${r.action ? `<span class="ability-action-tag">${_tagDoble(r.action, _accionCorta(r.action))}</span>` : ''}
+                ${r.action ? `<span class="ability-action-tag ${_claseAccion(r.action)}">${_tagDoble(r.action, _accionCorta(r.action))}</span>` : ''}
                 ${r.recharge ? `<span class="ability-recharge-tag">${rechargeLabel(r.recharge)}</span>` : ''}
               </div>
               ${r.desc ? `<div class="ability-card-desc">${fmtDesc(r.desc)}</div>` : ''}
@@ -2748,10 +2748,10 @@ const App = (() => {
   function _tiempoLanzamiento(ct) {
     const t = String(ct || '').trim();
     if (!t) return null;
-    if (/bonus|adicional/i.test(t)) return { largo: 'Bonus', corto: 'AA', bonus: true };
-    if (/^reacci[óo]n/i.test(t))    return { largo: 'Reac',  corto: 'R' };
-    if (/^(1\s+)?acci[óo]n$/i.test(t)) return { largo: 'Acc', corto: 'A' };
-    return { largo: t, corto: t.replace(/minutos?/i, 'min').replace(/horas?/i, 'h') };
+    if (/bonus|adicional/i.test(t)) return { largo: 'Bonus', corto: 'AA', tipo: 'aa', bonus: true };
+    if (/^reacci[óo]n/i.test(t))    return { largo: 'Reac',  corto: 'R',  tipo: 'r' };
+    if (/^(1\s+)?acci[óo]n$/i.test(t)) return { largo: 'Acc', corto: 'A', tipo: 'a' };
+    return { largo: t, corto: t.replace(/minutos?/i, 'min').replace(/horas?/i, 'h'), tipo: 'otro' };
   }
 
   // "Acción adicional" → AA, "Lanzar · Acción" → A, "Reacción" → R.
@@ -2763,14 +2763,22 @@ const App = (() => {
     return t;
   }
 
+  function _claseAccion(accion) {
+    const c = _accionCorta(accion);
+    return { AA: 'act-aa', R: 'act-r', A: 'act-a' }[c] || '';
+  }
+
   function _buildTagsHTML(sp) {
     let tags = '';
     const ct = _tiempoLanzamiento(sp.castTime);
     const rng = sp.range ? fmtDist(sp.range) : '';
     if (ct || rng) {
+      // Escritorio: un chip "Acc · 18 m". Ventana angosta: un dato por chip,
+      // y la acción con color según su tipo (A / AA / R).
       const largo = [ct && ct.largo, rng].filter(Boolean).join(' · ');
-      const corto = [ct && ct.corto, rng && rng.replace(/(\d)\s+(m|ft)\b/g, '$1$2')].filter(Boolean).join(' · ');
-      tags += `<span class="tag tag-quick">${_tagDoble(largo, corto)}</span>`;
+      tags += `<span class="tag tag-quick solo-ancho">${largo}</span>`;
+      if (ct) tags += `<span class="tag tag-act act-${ct.tipo} solo-angosto">${ct.corto}</span>`;
+      if (rng) tags += `<span class="tag tag-quick solo-angosto">${rng.replace(/(\d)\s+(m|ft)\b/g, '$1$2')}</span>`;
     }
     if (sp.desc) {
       const dmgMatch = sp.desc.match(/(\d+d\d+(?:[+\-]\w+)?)\s*(radiante|necrótico|fuego|frío|rayo|trueno|ácido|veneno|psíquico|fuerza|HP)?/i);
@@ -2778,12 +2786,15 @@ const App = (() => {
     }
     if (sp.concentration) tags += `<span class="tag tag-c">${_tagDoble('Conc', 'C')}</span>`;
     // "Bonus" aparte solo si el tiempo de lanzamiento no lo dice ya.
-    if (sp.bonus && !(ct && ct.bonus)) tags += `<span class="tag tag-b">${_tagDoble('Bonus', 'AA')}</span>`;
+    if (sp.bonus && !(ct && ct.bonus)) {
+      tags += `<span class="tag tag-b solo-ancho">Bonus</span><span class="tag tag-act act-aa solo-angosto">AA</span>`;
+    }
     // Dominio: en escritorio va como chip; en ventana angosta el CSS lo
     // oculta y el ◆ queda solo en el nombre (ver _nombreConjuro).
     if (sp.domain) tags += '<span class="tag tag-dom">◆ Dominio</span>';
-    if (sp.mi) tags += '<span class="tag tag-mi">MI</span>';
-    if (sp.dw) tags += '<span class="tag tag-dw">DW</span>';
+    // MI / DW: en ventana angosta sobran, el ○ y el ◈ ya van en el nombre.
+    if (sp.mi) tags += '<span class="tag tag-mi solo-ancho">MI</span>';
+    if (sp.dw) tags += '<span class="tag tag-dw solo-ancho">DW</span>';
     if (sp.ritual) tags += `<span class="tag tag-r">${_tagDoble('Ritual', 'Rit')}</span>`;
     return tags;
   }
