@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 440;
+const _SW_EXPECTED = 441;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 440;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=131">
+<link rel="stylesheet" href="css/style.css?v=132">
 </head>
 <body>
 
@@ -602,7 +602,16 @@ const _SW_EXPECTED = 440;
         <button onmousedown="event.preventDefault()" onclick="Hojas.deshacer()" title="Deshacer">↶</button>
         <button onmousedown="event.preventDefault()" onclick="Hojas.rehacer()" title="Rehacer">↷</button>
       </div>
+      <button class="hj-find-btn" id="hjFindBtn" style="display:none" onclick="Hojas.abrirBuscar()" title="Buscar en la nota">🔍</button>
       <button class="pg-new" onclick="Hojas.nuevaNota()">+ Nota</button>
+    </div>
+    <div class="hj-find" id="hjFind" style="display:none">
+      <input type="text" id="hjFindInput" enterkeyhint="next" placeholder="Buscar en la nota…" autocomplete="off"
+             oninput="Hojas.buscarEnNota(this.value)" onkeydown="Hojas._teclaBuscar(event)">
+      <span class="hj-find-count" id="hjFindCount"></span>
+      <button onmousedown="event.preventDefault()" onclick="Hojas.siguienteCoincidencia(-1)" title="Anterior">↑</button>
+      <button onmousedown="event.preventDefault()" onclick="Hojas.siguienteCoincidencia(1)" title="Siguiente">↓</button>
+      <button onclick="Hojas.cerrarBuscar()" title="Cerrar búsqueda">✕</button>
     </div>
     <div class="hj-pop" id="hjPop" style="display:none"></div>
     <div class="pg-body" id="pgBody"></div>
@@ -1303,8 +1312,8 @@ const _SW_EXPECTED = 440;
 <script src="js/storage.js?v=58"></script>
 <script src="js/characters.js?v=127"></script>
 <script src="js/export_resumen.js?v=3"></script>
-<script src="js/vendor/tiptap.min.js?v=1"></script>
-<script src="js/hojas.js?v=2"></script>
+<script src="js/vendor/tiptap.min.js?v=2"></script>
+<script src="js/hojas.js?v=3"></script>
 <script src="js/app.js?v=253"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>

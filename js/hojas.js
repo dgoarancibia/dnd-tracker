@@ -67,6 +67,7 @@ const Hojas = (() => {
   let _timer = null;         // guardado pendiente
   let _enfocar = false;
   let _saltarA = null;       // posición a la que ir al abrir una nota
+  let _buscarAlAbrir = null; // término del índice que se abre ya resaltado
   let _pop = null;           // estado del menú de sugerencias
 
   const C = () => (_ctx ? _ctx.getChar() : null);
@@ -526,11 +527,138 @@ const Hojas = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
+     BUSCAR DENTRO DE LA NOTA (tipo Ctrl+F)
+     Las coincidencias se pintan con decoraciones de ProseMirror: no tocan
+     el documento, así que buscar nunca modifica ni ensucia el deshacer.
+  ══════════════════════════════════════════════════════ */
+
+  // Diferida: si el editor no cargó, el módulo igual debe poder avisarlo.
+  let _buscarKeyCache = null;
+  const _buscarKey = () => _buscarKeyCache || (_buscarKeyCache = new TT.PluginKey('hjBuscar'));
+  let _find = { q: '', matches: [], idx: -1 };
+
+  // Sin tildes ni mayúsculas, carácter por carácter para conservar posiciones.
+  const _plano = (t) => Array.from(t, ch => ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() || ch).join('');
+
+  function _coincidencias(doc, q) {
+    const aguja = _plano(q.trim());
+    const out = [];
+    if (!aguja) return out;
+    doc.descendants((node, pos) => {
+      if (!node.isText) return;
+      const heno = _plano(node.text);
+      let i = heno.indexOf(aguja);
+      while (i !== -1) {
+        out.push({ from: pos + i, to: pos + i + aguja.length });
+        i = heno.indexOf(aguja, i + aguja.length);
+      }
+    });
+    return out;
+  }
+
+  function _buscarExt() {
+    return TT.Extension.create({
+      name: 'hjBuscar',
+      addProseMirrorPlugins() {
+        return [new TT.Plugin({
+          key: _buscarKey(),
+          state: {
+            init: () => TT.DecorationSet.empty,
+            apply: (tr, viejo) => {
+              const meta = tr.getMeta(_buscarKey());
+              if (!meta && !tr.docChanged) return viejo;
+              // Al editar con la búsqueda abierta se recalcula en vivo.
+              const q = meta ? meta.q : _find.q;
+              const idx = meta ? meta.idx : _find.idx;
+              if (!q) return TT.DecorationSet.empty;
+              const m = _coincidencias(tr.doc, q);
+              return TT.DecorationSet.create(tr.doc, m.map((r, i) =>
+                TT.Decoration.inline(r.from, r.to, { class: i === idx ? 'hj-hit actual' : 'hj-hit' })));
+            },
+          },
+          props: { decorations: (state) => _buscarKey().getState(state) },
+        })];
+      },
+    });
+  }
+
+  function _pintarBusqueda() {
+    if (!_editor) return;
+    _find.matches = _find.q ? _coincidencias(_editor.state.doc, _find.q) : [];
+    if (_find.idx >= _find.matches.length) _find.idx = _find.matches.length - 1;
+    if (_find.idx < 0 && _find.matches.length) _find.idx = 0;
+    _editor.view.dispatch(_editor.state.tr.setMeta(_buscarKey(), { q: _find.q, idx: _find.idx }));
+    const cont = document.getElementById('hjFindCount');
+    if (cont) {
+      cont.textContent = !_find.q ? '' : _find.matches.length ? `${_find.idx + 1}/${_find.matches.length}` : '0';
+      cont.classList.toggle('vacio', !!_find.q && !_find.matches.length);
+    }
+  }
+
+  function _irACoincidencia() {
+    const m = _find.matches[_find.idx];
+    if (!m || !_editor) return;
+    try {
+      const { node } = _editor.view.domAtPos(m.from);
+      const el = node.nodeType === 1 ? node : node.parentElement;
+      if (el) el.scrollIntoView({ block: 'center' });
+    } catch (e) { /* posición cambió al editar */ }
+  }
+
+  function abrirBuscar(q) {
+    const barra = document.getElementById('hjFind');
+    const input = document.getElementById('hjFindInput');
+    if (!barra || !input || !_editor) return;
+    barra.style.display = 'flex';
+    document.getElementById('nbPanePages')?.classList.add('hj-find-on');
+    if (typeof q === 'string') input.value = q;
+    _find = { q: input.value, matches: [], idx: 0 };
+    _pintarBusqueda();
+    _irACoincidencia();
+    input.focus();
+    input.select();
+  }
+
+  function cerrarBuscar() {
+    const barra = document.getElementById('hjFind');
+    if (barra) barra.style.display = 'none';
+    document.getElementById('nbPanePages')?.classList.remove('hj-find-on');
+    _find = { q: '', matches: [], idx: -1 };
+    if (_editor) _editor.view.dispatch(_editor.state.tr.setMeta(_buscarKey(), { q: '', idx: -1 }));
+  }
+
+  function buscarEnNota(q) {
+    _find.q = String(q || '');
+    const input = document.getElementById('hjFindInput');
+    if (input && input.value !== _find.q) input.value = _find.q;
+    _find.idx = 0;
+    _pintarBusqueda();
+    _irACoincidencia();
+  }
+
+  function siguienteCoincidencia(delta) {
+    if (!_find.matches.length) return;
+    _find.idx = (_find.idx + delta + _find.matches.length) % _find.matches.length;
+    _pintarBusqueda();
+    _irACoincidencia();
+  }
+
+  // Enter = siguiente, Shift+Enter = anterior, Escape = cerrar.
+  function _teclaBuscar(ev) {
+    if (ev.key === 'Enter') { ev.preventDefault(); siguienteCoincidencia(ev.shiftKey ? -1 : 1); }
+    else if (ev.key === 'Escape') { ev.preventDefault(); cerrarBuscar(); }
+  }
+
+  /* ══════════════════════════════════════════════════════
      EDITOR
   ══════════════════════════════════════════════════════ */
 
   function _destruirEditor() {
     _popCerrar();
+    const barra = document.getElementById('hjFind');
+    if (barra) barra.style.display = 'none';
+    document.getElementById('nbPanePages')?.classList.remove('hj-find-on');
+    _find = { q: '', matches: [], idx: -1 };
     if (_editor) { try { _editor.destroy(); } catch (e) { /* ya destruido */ } }
     _editor = null;
   }
@@ -564,6 +692,7 @@ const Hojas = (() => {
         _checklistEnListaExt(),
         _mencionExt(),
         _slashExt(),
+        _buscarExt(),
       ],
       editorProps: {
         attributes: { class: 'hj-doc', spellcheck: 'true', autocapitalize: 'sentences' },
@@ -648,6 +777,8 @@ const Hojas = (() => {
     if (back) back.style.display = enIndice ? 'none' : '';
     if (buscador) buscador.style.display = enIndice ? '' : 'none';
     if (deshacer) deshacer.style.display = enIndice ? 'none' : '';
+    const lupa = document.getElementById('hjFindBtn');
+    if (lupa) lupa.style.display = enIndice ? 'none' : '';
   }
 
   function _sesionLabel(sessionId) {
@@ -702,15 +833,25 @@ const Hojas = (() => {
     body.innerHTML = entHTML + (notas.length ? (q ? `<div class="hj-sec-hd">Notas</div>` : '') + `<div class="pg-list">` + notas.map(p => {
       const fecha = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('es', { day: '2-digit', month: '2-digit' }) : '';
       const bloques = (p.doc && p.doc.content) || [];
-      const prev = bloques.map(_textoDe).filter(t => t.trim()).slice(1, 2).join(' ');
+      let prev = bloques.map(_textoDe).filter(t => t.trim()).slice(1, 2).join(' ');
+      let prevHTML = '';
+      if (q) {
+        // Buscando: el fragmento con la palabra, no la segunda línea.
+        const plano = _textoPlano(p.doc).replace(/\s+/g, ' ');
+        const i = _plano(plano).indexOf(_plano(_buscar));
+        if (i !== -1) {
+          const ini = Math.max(0, i - 40), fin = Math.min(plano.length, i + _buscar.length + 60);
+          prevHTML = (ini ? '…' : '') + esc(plano.slice(ini, i)) + `<mark class="hj-hit">${esc(plano.slice(i, i + _buscar.length))}</mark>` + esc(plano.slice(i + _buscar.length, fin)) + (fin < plano.length ? '…' : '');
+        }
+      }
       const n = _mentions().filter(m => m.noteId === p.id).length;
       const ses = _sesionLabel(p.sessionId);
-      return `<div class="pg-card" onclick="Hojas.abrirNota('${p.id}')">
+      return `<div class="pg-card" onclick="Hojas.abrirNota('${p.id}', null, ${q ? 'true' : 'false'})">
         <div class="pg-card-hd">
           <span class="pg-card-title">${esc(_tituloDe(p))}</span>
           <span class="pg-card-date">${fecha}</span>
         </div>
-        ${prev ? `<div class="pg-card-prev">${esc(prev.slice(0, 100))}</div>` : ''}
+        ${prevHTML ? `<div class="pg-card-prev">${prevHTML}</div>` : prev ? `<div class="pg-card-prev">${esc(prev.slice(0, 100))}</div>` : ''}
         ${(n || ses) ? `<div class="pg-card-meta">${ses ? esc(ses) : ''}${ses && n ? ' · ' : ''}${n ? `${n} ${n === 1 ? 'mención' : 'menciones'}` : ''}</div>` : ''}
       </div>`;
     }).join('') + `</div>` : '');
@@ -752,6 +893,11 @@ const Hojas = (() => {
   }
 
   function _despuesDeMontar() {
+    if (_buscarAlAbrir) {
+      const q = _buscarAlAbrir; _buscarAlAbrir = null;
+      setTimeout(() => abrirBuscar(q), 40);
+      return;
+    }
     if (_saltarA != null) { const p = _saltarA; _saltarA = null; setTimeout(() => _irA(p), 30); }
     else if (_enfocar) { _enfocar = false; setTimeout(() => _editor && _editor.commands.focus('end'), 30); }
   }
@@ -843,8 +989,9 @@ const Hojas = (() => {
     _ir({ kind: 'page', id: p.id });
   }
 
-  function abrirNota(id, pos) {
+  function abrirNota(id, pos, conBusqueda) {
     _saltarA = pos == null ? null : pos;
+    _buscarAlAbrir = conBusqueda ? _buscar : null;
     _ir({ kind: 'page', id });
   }
 
@@ -1045,6 +1192,7 @@ const Hojas = (() => {
     init, render, reset, flush, salir,
     nuevaNota, abrirNota, abrirEntidad, volver, borrarNota,
     renombrar, cambiarTipo, buscar, deshacer, rehacer,
+    abrirBuscar, cerrarBuscar, buscarEnNota, siguienteCoincidencia, _teclaBuscar,
     _elegir, _abrirMencion,
     // Expuesto para pruebas y para el Codex
     TIPOS, _reindexar, _docDesdeTexto,

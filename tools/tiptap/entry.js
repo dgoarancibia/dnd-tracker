@@ -1,7 +1,8 @@
 // Punto de entrada del bundle de TipTap para la pestaña Hojas.
 // Regenerar con: tools/tiptap/build.sh  → js/vendor/tiptap.min.js (global TT)
 export { Editor, Node, Mark, Extension, mergeAttributes, InputRule } from '@tiptap/core';
-export { PluginKey } from '@tiptap/pm/state';
+export { Plugin, PluginKey } from '@tiptap/pm/state';
+export { Decoration, DecorationSet } from '@tiptap/pm/view';
 export { default as StarterKit } from '@tiptap/starter-kit';
 export { default as Mention } from '@tiptap/extension-mention';
 export { default as Suggestion } from '@tiptap/suggestion';

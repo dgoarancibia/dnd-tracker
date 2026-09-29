@@ -9698,3 +9698,29 @@ mark.diary-highlight {
   .tag-act { font-family: 'Jost', sans-serif; font-weight: 700; letter-spacing: 0.3px; }
   .ability-action-tag.act-a, .ability-action-tag.act-aa, .ability-action-tag.act-r { font-weight: 700; }
 }
+
+/* Hojas · buscar dentro de la nota */
+.hj-find-btn {
+  width: 38px; height: 32px; flex: 0 0 auto; border-radius: 10px; cursor: pointer;
+  background: var(--bg3); border: 1px solid var(--border); font-size: 14px;
+}
+.hj-find {
+  display: flex; align-items: center; gap: 6px; flex: 0 0 auto;
+  padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--bg2);
+}
+.hj-find input {
+  flex: 1 1 auto; min-width: 0; height: 36px; padding: 0 12px; border-radius: 12px;
+  background: var(--bg1, #14110f); border: 1px solid var(--gold-dim); color: var(--text);
+  font-family: 'Jost', sans-serif; font-size: 16px; outline: none;
+}
+.hj-find-count { font-size: 12px; color: var(--text-mid); min-width: 34px; text-align: center; }
+.hj-find-count.vacio { color: var(--red-light, #c07070); }
+.hj-find button {
+  width: 36px; height: 36px; flex: 0 0 auto; border-radius: 10px; cursor: pointer;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text-mid); font-size: 15px;
+}
+/* Con la barra de búsqueda abierta, el menú de @ y / baja para no taparla. */
+.hj-find-on .hj-pop { top: 102px; }
+.hj-hit { background: rgba(201,168,75,0.28); color: inherit; border-radius: 2px; }
+.hj-hit.actual { background: rgba(201,168,75,0.75); color: #14110f; box-shadow: 0 0 0 2px rgba(201,168,75,0.55); }
+.pg-card-prev .hj-hit { padding: 0 1px; }
