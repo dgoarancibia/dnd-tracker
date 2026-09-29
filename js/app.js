@@ -3504,7 +3504,6 @@ const App = (() => {
       filtered.forEach(item => {
         const i = item.__idx;
         const cat = item.category || 'Other';
-        const isMagic = _MAGIC_ITEM_CATS.has(cat);
         const hasCharges = !!item.charges;
         const isEmpty = item.qty === 0;
         const isContainer = !!item.container;
@@ -3547,7 +3546,7 @@ const App = (() => {
           <div class="item-row-right">
             ${qtyControls}
             <div class="item-actions">
-              ${isMagic ? `<button class="btn-sm" onclick="App.openEquipPicker(null, ${i})" title="Equipar">Equipar</button>` : ''}
+              ${_tipoEquipable(item) ? `<button class="btn-sm" onclick="App.openEquipPicker(null, ${i})" title="Equipar">Equipar</button>` : ''}
               <button class="item-edit" onclick="App.openEditItem(${i})" title="Editar">✎</button>
               <button class="item-del" onclick="App.deleteConsumable(${i})">✕</button>
             </div>
@@ -6772,6 +6771,7 @@ const App = (() => {
   }
 
   function closeAddWeapon() {
+    _awmDesdeMochila = null;
     document.getElementById('awmSuggestions').style.display = 'none';
     document.getElementById('addWeaponModal').classList.remove('show');
   }
@@ -6830,6 +6830,14 @@ const App = (() => {
     const extraType = document.getElementById('awmExtraType').value.trim();
     const notes     = document.getElementById('awmDesc').value.trim();
     _ensureEquipment(_char);
+    // Viniendo de la mochila es OTRA arma: la que estaba puesta se guarda
+    // en la mochila en vez de heredarle sus bonos.
+    const desdeMochila = _awmDesdeMochila;
+    if (desdeMochila != null) {
+      _quitarUnoDeMochila(desdeMochila);
+      _awmDesdeMochila = null;
+      if (_char.equipment[_awmSlot]) _moverSlotAMochila(_awmSlot);
+    }
     const existing = _char.equipment[_awmSlot];
     const bonuses = (existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 };
     const buffs   = (existing && existing.buffs) || [];
@@ -6846,11 +6854,135 @@ const App = (() => {
   let _equipPickerSlot = null;
   let _equipPickerBagIdx = null; // si viene desde "Equipar" en la mochila
 
+  /* ── Equipar desde la mochila ────────────────────────────────────────
+     Antes, "+ Equipar" en un slot vacío solo permitía CREAR un ítem, y el
+     botón "Equipar" de la mochila existía solo para ítems mágicos. Además
+     desequipar guardaba solo el nombre: se perdían daño, bonos, buffs, CA
+     y sintonía. Ahora el ítem desequipado viaja entero en `equipped` y se
+     puede volver a poner tal cual. */
+  const _SLOTS_POR_TIPO = {
+    weapon:   ['mainHand', 'offHand'],
+    shield:   ['offHand'],
+    armor:    ['armor'],
+    wondrous: WONDROUS_SLOTS,
+  };
+
+  // Qué tipo de equipo es un ítem de la mochila, o null si no se equipa.
+  function _tipoEquipable(item) {
+    if (!item) return null;
+    if (item.equipped && item.equipped.kind) return item.equipped.kind;
+    const cat = item.category || '';
+    const nombre = item.name || '';
+    if (/escudo|shield/i.test(nombre)) return 'shield';
+    if (/^Weapon/.test(cat)) return 'weapon';
+    if (_MAGIC_ITEM_CATS.has(cat)) return 'wondrous';
+    if (cat === 'Apparel' && /armadura|armor|cota|coraza|malla|placas|escamas|cuero|pieles|acolchada|camisote|laminada/i.test(nombre)) return 'armor';
+    return null;
+  }
+
+  function _compatibleConSlot(item, slotKey) {
+    const tipo = _tipoEquipable(item);
+    return !!tipo && (_SLOTS_POR_TIPO[tipo] || []).includes(slotKey);
+  }
+
+  function _quitarUnoDeMochila(idx) {
+    const bag = _char.consumables || [];
+    const it = bag[idx];
+    if (!it) return;
+    if ((it.qty || 1) > 1) it.qty -= 1;
+    else bag.splice(idx, 1);
+  }
+
+  // Pasa lo que ocupa el slot a la mochila, con todos sus datos.
+  function _moverSlotAMochila(slotKey) {
+    const item = _char.equipment && _char.equipment[slotKey];
+    if (!item) return null;
+    if (!_char.consumables) _char.consumables = [];
+    const catByKind = { weapon: 'Weapon - martial melee', shield: 'Equipment', armor: 'Apparel', wondrous: 'Ítem mágico' };
+    const { attuned, ...resto } = item;   // al quitarlo se pierde la sintonía (regla)
+    _char.consumables.push({
+      id: 'i-' + Date.now(), name: item.name, qty: 1,
+      category: catByKind[item.kind] || 'Other',
+      desc: _slotItemLine(item) || item.notes || '',
+      equipped: { ...resto, attuned: false },
+    });
+    _char.equipment[slotKey] = null;
+    return item;
+  }
+
+  function _refrescarEquipo() {
+    _saveChar();
+    _renderEquipoTab();
+    _renderHeader();
+    if (_activeTab === 'combate') _renderCombateTab();
+  }
+
+  /* Equipa el ítem `bagIdx` de la mochila en `slotKey`. Si el slot está
+     ocupado se intercambian. Sin datos guardados (ítem que nunca estuvo
+     equipado), se completan en el formulario de siempre. */
+  function _equiparDeMochila(bagIdx, slotKey) {
+    const item = (_char.consumables || [])[bagIdx];
+    if (!item) return;
+    _ensureEquipment(_char);
+    const tipo = _tipoEquipable(item);
+
+    if (item.equipped) {
+      const restaurado = { ...item.equipped, id: item.equipped.id || ('eq-' + Date.now()) };
+      _quitarUnoDeMochila(bagIdx);
+      const previo = _char.equipment[slotKey] ? _moverSlotAMochila(slotKey) : null;
+      _char.equipment[slotKey] = restaurado;
+      _refrescarEquipo();
+      showToast(previo ? `${restaurado.name} equipado · ${previo.name} → mochila` : `${restaurado.name} equipado`);
+      return;
+    }
+
+    // Las ramas directas intercambian aquí; las que abren un formulario lo
+    // hacen al guardar, para que cancelar no deje el slot vacío.
+    if (tipo === 'shield') {
+      _quitarUnoDeMochila(bagIdx);
+      if (_char.equipment[slotKey]) _moverSlotAMochila(slotKey);
+      _char.equipment[slotKey] = { id: 'shield-' + Date.now(), name: item.name || 'Escudo', kind: 'shield', shield_bonus: 2,
+        bonuses: { ac:0, attack:0, damage:0, save:0 }, buffs: [] };
+      _refrescarEquipo();
+      showToast(`${item.name} equipado`);
+      return;
+    }
+    if (tipo === 'weapon') {
+      // Si el nombre calza exacto con el catálogo, se equipa directo.
+      const base = (Characters.WEAPONS_DB || []).find(w => w.name.toLowerCase() === (item.name || '').trim().toLowerCase());
+      if (base) {
+        _quitarUnoDeMochila(bagIdx);
+        if (_char.equipment[slotKey]) _moverSlotAMochila(slotKey);
+        _char.equipment[slotKey] = { id: 'w-' + Date.now(), name: item.name, kind: 'weapon', die: base.die, bonus: '',
+          type: base.type, statUsed: base.statUsed === 'choice' ? 'dex' : base.statUsed, mastery: base.mastery || '',
+          extraDie: '', extraType: '', notes: item.desc || '', bonuses: { ac:0, attack:0, damage:0, save:0 }, buffs: [] };
+        _refrescarEquipo();
+        showToast(`${item.name} equipado`);
+        return;
+      }
+      _awmDesdeMochila = bagIdx;
+      openAddWeapon(slotKey);
+      document.getElementById('awmName').value = item.name || '';
+      document.getElementById('awmDesc').value = item.desc || '';
+      return;
+    }
+    if (tipo === 'armor') {
+      _armorDesdeMochila = bagIdx;
+      openArmorPicker();
+      return;
+    }
+    // Ítem mágico: formulario de accesorio con el nombre ya puesto.
+    _pickSlotForBagItem(slotKey, bagIdx);
+  }
+
+  let _awmDesdeMochila = null;    // ítem de mochila que se completa en el modal de arma
+  let _armorDesdeMochila = null;  // ídem en el selector de armadura
+
   function openEquipPicker(slotKey, bagIdx) {
     _equipPickerSlot = slotKey;
     _equipPickerBagIdx = (bagIdx !== undefined) ? bagIdx : null;
 
-    // Si viene desde la mochila (ítem mágico sin slot fijo), hay que elegir el slot destino.
+    // Desde la mochila: elegir slot entre los compatibles.
     if (slotKey === null && bagIdx !== undefined) {
       _openSlotChooserModal(bagIdx);
       return;
@@ -6859,21 +6991,63 @@ const App = (() => {
     const slotDef = EQUIP_SLOTS.find(s => s.key === slotKey);
     if (!slotDef) return;
 
-    if (slotDef.kinds.includes('weapon') && (slotKey === 'mainHand' || slotKey === 'offHand')) {
-      // Slot de arma: ofrecer buscador de armas directo (reusa el modal existente)
-      openAddWeapon(slotKey);
+    // Slot vacío: si hay algo compatible en la mochila, se ofrece primero.
+    const enMochila = (_char.consumables || [])
+      .map((it, i) => ({ it, i }))
+      .filter(x => _compatibleConSlot(x.it, slotKey));
+    if (enMochila.length) {
+      _openBagPickerModal(slotDef, enMochila);
       return;
     }
-    if (slotKey === 'offHand') {
-      _openOffHandChooserModal();
-      return;
-    }
-    if (slotKey === 'armor') {
-      openArmorPicker();
-      return;
-    }
-    // ring / neck / misc: ítem "wondrous" genérico — abrir mini-form
+    _crearParaSlot(slotKey);
+  }
+
+  // El flujo de siempre: crear un ítem nuevo para el slot.
+  function _crearParaSlot(slotKey) {
+    const ov = document.getElementById('bagPickerOverlay');
+    if (ov) ov.style.display = 'none';
+    if (slotKey === 'mainHand') { openAddWeapon(slotKey); return; }
+    if (slotKey === 'offHand')  { _openOffHandChooserModal(); return; }
+    if (slotKey === 'armor')    { openArmorPicker(); return; }
     _openWondrousModal(slotKey);
+  }
+
+  function _openBagPickerModal(slotDef, enMochila) {
+    let overlay = document.getElementById('bagPickerOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'bagPickerOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
+      overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = 'none'; };
+      document.body.appendChild(overlay);
+    }
+    const filas = enMochila.map(({ it, i }) => {
+      const detalle = it.equipped ? _slotItemLine(it.equipped) : (it.desc || '');
+      return `<button class="bag-pick-row" onclick="App._pickFromBag(${i},'${slotDef.key}')">
+        <span class="bag-pick-name">${it.name}${(it.qty || 1) > 1 ? ` <span class="bag-pick-qty">×${it.qty}</span>` : ''}</span>
+        ${detalle ? `<span class="bag-pick-meta">${detalle}</span>` : ''}
+      </button>`;
+    }).join('');
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:380px;width:100%;">
+        <div class="modal-header">${slotDef.icon} ${slotDef.label}</div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:6px;">
+          <div class="modal-mini-label">De tu mochila</div>
+          ${filas}
+          <button class="bag-pick-row bag-pick-new" onclick="App._crearParaSlot('${slotDef.key}')">＋ Crear nuevo</button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="document.getElementById('bagPickerOverlay').style.display='none'">Cancelar</button>
+        </div>
+      </div>`;
+    overlay.style.display = 'flex';
+  }
+
+  function _pickFromBag(bagIdx, slotKey) {
+    const ov = document.getElementById('bagPickerOverlay');
+    if (ov) ov.style.display = 'none';
+    _equiparDeMochila(bagIdx, slotKey);
   }
 
   // Mini modal genérico reusado para wondrous items (ring/neck/misc) y para
@@ -6929,6 +7103,9 @@ const App = (() => {
   function _openSlotChooserModal(bagIdx) {
     const item = (_char.consumables || [])[bagIdx];
     if (!item) return;
+    const compatibles = _SLOTS_POR_TIPO[_tipoEquipable(item)] || WONDROUS_SLOTS;
+    // Armadura o escudo tienen un único lugar posible: no hay nada que elegir.
+    if (compatibles.length === 1) { _equiparDeMochila(bagIdx, compatibles[0]); return; }
     let overlay = document.getElementById('slotChooserOverlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -6937,11 +7114,11 @@ const App = (() => {
       overlay.style.cssText = 'display:flex;align-items:center;z-index:1100;';
       document.body.appendChild(overlay);
     }
-    const btns = WONDROUS_SLOTS.map(key => {
+    const btns = compatibles.map(key => {
       const def = EQUIP_SLOTS.find(s => s.key === key);
       const occupied = !!(_char.equipment && _char.equipment[key]);
-      return `<button class="btn-secondary slot-chooser-btn" onclick="App._pickSlotForBagItem('${key}',${bagIdx})">
-        ${def.icon} ${def.label}${occupied ? ' <span class="slot-chooser-occupied">(ocupado)</span>' : ''}
+      return `<button class="btn-secondary slot-chooser-btn" onclick="document.getElementById('slotChooserOverlay').style.display='none';App._equiparDeMochila(${bagIdx},'${key}')">
+        ${def.icon} ${def.label}${occupied ? ` <span class="slot-chooser-occupied">(cambia por ${_char.equipment[key].name})</span>` : ''}
       </button>`;
     }).join('');
     overlay.innerHTML = `
@@ -6986,6 +7163,12 @@ const App = (() => {
     const requiresAttunement = !!document.getElementById('wondrousAttuneCheck')?.checked;
 
     _ensureEquipment(_char);
+    const bagIdxRaw = overlay.dataset.bagIdx;
+    const desdeMochila = bagIdxRaw !== '' && !isNaN(parseInt(bagIdxRaw));
+    if (desdeMochila) {
+      _quitarUnoDeMochila(parseInt(bagIdxRaw));
+      if (_char.equipment[slotKey]) _moverSlotAMochila(slotKey);
+    }
     const existing = _char.equipment[slotKey];
     const bonuses = (existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 };
     const buffs   = (existing && existing.buffs) || [];
@@ -6995,12 +7178,8 @@ const App = (() => {
       name, kind:'wondrous', requiresAttunement, attuned, notes, bonuses, buffs,
     };
 
-    const bagIdxRaw = overlay.dataset.bagIdx;
-    if (bagIdxRaw !== '') {
-      const bagIdx = parseInt(bagIdxRaw);
-      if (!isNaN(bagIdx)) _char.consumables.splice(bagIdx, 1);
-    }
 
+    overlay.dataset.bagIdx = '';
     _saveChar();
     _closeWondrousModal();
     _renderEquipoTab();
@@ -7077,19 +7256,9 @@ const App = (() => {
 
   function _slotOptUnequip(slotKey) {
     _closeSlotOptions();
-    const item = _char.equipment[slotKey];
+    const item = _moverSlotAMochila(slotKey);
     if (!item) return;
-    if (!_char.consumables) _char.consumables = [];
-    const catByKind = { weapon: 'Weapon - martial melee', shield: 'Equipment', armor: 'Apparel', wondrous: 'Ítem mágico' };
-    _char.consumables.push({
-      id: 'i-' + Date.now(), name: item.name, qty: 1,
-      category: catByKind[item.kind] || 'Other',
-      desc: item.notes || '',
-    });
-    _char.equipment[slotKey] = null;
-    _saveChar();
-    _renderEquipoTab();
-    _renderHeader();
+    _refrescarEquipo();
     showToast(`${item.name} → mochila`);
   }
 
@@ -7500,6 +7669,7 @@ const App = (() => {
   }
 
   function closeArmorPicker() {
+    _armorDesdeMochila = null;
     document.getElementById('armorPickerModal').classList.remove('show');
   }
 
@@ -7516,6 +7686,12 @@ const App = (() => {
     }
 
     _ensureEquipment(_char);
+    const desdeMochila = armorId !== 'none' ? _armorDesdeMochila : null;
+    _armorDesdeMochila = null;
+    if (desdeMochila != null) {
+      _quitarUnoDeMochila(desdeMochila);
+      if (_char.equipment.armor) _moverSlotAMochila('armor');
+    }
     const existing = _char.equipment.armor;
     const bonuses = (existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 };
     const buffs   = (existing && existing.buffs) || [];
@@ -11646,7 +11822,7 @@ ${notesText}`;
     adjustConsumable, deleteConsumable, addConsumable, refillContainer, refillCharges,
     setCurrency, setBagSearch, setBagCatFilter,
     openEquipPicker, openSlotOptions, _closeSlotOptions, _slotOptEdit, _slotOptUnequip, _slotOptDelete,
-    toggleAttunement, _pickSlotForBagItem,
+    toggleAttunement, _pickSlotForBagItem, _pickFromBag, _crearParaSlot, _equiparDeMochila,
     openBuffModal, _closeBuffModal, _saveBuffModal, removeSlotBuff, removeStatBuff,
     _closeWondrousModal, _saveWondrousModal,
     setSpeciesTraits,

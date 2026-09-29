@@ -9724,3 +9724,16 @@ mark.diary-highlight {
 .hj-hit { background: rgba(201,168,75,0.28); color: inherit; border-radius: 2px; }
 .hj-hit.actual { background: rgba(201,168,75,0.75); color: #14110f; box-shadow: 0 0 0 2px rgba(201,168,75,0.55); }
 .pg-card-prev .hj-hit { padding: 0 1px; }
+
+/* Equipar desde la mochila: lista de ítems compatibles con el slot */
+.bag-pick-row {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 8px; cursor: pointer; text-align: left;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  font-family: 'Jost', sans-serif;
+}
+.bag-pick-row:hover { border-color: var(--gold-dim); }
+.bag-pick-name { font-size: 14px; font-weight: 600; }
+.bag-pick-qty { font-weight: 400; color: var(--text-dim); }
+.bag-pick-meta { font-size: 12px; color: var(--text-dim); }
+.bag-pick-new { align-items: center; color: var(--gold); border-style: dashed; margin-top: 4px; }
