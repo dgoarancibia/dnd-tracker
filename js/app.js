@@ -1226,7 +1226,13 @@ const App = (() => {
     const init = Characters.calcInit(_char);
     const ca   = Characters.calcCA(_char);
 
-    document.getElementById('headerCharName').textContent = _char.name;
+    {
+      const n = Characters.partirNombre(_char.name);
+      const esc = t => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      document.getElementById('headerCharName').innerHTML =
+        `<span class="nm-nombres">${esc(n.nombres)}</span>${n.apellido ? `<span class="nm-apellido">${esc(n.apellido)}</span>` : ''}`;
+      document.getElementById('headerCharName').title = _char.name || '';
+    }
 
     // Subtítulo: "Clérigo 6" o "Clérigo 4 / Guerrero 2" si hay multiclase
     const subtitleEl = document.getElementById('headerCharSubtitle');
@@ -7858,6 +7864,8 @@ const App = (() => {
   function saveEditStats() {
     const STATS = ['for','des','con','int','sab','car'];
     let changed = false;
+    const conAntes = _char.stats.con;
+    const hpMaxAntes = _char.hp.max;
 
     STATS.forEach(s => {
       const el = document.getElementById(`es-stat-${s}`);
@@ -7882,6 +7890,13 @@ const App = (() => {
 
     document.getElementById('editStatsModal').classList.remove('show');
 
+    // CON retroactiva: solo si en el mismo guardado no escribiste el HP a
+    // mano (en ese caso manda tu número).
+    let ajusteCON = 0;
+    if (_char.stats.con !== conAntes && hpMax === hpMaxAntes) {
+      ajusteCON = Characters.ajustarHPPorCON(_char, conAntes);
+    }
+
     if (changed) {
       // Re-sincronizar recursos de subclase que dependen de stats (ej. Echo Knight CON mod)
       for (const [_sn, _slv] of _subclasesDe(_char)) {
@@ -7903,7 +7918,9 @@ const App = (() => {
       _saveChar();
       _renderHeader();
       _renderHabilidadesTab();
-      showToast('✓ Personaje actualizado');
+      showToast(ajusteCON
+        ? `✓ CON ${conAntes} → ${_char.stats.con}: ${ajusteCON > 0 ? '+' : ''}${ajusteCON} HP máx (${_char.nivel} niveles)`
+        : '✓ Personaje actualizado');
     }
   }
 
@@ -8598,6 +8615,12 @@ const App = (() => {
 
     if (value !== null) {
       Characters.applyChoice(_char, choice.id, value);
+      if (_char._ultimoAjusteHP) {
+        const d = _char._ultimoAjusteHP;
+        delete _char._ultimoAjusteHP;
+        showToast(`CON sube: ${d > 0 ? '+' : ''}${d} HP máx (todos tus niveles)`);
+        _renderHeader();
+      }
       _saveChar();
     }
 

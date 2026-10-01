@@ -9737,3 +9737,9 @@ mark.diary-highlight {
 .bag-pick-qty { font-weight: 400; color: var(--text-dim); }
 .bag-pick-meta { font-size: 12px; color: var(--text-dim); }
 .bag-pick-new { align-items: center; color: var(--gold); border-style: dashed; margin-top: 4px; }
+
+/* Nombre del personaje en dos líneas (nombres / apellido) */
+.app-char-name .nm-nombres, .app-char-name .nm-apellido {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.app-char-name .nm-apellido { font-size: 12px; font-weight: 600; letter-spacing: 1px; opacity: 0.8; margin-top: 3px; }

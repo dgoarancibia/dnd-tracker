@@ -5911,7 +5911,36 @@ const Characters = (() => {
   }
 
   // Aplica una elección al char object
+  /* Regla (PHB 2014 y 2024): si cambia el modificador de CON, el HP máximo
+     cambia como si siempre hubieras tenido ese modificador, en TODOS tus
+     niveles. Antes la app no lo hacía: subir CON de 10 a 14 en un nivel 6
+     dejaba fuera +12 HP. Devuelve cuánto cambió el máximo. */
+  /* Parte un nombre para mostrarlo en dos líneas: nombres arriba, apellido
+     abajo. Las partículas ("de", "del", "von"...) bajan con el apellido:
+     "Aragorn de Gondor" → Aragorn / de Gondor. Un solo nombre no se parte. */
+  const _PARTICULAS = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'von', 'van', 'der', 'di', 'da', 'du', 'le', 'el', 'of']);
+  function partirNombre(nombre) {
+    const palabras = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+    if (palabras.length < 2) return { nombres: palabras.join(' '), apellido: '' };
+    let corte = palabras.length - 1;
+    while (corte > 1 && _PARTICULAS.has(palabras[corte - 1].toLowerCase())) corte--;
+    return { nombres: palabras.slice(0, corte).join(' '), apellido: palabras.slice(corte).join(' ') };
+  }
+
+  function ajustarHPPorCON(char, conAntes) {
+    if (!char || !char.stats || !char.hp || conAntes == null) return 0;
+    const delta = (calcMod(char.stats.con) - calcMod(conAntes)) * (char.nivel || 1);
+    if (!delta) return 0;
+    char.hp.max = Math.max(1, char.hp.max + delta);
+    // Ganar HP máximo también sube el actual; perderlo solo lo recorta.
+    char.hp.current = delta > 0
+      ? Math.min(char.hp.max, char.hp.current + delta)
+      : Math.min(char.hp.current, char.hp.max);
+    return delta;
+  }
+
   function applyChoice(char, choiceId, value) {
+    const conAntesEleccion = char && char.stats ? char.stats.con : null;
     if (!char.choices) char.choices = {};
     char.choices[choiceId] = value;
 
@@ -5968,6 +5997,12 @@ const Characters = (() => {
         }
       }
     }
+
+    // Una mejora de CON (ASI o feat) se aplica hacia atrás en todos los niveles.
+    // Al subir de nivel el HP del nivel nuevo ya se sumó con la CON vieja,
+    // así que multiplicar por el nivel actual también cubre ese nivel.
+    const deltaHP = ajustarHPPorCON(char, conAntesEleccion);
+    if (deltaHP) char._ultimoAjusteHP = deltaHP;
 
     // Idiomas elegidos (Deft Explorer y futuras features que los den).
     if (choiceId === 'deft-languages' && Array.isArray(value)) {
@@ -6407,6 +6442,7 @@ const Characters = (() => {
     getCompanionHitDice,
     getWeaponMasteryCount,
     getWeaponMasteryOptions,
+    ajustarHPPorCON, partirNombre,
     AMMO_TYPES, getAmmoType,
     applySubraza,
     applySubclase,
