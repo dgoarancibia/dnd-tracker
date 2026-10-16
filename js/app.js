@@ -6779,12 +6779,55 @@ const App = (() => {
   }
 
   // slot: 'mainHand' o 'offHand'. Abre el modal para crear un arma nueva en ese slot.
+  /* Vista previa del arma que se está cargando, con las características del
+     personaje: así se ve el resultado real y no se escribe a mano un "bono al
+     golpe" total que después se sumaría dos veces. */
+  function _awmPreview() {
+    const el = document.getElementById('awmPreview');
+    if (!el || !_char) return;
+    const val = id => (document.getElementById(id) || {}).value || '';
+    const bonusRaw = val('awmBonus').trim();
+    const w = {
+      kind: 'weapon', name: val('awmName').trim(), id: '',
+      die: val('awmDie').trim() || '1d6',
+      bonus: bonusRaw ? (/^[+-]/.test(bonusRaw) ? bonusRaw : '+' + bonusRaw) : '',
+      type: val('awmType') || 'melee', statUsed: val('awmStatUsed') || 'str',
+      extraDie: val('awmExtraDie').trim(), extraType: val('awmExtraType').trim(),
+      bonuses: { ac:0, attack:0, damage:0, save:0 }, buffs: [],
+    };
+    // Si el nombre está en el catálogo, sus propiedades (Versatile, Two-Handed…)
+    // cuentan para los estilos de combate.
+    const base = (Characters.WEAPONS_DB || []).find(x => x.name.toLowerCase() === w.name.toLowerCase());
+    if (base) w.id = base.id;
+    const temp = { ..._char, equipment: { ...(_char.equipment || {}), [_awmSlot]: w } };
+    const a = Characters.calcArma(temp, _awmSlot);
+    if (!a) { el.innerHTML = ''; return; }
+    const statLbl = { for: 'FUE', des: 'DES' }[a.statKey] || a.statKey.toUpperCase();
+    const sg = n => (n >= 0 ? '+' : '') + n;
+    el.innerHTML = `
+      <div class="awm-prev-main">Con tu ficha: <strong>${sg(a.ataque)}</strong> al golpe · <strong>${a.daño}</strong>${a.extra ? ` + ${a.extra}` : ''}</div>
+      <div class="awm-prev-det">${statLbl} ${sg(a.mod)} · competencia ${sg(a.prof)}${a.magico ? ` · mágica ${sg(a.magico)}` : ''}${a.notas.length ? ' · ' + a.notas.join(' · ') : ''}</div>`;
+  }
+
+  // Se engancha una vez: cualquier cambio en el formulario recalcula.
+  let _awmPreviewListo = false;
+  function _awmEngancharPreview() {
+    if (_awmPreviewListo) return;
+    const modal = document.getElementById('addWeaponModal');
+    if (!modal) return;
+    modal.addEventListener('input', _awmPreview);
+    modal.addEventListener('change', _awmPreview);
+    _awmPreviewListo = true;
+  }
+
   function openAddWeapon(slot) {
     _awmSlot = slot || 'mainHand';
     document.getElementById('awmModalTitle').textContent = '+ Agregar Arma';
     _awmFill({ die:'1d6', type:'melee', statUsed:'str' });
     _awmClearSearch();
     document.getElementById('addWeaponModal').classList.add('show');
+    _awmEngancharPreview();
+    _awmPreview();
     setTimeout(() => document.getElementById('awmSearch')?.focus(), 80);
   }
 
@@ -6797,6 +6840,8 @@ const App = (() => {
     _awmFill(w);
     _awmClearSearch();
     document.getElementById('addWeaponModal').classList.add('show');
+    _awmEngancharPreview();
+    _awmPreview();
   }
 
   function closeAddWeapon() {
@@ -6832,6 +6877,7 @@ const App = (() => {
     _awmFill(_awmHits[i]);
     _awmHits = [];
     _awmClearSearch();
+    _awmPreview();
     document.getElementById('awmName').focus();
   }
 
