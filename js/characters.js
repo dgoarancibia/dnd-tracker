@@ -684,18 +684,88 @@ const Characters = (() => {
 
   // Bonus de ataque con el arma en mainHand (prof + stat + bonuses del arma + buffs).
   // Retorna null si no hay arma equipada.
-  function calcWeaponAttackBonus(char) {
+  /* ── Ataque y daño de un arma equipada, según la ficha ──────────────────
+     Antes: el daño no sumaba el modificador de característica, la mano
+     secundaria usaba los números de la principal, y el +1 mágico se contaba
+     dos veces (va en `bonus` y también en `bonuses`). Ahora todo sale de acá:
+       ataque = mod + competencia + mágico + buffs (+2 Archery a distancia)
+       daño   = dado + mod + mágico + buffs (+2 Dueling a una mano)
+     El arma de la mano secundaria es el ataque extra de Light: su daño no
+     suma el modificador salvo que sea negativo o tengas Two-Weapon Fighting.
+     La competencia se asume (los datos de competencia por clase no están
+     estructurados en la app). */
+  function _estilosDeCombate(char) {
+    const ch = char.choices || {};
+    return new Set(['fighting-style', 'fighting-style-2', 'fighting-style-r']
+      .map(k => ch[k]).filter(Boolean).map(v => (typeof v === 'object' ? v.id : v)));
+  }
+
+  function _propsArma(w) {
+    const base = WEAPONS_DB.find(x => x.id === w.id || x.name.toLowerCase() === String(w.name || '').toLowerCase());
+    return base ? (base.properties || []) : [];
+  }
+
+  function calcArma(char, slot) {
     const eq = char.equipment || {};
-    const w = eq.mainHand;
-    if (!w) return null;
-    const prof = calcProfBonus(char.nivel);
+    const w = eq[slot || 'mainHand'];
+    if (!w || w.kind !== 'weapon') return null;
+    const enSecundaria = slot === 'offHand';
+    const estilos = _estilosDeCombate(char);
+    const props = _propsArma(w);
+    const aDistancia = w.type === 'ranged';
+
     const statKey = w.statUsed === 'dex' ? 'des'
       : w.statUsed === 'choice' ? (calcMod(char.stats.des) > calcMod(char.stats.for) ? 'des' : 'for')
       : 'for';
     const mod = calcMod(char.stats[statKey]);
-    const itemBonus = _itemStatBonus(w, 'attack') + (parseInt(w.bonus) || 0);
-    const buffBonus = _sumBuffs(w.buffs, 'attack');
-    return prof + mod + itemBonus + buffBonus;
+    const prof = calcProfBonus(char.nivel);
+
+    // El +1 de un arma mágica puede venir en `bonus` ("+1") o en `bonuses`;
+    // si los dos dicen lo mismo es el mismo +1, no dos.
+    const magico = parseInt(w.bonus) || 0;
+    const extra = (stat) => { const v = _itemStatBonus(w, stat); return v === magico ? 0 : v; };
+
+    const notas = [];
+    let ataque = mod + prof + magico + extra('attack') + _sumBuffs(w.buffs, 'attack')
+      + _sumBuffs(char.statBuffs && char.statBuffs.attack, null);
+    if (aDistancia && estilos.has('fs-archery')) { ataque += 2; notas.push('+2 Archery'); }
+
+    let modDaño = mod;
+    if (enSecundaria && mod > 0 && !estilos.has('fs-two-weapon')) {
+      modDaño = 0;
+      notas.push('Ataque extra de Light: sin modificador al daño');
+    }
+    let dañoFijo = modDaño + magico + extra('damage') + _sumBuffs(w.buffs, 'damage');
+    const otraArma = !!(eq[enSecundaria ? 'mainHand' : 'offHand'] && eq[enSecundaria ? 'mainHand' : 'offHand'].kind === 'weapon');
+    const dosManos = props.some(p => /^Two-Handed/i.test(p));
+    if (!aDistancia && !enSecundaria && !dosManos && !otraArma && estilos.has('fs-dueling')) {
+      dañoFijo += 2; notas.push('+2 Dueling');
+    }
+    if (estilos.has('fs-thrown-weapon') && props.some(p => /^Thrown/i.test(p))) notas.push('+2 al daño si la arrojás (Thrown Weapon Fighting)');
+    if (estilos.has('fs-great-weapon') && (dosManos || props.some(p => /^Versatile/i.test(p)))) notas.push('Great Weapon Fighting: 1 y 2 en el dado de daño cuentan como 3');
+    // Versátil: a dos manos usa el dado mayor, pero solo con la otra mano
+    // libre (un escudo la ocupa). A dos manos Dueling no aplica.
+    const versatil = props.find(p => /^Versatile/i.test(p));
+    if (versatil && !eq.offHand && !enSecundaria) {
+      const d = (versatil.match(/\((\d+d\d+)\)/) || [])[1];
+      if (d) notas.push(`A dos manos: ${d}${estilos.has('fs-dueling') ? ' (sin Dueling)' : ''}`);
+    }
+
+    const dado = w.die || '1d4';
+    const fmtNum = n => (n > 0 ? `+${n}` : n < 0 ? `${n}` : '');
+    return {
+      ataque, statKey, mod, prof, magico,
+      dado, dañoFijo,
+      daño: `${dado}${fmtNum(dañoFijo)}`,
+      extra: w.extraDie ? `${w.extraDie}${w.extraType ? ' ' + w.extraType : ''}` : '',
+      notas,
+    };
+  }
+
+  function calcWeaponAttackBonus(char) {
+    const r = calcArma(char, 'mainHand');
+    if (r) return r.ataque;
+    return null;
   }
 
   // Cuenta ítems atunados en equipment (máx 3, regla estándar 5e).
@@ -6405,7 +6475,7 @@ const Characters = (() => {
     calcSave,
     calcHPMaxSuggested,
     calcCA,
-    calcWeaponAttackBonus,
+    calcWeaponAttackBonus, calcArma,
     calcAttunementCount,
     ATTUNEMENT_MAX,
     getSlotsForClass,

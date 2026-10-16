@@ -1272,10 +1272,16 @@ const App = (() => {
     if (cdBox)  cdBox.classList.toggle('has-bonus',  !!cdBonus);
     if (atqBox) atqBox.classList.toggle('has-bonus', !!atqBonus);
     document.getElementById('hdrINIT').textContent = (init >= 0 ? '+' : '') + init;
+    // ATK: el ataque del arma en la mano principal; sin arma, el mejor entre
+    // FUE y DES más competencia.
+    const armaPpal = Characters.calcArma(_char, 'mainHand');
     const strMod = Characters.calcMod(_char.stats.for);
     const dexMod = Characters.calcMod(_char.stats.des);
-    const physAtk = Math.max(strMod, dexMod) + prof;
+    const physAtk = armaPpal ? armaPpal.ataque : Math.max(strMod, dexMod) + prof;
     document.getElementById('hdrPROF').textContent = (physAtk >= 0 ? '+' : '') + physAtk;
+    document.getElementById('hdrPROF').title = armaPpal
+      ? `${_char.equipment.mainHand.name}: ${physAtk >= 0 ? '+' : ''}${physAtk} al golpe · ${armaPpal.daño} de daño`
+      : 'Ataque sin arma equipada';
     const percEl = document.getElementById('hdrPERC');
     if (percEl) percEl.textContent = Characters.calcPercPasiva(_char);
 
@@ -2384,7 +2390,10 @@ const App = (() => {
                 ${prop ? `<button class="mastery-badge" onclick="event.stopPropagation();App.openMasteryDetail('${prop}')"
                   title="${(m.short||'').replace(/"/g,'&quot;')}">${prop}</button>` : ''}
               </div>
-              <div class="ability-card-desc">${w.label} · ${typeLabel}</div>
+              <div class="ability-card-desc">${(() => {
+                const a = Characters.calcArma(c, w.slot);
+                return a ? `<strong class="arma-num">${a.ataque >= 0 ? '+' : ''}${a.ataque}</strong> al golpe · <strong class="arma-num">${a.daño}</strong>${a.extra ? ` + ${a.extra}` : ''} · ` : '';
+              })()}${w.label} · ${typeLabel}</div>
               ${prop ? `<div class="mastery-reminder">${m.short || ''}</div>` : ''}
             </div>
             <button class="cast-btn" onclick="App.attackWithWeapon('${w.slot}')">Atacar</button>
@@ -6168,25 +6177,24 @@ const App = (() => {
       else showToast(`Sin ${_mun.tipo.label.toLowerCase()}`);
     }
 
-    const atkBonus = Characters.calcWeaponAttackBonus(_char);
-    const dmgBonus = (w.bonuses && Number(w.bonuses.damage)) || 0;
-    const buffDmg = (Array.isArray(w.buffs) ? w.buffs : [])
-      .filter(b => b.stat === 'damage')
-      .reduce((acc, b) => acc + (Number(b.value) || 0), 0);
-    const totalDmgBonus = dmgBonus + buffDmg;
-    const dmgFormula = `${w.die || '?'}${totalDmgBonus ? (totalDmgBonus > 0 ? `+${totalDmgBonus}` : totalDmgBonus) : ''}`;
+    // Ataque y daño de ESTA arma con tus características (antes la mano
+    // secundaria usaba los números de la principal y el daño no sumaba mod).
+    const arma = Characters.calcArma(_char, slot);
+    const atkBonus = arma ? arma.ataque : null;
+    const dmgFormula = arma ? arma.daño + (arma.extra ? ` + ${arma.extra}` : '') : (w.die || '?');
+    const notasArma = arma && arma.notas.length ? arma.notas.join(' · ') : '';
 
     openActionRefModal('attack', {
       kind: 'attack',
       title: w.name,
       icon: '⚔️',
       passiveBonuses: Characters.getPassiveDamageBonuses(_char, 'weapon'),
-      attackFormula: atkBonus != null ? `d20+${atkBonus}` : null,
+      attackFormula: atkBonus != null ? `d20${atkBonus >= 0 ? '+' : ''}${atkBonus}` : null,
       damage: dmgFormula,
       // Sin meta redundante: el popup es solo "qué dados tiro". Las notas del
       // arma sí van, porque son propiedades mecánicas que no están en otro lado.
       meta: [],
-      note: w.notes || null,
+      note: [notasArma, w.notes].filter(Boolean).join('\n') || null,
     });
   }
 

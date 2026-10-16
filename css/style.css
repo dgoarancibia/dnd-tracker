@@ -9743,3 +9743,6 @@ mark.diary-highlight {
   display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .app-char-name .nm-apellido { font-size: 12px; font-weight: 600; letter-spacing: 1px; opacity: 0.8; margin-top: 3px; }
+
+/* Ataque y daño del arma en su tarjeta de combate */
+.arma-num { color: var(--gold-light); font-weight: 700; }
