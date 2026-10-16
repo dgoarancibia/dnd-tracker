@@ -3882,6 +3882,7 @@ const Characters = (() => {
       { id:'produce-flame', name:'Produce Flame',    level:0, castTime:'Acción',       range:'Uno mismo', duration:'10 min', concentration:false, combat:true,  desc:'Llama en la mano: ilumina 10ft o 1d8 fuego al lanzar.' },
       { id:'druidcraft',    name:'Druidcraft',       level:0, castTime:'Acción',       range:'4,5 m',     duration:'Inst.', concentration:false, combat:false, desc:'Predicción del clima, hacer florecer plantas, crear efecto sensorial menor.' },
       { id:'thorn-whip',    name:'Thorn Whip',       level:0, castTime:'Acción',       range:'9 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Ataque de toque a distancia · 1d6 perforante · jala 3m si es Grande o menos. Escala nv5/11/17.' },
+      { id:'starry-wisp',   name:'Starry Wisp',      level:0, castTime:'Acción',       range:'18 m',      duration:'Inst.', concentration:false, combat:true,  desc:'Ataque de conjuro a distancia · 1d8 radiante · hasta el fin de tu próximo turno emite luz tenue (3 m) y no puede beneficiarse de Invisible. Escala nv5/11/17. (PHB 2024)' },
       { id:'poison-spray-d',name:'Poison Spray',     level:0, castTime:'Acción',       range:'3 m',       duration:'Inst.', concentration:false, combat:true,  desc:'Save CON · 1d12 veneno. Escala nv5/11/17.' },
       { id:'mending-d',     name:'Mending',          level:0, castTime:'1 min',        range:'Toque',     duration:'Inst.', concentration:false, combat:false, desc:'Repara una rotura u orificio en un objeto (hasta 30 cm).' },
       { id:'resistance-d',  name:'Resistance',       level:0, castTime:'Acción',       range:'Toque',     duration:'1 min', concentration:true,  combat:false, desc:'Concentración · +1d4 a una tirada de salvación.' },
@@ -3934,6 +3935,7 @@ const Characters = (() => {
     'Bardo': [
       // Cantrips
       { id:'vicious-mockery',  name:'Vicious Mockery',  level:0, castTime:'Acción', range:'18 m', duration:'Inst.',     concentration:false, combat:true,  desc:'Save SAB o 1d4 psíquico + desventaja en próximo ataque. Escala nv5/11/17.' },
+      { id:'starry-wisp-b',    name:'Starry Wisp',      level:0, castTime:'Acción', range:'18 m', duration:'Inst.',     concentration:false, combat:true,  desc:'Ataque de conjuro a distancia · 1d8 radiante · hasta el fin de tu próximo turno emite luz tenue (3 m) y no puede beneficiarse de Invisible. Escala nv5/11/17. (PHB 2024)' },
       { id:'minor-illusion',   name:'Minor Illusion',   level:0, castTime:'Acción', range:'9 m',  duration:'1 min',     concentration:false, combat:false, desc:'Sonido o imagen inanimada de cubo 5ft.' },
       { id:'prestidigitation-b',name:'Prestidigitation',level:0, castTime:'Acción', range:'3 m',  duration:'Hasta 1h',  concentration:false, combat:false, desc:'Truco menor: limpiar, encender, sabor, etc.' },
       { id:'mage-hand-b',      name:'Mage Hand',        level:0, castTime:'Acción', range:'9 m',  duration:'1 min',     concentration:false, combat:false, desc:'Mano espectral manipula objetos hasta 5 kg.' },
