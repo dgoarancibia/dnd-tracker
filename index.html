@@ -1475,7 +1475,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=58"></script>
-<script src="js/characters.js?v=130"></script>
+<script src="js/characters.js?v=131"></script>
 <script type="module" src="js/firebase.js?v=39"></script>
 <script>
 // ═══════════════════════════════════════════════════
@@ -2432,11 +2432,13 @@ function _wizRenderIdiomas() {
   const fijos = Characters.getFixedLanguages(fake);
   const max   = Characters.getPendingLanguageCount(fake);
 
-  document.getElementById('wizLangHint').textContent = `(${_wizLangs.length}/${max} elegidos)`;
+  document.getElementById('wizLangHint').textContent = `Común + ${max} de la tabla estándar (${_wizLangs.length}/${max})`;
   document.getElementById('wizLangFixed').innerHTML = fijos.map(l =>
     `<span style="padding:4px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text);">${l}</span>`).join('');
 
-  const todos = Characters.getAllLanguages().filter(l => !fijos.includes(l));
+  // PHB 2024: al crear se elige de la tabla ESTÁNDAR. Los raros (Abisal,
+  // Celestial, Infernal…) llegan después por rasgos como Deft Explorer.
+  const todos = (Characters.LANGUAGES_STANDARD || Characters.getAllLanguages()).filter(l => !fijos.includes(l));
   document.getElementById('wizLangList').innerHTML = todos.map(l => {
     const sel = _wizLangs.includes(l);
     const lleno = !sel && _wizLangs.length >= max;
@@ -3036,7 +3038,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 448;
+var _SW_EXPECTED_IDX = 449;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {

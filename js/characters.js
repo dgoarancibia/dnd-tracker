@@ -300,7 +300,9 @@ const Characters = (() => {
   // traits: rasgos clave de la raza
   // speed: velocidad en pies (por defecto 30)
   // resistances: resistencias a tipos de daño
-  // languages: idiomas que habla
+  // languages: en el PHB 2024 las especies NO dan idiomas: todos parten con
+  //   Común y eligen 2 de la tabla estándar al crear (getPendingLanguageCount).
+  //   Antes cada especie regalaba uno (Enano, Élfico…), herencia de 2014.
   // skillProfs: proficiencias de habilidad que otorga
   // weaponProfs: proficiencias de armas
   // darkvision: alcance en metros (0 = sin darkvision)
@@ -315,7 +317,7 @@ const Characters = (() => {
         'Skillful — proficiencia en una habilidad a elección',
         'Versatile — ganas una dote de Origen a elección (Origin feat)',
       ],
-      resistances: [], languages: ['Común', 'Un idioma a elección'],
+      resistances: [], languages: ['Común'],
       skillProfs: [], weaponProfs: [],
     },
     'Elfo': {
@@ -325,7 +327,7 @@ const Characters = (() => {
         'Keen Senses — proficiencia en Perspicacia, Percepción o Supervivencia (a elección)',
         'Trance — completas un Long Rest en 4 h de meditación consciente',
       ],
-      resistances: [], languages: ['Común', 'Élfico'],
+      resistances: [], languages: ['Común'],
       // 2024: Keen Senses es una ELECCIÓN entre 3 skills; ya no otorga
       // Percepción fija, así que no se pre-asigna nada acá.
       skillProfs: [], weaponProfs: [],
@@ -357,7 +359,7 @@ const Characters = (() => {
         'Dwarven Toughness — HP máximo +1, y +1 más cada vez que subes de nivel',
         'Stonecunning — acción bonus: Tremorsense 18 m por 10 min estando sobre o tocando una superficie de piedra (Prof Bonus usos/Long Rest)',
       ],
-      resistances: ['Veneno'], languages: ['Común', 'Enano'],
+      resistances: ['Veneno'], languages: ['Común'],
       skillProfs: [], weaponProfs: [],
     },
     // PHB 2024: el Halfling se unificó — ya NO hay subrazas (Pies Ligeros/Robusto).
@@ -385,7 +387,7 @@ const Characters = (() => {
         'Damage Resistance — resistencia al tipo de daño de tu ancestro dracónico',
         'Draconic Flight (nv5) — acción bonus: alas espectrales por 10 min, velocidad de vuelo = tu velocidad · 1 vez/Long Rest',
       ],
-      resistances: [], languages: ['Común', 'Dracónico'], skillProfs: [], weaponProfs: [],
+      resistances: [], languages: ['Común'], skillProfs: [], weaponProfs: [],
       subraces: [
         { name: 'Linaje de Fuego',    emoji: '🔥', traits: ['Ancestro dracónico: daño de Fuego (Breath Weapon y resistencia)'],     resistances: ['Fuego'] },
         { name: 'Linaje de Frío',     emoji: '❄️', traits: ['Ancestro dracónico: daño de Frío (Breath Weapon y resistencia)'],      resistances: ['Frío'] },
@@ -397,7 +399,7 @@ const Characters = (() => {
     'Gnomo': {
       emoji: '🔧', speed: 30, darkvision: 18,
       traits: ['Gnomish Cunning — ventaja en saves de INT, SAB y CAR contra magia'],
-      resistances: [], languages: ['Común', 'Gnómico'], skillProfs: [], weaponProfs: [],
+      resistances: [], languages: ['Común'], skillProfs: [], weaponProfs: [],
       subraces: [
         {
           name: 'Gnomo de Roca', emoji: '⚙️',
@@ -414,7 +416,7 @@ const Characters = (() => {
     'Tiefling': {
       emoji: '😈', speed: 30, darkvision: 18,
       traits: ['Otherworldly Presence — conoces el cantrip Thaumaturgy (SAB, INT o CAR)'],
-      resistances: [], languages: ['Común', 'Infernal'], skillProfs: [], weaponProfs: [],
+      resistances: [], languages: ['Común'], skillProfs: [], weaponProfs: [],
       subraces: [
         {
           name: 'Linaje Infernal', emoji: '🔱',
@@ -445,7 +447,7 @@ const Characters = (() => {
         'Light Bearer — conoces el cantrip Light (Carisma es tu aptitud mágica)',
         'Celestial Revelation (nv3) — acción bonus: te transformas 1 min y sumas daño extra = Prof Bonus una vez por turno · 1 vez/Long Rest',
       ],
-      resistances: ['Necrótico', 'Radiante'], languages: ['Común', 'Celestial'],
+      resistances: ['Necrótico', 'Radiante'], languages: ['Común'],
       skillProfs: [], weaponProfs: [],
       subraces: [
         {
@@ -468,7 +470,7 @@ const Characters = (() => {
         'Large Form (nv5) — acción bonus: tamaño Grande por 10 min, ventaja en pruebas de Fuerza y +3 m de velocidad · 1 vez/Long Rest',
         'Powerful Build — ventaja en pruebas para terminar el estado Apresado; cuentas como un tamaño mayor para capacidad de carga',
       ],
-      resistances: [], languages: ['Común', 'Gigante'], skillProfs: [], weaponProfs: [],
+      resistances: [], languages: ['Común'], skillProfs: [], weaponProfs: [],
       // 2024: ningún linaje de gigante otorga resistencia a daño.
       subraces: [
         { name: 'Linaje de Nube',    emoji: '☁️',  traits: ['Cloud\'s Jaunt — acción bonus: te teletransportas hasta 9 m (Prof Bonus usos/Long Rest)'] },
@@ -487,7 +489,7 @@ const Characters = (() => {
         'Relentless Endurance — al caer a 0 PV sin morir del golpe, quedas en 1 PV · 1 vez/Long Rest',
         'Powerful Build — ventaja en pruebas para terminar el estado Apresado; cuentas como un tamaño mayor para capacidad de carga',
       ],
-      resistances: [], languages: ['Común', 'Orco'], skillProfs: [], weaponProfs: [],
+      resistances: [], languages: ['Común'], skillProfs: [], weaponProfs: [],
     },
     // FUENTE: Shadar-Kai NO está en el PHB 2024. Viene de Mordenkainen Presents:
     // Monsters of the Multiverse (2022, pág. 31), donde es un linaje de elfo.
@@ -513,7 +515,7 @@ const Characters = (() => {
             fullDesc:`Como acción adicional, puedes teletransportarte mágicamente hasta 9 metros a un espacio desocupado que puedas ver.\n\nCuando te teletransportas, ganas resistencia a todo el daño hasta el inicio de tu siguiente turno.\n\nPuedes usar esta habilidad un número de veces igual a tu bonificador de competencia (actualmente ${prof}). Recuperas todos los usos al terminar un descanso largo.` },
         ];
       },
-      resistances: ['Necrótico'], languages: ['Común', 'Élfico'],
+      resistances: ['Necrótico'], languages: ['Común'],
       skillProfs: ['percepcion'], weaponProfs: [],
     },
     'Custom': {
@@ -4618,8 +4620,8 @@ const Characters = (() => {
     if (cfg.traits) traits.push(...cfg.traits);
     char.speciesTraits = traits.join('\n');
 
-    // Idiomas
-    char.languages = cfg.languages || ['Común'];
+    // Idiomas: la especie no da ninguno en 2024; los 2 de origen se eligen aparte.
+    char.languages = ['Común'];
 
     return char;
   }
@@ -6302,16 +6304,16 @@ const Characters = (() => {
   }
 
   /* ── Idiomas (PHB 2024) ───────────────────────────────────────────────
-     Todos empiezan con Común más dos a elección; algunas especies suman
-     uno fijo. Las razas guardan textos como "Un idioma a elección" que
-     hay que resolver al crear el personaje.                              */
+     PHB 2024: al crear, Común más 2 de la tabla ESTÁNDAR. Los idiomas
+     raros llegan solo por rasgos (ej. Deft Explorer del Explorador, que
+     permite cualquiera de las dos tablas). Las especies no dan idiomas. */
   const LANGUAGES_STANDARD = [
     'Común', 'Enano', 'Élfico', 'Gigante', 'Gnómico', 'Goblin',
     'Mediano', 'Orco', 'Dracónico', 'Common Sign Language',
   ];
   const LANGUAGES_RARE = [
-    'Abisal', 'Celestial', 'Infracomún', 'Infernal', 'Primordial',
-    'Silvano', 'Druídico', 'Jerga de Ladrones',
+    'Abisal', 'Celestial', 'Habla Profunda', 'Infracomún', 'Infernal',
+    'Primordial', 'Silvano', 'Druídico', 'Jerga de Ladrones',
   ];
 
   function getAllLanguages() {
