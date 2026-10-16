@@ -10,7 +10,9 @@
        controlado), y siempre verifica el timestamp de la nube antes de pisar.
      - La bajada es EXPLÍCITA: forcePullFromCloud() (botón "Sincronizar desde nube").
    ═══════════════════════════════════════════════════════ */
-import './firebase.js?v=2';
+// Misma URL que importa app.html: con otra ?v= el módulo se evaluaba dos veces.
+// Al subir la versión de firebase.js hay que cambiarla en ambos lados.
+import './firebase.js?v=4';
 
 const Cloud = (() => {
   let _uid     = null;    // UID del usuario autenticado
@@ -148,6 +150,49 @@ const Cloud = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
+     VERSIÓN BASE (control de concurrencia optimista)
+     Por cada personaje se recuerda el updatedAt de la versión de la nube
+     de la que parte la copia local: la última que se subió o se bajó.
+     Antes el conflicto se decidía comparando "quién editó último": un
+     dispositivo con datos de hace una semana editaba algo, su updatedAt
+     pasaba a ser "ahora" y pisaba en silencio la sesión del otro. Ahora la
+     pregunta es "¿la nube cambió desde mi última sincronización?", que no
+     depende de los relojes de cada dispositivo.
+  ══════════════════════════════════════════════════════ */
+
+  const _baseKey = id => 'dnd_cloud_base_' + id;
+  function getBase(id) {
+    try { return localStorage.getItem(_baseKey(id)) || null; } catch (e) { return null; }
+  }
+  function setBase(id, ts) {
+    try {
+      if (ts) localStorage.setItem(_baseKey(id), ts);
+      else localStorage.removeItem(_baseKey(id));
+    } catch (e) { /* sin storage: se cae a la comparación por fecha */ }
+  }
+
+  // ¿La nube tiene cambios que esta copia local no conoce?
+  function nubeCambio(char, cloudChar) {
+    if (!cloudChar) return false;
+    if (cloudChar.updatedAt && cloudChar.updatedAt === char.updatedAt) return false;
+    const base = getBase(char.id);
+    if (base) return cloudChar.updatedAt !== base;
+    // Sin base (primera vez con esta versión de la app): no se sabe de qué
+    // versión parte la local, así que cualquier diferencia se decide una vez
+    // con el usuario. Decidir por fecha era justamente lo que pisaba datos.
+    return true;
+  }
+
+  // Firestore rechaza documentos de más de 1 MB; el personaje entero es uno.
+  const LIMITE_BYTES = 1048576;
+  function _tamano(char) {
+    try {
+      const { noteMentions, ...resto } = char;   // no viaja a la nube
+      return new Blob([JSON.stringify(resto)]).size;
+    } catch (e) { return 0; }
+  }
+
+  /* ══════════════════════════════════════════════════════
      GUARDADO A NUBE (explícito, con verificación de conflicto)
   ══════════════════════════════════════════════════════ */
 
@@ -183,6 +228,7 @@ const Cloud = (() => {
   //   'conflict' → la nube tiene algo más nuevo; NO se subió (el llamador decide)
   //   'skipped'  → sin sesión / sin conexión / pull en curso
   //   'error'    → falló la subida
+  //   'toolarge' → supera el límite de 1 MB de Firestore; NO se subió
   async function saveNow(char, opts = {}) {
     if (!_uid || !navigator.onLine || _pulling) return 'skipped';
     // Verificación de conflicto: si la nube tiene un updatedAt posterior al del
@@ -191,11 +237,7 @@ const Cloud = (() => {
     if (!opts.force) {
       try {
         const cloudChar = await _withTimeout(FirebaseApp.loadCharCloud(_uid, char.id), 10000);
-        if (cloudChar) {
-          const cloudTs = new Date(cloudChar.updatedAt || 0).getTime();
-          const localTs = new Date(char.updatedAt || 0).getTime();
-          if (cloudTs > localTs) return 'conflict';
-        }
+        if (nubeCambio(char, cloudChar)) return 'conflict';
       } catch (e) {
         // Si falla la verificación (ej. sin red o timeout), no arriesgar: reportar error.
         return 'error';
@@ -207,8 +249,14 @@ const Cloud = (() => {
       char.updatedAt = new Date().toISOString();
       if (Storage.saveCharRaw) Storage.saveCharRaw(char); // reflejar el ts nuevo en local
     }
+    const bytes = _tamano(char);
+    if (bytes > LIMITE_BYTES * 0.97) {
+      _setSyncState(SyncState.ERROR, 'personaje demasiado grande para la nube');
+      return 'toolarge';
+    }
     try {
       await _withTimeout(FirebaseApp.saveCharCloud(_uid, char), 12000);
+      setBase(char.id, char.updatedAt);
       _setSyncState(SyncState.SAVED, new Date().toISOString());
       return 'saved';
     } catch (e) {
@@ -362,6 +410,7 @@ const Cloud = (() => {
       for (const char of Object.values(cloudChars)) {
         const migrated = Storage.migrateChar ? Storage.migrateChar(char) : char;
         Storage.saveCharRaw(migrated);
+        setBase(char.id, char.updatedAt);
       }
       const activeId = Storage.getActiveId();
       const rawFresh = activeId ? cloudChars[activeId] : null;
@@ -424,6 +473,11 @@ const Cloud = (() => {
     scheduleSave,
     saveNow,
     loadCloudChar,
+    getBase,
+    setBase,
+    nubeCambio,
+    tamano: _tamano,
+    LIMITE_BYTES,
     markDeleted,
     deleteChar,
     forcePullFromCloud,

@@ -606,7 +606,21 @@ const App = (() => {
     // cuando esta pestaña estuvo abierta con una versión vieja en memoria.
     // La subida a nube es explícita (botón guardar) o por autosave verificado.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') _saveChar();
+      if (document.visibilityState === 'hidden') {
+        _saveChar();
+        // Al salir, intentar subir lo pendiente: el iPad puede no volver a
+        // abrir la app hasta la próxima sesión. saveNow no pisa una nube
+        // que cambió, así que es seguro.
+        _autoSaveTick({ alSalir: true });
+      } else if (Date.now() - _ultimaVerificacion > 15000) {
+        _verificarNube('volver');
+      }
+    });
+    window.addEventListener('focus', () => {
+      if (Date.now() - _ultimaVerificacion > 15000) _verificarNube('volver');
+    });
+    window.addEventListener('online', () => {
+      _verificarNube('red').then(() => _autoSaveTick());
     });
 
     window.addEventListener('pagehide', () => {
@@ -648,7 +662,7 @@ const App = (() => {
     Storage.saveChar(_char);
     // Si el guardado local avanzó el updatedAt, hubo un cambio real → marcar
     // que hay algo pendiente de subir a la nube (indicador en botón Guardar).
-    if (_char.updatedAt !== before && _char.id !== 'lursey-brumaclara') {
+    if (_char.updatedAt !== before) {
       _markCloudDirty();
     }
     // scheduleSave es no-op en modelo savepoint (subida explícita), se deja por compat.
@@ -664,6 +678,7 @@ const App = (() => {
   function _markCloudDirty() {
     _cloudDirty = true;
     _renderCloudDirty();
+    _programarAutoSubida();
   }
   function _markCloudClean() {
     _cloudDirty = false;
@@ -701,7 +716,7 @@ const App = (() => {
     const before = _char.updatedAt;
     Storage.saveChar(_char);
     // Deshacer es un cambio real → marcar pendiente de subir (igual que _saveChar).
-    if (_char.updatedAt !== before && _char.id !== 'lursey-brumaclara') _markCloudDirty();
+    if (_char.updatedAt !== before) _markCloudDirty();
     _renderHeader();
     _renderActiveTab();
     showToast('Cambio deshecho');
@@ -11387,21 +11402,27 @@ ${notesText}`;
       _updateCloudSaveBtn();
     } else if (res === 'conflict') {
       _hideCloudSaveOverlay();
-      // La nube tiene una versión más nueva (otro dispositivo). Preguntar.
+      // La nube cambió desde la última sincronización (otro dispositivo).
       const cloudChar = await Cloud.loadCloudChar(_char.id);
-      const cloudWhen = cloudChar ? new Date(cloudChar.updatedAt).toLocaleString('es') : 'desconocida';
-      const cloudHp = cloudChar && cloudChar.hp ? `${cloudChar.hp.current}/${cloudChar.hp.max}` : '?';
-      const cloudNvl = cloudChar ? (cloudChar.nivel || '?') : '?';
-      _confirm(
-        `⚠ La nube tiene una versión MÁS NUEVA (Nvl ${cloudNvl}, HP ${cloudHp}, ${cloudWhen}), probablemente de otro dispositivo.\n\n¿Sobreescribirla con esta versión (Nvl ${_char.nivel || '?'}, HP ${_char.hp.current}/${_char.hp.max})?`,
+      if (!cloudChar) { showToast('No se pudo leer la nube', 'error', 3000); return; }
+      _confirmChoice(
+        'La nube tiene cambios de otro dispositivo',
+        `📱 ESTE DISPOSITIVO:\n${_fmtVersion(_char)}\n\n☁ NUBE:\n${_fmtVersion(cloudChar)}\n\n¿Cuál conservás? La otra se pierde.`,
+        'Usar la de la NUBE',
+        'Subir ESTA',
+        () => _adoptarNube(cloudChar, '✓ Cargada la versión de la nube'),
         async () => {
           _showCloudSaveOverlay('☁ Sobrescribiendo…');
           const forced = await Cloud.saveNow(_char, { force: true });
           _hideCloudSaveOverlay();
-          if (forced === 'saved') { showToast('✓ Sobrescrito en nube', 'success', 3000); _updateCloudSaveBtn(); }
+          if (forced === 'saved') { showToast('✓ Subida a la nube', 'success', 3000); _updateCloudSaveBtn(); }
+          else if (forced === 'toolarge') _avisoTamano();
           else showToast('No se pudo guardar', 'error', 3000);
         }
       );
+    } else if (res === 'toolarge') {
+      _hideCloudSaveOverlay();
+      _avisoTamano();
     } else if (res === 'error') {
       _hideCloudSaveOverlay();
       const msg = !navigator.onLine
@@ -11512,11 +11533,7 @@ ${notesText}`;
     const c = await Cloud.loadCloudChar(_char.id);
     _hideCloudSaveOverlay();
     if (!c) { showToast('No se pudo cargar', 'error', 3000); return; }
-    const migrated = Storage.migrateChar ? Storage.migrateChar(c) : c;
-    Storage.saveCharRaw(migrated);
-    App.reloadChar(migrated);
-    _markCloudClean(); // local == autosave de la nube
-    showToast('✓ Cargado último guardado', 'success', 3000);
+    _adoptarNube(c, '✓ Cargado último guardado');
   }
 
   async function restoreCheckpoint(cpId) {
@@ -11566,57 +11583,170 @@ ${notesText}`;
     return strip(a) !== strip(b);
   }
 
-  // Al abrir un PJ: si la nube difiere de lo local, ofrecer elegir versión.
-  async function _checkCloudVersionOnOpen() {
-    if (!_char || _char.id === 'lursey-brumaclara') return;
-    if (!window.Cloud || !navigator.onLine) return;
-    // Firebase puede tardar 1-3 s en restaurar la sesión tras cargar la página.
-    // Esperar a que _uid esté listo (hasta 6 s) antes de comparar; si no, la
-    // comparación se saltaría siempre en la carga inicial y nunca preguntaría.
-    if (!Cloud.isLoggedIn()) {
-      const t0 = Date.now();
-      while (!Cloud.isLoggedIn() && Date.now() - t0 < 6000) {
-        await new Promise(r => setTimeout(r, 250));
-      }
-      if (!Cloud.isLoggedIn()) return; // sigue sin sesión → no hay con qué comparar
-    }
-    let cloudChar;
-    try {
-      cloudChar = await Cloud.loadCloudChar(_char.id);
-    } catch (e) { return; }
-    if (!cloudChar) { _markCloudDirty(); return; } // no está en la nube → hay que subirlo
-    if (!_charContentDiffers(_char, cloudChar)) { _markCloudClean(); return; } // iguales
-
-    const fmt = c => {
-      const when = c.updatedAt ? new Date(c.updatedAt).toLocaleString('es', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
-      const hp = c.hp ? `${c.hp.current}/${c.hp.max}` : '?';
-      return `Nvl ${c.nivel || '?'} · HP ${hp} · ${when}`;
-    };
-    // Modal de dos opciones (reusa confirm con textos claros).
-    _confirmChoice(
-      'Hay dos versiones de este personaje',
-      `📱 LOCAL (este dispositivo):\n${fmt(_char)}\n\n☁ NUBE (guardado):\n${fmt(cloudChar)}\n\n¿Cuál querés usar?`,
-      'Usar la de la NUBE',
-      'Seguir con la LOCAL',
-      () => {
-        // Cargar la de la nube → local == nube
-        const migrated = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
-        Storage.saveCharRaw(migrated);
-        App.reloadChar(migrated);
-        _markCloudClean();
-        showToast('✓ Cargada versión de la nube', 'success', 3000);
-      },
-      () => { _markCloudDirty(); } // sigue con local → hay cambios sin subir
-    );
+  /* ── Verificación contra la nube ──────────────────────────────────────
+     Se hace al abrir el personaje, al volver a la app (otra pestaña, el
+     iPad que vuelve del segundo plano) y al recuperar conexión. Antes solo
+     al cargar la página: un desktop con la pestaña abierta desde la semana
+     pasada nunca se enteraba de lo jugado en el iPad. Casos:
+       · la nube no cambió desde mi última sync → solo actualizar indicador
+       · la nube cambió y yo no toqué nada     → traer la de la nube solo
+       · la nube cambió y yo también           → preguntar cuál conservar */
+  function _fmtVersion(c) {
+    const when = c.updatedAt ? new Date(c.updatedAt).toLocaleString('es', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+    const hp = c.hp ? `${c.hp.current}/${c.hp.max}` : '?';
+    return `Nvl ${c.nivel || '?'} · HP ${hp} · ${when}`;
   }
 
-  /* ── Autoguardado a la nube (cada 10 min, con protecciones) ── */
+  // Reemplaza lo local por la versión de la nube y la deja como base.
+  function _adoptarNube(cloudChar, msg) {
+    const migrated = Storage.migrateChar ? Storage.migrateChar(cloudChar) : cloudChar;
+    Storage.saveCharRaw(migrated);
+    if (Cloud.setBase) Cloud.setBase(cloudChar.id, cloudChar.updatedAt);
+    App.reloadChar(migrated);
+    _markCloudClean();
+    if (msg) showToast(msg, 'success', 4000);
+  }
+
+  // Hay un diálogo abierto o se está escribiendo: no interrumpir.
+  function _usuarioOcupado() {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return true;
+    return !!document.querySelector('.modal-overlay.show, #confirmModal.show, #choiceModalOverlay[style*="flex"]');
+  }
+
+  let _verificando = false;
+  let _ultimaVerificacion = 0;
+
+  async function _verificarNube(motivo) {
+    if (!_char || !window.Cloud || !navigator.onLine || _verificando) return;
+    // cloud.js viejo en caché (sin la versión base): no arriesgar decisiones.
+    if (typeof Cloud.nubeCambio !== 'function') return;
+    // Firebase tarda 1-3 s en restaurar la sesión al cargar la página.
+    if (!Cloud.isLoggedIn()) {
+      if (motivo !== 'abrir') return;
+      const t0 = Date.now();
+      while (!Cloud.isLoggedIn() && Date.now() - t0 < 6000) await new Promise(r => setTimeout(r, 250));
+      if (!Cloud.isLoggedIn()) return;
+    }
+    _verificando = true;
+    _ultimaVerificacion = Date.now();
+    try {
+      const id = _char.id;
+      let cloudChar;
+      try { cloudChar = await Cloud.loadCloudChar(id); } catch (e) { return; }
+      if (!_char || _char.id !== id) return;          // cambió de personaje mientras tanto
+      if (!cloudChar) { _markCloudDirty(); return; }   // no está en la nube → hay que subirlo
+
+      const base = Cloud.getBase(id);
+      const cambioNube = Cloud.nubeCambio(_char, cloudChar);
+      const cambioLocal = base ? _char.updatedAt !== base : _charContentDiffers(_char, cloudChar);
+
+      if (!cambioNube) {
+        if (base) {
+          if (cambioLocal) _markCloudDirty(); else _markCloudClean();
+        } else {
+          // Primera vez con esta versión de la app y misma fecha: es la misma
+          // versión (las diferencias de contenido vienen de la sincronización
+          // de reglas al cargar). Queda como base.
+          Cloud.setBase(id, cloudChar.updatedAt);
+          _markCloudClean();
+        }
+        return;
+      }
+      if (!cambioLocal) {
+        if (!base) {
+          // Primera sync y mismo contenido: misma versión, solo alinear fecha.
+          _char.updatedAt = cloudChar.updatedAt;
+          Storage.saveCharRaw(_char);
+          Cloud.setBase(id, cloudChar.updatedAt);
+          _markCloudClean();
+          return;
+        }
+        if (_usuarioOcupado()) return;                 // se reintenta en la próxima vuelta
+        _adoptarNube(cloudChar, '☁ Actualizado con lo guardado en tu otro dispositivo');
+        return;
+      }
+      if (_usuarioOcupado() && motivo !== 'abrir') return;
+      _confirmChoice(
+        'Hay dos versiones de este personaje',
+        `Lo cambiaste en este dispositivo y también en otro.\n\n📱 ESTE DISPOSITIVO:\n${_fmtVersion(_char)}\n\n☁ NUBE (otro dispositivo):\n${_fmtVersion(cloudChar)}\n\n¿Cuál conservás? La otra se pierde (podés recuperarla desde un checkpoint si lo creaste).`,
+        'Usar la de la NUBE',
+        'Conservar ESTA',
+        () => _adoptarNube(cloudChar, '✓ Cargada la versión de la nube'),
+        () => {
+          // Elegir la local es decidir pisar la nube: se toma su versión como
+          // base para que la próxima subida no vuelva a marcar conflicto.
+          Cloud.setBase(id, cloudChar.updatedAt);
+          _markCloudDirty();
+          showToast('Se conserva la de este dispositivo; se subirá a la nube', 'info', 4000);
+        }
+      );
+    } finally {
+      _verificando = false;
+    }
+  }
+
+  // Compat: el arranque llama a este nombre.
+  function _checkCloudVersionOnOpen() { return _verificarNube('abrir'); }
+
+  /* ── Subida automática ───────────────────────────────────────────────
+     Antes subía cada 10 min: al cerrar el iPad justo al terminar, la última
+     parte de la sesión quedaba solo en el dispositivo. Ahora sube 45 s
+     después del último cambio, al salir de la app y al recuperar red. Es
+     seguro porque saveNow nunca pisa una nube que cambió (ver Cloud.nubeCambio). */
   let _autoSaveTimer = null;
-  const AUTOSAVE_MS = 10 * 60 * 1000; // 10 minutos
+  let _autoSubidaTimer = null;
+  const AUTOSAVE_MS = 10 * 60 * 1000;   // red de seguridad
+  const AUTOSUBIDA_MS = 45 * 1000;
+
+  function _programarAutoSubida() {
+    clearTimeout(_autoSubidaTimer);
+    _autoSubidaTimer = setTimeout(() => _autoSaveTick(), AUTOSUBIDA_MS);
+  }
 
   function _startAutoSaveCloud() {
     if (_autoSaveTimer) clearInterval(_autoSaveTimer);
     _autoSaveTimer = setInterval(_autoSaveTick, AUTOSAVE_MS);
+  }
+
+  let _subiendo = false;
+  async function _autoSaveTick(opts = {}) {
+    if (!_char || _subiendo) return;
+    if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) return;
+    if (!_cloudDirty) return;
+    // En un campo de texto el valor se confirma al salir de él: esperar.
+    // El editor de Hojas (contenteditable) ya guarda mientras se escribe, así
+    // que tomar notas durante la partida no frena la subida.
+    if (!opts.alSalir) {
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) {
+        _programarAutoSubida();
+        return;
+      }
+    }
+    _subiendo = true;
+    try {
+      _saveChar();
+      const res = await Cloud.saveNow(_char);
+      if (res === 'saved') {
+        _updateCloudSaveBtn();
+      } else if (res === 'conflict') {
+        // El otro dispositivo guardó algo que este no tiene: decidir ahora,
+        // no en silencio.
+        if (!opts.alSalir) _verificarNube('conflicto');
+      } else if (res === 'toolarge') {
+        _avisoTamano();
+      } else if (res === 'error' && !opts.alSalir) {
+        showToast('⚠ No se pudo guardar en la nube (revisá tu conexión). Tus cambios están en el dispositivo.', 'error', 6000);
+      }
+    } finally {
+      _subiendo = false;
+    }
+  }
+
+  function _avisoTamano() {
+    const kb = Cloud.tamano ? Math.round(Cloud.tamano(_char) / 1024) : '?';
+    showToast(`⚠ El personaje pesa ${kb} KB y la nube acepta hasta 1024 KB. No se subió: está a salvo en este dispositivo. Exportá un respaldo y avisame para mover las notas a otro lugar.`, 'error', 10000);
   }
 
   /* ── Detección de misma app abierta en otra pestaña ──
@@ -11642,32 +11772,6 @@ ${notesText}`;
       // Anunciar mi apertura (las otras pestañas del mismo PJ responderán)
       _tabChannel.postMessage({ type: 'hello', charId: myId });
     } catch (e) { /* BroadcastChannel no disponible: ignorar */ }
-  }
-
-  async function _autoSaveTick() {
-    if (!_char || _char.id === 'lursey-brumaclara') return;
-    if (!window.Cloud || !Cloud.isLoggedIn() || !navigator.onLine) return;
-    // Solo subir si hay cambios reales pendientes. Sin esto, cada pestaña sube
-    // su copia cada 10 min aunque no haya tocado nada, y dos pestañas del mismo
-    // PJ se pisan entre sí con datos viejos.
-    if (!_cloudDirty) return;
-    // No guardar si el usuario está editando algo (input/textarea con foco)
-    const ae = document.activeElement;
-    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) {
-      return; // se reintenta en el próximo tick
-    }
-    _saveChar();
-    const res = await Cloud.saveNow(_char);
-    if (res === 'saved') {
-      _updateCloudSaveBtn();
-    } else if (res === 'conflict') {
-      // Otro dispositivo guardó algo más nuevo. No pisar en silencio: avisar.
-      showToast('⚠ Hay una versión más nueva en la nube. Usá "Guardar en nube" para decidir.', 'info', 6000);
-    } else if (res === 'error') {
-      // El guardado automático falló (red que bloquea Firestore, timeout, etc.).
-      // No dejarlo en silencio: el punto ámbar sigue encendido y avisamos.
-      showToast('⚠ No se pudo guardar en la nube (revisá tu conexión). Tus cambios están guardados en el dispositivo.', 'error', 6000);
-    }
   }
 
   function _confirm(msg, onOk) {

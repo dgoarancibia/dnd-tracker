@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 443;
+const _SW_EXPECTED = 444;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -1314,7 +1314,7 @@ const _SW_EXPECTED = 443;
 <script src="js/export_resumen.js?v=3"></script>
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=3"></script>
-<script src="js/app.js?v=255"></script>
+<script src="js/app.js?v=256"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>
@@ -1390,7 +1390,9 @@ const _SW_EXPECTED = 443;
     });
   });
 
-  await import('./js/cloud.js');
+  // Con versión: sin ella el navegador podía servir un cloud.js viejo (caché de
+  // GitHub Pages) junto a un app.js nuevo que usa funciones que no existen.
+  await import('./js/cloud.js?v=2');
 </script>
 <script>
   if ('serviceWorker' in navigator) {
