@@ -9756,3 +9756,27 @@ mark.diary-highlight {
 .awm-prev-main { font-size: 15px; color: var(--text); }
 .awm-prev-main strong { color: var(--gold-light); }
 .awm-prev-det { font-size: 12px; color: var(--text-dim); margin-top: 3px; line-height: 1.4; }
+
+/* Bloque de la bestia (Primal Companion): había textos de 8-10 px, ilegibles
+   en el iPad. Mínimo 11 px; los datos que se leen en combate, 12-14 px. */
+.companion-section .rc-name { font-size: 11px; letter-spacing: 1.5px; }
+.companion-section .companion-beast-chip { font-size: 13px; }
+.companion-section .companion-meta,
+.companion-section .companion-meta span { font-size: 12px; }
+.companion-section .companion-senses { font-size: 12px; }
+.companion-section .companion-ac-lbl { font-size: 11px; }
+.companion-ac-det { font-size: 10.5px; color: var(--text-dim); margin-top: 1px; white-space: nowrap; }
+.companion-section .companion-hp-label { font-size: 13px; }
+.companion-section .companion-adj-btn { font-size: 13px; }
+.companion-section .companion-stat-name { font-size: 11px; letter-spacing: 1px; }
+.companion-section .companion-stat-mod { font-size: 12px; }
+.companion-section .companion-attacks-header { font-size: 11.5px; }
+.companion-section .companion-atk-name { font-size: 14px; }
+.companion-section .companion-atk-dmg { font-size: 13px; }
+.companion-section .companion-trait-name,
+.companion-section .companion-trait-desc { font-size: 13px; line-height: 1.5; }
+.companion-section .companion-level-note { font-size: 12px; }
+/* Tamaño y velocidad: si no cabe junto al tipo de animal, baja entero
+   (antes la "m" de "Trepa 12 m" quedaba sola en otra línea). */
+.companion-section .companion-meta { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px; }
+.companion-section .companion-meta > span { white-space: nowrap; }

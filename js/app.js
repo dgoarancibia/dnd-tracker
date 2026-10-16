@@ -4769,12 +4769,13 @@ const App = (() => {
                      onclick="this.select()">
               <span>${beast.size} ${beast.type} · ${fmtDist(beast.speed)}</span>
             </div>
-            <div class="companion-senses">${beast.senses} · CD ${Characters.calcCD(c)}</div>
+            <div class="companion-senses">${beast.senses} · CD de salvación ${Characters.calcCD(c)}</div>
           </div>
         </div>
-        <div class="companion-ac-badge">
+        <div class="companion-ac-badge" title="CA = 13 + tu modificador de Sabiduría (PHB 2024)">
           <div class="companion-ac-val">${ac}</div>
           <div class="companion-ac-lbl">CA</div>
+          <div class="companion-ac-det">13 + SAB ${wisMod >= 0 ? '+' : ''}${wisMod}</div>
         </div>
       </div>
 

@@ -5401,7 +5401,7 @@ const Characters = (() => {
       traits: [
         {
           name: 'Charge',
-          desc: 'Si se mueve al menos 6 m (20 ft) en línea recta hacia un objetivo y lo golpea en el mismo turno, inflige 1d6 de daño perforante extra y el objetivo debe superar una salvación de FUE (CD = tu CD de conjuros) o queda Derribado.',
+          desc: 'Si se mueve al menos 6 m (20 ft) en línea recta hacia un objetivo y lo golpea con Beast\'s Strike en el mismo turno, inflige 1d6 de daño extra del mismo tipo que el golpe, y si es una criatura debe superar una salvación de FUE (CD = tu CD de conjuros) o queda Derribado.',
         },
         {
           name: 'Primal Bond',
