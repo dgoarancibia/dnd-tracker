@@ -106,6 +106,26 @@ const App = (() => {
       });
     }
 
+    // 1b. Favored Enemy (Explorador nv1, PHB 2024): Hunter's Mark siempre
+    //     preparado y sin contar contra el límite. Antes era un conjuro más:
+    //     había que prepararlo cada día y si no, no aparecía en combate.
+    const esExplorador = (Array.isArray(c.classes) && c.classes.length)
+      ? c.classes.some(x => x && x.name === 'Explorador' && (x.level || 0) >= 1)
+      : c.clase === 'Explorador';
+    if (esExplorador) {
+      if (!Array.isArray(c.spells)) c.spells = [];
+      let hm = c.spells.find(s => s.id === 'hunters-mark' || /hunter'?s mark/i.test(s.name || ''));
+      if (!hm) {
+        const cat = ((Characters.CLASE_SPELLS && Characters.CLASE_SPELLS['Explorador']) || []).find(s => s.id === 'hunters-mark');
+        if (cat) { hm = { ...cat }; c.spells.push(hm); changed = true; }
+      }
+      if (hm && (!hm.domain || hm.alwaysLabel !== 'Favored Enemy')) {
+        hm.domain = true;
+        hm.alwaysLabel = 'Favored Enemy';
+        changed = true;
+      }
+    }
+
     // 2. Reparar subclase vacío — tres fuentes posibles:
     //    a) classes[0].subclass
     //    b) choices['subclase-1'] → buscar nombre real en SUBCLASES_CONFIG
@@ -2821,7 +2841,7 @@ const App = (() => {
     }
     // Dominio: en escritorio va como chip; en ventana angosta el CSS lo
     // oculta y el ◆ queda solo en el nombre (ver _nombreConjuro).
-    if (sp.domain) tags += '<span class="tag tag-dom">◆ Dominio</span>';
+    if (sp.domain) tags += `<span class="tag tag-dom">◆ ${sp.alwaysLabel || 'Dominio'}</span>`;
     // MI / DW: en ventana angosta sobran, el ○ y el ◈ ya van en el nombre.
     if (sp.mi) tags += '<span class="tag tag-mi solo-ancho">MI</span>';
     if (sp.dw) tags += '<span class="tag tag-dw solo-ancho">DW</span>';
@@ -2835,7 +2855,7 @@ const App = (() => {
   function _nombreConjuro(sp) {
     const nombre = String(sp.name || '');
     if (!sp.domain || /◆/.test(nombre)) return nombre;
-    return `${nombre}<span class="spell-dom" title="Siempre preparado por tu dominio">&nbsp;◆</span>`;
+    return `${nombre}<span class="spell-dom" title="Siempre preparado${sp.alwaysLabel ? ' (' + sp.alwaysLabel + ')' : ''}">&nbsp;◆</span>`;
   }
 
   /* ══════════════════════════════════════════════════════
@@ -3162,7 +3182,7 @@ const App = (() => {
     const domainLabel = {
       'Clérigo': 'Dominio — siempre preparados',
       'Paladín': 'Juramento — siempre preparados',
-      'Explorador': 'Subclase — siempre preparados',
+      'Explorador': 'Siempre preparados',
     }[c.clase] || 'Subclase — siempre preparados';
     htmlDer += `<div class="section-hd">${domainLabel}</div>`;
 
