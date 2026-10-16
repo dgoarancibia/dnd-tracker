@@ -1476,7 +1476,7 @@
 
 <script src="js/storage.js?v=58"></script>
 <script src="js/characters.js?v=128"></script>
-<script type="module" src="js/firebase.js?v=38"></script>
+<script type="module" src="js/firebase.js?v=39"></script>
 <script>
 // ═══════════════════════════════════════════════════
 // ESTADO DE AUTH
@@ -1570,15 +1570,17 @@ function doGoogleLogin() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0;"></div> Conectando…';
 
-  // Timeout de seguridad — si el popup no resuelve en 20s, restaurar el botón
-  const safetyTimer = setTimeout(() => _resetBtn('Tiempo agotado — intenta de nuevo'), 20000);
+  // Timeout de seguridad — si el popup no resuelve, restaurar el botón. Con
+  // 20 s saltaba mientras uno todavía elegía la cuenta en la ventana de Google.
+  const safetyTimer = setTimeout(() => _resetBtn('Tiempo agotado — intenta de nuevo'), 90000);
 
   FirebaseApp.signIn()
     .then(() => clearTimeout(safetyTimer))
     .catch(err => {
       clearTimeout(safetyTimer);
       console.error('Login error:', err);
-      _resetBtn('No se pudo iniciar sesión');
+      const cerrada = err && (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request');
+      _resetBtn(cerrada ? 'Se cerró la ventana de Google' : 'No se pudo iniciar sesión');
     });
   // onAuthStateChanged se disparará si el login tiene éxito
 }
@@ -3034,7 +3036,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 444;
+var _SW_EXPECTED_IDX = 445;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {

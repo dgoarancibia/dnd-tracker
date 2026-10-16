@@ -12,7 +12,7 @@
    ═══════════════════════════════════════════════════════ */
 // Misma URL que importa app.html: con otra ?v= el módulo se evaluaba dos veces.
 // Al subir la versión de firebase.js hay que cambiarla en ambos lados.
-import './firebase.js?v=4';
+import './firebase.js?v=5';
 
 const Cloud = (() => {
   let _uid     = null;    // UID del usuario autenticado

@@ -46,35 +46,27 @@ await setPersistence(_auth, browserLocalPersistence).catch(() => {});
 
 /* ── Auth ── */
 
-// Detectar Safari / iOS — en esos entornos el redirect falla por ITP
-function _isSafariOrIOS() {
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua);
-  // Safari en macOS/iOS — no Chrome ni Firefox
-  const isSafariBrowser = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
-  return isIOS || isSafariBrowser;
-}
-
+/* Login con ventana emergente en TODOS los navegadores.
+   Antes solo Safari/iOS usaba popup y el resto redirect. Pero Chrome (desde
+   2024) también bloquea el almacenamiento entre sitios: la página de login
+   vive en firebaseapp.com y la app en github.io, así que al volver del
+   redirect la sesión no llegaba — la página recargaba y caía al inicio.
+   Firebase recomienda popup en este caso. El redirect queda solo como
+   respaldo si el navegador bloquea la ventana. */
 async function signIn() {
   await setPersistence(_auth, browserLocalPersistence).catch(() => {});
-  if (_isSafariOrIOS()) {
-    // Safari / iOS: usar popup para evitar problemas con ITP y cookies de terceros
-    console.log('[firebase] Safari/iOS detectado — usando signInWithPopup');
-    try {
-      const result = await signInWithPopup(_auth, _provider);
-      console.log('[firebase] popup login OK:', result.user?.email);
-      return result;
-    } catch (e) {
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
-        // Popup bloqueado o cerrado — fallback a redirect
-        console.warn('[firebase] popup bloqueado, fallback a redirect:', e.code);
-        return signInWithRedirect(_auth, _provider);
-      }
-      throw e;
+  try {
+    const result = await signInWithPopup(_auth, _provider);
+    console.log('[firebase] popup login OK:', result.user?.email);
+    return result;
+  } catch (e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
+      console.warn('[firebase] popup no disponible, uso redirect:', e.code);
+      return signInWithRedirect(_auth, _provider);
     }
+    // El usuario cerró la ventana o canceló: no redirigir por sorpresa.
+    throw e;
   }
-  // Otros navegadores: redirect normal
-  return signInWithRedirect(_auth, _provider);
 }
 
 // Procesar redirect result con top-level await — para browsers no-Safari
