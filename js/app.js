@@ -3765,6 +3765,7 @@ const App = (() => {
         <div class="stat-block-name">${STAT_LABELS[stat]}</div>
         <div class="stat-block-val" id="statVal-${stat}">${val}</div>
         <div class="stat-block-mod">(${mod >= 0 ? '+' : ''}${mod})</div>
+        ${_r20Btn('stat', stat, 'Copiar prueba de característica para Roll20')}
       </div>`;
     });
 
@@ -3795,6 +3796,7 @@ const App = (() => {
         <div class="skill-prof-btn ${btnClass}" onclick="App.toggleSkillProf('${skill.id}')" title="${title}"></div>
         <span class="skill-name">${skill.name}</span>
         <span class="skill-stat">(${STAT_LABELS[skill.stat]})</span>
+        ${_r20Btn('skill', skill.id)}
         <span class="skill-val ${valClass}">${val >= 0 ? '+' : ''}${val}</span>
         <input type="number" class="bonus-input-sm" value="${bonusSkill}"
                onchange="App.setBonus('skills.${skill.id}', this.value)" onclick="this.select()"
@@ -3829,6 +3831,7 @@ const App = (() => {
           onclick="App.toggleSavingThrow('${stat}')" title="${hasProf ? 'Quitar' : 'Agregar'} proficiencia">★</button>
         <span class="save-name">${STAT_LABELS[stat]}</span>
         <span class="save-val ${hasProf ? 'prof' : ''}">${save >= 0 ? '+' : ''}${save}</span>
+        ${_r20Btn('save', stat, 'Copiar salvación para Roll20')}
         <input type="number" class="bonus-input-sm" value="${bonusStat}"
                onchange="App.setBonus('saves.${stat}', this.value)" onclick="this.select()"
                title="Bonus extra ${STAT_LABELS[stat]}">
@@ -3952,6 +3955,7 @@ const App = (() => {
       <div class="passive-row">
         <span class="passive-label">Iniciativa</span>
         <div style="display:flex;align-items:center;gap:4px;">
+          ${_r20Btn('init', '', 'Copiar iniciativa para Roll20 (entra al turno)')}
           ${(() => {
             const initBonus = (c.bonuses && c.bonuses.init) || 0;
             const initBase  = Characters.calcMod(c.stats.des);
@@ -6047,6 +6051,124 @@ const App = (() => {
     return `<div class="sdm-announce">${inner}</div>`;
   }
 
+  /* ── Roll20 (solo escritorio) ─────────────────────────────────────────
+     La app no tira dados: arma el comando para pegar en el chat de Roll20,
+     que es quien tira. Plantilla "default", que existe en cualquier partida
+     sin importar la hoja que use el DM. */
+  const _STAT_NOMBRE = { for:'Fuerza', des:'Destreza', con:'Constitución', int:'Inteligencia', sab:'Sabiduría', car:'Carisma' };
+  const _r20Limpio = t => String(t == null ? '' : t).replace(/[{}]{2,}/g, '').replace(/\s+/g, ' ').trim();
+  const _r20Bono = n => (n >= 0 ? '+' : '') + n;
+
+  // "1d8+4 de fuerza" → { expr: '1d8+4', resto: 'de fuerza' }; sin dados → null
+  function _r20Dados(txt) {
+    const m = String(txt || '').match(/^\s*((?:\d*d\d+|\d+)(?:\s*[+\-]\s*(?:\d*d\d+|\d+))*)\s*(.*)$/i);
+    if (!m || !/d\d/i.test(m[1])) return null;
+    return { expr: m[1].replace(/\s+/g, ''), resto: m[2].trim() };
+  }
+
+  function _r20Plantilla(titulo, filas) {
+    const nombre = _char && _char.name ? Characters.partirNombre(_char.name).nombres : '';
+    return `&{template:default} {{name=${_r20Limpio(nombre ? nombre + ': ' + titulo : titulo)}}} ` +
+      filas.filter(Boolean).map(([k, v]) => `{{${_r20Limpio(k)}=${_r20Limpio(v)}}}`).join(' ');
+  }
+
+  // Filas de daño: una por caso ("caso normal" / "si ya tiene daño").
+  function _r20FilasDaño(dmg) {
+    return _splitConditionalDamage(dmg).map(c => {
+      const d = _r20Dados(c.formula);
+      const val = d ? `[[${d.expr}]]${d.resto ? ' ' + d.resto : ''}` : c.formula;
+      return [c.cond ? `Daño (${c.cond})` : 'Daño', val];
+    });
+  }
+
+  function _r20FilasPasivos(bonuses) {
+    return (bonuses || []).map(b => [b.label, `+[[${b.dice}]] ${b.damageType}${b.note ? ' (' + b.note + ')' : ''}`]);
+  }
+
+  function _r20Tirada(titulo, bono) {
+    return _r20Plantilla(titulo, [['Tirada', `[[1d20${_r20Bono(bono)}]]`]]);
+  }
+
+  function _r20Conjuro(sp) {
+    const data = _spellRefData(sp);
+    const nombre = sp.name.replace(/\s*[◆†○]/g, '');
+    const filas = [];
+    if (data.kind === 'attack' && data.attackFormula) filas.push(['Ataque', `[[1${data.attackFormula}]]`]);
+    if (data.kind === 'save' && data.cd != null) filas.push(['Salvación', `CD ${data.cd}${data.saveStat ? ' de ' + data.saveStat : ''}`]);
+    if (data.damage) filas.push(..._r20FilasDaño(data.damage), ..._r20FilasPasivos(data.passiveBonuses));
+    if (data.effect) {
+      const d = _r20Dados(data.effect);
+      filas.push(['Efecto', d ? `[[${d.expr}]]${d.resto ? ' ' + d.resto : ''}` : data.effect]);
+      // Dados dentro del texto (Hunter's Mark: "+1d6 cuando la golpeás"): tirada aparte.
+      const enTexto = !d && _extractDiceFormula(data.effect);
+      if (enTexto) filas.push(['Dados', `[[${enTexto}]]`]);
+    }
+    if (!filas.length) filas.push(['Efecto', (sp.desc || '').slice(0, 200)]);
+    return _r20Plantilla(nombre, filas);
+  }
+
+  function _r20Descripcion(titulo, partes) {
+    return [titulo, ...partes.filter(Boolean)].join('\n');
+  }
+
+  async function _copiarTexto(txt, aviso) {
+    try {
+      await navigator.clipboard.writeText(txt);
+      showToast(aviso || '📋 Copiado: pegalo en el chat de Roll20', 'success', 2500);
+    } catch (e) {
+      showToast('No se pudo copiar al portapapeles', 'error', 3000);
+    }
+  }
+
+  // Botón chico que aparece al pasar el mouse por la fila (solo escritorio).
+  const _r20Btn = (tipo, id, titulo) =>
+    `<button class="r20-btn solo-desktop" onclick="event.stopPropagation();App.copiarRoll20('${tipo}','${id}')" title="${titulo || 'Copiar tirada para Roll20'}">R20</button>`;
+
+  let _r20Ref = null;       // comando del popup de referencia abierto (armas)
+  let _rasgoAbierto = null; // rasgo del modal de detalle abierto
+
+  function copiarRoll20(tipo, id) {
+    if (!_char) return;
+    const c = _char;
+    let txt = null, aviso;
+    if (tipo === 'skill') {
+      const sk = Characters.SKILLS_DEF.find(x => x.id === id);
+      if (sk) txt = _r20Tirada(sk.name, Characters.calcSkill(c, id));
+    } else if (tipo === 'save') {
+      txt = _r20Tirada(`Salvación de ${_STAT_NOMBRE[id] || id}`, Characters.calcSave(c, id));
+    } else if (tipo === 'stat') {
+      txt = _r20Tirada(`Prueba de ${_STAT_NOMBRE[id] || id}`, Characters.calcMod(c.stats[id]));
+    } else if (tipo === 'init') {
+      txt = _r20Plantilla('Iniciativa', [['Tirada', `[[1d20${_r20Bono(Characters.calcInit(c))} &{tracker}]]`]]);
+    } else if (tipo === 'ref') {
+      txt = _r20Ref;
+    } else if (tipo === 'conjuro') {
+      const sp = (c.spells || []).find(x => x.id === id);
+      if (sp) txt = _r20Conjuro(sp);
+    } else if (tipo === 'conjuro-desc') {
+      const sp = (c.spells || []).find(x => x.id === id);
+      if (sp) {
+        const nivel = sp.level === 0 ? 'Truco' : `Nivel ${sp.level}`;
+        txt = _r20Descripcion(`${sp.name.replace(/\s*[◆†○]/g, '')} (${nivel})`, [
+          [sp.castTime, fmtDistGrid(sp.range), sp.duration].filter(Boolean).join(' · '),
+          fmtDesc(sp.fullDesc || sp.desc || ''),
+          sp.upcast ? `A mayor nivel: ${sp.upcast}` : '',
+        ]);
+        aviso = '📋 Descripción copiada';
+      }
+    } else if (tipo === 'rasgo') {
+      const f = (c.features || []).find(x => x.id === (id || _rasgoAbierto));
+      if (f) {
+        txt = _r20Descripcion(f.name, [
+          [f.action, f.range ? fmtDist(f.range) : '', f.recharge ? '↺ ' + f.recharge : ''].filter(Boolean).join(' · '),
+          fmtDesc(f.fullDesc || f.desc || ''),
+        ]);
+        aviso = '📋 Descripción copiada';
+      }
+    }
+    if (txt) _copiarTexto(txt, aviso);
+  }
+
   // needsConfirm: true cuando el popup precede a un lanzamiento real (el slot
   // se descuenta al confirmar). false = solo referencia (ej. atacar con arma).
   function openActionRefModal(kind, data, needsConfirm) {
@@ -6060,6 +6182,8 @@ const App = (() => {
         ? `<button class="btn-secondary" onclick="App.cancelPendingCast()">Cancelar</button>
            <button class="ref-ok-btn" onclick="App.confirmPendingCast()">Lanzar</button>`
         : `<button class="ref-ok-btn" onclick="App.closeActionRefModal()">Entendido</button>`;
+      _r20Ref = data.r20 || null;
+      if (_r20Ref) footEl.innerHTML = `<button class="btn-secondary solo-desktop" onclick="App.copiarRoll20('ref')" title="Copiar ataque y daño para el chat de Roll20">📋 Copiar para Roll20</button>` + footEl.innerHTML;
     }
 
     titleEl.innerHTML = `<span>${data.icon || '✨'}</span><span>${data.title || ''}</span>`;
@@ -6215,8 +6339,20 @@ const App = (() => {
     const dmgFormula = arma ? arma.daño + (arma.extra ? ` + ${arma.extra}` : '') : (w.die || '?');
     const notasArma = arma && arma.notas.length ? arma.notas.join(' · ') : '';
 
+    const r20 = _r20Plantilla(w.name, [
+      atkBonus != null ? ['Ataque', `[[1d20${_r20Bono(atkBonus)}]]`] : null,
+      ...(arma ? [(() => {
+        const d = _r20Dados(arma.dado);
+        return ['Daño', d ? `[[${d.expr}${arma.dañoFijo ? _r20Bono(arma.dañoFijo) : ''}]]${d.resto ? ' ' + d.resto : ''}` : arma.daño];
+      })()] : _r20FilasDaño(w.die || '')),
+      arma && arma.extra ? (() => { const d = _r20Dados(arma.extra); return ['Extra', d ? `+[[${d.expr}]] ${d.resto}` : arma.extra]; })() : null,
+      ..._r20FilasPasivos(Characters.getPassiveDamageBonuses(_char, 'weapon')),
+      notasArma ? ['Notas', notasArma] : null,
+    ]);
+
     openActionRefModal('attack', {
       kind: 'attack',
+      r20,
       title: w.name,
       icon: '⚔️',
       passiveBonuses: Characters.getPassiveDamageBonuses(_char, 'weapon'),
@@ -11069,6 +11205,11 @@ ${notesText}`;
     // mismo, sin abrir ningún otro modal.
     _renderCastButtons(sp);
 
+    const r20El = document.getElementById('sdmR20');
+    if (r20El) r20El.innerHTML =
+      `<button class="btn btn-ghost" onclick="App.copiarRoll20('conjuro','${sp.id}')" title="Copiar la tirada para el chat de Roll20">📋 Tirada para Roll20</button>
+       <button class="btn btn-ghost" onclick="App.copiarRoll20('conjuro-desc','${sp.id}')" title="Copiar nombre y descripción">📋 Descripción</button>`;
+
     _spellDetailOpen = true;
     document.getElementById('spellDetailModal').classList.add('show');
     document.getElementById('overlayBackdrop').classList.add('show');
@@ -11296,6 +11437,7 @@ ${notesText}`;
     }
     const f = (_char.features || []).find(f => f.id === featId);
     if (!f) return;
+    _rasgoAbierto = f.id;
 
     const badge = f.type === 'passive'
       ? `<span class="feat-badge feat-passive" style="font-size:11px;padding:2px 8px;">Pasiva</span>`
@@ -12119,6 +12261,7 @@ ${notesText}`;
     openSpellDetail, closeSpellDetail,
     openAbilityDetail, toggleEcho, larryRoll, closeLarryModal,
     openFeatureDetail, closeFeatureDetail,
+    copiarRoll20,
     toggleHideFeature, toggleShowHidden, showAllHiddenFeatures,
     togglePouchDetail, openDicePouchModal, closeDicePouchModal,
     openPrepSesion, closePrepSesion,

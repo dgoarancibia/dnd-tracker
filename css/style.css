@@ -9780,3 +9780,28 @@ mark.diary-highlight {
    (antes la "m" de "Trepa 12 m" quedaba sola en otra línea). */
 .companion-section .companion-meta { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px; }
 .companion-section .companion-meta > span { white-space: nowrap; }
+
+/* ── Roll20: solo en escritorio con mouse; en iPad y celular no ocupa espacio ── */
+.solo-desktop { display: none !important; }
+@media (hover: hover) and (pointer: fine) and (min-width: 1001px) {
+  .solo-desktop { display: revert !important; }
+  .r20-row.solo-desktop { display: flex !important; }
+  /* En habilidades el botón toma el lugar de "(DES)" al pasar el mouse: no
+     agrega ancho a la fila (si no, empuja el bonus fuera de la columna). */
+  .skill-row .r20-btn.solo-desktop { display: none !important; }
+  .skill-row:hover .r20-btn.solo-desktop { display: inline-block !important; }
+  .skill-row:hover .skill-stat { display: none; }
+}
+.r20-btn {
+  font-family: 'Jost', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 1px 4px; line-height: 1.4; border-radius: 4px; cursor: pointer;
+  background: transparent; color: var(--gold); border: 1px solid var(--gold-dim);
+  opacity: 0; transition: opacity 0.12s;
+}
+.r20-btn:hover { background: var(--gold-dim); color: var(--bg); }
+.skill-row:hover .r20-btn, .save-row:hover .r20-btn, .stat-block:hover .r20-btn,
+.passive-row:hover .r20-btn, .r20-btn:focus-visible { opacity: 1; }
+.stat-block { position: relative; }
+.stat-block .r20-btn { position: absolute; top: 3px; right: 3px; }
+.r20-row { gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.r20-row .btn { font-size: 11px; padding: 5px 10px; }
