@@ -6339,15 +6339,21 @@ const App = (() => {
     const dmgFormula = arma ? arma.daño + (arma.extra ? ` + ${arma.extra}` : '') : (w.die || '?');
     const notasArma = arma && arma.notas.length ? arma.notas.join(' · ') : '';
 
+    // Cada bono con su etiqueta: Roll20 la muestra al pasar el mouse por el
+    // resultado, y la fila "Suma" deja a la vista de dónde sale cada número.
+    const _r20Partes = des => (des || []).map(x => `${_r20Bono(x.v)}[${x.l}]`).join('');
+    const _r20Texto = des => (des || []).map(x => `${x.l} ${_r20Bono(x.v)}`).join(' · ');
     const r20 = _r20Plantilla(w.name, [
-      atkBonus != null ? ['Ataque', `[[1d20${_r20Bono(atkBonus)}]]`] : null,
+      atkBonus != null ? ['Ataque', arma ? `[[1d20${_r20Partes(arma.desgloseAtaque)}]]` : `[[1d20${_r20Bono(atkBonus)}]]`] : null,
+      arma && arma.desgloseAtaque.length ? ['Suma al ataque', _r20Texto(arma.desgloseAtaque)] : null,
       ...(arma ? [(() => {
         const d = _r20Dados(arma.dado);
-        return ['Daño', d ? `[[${d.expr}${arma.dañoFijo ? _r20Bono(arma.dañoFijo) : ''}]]${d.resto ? ' ' + d.resto : ''}` : arma.daño];
+        return ['Daño', d ? `[[${d.expr}${_r20Partes(arma.desgloseDaño)}]]${d.resto ? ' ' + d.resto : ''}` : arma.daño];
       })()] : _r20FilasDaño(w.die || '')),
+      arma && arma.desgloseDaño.length ? ['Suma al daño', _r20Texto(arma.desgloseDaño)] : null,
       arma && arma.extra ? (() => { const d = _r20Dados(arma.extra); return ['Extra', d ? `+[[${d.expr}]] ${d.resto}` : arma.extra]; })() : null,
       ..._r20FilasPasivos(Characters.getPassiveDamageBonuses(_char, 'weapon')),
-      notasArma ? ['Notas', notasArma] : null,
+      (() => { const n = arma ? arma.notas.filter(x => !/^\+2 (Archery|Dueling)$/.test(x)) : []; return n.length ? ['Notas', n.join(' · ')] : null; })(),
     ]);
 
     openActionRefModal('attack', {

@@ -698,15 +698,33 @@ const Characters = (() => {
      suma el modificador salvo que sea negativo o tengas Two-Weapon Fighting.
      La competencia se asume (los datos de competencia por clase no están
      estructurados en la app). */
+  // Acepta el id ('fs-archery') o el nombre ('Archery') que dejaron
+  // versiones viejas del asistente.
   function _estilosDeCombate(char) {
     const ch = char.choices || {};
     return new Set(['fighting-style', 'fighting-style-2', 'fighting-style-r']
-      .map(k => ch[k]).filter(Boolean).map(v => (typeof v === 'object' ? v.id : v)));
+      .map(k => ch[k]).filter(Boolean).map(v => String(typeof v === 'object' ? (v.id || v.name) : v))
+      .map(v => v.startsWith('fs-') ? v : 'fs-' + v.toLowerCase().replace(/\s+fighting$/, '').replace(/\s+/g, '-')));
+  }
+
+  function _baseArma(w) {
+    return WEAPONS_DB.find(x => x.id === w.id || x.name.toLowerCase() === String(w.name || '').toLowerCase()) || null;
   }
 
   function _propsArma(w) {
-    const base = WEAPONS_DB.find(x => x.id === w.id || x.name.toLowerCase() === String(w.name || '').toLowerCase());
+    const base = _baseArma(w);
     return base ? (base.properties || []) : [];
+  }
+
+  // A distancia aunque el ítem no traiga `type` (equipado desde la mochila o
+  // creado a mano con nombre en español).
+  const _NOMBRE_DISTANCIA = /\b(arco|ballesta|honda|cerbatana|bow|crossbow|sling|blowgun)/i;
+  function _esADistancia(w, props) {
+    if (w.type === 'ranged') return true;
+    if (w.type === 'melee') return false;
+    const base = _baseArma(w);
+    if (base) return base.type === 'ranged';
+    return props.some(p => /^Ammunition/i.test(p)) || _NOMBRE_DISTANCIA.test(w.name || '');
   }
 
   function calcArma(char, slot) {
@@ -716,10 +734,11 @@ const Characters = (() => {
     const enSecundaria = slot === 'offHand';
     const estilos = _estilosDeCombate(char);
     const props = _propsArma(w);
-    const aDistancia = w.type === 'ranged';
+    const aDistancia = _esADistancia(w, props);
 
-    const statKey = w.statUsed === 'dex' ? 'des'
-      : w.statUsed === 'choice' ? (calcMod(char.stats.des) > calcMod(char.stats.for) ? 'des' : 'for')
+    const statUsed = w.statUsed || (_baseArma(w) || {}).statUsed || (aDistancia ? 'dex' : 'str');
+    const statKey = statUsed === 'dex' ? 'des'
+      : statUsed === 'choice' ? (calcMod(char.stats.des) > calcMod(char.stats.for) ? 'des' : 'for')
       : 'for';
     const mod = calcMod(char.stats[statKey]);
     const prof = calcProfBonus(char.nivel);
@@ -730,20 +749,28 @@ const Characters = (() => {
     const extra = (stat) => { const v = _itemStatBonus(w, stat); return v === magico ? 0 : v; };
 
     const notas = [];
-    let ataque = mod + prof + magico + extra('attack') + _sumBuffs(w.buffs, 'attack')
-      + _sumBuffs(char.statBuffs && char.statBuffs.attack, null);
-    if (aDistancia && estilos.has('fs-archery')) { ataque += 2; notas.push('+2 Archery'); }
+    // Desglose de lo que suma cada número (para mostrarlo, ej. en Roll20).
+    const STAT_ABR = { for: 'FUE', des: 'DES' };
+    const otrosAtq = extra('attack') + _sumBuffs(w.buffs, 'attack') + _sumBuffs(char.statBuffs && char.statBuffs.attack, null);
+    const desgloseAtaque = [
+      { v: mod, l: STAT_ABR[statKey] }, { v: prof, l: 'Competencia' },
+      { v: magico, l: 'Mágica' }, { v: otrosAtq, l: 'Otros' },
+    ];
+    let ataque = mod + prof + magico + otrosAtq;
+    if (aDistancia && estilos.has('fs-archery')) { ataque += 2; notas.push('+2 Archery'); desgloseAtaque.push({ v: 2, l: 'Archery' }); }
 
     let modDaño = mod;
     if (enSecundaria && mod > 0 && !estilos.has('fs-two-weapon')) {
       modDaño = 0;
       notas.push('Ataque extra de Light: sin modificador al daño');
     }
-    let dañoFijo = modDaño + magico + extra('damage') + _sumBuffs(w.buffs, 'damage');
+    const otrosDaño = extra('damage') + _sumBuffs(w.buffs, 'damage');
+    const desgloseDaño = [{ v: modDaño, l: STAT_ABR[statKey] }, { v: magico, l: 'Mágica' }, { v: otrosDaño, l: 'Otros' }];
+    let dañoFijo = modDaño + magico + otrosDaño;
     const otraArma = !!(eq[enSecundaria ? 'mainHand' : 'offHand'] && eq[enSecundaria ? 'mainHand' : 'offHand'].kind === 'weapon');
     const dosManos = props.some(p => /^Two-Handed/i.test(p));
     if (!aDistancia && !enSecundaria && !dosManos && !otraArma && estilos.has('fs-dueling')) {
-      dañoFijo += 2; notas.push('+2 Dueling');
+      dañoFijo += 2; notas.push('+2 Dueling'); desgloseDaño.push({ v: 2, l: 'Dueling' });
     }
     if (estilos.has('fs-thrown-weapon') && props.some(p => /^Thrown/i.test(p))) notas.push('+2 al daño si la arrojás (Thrown Weapon Fighting)');
     if (estilos.has('fs-great-weapon') && (dosManos || props.some(p => /^Versatile/i.test(p)))) notas.push('Great Weapon Fighting: 1 y 2 en el dado de daño cuentan como 3');
@@ -758,7 +785,9 @@ const Characters = (() => {
     const dado = w.die || '1d4';
     const fmtNum = n => (n > 0 ? `+${n}` : n < 0 ? `${n}` : '');
     return {
-      ataque, statKey, mod, prof, magico,
+      ataque, statKey, mod, prof, magico, aDistancia,
+      desgloseAtaque: desgloseAtaque.filter(x => x.v),
+      desgloseDaño: desgloseDaño.filter(x => x.v),
       dado, dañoFijo,
       daño: `${dado}${fmtNum(dañoFijo)}`,
       extra: w.extraDie ? `${w.extraDie}${w.extraType ? ' ' + w.extraType : ''}` : '',
