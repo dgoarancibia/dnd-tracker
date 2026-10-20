@@ -501,6 +501,34 @@ const Cloud = (() => {
   ══════════════════════════════════════════════════════ */
   let _sincronizandoLista = false;
 
+  // Compara lo que importa: sin fechas ni noteMentions (índice que no se sube),
+  // y tratando igual un campo vacío/false que uno ausente, que es lo que
+  // dejan las migraciones de distintas versiones de la app.
+  const _IGNORAR = new Set(['updatedAt', '_syncedAt', '_dataVersion', 'noteMentions']);
+  function _canon(v) {
+    if (Array.isArray(v)) return v.map(_canon);
+    if (v && typeof v === 'object') {
+      const o = {};
+      for (const k of Object.keys(v).sort()) {
+        const x = _canon(v[k]);
+        if (x === undefined || x === null || x === false || x === '' ||
+            (Array.isArray(x) && !x.length) || (typeof x === 'object' && x && !Array.isArray(x) && !Object.keys(x).length)) continue;
+        o[k] = x;
+      }
+      return o;
+    }
+    return v;
+  }
+  function contenidoDistinto(a, b) {
+    if (!a || !b) return true;
+    const limpio = o => {
+      const c = { ...o };
+      for (const k of _IGNORAR) delete c[k];
+      return JSON.stringify(_canon(c));
+    };
+    return limpio(a) !== limpio(b);
+  }
+
   async function sincronizarLista(opts = {}) {
     if (!_uid || !navigator.onLine || _pulling || _sincronizandoLista) return null;
     _sincronizandoLista = true;
@@ -550,6 +578,12 @@ const Cloud = (() => {
         }
         const base = getBase(id);
         if (local.updatedAt === cloud.updatedAt) { if (!base) setBase(id, cloud.updatedAt); continue; }
+        // Sin base pero idénticos: misma versión con otra fecha (igual que al abrirlo).
+        if (!base && !contenidoDistinto(local, migrar(JSON.parse(JSON.stringify(cloud))))) {
+          Storage.saveCharRaw({ ...local, updatedAt: cloud.updatedAt });
+          setBase(id, cloud.updatedAt);
+          continue;
+        }
         const cambioLocal = base ? local.updatedAt !== base : true;
         const cambioNube = base ? cloud.updatedAt !== base : true;
         if (base && !cambioLocal && cambioNube) {
@@ -590,6 +624,7 @@ const Cloud = (() => {
     getBase,
     setBase,
     nubeCambio,
+    contenidoDistinto,
     tamano: _tamano,
     LIMITE_BYTES,
     markDeleted,

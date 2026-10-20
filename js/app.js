@@ -11662,13 +11662,7 @@ ${notesText}`;
 
   // Compara contenido de dos chars ignorando campos derivados/volátiles.
   function _charContentDiffers(a, b) {
-    if (!a || !b) return true;
-    const strip = o => {
-      const c = { ...o };
-      delete c.updatedAt; delete c._syncedAt; delete c._dataVersion;
-      return JSON.stringify(c);
-    };
-    return strip(a) !== strip(b);
+    return Cloud.contenidoDistinto ? Cloud.contenidoDistinto(a, b) : true;
   }
 
   /* ── Verificación contra la nube ──────────────────────────────────────
@@ -11705,17 +11699,22 @@ ${notesText}`;
   let _verificando = false;
   let _ultimaVerificacion = 0;
 
+  // cloud.js es un módulo: carga después de que init() ya corrió. Sin esta
+  // espera la verificación al abrir se saltaba siempre en silencio.
+  async function _esperarSesionNube(ms) {
+    const t0 = Date.now();
+    while (!(window.Cloud && Cloud.isLoggedIn()) && Date.now() - t0 < ms) await new Promise(r => setTimeout(r, 250));
+    return !!(window.Cloud && Cloud.isLoggedIn());
+  }
+
   async function _verificarNube(motivo) {
-    if (!_char || !window.Cloud || !navigator.onLine || _verificando) return;
+    if (!_char || !navigator.onLine || _verificando) return;
+    // Firebase tarda unos segundos en cargar y restaurar la sesión.
+    if (!(window.Cloud && Cloud.isLoggedIn())) {
+      if (motivo !== 'abrir' || !(await _esperarSesionNube(15000))) return;
+    }
     // cloud.js viejo en caché (sin la versión base): no arriesgar decisiones.
     if (typeof Cloud.nubeCambio !== 'function') return;
-    // Firebase tarda 1-3 s en restaurar la sesión al cargar la página.
-    if (!Cloud.isLoggedIn()) {
-      if (motivo !== 'abrir') return;
-      const t0 = Date.now();
-      while (!Cloud.isLoggedIn() && Date.now() - t0 < 6000) await new Promise(r => setTimeout(r, 250));
-      if (!Cloud.isLoggedIn()) return;
-    }
     _verificando = true;
     _ultimaVerificacion = Date.now();
     try {
@@ -11775,10 +11774,7 @@ ${notesText}`;
   }
 
   async function _sincronizarListaApp() {
-    if (!window.Cloud || !Cloud.sincronizarLista) return;
-    const t0 = Date.now();
-    while (!Cloud.isLoggedIn() && Date.now() - t0 < 8000) await new Promise(r => setTimeout(r, 250));
-    if (!Cloud.isLoggedIn() || !_char) return;
+    if (!(await _esperarSesionNube(15000)) || !Cloud.sincronizarLista || !_char) return;
     const r = await Cloud.sincronizarLista({ excluir: _char.id });
     if (!r) return;
     _populateCharSelector();
