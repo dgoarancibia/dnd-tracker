@@ -106,6 +106,13 @@ const App = (() => {
       });
     }
 
+    // 1a. Salvaciones guardadas como 'fue': la clave de Fuerza es 'for', así
+    //     que la salvación de FUE nunca contaba como competente.
+    if (Array.isArray(c.savingThrows) && c.savingThrows.includes('fue')) {
+      c.savingThrows = [...new Set(c.savingThrows.map(st => st === 'fue' ? 'for' : st))];
+      changed = true;
+    }
+
     // 1b. Favored Enemy (Explorador nv1, PHB 2024): Hunter's Mark siempre
     //     preparado y sin contar contra el límite. Antes era un conjuro más:
     //     había que prepararlo cada día y si no, no aparecía en combate.
@@ -8046,6 +8053,9 @@ const App = (() => {
     if (idx >= 0) _char.savingThrows.splice(idx, 1);
     else _char.savingThrows.push(stat);
     _saveChar();
+    // Las salvaciones se ven en la columna lateral: antes solo se redibujaba
+    // la pestaña Habilidades y la ★ parecía no responder.
+    _renderStatsSidebar();
     _renderHabilidadesTab();
   }
 

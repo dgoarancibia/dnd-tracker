@@ -118,6 +118,8 @@ const Characters = (() => {
   // picks al importar, y la UI para el label "Conjuros conocidos". Separar
   // ambos conceptos evita romper ese flujo al corregir la fórmula.
   // preparesCaster: true → preparan de una lista, cambiable en descanso largo.
+  // savingThrows usa las claves de stats ('for', no 'fue'): con 'fue' la
+  // salvación de FUE de Explorador, Guerrero, Bárbaro y Monje nunca se marcaba.
   const CLASES_CONFIG = {
     'Clérigo':      { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['sab', 'car'], slotTable: 'full',    preparesCaster: true,
       cantripsKnown: [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5] },
@@ -138,10 +140,10 @@ const Characters = (() => {
     // Paladín y Explorador no tienen columna de cantrips en 2024 (el Explorador
     // solo puede obtenerlos vía el estilo de combate Druidic Warrior).
     'Paladín':      { hitDie: 10, spellcastingStat: 'car', savingThrows: ['sab', 'car'], slotTable: 'half',    preparesCaster: true },
-    'Explorador':   { hitDie: 10, spellcastingStat: 'sab', savingThrows: ['fue', 'des'], slotTable: 'half',    preparesCaster: true },
-    'Guerrero':     { hitDie: 10, spellcastingStat: null,  savingThrows: ['fue', 'con'], slotTable: null },
-    'Bárbaro':      { hitDie: 12, spellcastingStat: null,  savingThrows: ['fue', 'con'], slotTable: null },
-    'Monje':        { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['fue', 'des'], slotTable: null },
+    'Explorador':   { hitDie: 10, spellcastingStat: 'sab', savingThrows: ['for', 'des'], slotTable: 'half',    preparesCaster: true },
+    'Guerrero':     { hitDie: 10, spellcastingStat: null,  savingThrows: ['for', 'con'], slotTable: null },
+    'Bárbaro':      { hitDie: 12, spellcastingStat: null,  savingThrows: ['for', 'con'], slotTable: null },
+    'Monje':        { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['for', 'des'], slotTable: null },
     'Pícaro':       { hitDie: 8,  spellcastingStat: 'int', savingThrows: ['des', 'int'], slotTable: null },
   };
 

@@ -21,7 +21,7 @@ vm.createContext(ctx);
 vm.runInContext(src + '\n;globalThis.__C = Characters;', ctx);
 const C = ctx.__C;
 
-const STATS = { fue: 15, des: 15, con: 14, int: 12, sab: 14, car: 12 };
+const STATS = { for: 15, des: 15, con: 14, int: 12, sab: 14, car: 12 };
 const errores = [];
 const avisos = [];
 const err = (m) => errores.push(m);
@@ -231,6 +231,20 @@ for (const cl of clases) {
     if (n > 1 && C.getXPForLevel(n) <= C.getXPForLevel(n - 1)) {
       err(`XP: el umbral de nivel ${n} no es mayor que el de ${n - 1}`);
     }
+  }
+}
+
+/* ── Claves de características válidas ─────────────────────────── */
+// Las salvaciones deben usar las mismas claves que stats. Una clave mal
+// escrita ('fue' en vez de 'for') no da error: simplemente nunca se marca.
+{
+  // Las claves reales de c.stats en la app.
+  const VALIDAS = new Set(['for', 'des', 'con', 'int', 'sab', 'car']);
+  for (const [clase, cfg] of Object.entries(C.CLASES_CONFIG || {})) {
+    (cfg.savingThrows || []).forEach(st => {
+      if (!VALIDAS.has(st)) err(`${clase}: salvación '${st}' no es una característica (válidas: ${[...VALIDAS].join(', ')})`);
+    });
+    if (cfg.spellcastingStat && !VALIDAS.has(cfg.spellcastingStat)) err(`${clase}: spellcastingStat '${cfg.spellcastingStat}' no es una característica`);
   }
 }
 
