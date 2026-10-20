@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 456;
+const _SW_EXPECTED = 457;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -1394,7 +1394,7 @@ const _SW_EXPECTED = 456;
 
   // Con versión: sin ella el navegador podía servir un cloud.js viejo (caché de
   // GitHub Pages) junto a un app.js nuevo que usa funciones que no existen.
-  await import('./js/cloud.js?v=7');
+  await import('./js/cloud.js?v=8');
 </script>
 <script>
   if ('serviceWorker' in navigator) {

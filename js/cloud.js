@@ -73,8 +73,17 @@ const Cloud = (() => {
      AUTH
   ══════════════════════════════════════════════════════ */
 
-  function init() {
-    if (!window.FirebaseApp) return;
+  // Safari (iPad) puede evaluar este módulo antes de que firebase.js termine
+  // su await inicial: antes init() se rendía y la nube quedaba "sin sesión"
+  // aunque el inicio mostrara la cuenta. Ahora espera a que aparezca.
+  let _iniciado = false;
+  function init(intento = 0) {
+    if (_iniciado) return;
+    if (!window.FirebaseApp) {
+      if (intento < 300) setTimeout(() => init(intento + 1), 100);
+      return;
+    }
+    _iniciado = true;
 
     // MODELO SAVEPOINT: al iniciar sesión NO se baja ni sube nada automáticamente,
     // ni se abre un listener en tiempo real. El usuario decide explícitamente
@@ -82,6 +91,7 @@ const Cloud = (() => {
     // autosave controlado con verificación de conflicto).
     FirebaseApp.onAuthChange(user => {
       _uid = user ? user.uid : null;
+      _registrarAuth(user);
       _updateAuthUI(user);
       if (user) {
         // Solo limpiar de Firestore los personajes que el usuario eliminó.
@@ -138,8 +148,26 @@ const Cloud = (() => {
     }
   }
 
+  // Si el aviso de login se perdió, tomar la sesión que Firebase ya tiene.
+  function _refrescarUid() {
+    if (!_uid && window.FirebaseApp && FirebaseApp.getCurrentUser) {
+      const u = FirebaseApp.getCurrentUser();
+      if (u) _uid = u.uid;
+    }
+    return _uid;
+  }
+
   function isLoggedIn() {
-    return !!_uid;
+    return !!_refrescarUid();
+  }
+
+  const _AUTH_LOG_KEY = 'dnd_auth_log';
+  function _registrarAuth(user) {
+    try {
+      const log = JSON.parse(localStorage.getItem(_AUTH_LOG_KEY) || '[]');
+      log.push({ hora: new Date().toISOString(), sesion: !!user });
+      localStorage.setItem(_AUTH_LOG_KEY, JSON.stringify(log.slice(-8)));
+    } catch (e) {}
   }
 
   // IDs borrados en esta sesión (en memoria, para respuesta inmediata)
@@ -543,7 +571,11 @@ const Cloud = (() => {
 
   // Foto de qué hay en cada lado y qué haría la sincronización, sin cambiar nada.
   async function diagnostico() {
-    const d = { uid: _uid ? _uid.slice(0, 6) + '…' : null, online: navigator.onLine, filas: [] };
+    _refrescarUid();
+    const fu = window.FirebaseApp && FirebaseApp.getCurrentUser ? FirebaseApp.getCurrentUser() : undefined;
+    const d = { uid: _uid ? _uid.slice(0, 6) + '…' : null, online: navigator.onLine, filas: [],
+      iniciado: _iniciado, firebase: fu === undefined ? 'no cargó' : fu ? 'con sesión' : 'sin sesión' };
+    try { d.auth = JSON.parse(localStorage.getItem(_AUTH_LOG_KEY) || '[]'); } catch (e) {}
     try { d.ultima = JSON.parse(localStorage.getItem(_DIAG_KEY) || 'null'); } catch (e) {}
     if (!_uid) return d;
     let nube = {}, marcas = new Set();
@@ -573,6 +605,7 @@ const Cloud = (() => {
 
   async function sincronizarLista(opts = {}) {
     if (_sincronizandoLista) return null;
+    _refrescarUid();
     if (!_uid || !navigator.onLine || _pulling) {
       _registrarSync({ noCorrio: !_uid ? 'sin sesión' : !navigator.onLine ? 'sin conexión' : 'bajada en curso' });
       return null;
