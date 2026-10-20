@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 452;
+const _SW_EXPECTED = 453;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -1311,12 +1311,12 @@ const _SW_EXPECTED = 452;
 <div class="map-overlay-backdrop" id="mapOverlayBackdrop" onclick="Maps.closeMap()"></div>
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="js/storage.js?v=58"></script>
+<script src="js/storage.js?v=59"></script>
 <script src="js/characters.js?v=133"></script>
 <script src="js/export_resumen.js?v=3"></script>
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=3"></script>
-<script src="js/app.js?v=261"></script>
+<script src="js/app.js?v=262"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>
@@ -1352,7 +1352,7 @@ const _SW_EXPECTED = 452;
      luego cloud.js (classic) puede usarlo al cargarse después.
      Guard de auth: si no hay sesión activa, redirige al home. -->
 <script type="module">
-  await import('./js/firebase.js?v=5');
+  await import('./js/firebase.js?v=6');
 
   // Modo invitado ("Usar sin cuenta"): no hay ni habrá usuario de Firebase,
   // así que el guard de abajo expulsaría siempre. Se acepta y se sigue.
@@ -1394,7 +1394,7 @@ const _SW_EXPECTED = 452;
 
   // Con versión: sin ella el navegador podía servir un cloud.js viejo (caché de
   // GitHub Pages) junto a un app.js nuevo que usa funciones que no existen.
-  await import('./js/cloud.js?v=3');
+  await import('./js/cloud.js?v=4');
 </script>
 <script>
   if ('serviceWorker' in navigator) {

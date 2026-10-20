@@ -563,6 +563,9 @@ const App = (() => {
     // Al abrir un PJ: si la nube tiene una versión distinta a la local, ofrecer
     // elegir cuál cargar (modelo savepoint). No baja nada solo; solo pregunta.
     _checkCloudVersionOnOpen();
+    // Y la lista completa, en segundo plano: personajes creados o borrados en
+    // otro dispositivo (el abierto lo gestiona la verificación de arriba).
+    _sincronizarListaApp();
     // Iniciar el autoguardado periódico a la nube (cada 10 min, con protecciones).
     _startAutoSaveCloud();
     // Detectar si el mismo personaje ya está abierto en otra pestaña.
@@ -11769,6 +11772,18 @@ ${notesText}`;
     } finally {
       _verificando = false;
     }
+  }
+
+  async function _sincronizarListaApp() {
+    if (!window.Cloud || !Cloud.sincronizarLista) return;
+    const t0 = Date.now();
+    while (!Cloud.isLoggedIn() && Date.now() - t0 < 8000) await new Promise(r => setTimeout(r, 250));
+    if (!Cloud.isLoggedIn() || !_char) return;
+    const r = await Cloud.sincronizarLista({ excluir: _char.id });
+    if (!r) return;
+    _populateCharSelector();
+    const n = r.bajados.length + r.borrados.length;
+    if (n) showToast(`☁ Lista actualizada${r.bajados.length ? ' · nuevos: ' + r.bajados.join(', ') : ''}${r.borrados.length ? ' · borrados en otro dispositivo: ' + r.borrados.join(', ') : ''}`, 'info', 5000);
   }
 
   // Compat: el arranque llama a este nombre.

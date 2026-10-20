@@ -24,6 +24,12 @@ const appHtml = fs.readFileSync(path.join(raiz, 'app.html'), 'utf8');
 const cloudJs = fs.readFileSync(path.join(raiz, 'js/cloud.js'), 'utf8');
 const vApp = (appHtml.match(/import\('\.\/js\/firebase\.js\?v=(\d+)'\)/) || [])[1];
 const vCloud = (cloudJs.match(/import '\.\/firebase\.js\?v=(\d+)'/) || [])[1];
+const indexHtml = fs.readFileSync(path.join(raiz, 'index.html'), 'utf8');
+const vIndex = (indexHtml.match(/src="js\/firebase\.js\?v=(\d+)"/) || [])[1];
+if (vIndex && vIndex !== vApp) {
+  console.error(`✗ firebase.js con versiones distintas: index.html ?v=${vIndex} / app.html ?v=${vApp}`);
+  process.exit(1);
+}
 if (vApp !== vCloud) {
   console.error(`✗ firebase.js con versiones distintas: app.html ?v=${vApp} / cloud.js ?v=${vCloud}`);
   process.exit(1);

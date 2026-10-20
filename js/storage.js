@@ -842,6 +842,9 @@ const Storage = (() => {
     all[id] = char;
     _set(CHARS_KEY, all);
     _idbPut(char);
+    // Quitar la marca de borrado de la nube: si no, otros dispositivos (y
+    // la próxima sincronización) lo volverían a mandar a la papelera.
+    if (window.Cloud && Cloud.restaurado) Cloud.restaurado(id);
     return true;
   }
 

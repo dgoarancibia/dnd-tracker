@@ -146,6 +146,26 @@ async function deleteCharCloud(uid, charId) {
   await deleteDoc(_charRef(uid, charId));
 }
 
+/* ── Marcas de borrado ("lápidas") ──
+   users/{uid}/deleted/{charId}: al borrar un personaje en un dispositivo,
+   los demás lo ven y lo mandan a su papelera en vez de volver a subirlo.
+   Las reglas ya cubren la ruta (users/{uid}/{document=**}). */
+function _deletedRef(uid, charId) {
+  return doc(_db, 'users', uid, 'deleted', charId);
+}
+async function markDeletedCloud(uid, charId) {
+  await setDoc(_deletedRef(uid, charId), { id: charId, deletedAt: new Date().toISOString() });
+}
+async function unmarkDeletedCloud(uid, charId) {
+  await deleteDoc(_deletedRef(uid, charId));
+}
+async function loadDeletedCloud(uid) {
+  const snap = await getDocs(collection(_db, 'users', uid, 'deleted'));
+  const ids = new Set();
+  snap.forEach(d => ids.add(d.id));
+  return ids;
+}
+
 /* ── Checkpoints (savepoints manuales, subcolección por personaje) ── */
 
 function _checkpointsCol(uid, charId) {
@@ -274,6 +294,9 @@ window.FirebaseApp = {
   loadCharCloud,
   loadAllCharsCloud,
   deleteCharCloud,
+  markDeletedCloud,
+  unmarkDeletedCloud,
+  loadDeletedCloud,
   saveCheckpointCloud,
   listCheckpointsCloud,
   loadCheckpointCloud,

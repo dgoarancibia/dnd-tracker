@@ -292,6 +292,8 @@
     display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .char-card-name .nm-apellido { font-size: 13px; font-weight: 600; opacity: 0.8; margin-top: 2px; }
+  .char-dup { font-size: 12px; color: var(--text-dim); margin: 2px 0 8px; line-height: 1.4; }
+  .char-dup.conflicto { color: #e8b84b; }
   .char-card-actions { display: flex; gap: 8px; flex-shrink: 0; }
   .char-action-btn {
     background: transparent;
@@ -1474,9 +1476,11 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/storage.js?v=58"></script>
+<script src="js/storage.js?v=59"></script>
 <script src="js/characters.js?v=133"></script>
-<script type="module" src="js/firebase.js?v=39"></script>
+<script type="module" src="js/firebase.js?v=6"></script>
+<!-- cloud.js también aquí: sincroniza la LISTA de personajes al iniciar sesión -->
+<script type="module" src="js/cloud.js?v=4"></script>
 <script>
 // ═══════════════════════════════════════════════════
 // ESTADO DE AUTH
@@ -1621,10 +1625,11 @@ waitForFirebase(() => {
         return;
       }
 
-      // Si localStorage está vacío, traer personajes de Firebase antes de mostrar la grilla
-      const localChars = Storage.getAllCharsList().filter(c => c.id !== 'lursey-brumaclara');
-      if (localChars.length === 0) {
-        // Mostrar spinner
+      /* Sincronizar la LISTA de personajes con la nube en ambos sentidos.
+         Antes solo se bajaba si el dispositivo no tenía ninguno: un
+         personaje creado en otro dispositivo nunca aparecía aquí. */
+      const vacio = Storage.getAllCharsList().filter(c => c.id !== 'lursey-brumaclara').length === 0;
+      if (vacio) {
         document.getElementById('homeScreen').style.display = 'none';
         document.getElementById('charsScreen').style.display = 'flex';
         document.getElementById('charCountLabel').textContent = 'Cargando…';
@@ -1633,19 +1638,9 @@ waitForFirebase(() => {
             <div style="width:36px;height:36px;border:3px solid rgba(201,151,58,0.3);border-top-color:#c9973a;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
             <div style="font-family:'Cinzel',serif;font-size:13px;color:#c9973a;letter-spacing:0.05em;">Cargando personajes…</div>
           </div>`;
-        try {
-          const cloudChars = await Promise.race([
-            FirebaseApp.loadAllCharsCloud(user.uid),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))
-          ]);
-          // Guardar en localStorage — usar doc ID como fallback si char.id falta
-          Object.entries(cloudChars || {}).forEach(([docId, c]) => {
-            if (!c.id) c.id = docId;
-            Storage.saveCharRaw(c);
-          });
-        } catch(e) {
-          console.warn('[index] sync timeout/error:', e.message);
-        }
+        await _sincronizarListaInicio();   // con lista vacía, esperar antes de mostrar
+      } else {
+        _sincronizarListaInicio();          // con datos locales, mostrar ya y refrescar al terminar
       }
 
       showCharsScreen(user);
@@ -1657,6 +1652,27 @@ waitForFirebase(() => {
     }
   });
 });
+
+// Espera a que cloud.js tenga la sesión y sincroniza la lista; luego
+// redibuja la grilla y avisa qué cambió.
+let _conflictosLista = new Set();
+async function _sincronizarListaInicio() {
+  const t0 = Date.now();
+  while (!(window.Cloud && Cloud.isLoggedIn && Cloud.isLoggedIn() && Cloud.sincronizarLista) && Date.now() - t0 < 8000) {
+    await new Promise(r => setTimeout(r, 200));
+  }
+  if (!(window.Cloud && Cloud.sincronizarLista && Cloud.isLoggedIn())) return;
+  const r = await Cloud.sincronizarLista();
+  if (!r) return;
+  _conflictosLista = new Set(r.conflictos);
+  if (document.getElementById('charsScreen').style.display === 'flex') renderGrid();
+  const partes = [];
+  if (r.bajados.length)      partes.push(`↓ ${r.bajados.join(', ')}`);
+  if (r.actualizados.length) partes.push(`↻ ${r.actualizados.join(', ')}`);
+  if (r.subidos.length)      partes.push(`↑ ${r.subidos.join(', ')}`);
+  if (r.borrados.length)     partes.push(`🗑 ${r.borrados.join(', ')} (borrado en otro dispositivo)`);
+  if (partes.length) showToast('☁ ' + partes.join(' · '));
+}
 
 // ═══════════════════════════════════════════════════
 // GRID
@@ -1709,6 +1725,11 @@ function renderGrid() {
   if (sortBtn) sortBtn.textContent = _SORT_MODES.find(m => m.key === _sortMode)?.label || 'Reciente ↓';
 
   let html = '';
+  // Con nombres repetidos (ej. el mismo personaje creado en dos dispositivos)
+  // se muestran las fechas para distinguirlos.
+  const cuentaNombres = {};
+  chars.forEach(c => { const k = (c.name || '').trim().toLowerCase(); cuentaNombres[k] = (cuentaNombres[k] || 0) + 1; });
+  const fecha = ts => ts ? new Date(ts).toLocaleString('es', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
 
   chars.forEach(c => {
     const hpPct = c.hp.max > 0 ? (c.hp.current / c.hp.max) * 100 : 0;
@@ -1743,6 +1764,8 @@ function renderGrid() {
         ${c.hp.temp > 0 ? `<span class="stat-pill tmp">+${c.hp.temp} tmp</span>` : ''}
         ${c.concentration ? `<span class="stat-pill conc">◆ Conc</span>` : ''}
       </div>
+      ${cuentaNombres[(c.name || '').trim().toLowerCase()] > 1 ? `<div class="char-dup">Nombre repetido · creado ${fecha(c.createdAt)} · modificado ${fecha(c.updatedAt)}</div>` : ''}
+      ${_conflictosLista.has(c.id) ? `<div class="char-dup conflicto">☁ Distinto en la nube: te preguntará cuál usar al abrirlo</div>` : ''}
       <button class="char-play-btn" onclick="playChar('${c.id}')">▶ Jugar</button>
     </div>`;
   });
@@ -3038,7 +3061,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 452;
+var _SW_EXPECTED_IDX = 453;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {

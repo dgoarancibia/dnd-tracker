@@ -12,7 +12,7 @@
    ═══════════════════════════════════════════════════════ */
 // Misma URL que importa app.html: con otra ?v= el módulo se evaluaba dos veces.
 // Al subir la versión de firebase.js hay que cambiarla en ambos lados.
-import './firebase.js?v=5';
+import './firebase.js?v=6';
 
 const Cloud = (() => {
   let _uid     = null;    // UID del usuario autenticado
@@ -442,6 +442,7 @@ const Cloud = (() => {
       const cloudChars = await FirebaseApp.loadAllCharsCloud(_uid);
       for (const id of Object.keys(cloudChars)) {
         if (persistedDeleted.has(id)) {
+          await FirebaseApp.markDeletedCloud(_uid, id).catch(() => {});
           await FirebaseApp.deleteCharCloud(_uid, id).catch(() => {});
           console.log(`[Cloud] Purgado de Firestore: ${id}`);
         }
@@ -457,11 +458,124 @@ const Cloud = (() => {
 
   async function deleteChar(charId) {
     _deletedIds.add(charId);
-    if (!_uid || !navigator.onLine) return;
+    if (!_uid || !navigator.onLine) return;   // la lista negra local lo subirá después
     try {
+      await FirebaseApp.markDeletedCloud(_uid, charId);
       await FirebaseApp.deleteCharCloud(_uid, charId);
+      setBase(charId, null);
     } catch (e) {
       console.error('Cloud delete error:', e);
+    }
+  }
+
+  // Restaurado desde la papelera: quitar la marca para que vuelva a subirse.
+  // Sin conexión queda pendiente: si no, la próxima sync vería la marca y lo
+  // mandaría de nuevo a la papelera.
+  const _RESTAURADOS_KEY = 'dnd_restaurados_pend';
+  const _pendientes = () => { try { return new Set(JSON.parse(localStorage.getItem(_RESTAURADOS_KEY) || '[]')); } catch (e) { return new Set(); } };
+  const _guardarPendientes = set => { try { localStorage.setItem(_RESTAURADOS_KEY, JSON.stringify([...set])); } catch (e) {} };
+
+  async function restaurado(charId) {
+    _deletedIds.delete(charId);
+    setBase(charId, null);
+    const pend = _pendientes(); pend.add(charId); _guardarPendientes(pend);
+    if (!_uid || !navigator.onLine) return;
+    try {
+      await FirebaseApp.unmarkDeletedCloud(_uid, charId);
+      pend.delete(charId); _guardarPendientes(pend);
+    } catch (e) { /* queda pendiente para la próxima sync */ }
+  }
+
+  /* ══════════════════════════════════════════════════════
+     SINCRONIZAR LA LISTA DE PERSONAJES
+     Antes solo se bajaba la lista si el dispositivo no tenía NINGÚN
+     personaje: un personaje creado en Windows nunca aparecía en el Mac, y
+     al crearlo de nuevo quedaban dos. Ahora, en ambos sentidos:
+       · en la nube y no aquí               → se baja
+       · aquí y no en la nube                → se sube
+       · cambió solo en la nube              → se actualiza aquí
+       · cambió solo aquí                    → se sube
+       · cambió en ambos / sin referencia    → no se toca; se pregunta al abrirlo
+       · borrado en otro dispositivo (marca) → va a la papelera de este
+     `excluir`: el personaje abierto en la app, que ya gestiona _verificarNube.
+  ══════════════════════════════════════════════════════ */
+  let _sincronizandoLista = false;
+
+  async function sincronizarLista(opts = {}) {
+    if (!_uid || !navigator.onLine || _pulling || _sincronizandoLista) return null;
+    _sincronizandoLista = true;
+    const r = { bajados: [], actualizados: [], subidos: [], borrados: [], conflictos: [], errores: 0 };
+    try {
+      const [nube, marcas] = await Promise.all([
+        _withTimeout(FirebaseApp.loadAllCharsCloud(_uid), 15000),
+        _withTimeout(FirebaseApp.loadDeletedCloud(_uid), 15000).catch(() => new Set()),
+      ]);
+      const listaNegra = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
+      // Restaurados de la papelera sin conexión: quitar su marca primero.
+      const pend = _pendientes();
+      for (const id of pend) {
+        try { await FirebaseApp.unmarkDeletedCloud(_uid, id); marcas.delete(id); pend.delete(id); } catch (e) {}
+      }
+      _guardarPendientes(pend);
+      const locales = Storage.getAllChars();
+      const migrar = c => (Storage.migrateChar ? Storage.migrateChar(c) : c);
+
+      // Borrados aquí sin conexión: subir la marca y quitar de la nube.
+      for (const id of listaNegra) {
+        if (!marcas.has(id)) { FirebaseApp.markDeletedCloud(_uid, id).catch(() => {}); marcas.add(id); }
+        if (nube[id]) { FirebaseApp.deleteCharCloud(_uid, id).catch(() => {}); delete nube[id]; }
+      }
+
+      // Borrados en otro dispositivo.
+      for (const id of marcas) {
+        if (nube[id]) { FirebaseApp.deleteCharCloud(_uid, id).catch(() => {}); delete nube[id]; }
+        if (locales[id] && id !== opts.excluir) {
+          Storage.deleteChar(id);          // a la papelera: recuperable
+          setBase(id, null);
+          r.borrados.push(locales[id].name || id);
+          delete locales[id];
+        }
+      }
+
+      // Nube → este dispositivo.
+      for (const [id, cloud] of Object.entries(nube)) {
+        if (!cloud.id) cloud.id = id;
+        if (id === opts.excluir || listaNegra.has(id)) continue;
+        const local = locales[id];
+        if (!local) {
+          Storage.saveCharRaw(migrar(cloud));
+          setBase(id, cloud.updatedAt);
+          r.bajados.push(cloud.name || id);
+          continue;
+        }
+        const base = getBase(id);
+        if (local.updatedAt === cloud.updatedAt) { if (!base) setBase(id, cloud.updatedAt); continue; }
+        const cambioLocal = base ? local.updatedAt !== base : true;
+        const cambioNube = base ? cloud.updatedAt !== base : true;
+        if (base && !cambioLocal && cambioNube) {
+          Storage.saveCharRaw(migrar(cloud));
+          setBase(id, cloud.updatedAt);
+          r.actualizados.push(cloud.name || id);
+        } else if (base && cambioLocal && !cambioNube) {
+          const res = await saveNow(local);
+          if (res === 'saved') r.subidos.push(local.name || id); else r.errores++;
+        } else {
+          r.conflictos.push(id);
+        }
+      }
+
+      // Este dispositivo → nube: lo que la nube no tiene.
+      for (const [id, local] of Object.entries(locales)) {
+        if (nube[id] || marcas.has(id) || listaNegra.has(id) || id === opts.excluir) continue;
+        const res = await saveNow(local);
+        if (res === 'saved') r.subidos.push(local.name || id); else r.errores++;
+      }
+      return r;
+    } catch (e) {
+      console.warn('[Cloud] sincronizarLista:', e);
+      return null;
+    } finally {
+      _sincronizandoLista = false;
     }
   }
 
@@ -480,6 +594,8 @@ const Cloud = (() => {
     LIMITE_BYTES,
     markDeleted,
     deleteChar,
+    restaurado,
+    sincronizarLista,
     forcePullFromCloud,
     purgeDeletedFromCloud,
     saveCheckpoint,
