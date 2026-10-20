@@ -267,11 +267,13 @@ const Cloud = (() => {
   }
 
   // Lee el char de la nube (para comparar versiones antes de abrir/guardar).
-  async function loadCloudChar(id) {
+  // lanzar: el error sube en vez de confundirse con "no está en la nube".
+  async function loadCloudChar(id, opts = {}) {
     if (!_uid || !navigator.onLine) return null;
     try {
       return await FirebaseApp.loadCharCloud(_uid, id);
     } catch (e) {
+      if (opts.lanzar) throw e;
       return null;
     }
   }
@@ -459,8 +461,10 @@ const Cloud = (() => {
   async function deleteChar(charId) {
     _deletedIds.add(charId);
     if (!_uid || !navigator.onLine) return;   // la lista negra local lo subirá después
+    // Independientes: si la marca falla, igual se borra de la nube y los
+    // otros dispositivos lo detectan porque falta (ver sincronizarLista).
+    await FirebaseApp.markDeletedCloud(_uid, charId).catch(e => console.error('Cloud mark error:', e));
     try {
-      await FirebaseApp.markDeletedCloud(_uid, charId);
       await FirebaseApp.deleteCharCloud(_uid, charId);
       setBase(charId, null);
     } catch (e) {
@@ -532,11 +536,14 @@ const Cloud = (() => {
   async function sincronizarLista(opts = {}) {
     if (!_uid || !navigator.onLine || _pulling || _sincronizandoLista) return null;
     _sincronizandoLista = true;
-    const r = { bajados: [], actualizados: [], subidos: [], borrados: [], conflictos: [], errores: 0 };
+    const r = { bajados: [], actualizados: [], subidos: [], borrados: [], conflictos: [], errores: 0, aviso: null };
     try {
       const [nube, marcas] = await Promise.all([
         _withTimeout(FirebaseApp.loadAllCharsCloud(_uid), 15000),
-        _withTimeout(FirebaseApp.loadDeletedCloud(_uid), 15000).catch(() => new Set()),
+        _withTimeout(FirebaseApp.loadDeletedCloud(_uid), 15000).catch(e => {
+          r.aviso = 'No se pudieron leer los borrados (' + (e.code || e.message) + ')';
+          return new Set();
+        }),
       ]);
       const listaNegra = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
       // Restaurados de la papelera sin conexión: quitar su marca primero.
@@ -601,13 +608,21 @@ const Cloud = (() => {
       // Este dispositivo → nube: lo que la nube no tiene.
       for (const [id, local] of Object.entries(locales)) {
         if (nube[id] || marcas.has(id) || listaNegra.has(id) || id === opts.excluir) continue;
+        // Ya estuvo en la nube (tiene base) y ahora no está: lo borraron en
+        // otro dispositivo. No resubirlo aunque falte la marca de borrado.
+        if (getBase(id)) {
+          Storage.deleteChar(id);
+          setBase(id, null);
+          r.borrados.push(local.name || id);
+          continue;
+        }
         const res = await saveNow(local);
         if (res === 'saved') r.subidos.push(local.name || id); else r.errores++;
       }
       return r;
     } catch (e) {
       console.warn('[Cloud] sincronizarLista:', e);
-      return null;
+      return { error: e.code || e.message || String(e) };
     } finally {
       _sincronizandoLista = false;
     }

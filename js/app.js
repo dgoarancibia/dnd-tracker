@@ -11720,7 +11720,10 @@ ${notesText}`;
     try {
       const id = _char.id;
       let cloudChar;
-      try { cloudChar = await Cloud.loadCloudChar(id); } catch (e) { return; }
+      try { cloudChar = await Cloud.loadCloudChar(id, { lanzar: true }); } catch (e) {
+        if (motivo === 'abrir') showToast('⚠ No se pudo revisar la nube: ' + (e.code || e.message), 'error', 6000);
+        return;
+      }
       if (!_char || _char.id !== id) return;          // cambió de personaje mientras tanto
       if (!cloudChar) { _markCloudDirty(); return; }   // no está en la nube → hay que subirlo
 
@@ -11777,6 +11780,8 @@ ${notesText}`;
     if (!(await _esperarSesionNube(15000)) || !Cloud.sincronizarLista || !_char) return;
     const r = await Cloud.sincronizarLista({ excluir: _char.id });
     if (!r) return;
+    if (r.error) { showToast('⚠ No se pudo sincronizar la lista: ' + r.error, 'error', 6000); return; }
+    if (r.aviso) showToast('⚠ ' + r.aviso, 'error', 6000);
     _populateCharSelector();
     const n = r.bajados.length + r.borrados.length;
     if (n) showToast(`☁ Lista actualizada${r.bajados.length ? ' · nuevos: ' + r.bajados.join(', ') : ''}${r.borrados.length ? ' · borrados en otro dispositivo: ' + r.borrados.join(', ') : ''}`, 'info', 5000);
