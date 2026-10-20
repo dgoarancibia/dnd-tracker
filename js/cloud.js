@@ -229,6 +229,7 @@ const Cloud = (() => {
   //   'skipped'  → sin sesión / sin conexión / pull en curso
   //   'error'    → falló la subida
   //   'toolarge' → supera el límite de 1 MB de Firestore; NO se subió
+  let _ultimoError = null;
   async function saveNow(char, opts = {}) {
     if (!_uid || !navigator.onLine || _pulling) return 'skipped';
     // Verificación de conflicto: si la nube tiene un updatedAt posterior al del
@@ -240,6 +241,7 @@ const Cloud = (() => {
         if (nubeCambio(char, cloudChar)) return 'conflict';
       } catch (e) {
         // Si falla la verificación (ej. sin red o timeout), no arriesgar: reportar error.
+        _ultimoError = 'leer: ' + (e.code || e.message);
         return 'error';
       }
     } else {
@@ -261,6 +263,7 @@ const Cloud = (() => {
       return 'saved';
     } catch (e) {
       console.error('Cloud saveNow error:', e);
+      _ultimoError = 'subir: ' + (e.code || e.message);
       _setSyncState(SyncState.ERROR, e.message === 'timeout' ? 'tiempo agotado' : (e.code === 'unavailable' ? 'sin conexión' : e.message));
       return 'error';
     }
@@ -533,10 +536,50 @@ const Cloud = (() => {
     return limpio(a) !== limpio(b);
   }
 
+  const _DIAG_KEY = 'dnd_sync_diag';
+  function _registrarSync(r) {
+    try { localStorage.setItem(_DIAG_KEY, JSON.stringify({ hora: new Date().toISOString(), ...r })); } catch (e) {}
+  }
+
+  // Foto de qué hay en cada lado y qué haría la sincronización, sin cambiar nada.
+  async function diagnostico() {
+    const d = { uid: _uid ? _uid.slice(0, 6) + '…' : null, online: navigator.onLine, filas: [] };
+    try { d.ultima = JSON.parse(localStorage.getItem(_DIAG_KEY) || 'null'); } catch (e) {}
+    if (!_uid) return d;
+    let nube = {}, marcas = new Set();
+    try { nube = await _withTimeout(FirebaseApp.loadAllCharsCloud(_uid), 15000); } catch (e) { d.errorNube = e.code || e.message; }
+    try { marcas = await _withTimeout(FirebaseApp.loadDeletedCloud(_uid), 15000); } catch (e) { d.errorMarcas = e.code || e.message; }
+    const locales = Storage.getAllChars();
+    const negra = Storage.getDeletedIds ? Storage.getDeletedIds() : new Set();
+    const ids = new Set([...Object.keys(locales), ...Object.keys(nube)]);
+    for (const id of ids) {
+      const l = locales[id], c = nube[id], base = getBase(id);
+      let estado;
+      if (negra.has(id)) estado = 'borrado aquí';
+      else if (marcas.has(id)) estado = 'borrado en otro dispositivo';
+      else if (!c) estado = base ? 'falta en la nube (se manda a la papelera)' : 'solo aquí (se sube)';
+      else if (!l) estado = 'solo en la nube (se baja)';
+      else if (l.updatedAt === c.updatedAt) estado = 'igual';
+      else if (!base) estado = contenidoDistinto(l, c) ? 'distinto, sin base (pregunta al abrir)' : 'igual salvo fecha';
+      else if (l.updatedAt === base) estado = 'cambió en la nube (se baja)';
+      else if (c.updatedAt === base) estado = 'cambió aquí (se sube)';
+      else estado = 'cambió en ambos (pregunta al abrir)';
+      const x = l || c;
+      d.filas.push({ nombre: x.name || '?', nivel: x.nivel, id: id.slice(-6), local: l && l.updatedAt, nube: c && c.updatedAt, base, estado,
+        kb: l ? Math.round(_tamano(l) / 1024) : null });
+    }
+    return d;
+  }
+
   async function sincronizarLista(opts = {}) {
-    if (!_uid || !navigator.onLine || _pulling || _sincronizandoLista) return null;
+    if (_sincronizandoLista) return null;
+    if (!_uid || !navigator.onLine || _pulling) {
+      _registrarSync({ noCorrio: !_uid ? 'sin sesión' : !navigator.onLine ? 'sin conexión' : 'bajada en curso' });
+      return null;
+    }
     _sincronizandoLista = true;
-    const r = { bajados: [], actualizados: [], subidos: [], borrados: [], conflictos: [], errores: 0, aviso: null };
+    const r = { bajados: [], actualizados: [], subidos: [], borrados: [], conflictos: [], errores: 0, fallos: [], aviso: null };
+    const fallo = (c, res) => { r.errores++; r.fallos.push(`${c.name || c.id}: ${res}${res === 'error' && _ultimoError ? ' (' + _ultimoError + ')' : ''}`); };
     try {
       const [nube, marcas] = await Promise.all([
         _withTimeout(FirebaseApp.loadAllCharsCloud(_uid), 15000),
@@ -599,7 +642,7 @@ const Cloud = (() => {
           r.actualizados.push(cloud.name || id);
         } else if (base && cambioLocal && !cambioNube) {
           const res = await saveNow(local);
-          if (res === 'saved') r.subidos.push(local.name || id); else r.errores++;
+          if (res === 'saved') r.subidos.push(local.name || id); else fallo(local, res);
         } else {
           r.conflictos.push(id);
         }
@@ -617,12 +660,15 @@ const Cloud = (() => {
           continue;
         }
         const res = await saveNow(local);
-        if (res === 'saved') r.subidos.push(local.name || id); else r.errores++;
+        if (res === 'saved') r.subidos.push(local.name || id); else fallo(local, res);
       }
+      _registrarSync(r);
       return r;
     } catch (e) {
       console.warn('[Cloud] sincronizarLista:', e);
-      return { error: e.code || e.message || String(e) };
+      const err = { error: e.code || e.message || String(e) };
+      _registrarSync(err);
+      return err;
     } finally {
       _sincronizandoLista = false;
     }
@@ -646,6 +692,7 @@ const Cloud = (() => {
     deleteChar,
     restaurado,
     sincronizarLista,
+    diagnostico,
     forcePullFromCloud,
     purgeDeletedFromCloud,
     saveCheckpoint,

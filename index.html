@@ -486,6 +486,17 @@
   }
   .btn-danger-sm:hover { background: rgba(200,60,60,0.12); }
 
+  .idx-diag-btn {
+    display: block; margin: 28px auto 8px; background: none; border: none;
+    color: var(--text-dim); font-family: 'Jost', sans-serif; font-size: 12px;
+    cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .sync-diag-text {
+    white-space: pre-wrap; word-break: break-word; font-size: 12px; line-height: 1.5;
+    color: var(--text); background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px; max-height: 60vh; overflow-y: auto; margin: 0;
+  }
+
   /* MODAL */
   .modal-overlay {
     display: none;
@@ -1195,6 +1206,7 @@
       </div>
     </div>
     <div class="char-grid" id="charGrid"></div>
+    <button class="idx-diag-btn" onclick="openSyncDiag()">☁ Estado de sincronización</button>
   </main>
 </div>
 
@@ -1474,13 +1486,26 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="syncDiagModal">
+  <div class="modal" style="max-width:640px;">
+    <button class="modal-close-x" onclick="closeSyncDiag()">✕</button>
+    <div class="modal-title">☁ Estado de sincronización</div>
+    <pre id="syncDiagText" class="sync-diag-text">Revisando…</pre>
+    <div class="modal-btns" style="margin-top:16px;justify-content:space-between;">
+      <button class="btn btn-ghost" onclick="copySyncDiag()">Copiar</button>
+      <button class="btn btn-ghost" onclick="resyncDiag()">Sincronizar ahora</button>
+      <button class="btn-cancel" onclick="closeSyncDiag()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=59"></script>
 <script src="js/characters.js?v=133"></script>
 <script type="module" src="js/firebase.js?v=6"></script>
 <!-- cloud.js también aquí: sincroniza la LISTA de personajes al iniciar sesión -->
-<script type="module" src="js/cloud.js?v=6"></script>
+<script type="module" src="js/cloud.js?v=7"></script>
 <script>
 // ═══════════════════════════════════════════════════
 // ESTADO DE AUTH
@@ -1656,6 +1681,45 @@ waitForFirebase(() => {
 // Espera a que cloud.js tenga la sesión y sincroniza la lista; luego
 // redibuja la grilla y avisa qué cambió.
 let _conflictosLista = new Set();
+const _fmtFecha = iso => iso ? new Date(iso).toLocaleString('es', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+async function openSyncDiag() {
+  document.getElementById('syncDiagModal').classList.add('show');
+  const el = document.getElementById('syncDiagText');
+  el.textContent = 'Revisando…';
+  if (!(window.Cloud && Cloud.diagnostico)) { el.textContent = 'La conexión con la nube no cargó.'; return; }
+  const d = await Cloud.diagnostico();
+  const L = [];
+  L.push(`Versión: v${localStorage.getItem('dnd_sw_ver') || _SW_EXPECTED_IDX} · Cuenta: ${d.uid || 'SIN SESIÓN'} · ${d.online ? 'en línea' : 'SIN CONEXIÓN'}`);
+  if (d.errorNube) L.push(`⚠ No se pudo leer la nube: ${d.errorNube}`);
+  if (d.errorMarcas) L.push(`⚠ No se pudieron leer los borrados: ${d.errorMarcas}`);
+  const u = d.ultima;
+  if (!u) L.push('Última sincronización: nunca registrada');
+  else if (u.noCorrio) L.push(`Última sincronización (${_fmtFecha(u.hora)}): no corrió — ${u.noCorrio}`);
+  else if (u.error) L.push(`Última sincronización (${_fmtFecha(u.hora)}): ⚠ ${u.error}`);
+  else {
+    L.push(`Última sincronización (${_fmtFecha(u.hora)}): ↓${u.bajados.length} ↻${u.actualizados.length} ↑${u.subidos.length} 🗑${u.borrados.length} · conflictos ${u.conflictos.length}`);
+    (u.fallos || []).forEach(f => L.push(`  ⚠ no se subió ${f}`));
+    if (u.aviso) L.push(`  ⚠ ${u.aviso}`);
+  }
+  L.push('');
+  for (const f of d.filas.sort((a, b) => a.nombre.localeCompare(b.nombre))) {
+    L.push(`${f.nombre} (Nvl ${f.nivel ?? '?'}) · …${f.id}${f.kb != null ? ' · ' + f.kb + ' KB' : ''}`);
+    L.push(`  aquí ${_fmtFecha(f.local)} · nube ${_fmtFecha(f.nube)} · base ${_fmtFecha(f.base)}`);
+    L.push(`  → ${f.estado}`);
+  }
+  el.textContent = L.join('\n');
+}
+function closeSyncDiag() { document.getElementById('syncDiagModal').classList.remove('show'); }
+function copySyncDiag() {
+  const t = document.getElementById('syncDiagText').textContent;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => showToast('Copiado'), () => showToast('No se pudo copiar'));
+}
+async function resyncDiag() {
+  document.getElementById('syncDiagText').textContent = 'Sincronizando…';
+  await _sincronizarListaInicio();
+  openSyncDiag();
+}
+
 async function _sincronizarListaInicio() {
   const t0 = Date.now();
   while (!(window.Cloud && Cloud.isLoggedIn && Cloud.isLoggedIn() && Cloud.sincronizarLista) && Date.now() - t0 < 8000) {
@@ -1664,8 +1728,9 @@ async function _sincronizarListaInicio() {
   if (!(window.Cloud && Cloud.sincronizarLista && Cloud.isLoggedIn())) return;
   const r = await Cloud.sincronizarLista();
   if (!r) return;
-  if (r.error) { showToast('⚠ No se pudo sincronizar la lista: ' + r.error); return; }
-  if (r.aviso) showToast('⚠ ' + r.aviso);
+  if (r.error) { showToast('⚠ No se pudo sincronizar la lista: ' + r.error, 8000); return; }
+  if (r.aviso) showToast('⚠ ' + r.aviso, 8000);
+  if (r.fallos && r.fallos.length) showToast('⚠ No se subió: ' + r.fallos.join(' · '), 8000);
   _conflictosLista = new Set(r.conflictos);
   if (document.getElementById('charsScreen').style.display === 'flex') renderGrid();
   const partes = [];
@@ -3020,12 +3085,12 @@ function importChars(input) {
 // ═══════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════
-function showToast(msg) {
+function showToast(msg, ms) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2400);
 }
 
 function toggleIndexTheme() {
@@ -3063,7 +3128,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 455;
+var _SW_EXPECTED_IDX = 456;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
