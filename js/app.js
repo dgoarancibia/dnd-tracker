@@ -6066,10 +6066,17 @@ const App = (() => {
     return { expr: m[1].replace(/\s+/g, ''), resto: m[2].trim() };
   }
 
+  // Lo copiado sale en español (la app sigue en inglés): ver roll20_es.js.
+  const _es = {
+    nombre: n => (window.Roll20Es ? Roll20Es.nombre(n) : n),
+    texto: t => (window.Roll20Es ? Roll20Es.texto(t) : t),
+  };
+
   function _r20Plantilla(titulo, filas) {
     const nombre = _char && _char.name ? Characters.partirNombre(_char.name).nombres : '';
-    return `&{template:default} {{name=${_r20Limpio(nombre ? nombre + ': ' + titulo : titulo)}}} ` +
-      filas.filter(Boolean).map(([k, v]) => `{{${_r20Limpio(k)}=${_r20Limpio(v)}}}`).join(' ');
+    const t = _es.nombre(titulo);
+    return `&{template:default} {{name=${_r20Limpio(nombre ? nombre + ': ' + t : t)}}} ` +
+      filas.filter(Boolean).map(([k, v]) => `{{${_r20Limpio(_es.nombre(k))}=${_r20Limpio(_es.texto(v))}}}`).join(' ');
   }
 
   // Filas de daño: una por caso ("caso normal" / "si ya tiene daño").
@@ -6108,7 +6115,7 @@ const App = (() => {
   }
 
   function _r20Descripcion(titulo, partes) {
-    return [titulo, ...partes.filter(Boolean)].join('\n');
+    return [_es.nombre(titulo), ...partes.filter(Boolean).map(_es.texto)].join('\n');
   }
 
   async function _copiarTexto(txt, aviso) {
@@ -6341,8 +6348,8 @@ const App = (() => {
 
     // Cada bono con su etiqueta: Roll20 la muestra al pasar el mouse por el
     // resultado, y la fila "Suma" deja a la vista de dónde sale cada número.
-    const _r20Partes = des => (des || []).map(x => `${_r20Bono(x.v)}[${x.l}]`).join('');
-    const _r20Texto = des => (des || []).map(x => `${x.l} ${_r20Bono(x.v)}`).join(' · ');
+    const _r20Partes = des => (des || []).map(x => `${_r20Bono(x.v)}[${_es.nombre(x.l)}]`).join('');
+    const _r20Texto = des => (des || []).map(x => `${_es.nombre(x.l)} ${_r20Bono(x.v)}`).join(' · ');
     const r20 = _r20Plantilla(w.name, [
       atkBonus != null ? ['Ataque', arma ? `[[1d20${_r20Partes(arma.desgloseAtaque)}]]` : `[[1d20${_r20Bono(atkBonus)}]]`] : null,
       arma && arma.desgloseAtaque.length ? ['Suma al ataque', _r20Texto(arma.desgloseAtaque)] : null,
