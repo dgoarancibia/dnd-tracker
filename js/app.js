@@ -8166,7 +8166,10 @@ const App = (() => {
       }
       _saveChar();
       _renderHeader();
-      _renderHabilidadesTab();
+      // La franja de stats y las skills/saves viven en el sidebar: sin esto
+      // el popup guardaba pero la pantalla seguía mostrando los valores viejos.
+      _renderStatsSidebar();
+      _renderActiveTab();
       showToast(ajusteCON
         ? `✓ CON ${conAntes} → ${_char.stats.con}: ${ajusteCON > 0 ? '+' : ''}${ajusteCON} HP máx (${_char.nivel} niveles)`
         : '✓ Personaje actualizado');
