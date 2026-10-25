@@ -1178,9 +1178,8 @@ const Characters = (() => {
           current: 3, max: 3,
           recharge: 'long',
           action: 'Acción adicional',
-          desc: 'Vinculás hasta 3 criaturas dispuestas (incluida vos) por 10 min. Mientras dos vinculadas estén a 9 m, cualquiera puede sumar 1d4 a un ataque, salvación o prueba.',
-          note: '1d4 en ataque/save/check · 9 m · 10 min · hasta 3 criaturas'
-        },
+          desc: 'Acción · vinculás BC criaturas (incluida vos) por 10 min. Mientras una vinculada esté a 9 m de otra, puede sumar 1d4 a un ataque, prueba o salvación, máx. 1 vez por turno.',
+          note: '1d4 en ataque/save/check · 9 m · 10 min · hasta 3 criaturas', fullDesc:'Acción. Elegís un número de criaturas dispuestas a 9 m o menos de vos igual a tu Bono de Competencia (podés incluirte). Creás un vínculo mágico entre ellas durante 10 minutos o hasta que vuelvas a usar este rasgo.\n\nMientras una criatura vinculada esté a 9 m o menos de otra criatura vinculada, puede tirar 1d4 y sumarlo a una tirada de ataque, prueba de característica o salvación que haga. Cada criatura puede sumar el d4 como máximo una vez por turno.\n\nUsos: igual a tu Bono de Competencia; recuperás todos al terminar un descanso largo. No gasta Channel Divinity.\n\nExpansive Bond (nv 17): la distancia entre vinculadas pasa a 18 m.' },
         {
           id: 'guiding-bolt-mi',
           name: 'Guiding Bolt (MI)',
@@ -1251,8 +1250,8 @@ const Characters = (() => {
           recharge: 'long',
           action: 'Acción',
           range: '9 m',
-          desc: 'Vinculás hasta 3 criaturas: 1d4 a ataque/prueba/salvación, 1 vez por turno cada una.',
-          fullDesc: 'Como acción, elegís hasta tu Bono de Competencia (3) en criaturas dispuestas que puedas ver a 9 m, incluida vos. El vínculo dura 10 minutos o hasta que vuelvas a usar el rasgo.\n\nMientras una criatura vinculada esté a 9 m de otra criatura vinculada, puede tirar 1d4 y sumarlo a UNA tirada de ataque, prueba de característica o salvación — máximo una vez por turno por criatura.\n\nUsos = tu Bono de Competencia, recarga con descanso largo. NO gasta Channel Divinity.\n\nNota: Peace Domain es material de Tasha\'s (2014). WotC no lo convirtió al PHB 2024, así que este texto sigue las reglas de Tasha\'s.'
+          desc: 'Acción: vinculás a BC criaturas dispuestas a 9 m (podés incluirte) por 10 min. Vinculada a ≤9 m de otra: +1d4 a ataque, prueba o salvación, 1 vez por turno. Usos = BC/descanso largo.',
+          fullDesc: 'Acción. Elegís un número de criaturas dispuestas a 9 m o menos de vos igual a tu Bono de Competencia (podés incluirte). Creás un vínculo mágico entre ellas durante 10 minutos o hasta que vuelvas a usar este rasgo.\n\nMientras una criatura vinculada esté a 9 m o menos de otra criatura vinculada, puede tirar 1d4 y sumarlo a una tirada de ataque, prueba de característica o salvación que haga. Cada criatura puede sumar el d4 como máximo una vez por turno.\n\nUsos: igual a tu Bono de Competencia; recuperás todos al terminar un descanso largo. No gasta Channel Divinity.\n\nExpansive Bond (nv 17): la distancia entre vinculadas pasa a 18 m.'
         },
         {
           id: 'cd-balm',
@@ -1262,8 +1261,8 @@ const Characters = (() => {
           recharge: 'short1',
           action: 'Acción',
           range: '1,5 m al moverte',
-          desc: 'Te movés sin provocar OA y curás 2d6+4 a cada criatura que pases al lado (una vez cada una).',
-          fullDesc: 'Usás tu acción y gastás un uso de Channel Divinity. Te movés hasta tu velocidad sin provocar ataques de oportunidad.\n\nAl pasar a 1,5 m de una criatura durante ese movimiento, podés curarla 2d6 + tu modificador de Sabiduría (+4), mínimo 1 HP. Cada criatura solo una vez por uso, pero no hay límite de cuántas alcances al moverte.\n\nNota: Peace Domain es material de Tasha\'s (2014), no convertido al PHB 2024.'
+          desc: 'Acción + 1 Channel Divinity: te movés hasta tu velocidad sin provocar ataques de oportunidad y curás 2d6 + SAB (mín. 1) a cada otra criatura a la que pases a 1,5 m (1 vez cada una).',
+          fullDesc: 'Acción + 1 uso de Channel Divinity. Te movés hasta tu velocidad sin provocar ataques de oportunidad. Cuando durante ese movimiento te movés a 1,5 m o menos de cualquier OTRA criatura, podés hacer que recupere 2d6 + tu mod. de Sabiduría PG (mínimo 1). Cada criatura solo puede recibir esta curación una vez por uso. No te cura a vos.'
         },
         {
           id: 'cd-spark',
@@ -1273,8 +1272,8 @@ const Characters = (() => {
           recharge: 'short1',
           action: 'Acción',
           range: '9 m',
-          desc: 'Cura 1d8+4, o daño radiante/necrótico con save de CON (mitad si tiene éxito).',
-          fullDesc: 'Usás tu acción (Mágica) y gastás un uso de Channel Divinity. Apuntás tu Símbolo Sagrado a otra criatura a 9 m y tirás 1d8 + tu modificador de Sabiduría (+4). Elegís:\n\n• CURAR a la criatura esa cantidad, o\n• DAÑARLA: hace salvación de Constitución contra tu CD (15). Si falla recibe el total en daño Necrótico o Radiante (vos elegís el tipo); si tiene éxito, la mitad redondeando abajo.\n\nEscala: 2d8 a nivel 7, 3d8 a nivel 13, 4d8 a nivel 18.\n\nCorregido: la versión anterior decía "dados = mod SAB" y alcance 18 m, que son datos de 2014.'
+          desc: 'Acción Mágica + 1 Channel Divinity · 9 m, criatura que veas · 1d8+SAB: curás eso o salvación de CON (falla: total necrótico/radiante; éxito: mitad).',
+          fullDesc: 'Acción Mágica + 1 uso de Channel Divinity. Apuntás tu Símbolo Sagrado a otra criatura que puedas ver a 9 m o menos y tirás 1d8 + tu mod. de Sabiduría. Elegís:\n\n• CURAR: la criatura recupera PG iguales al total.\n• DAÑAR: la criatura hace una salvación de Constitución contra tu CD de conjuros de Clérigo. Si falla, recibe el total como daño Necrótico o Radiante (a tu elección); si tiene éxito, la mitad (redondeando hacia abajo).\n\nDados: 1d8 (nv 2), 2d8 (nv 7), 3d8 (nv 13), 4d8 (nv 18).'
         },
         {
           id: 'cd-undead',
@@ -1284,8 +1283,8 @@ const Characters = (() => {
           recharge: 'short1',
           action: 'Acción',
           range: '9 m (área)',
-          desc: 'No-muertos que elijas y fallen save de SAB quedan Asustados e Incapacitados 1 min. Sear Undead suma daño radiante.',
-          fullDesc: 'Usás tu acción (Mágica) y gastás un uso de Channel Divinity. Cada no-muerto que elijas a 9 m debe hacer una salvación de Sabiduría contra tu CD de conjuro (15). Si falla, queda Asustado e Incapacitado durante 1 minuto, y en sus turnos huye lo más lejos posible de vos.\n\nEl efecto termina antes si la criatura recibe CUALQUIER daño, si vos quedás Incapacitada o si morís.\n\nSear Undead (nivel 5): tirás d8 igual a tu modificador de Sabiduría (mínimo 1d8) y cada no-muerto que falle la salvación recibe ese total en daño radiante. Ojo: ese daño NO termina el efecto de Turn.'
+          desc: 'Acción Mágica + 1 Channel Divinity · No-muertos elegidos a 9 m: salvación de SAB o Asustados e Incapacitados 1 min (terminan si reciben daño). Sear Undead: +SAB d8 radiante a los que fallen.',
+          fullDesc: 'Acción Mágica + 1 uso de Channel Divinity. Presentás tu Símbolo Sagrado: cada No-muerto que elijas a 9 m o menos hace una salvación de Sabiduría contra tu CD de conjuros de Clérigo. Si falla, queda Asustado e Incapacitado durante 1 minuto y, durante ese tiempo, en sus turnos intenta alejarse de vos lo más posible.\n\nEl efecto termina antes sobre esa criatura si recibe cualquier daño, si vos quedás Incapacitado o si morís.\n\nSear Undead (nv 5): además podés tirar tantos d8 como tu mod. de Sabiduría (mínimo 1d8); cada No-muerto que falle esta salvación recibe ese total como daño Radiante. Este daño NO termina el efecto de Turn Undead.'
         },
         {
           id: 'protective-bond',
@@ -1295,8 +1294,8 @@ const Characters = (() => {
           recharge: null,
           action: 'Reacción',
           range: '9 m',
-          desc: 'Un aliado vinculado puede teletransportarse para recibir el daño en tu lugar.',
-          fullDesc: 'A nivel 6, el Emboldening Bond se vuelve más poderoso con Protective Bond.\n\nCuando una criatura vinculada por tu Emboldening Bond va a recibir daño, otra criatura vinculada que esté a 9 m o menos puede usar su reacción para teletransportarse al espacio de la primera criatura y recibir todo el daño en su lugar.\n\nCondiciones:\n1. Ambas criaturas deben estar actualmente vinculadas por tu Emboldening Bond.\n2. La criatura que interviene debe estar a 9 m o menos de quien va a recibir el daño.\n3. La criatura que interviene debe poder ver a la criatura objetivo.\n4. La criatura que interviene usa su reacción.\n\nEsto convierte el bond en una herramienta de protección activa — los aliados vinculados pueden literalmente interponerse por los demás.'
+          desc: 'Reacción de una vinculada: cuando otra vinculada a 9 m va a recibir daño, se teletransporta a un espacio desocupado a 1,5 m de ella y recibe todo ese daño en su lugar.',
+          fullDesc: 'Reacción de la criatura que interviene (no tuya, salvo que seas vos quien interviene). Cuando una criatura afectada por tu Emboldening Bond está a punto de recibir daño, una segunda criatura vinculada que esté a 9 m o menos de la primera puede usar su reacción para teletransportarse a un espacio desocupado a 1,5 m o menos de la primera. La segunda criatura recibe entonces todo ese daño en su lugar.\n\nRequiere que ambas sigan vinculadas (vínculo de 10 min activo). Cualquier vinculada puede intervenir por cualquier otra, incluida vos.\n\nExpansive Bond (nv 17): el alcance sube a 18 m y quien recibe el daño ajeno tiene Resistencia a ese daño.'
         },
         {
           id: 'servirse-poder-divino',
@@ -1453,9 +1452,9 @@ const Characters = (() => {
       ],
       features: (nivel) => [
         { id:'cleric-spellcasting', name:'Spellcasting (SAB)', source:'Clérigo · Nivel 1', type:'passive', action:'Varía', range:'Varía', recharge:null,
-          desc:'Lanzas conjuros divinos usando Sabiduría como stat de conjuro.', fullDesc:'' },
-        { id:'channel-divinity', name:'Channel Divinity', source:`Clérigo · Nivel 1 (${nivel>=6?3:nivel>=2?2:1} usos)`, type:'active', action:'Acción', range:'Varía', recharge:'short',
-          desc:`${nivel>=6?3:nivel>=2?2:1} uso${nivel>=6?'s':nivel>=2?'s':''} por Short Rest. Turn Undead · Divine Spark.`, fullDesc:'' },
+          desc:'Lanzás conjuros de Clérigo con Sabiduría. CD = 8 + BC + SAB; ataque = BC + SAB. Preparás conjuros tras cada descanso largo.', fullDesc:'Característica: Sabiduría. CD de salvación = 8 + Bono de Competencia + mod. SAB. Ataque de conjuro = Bono de Competencia + mod. SAB. Foco: Símbolo Sagrado.\n\nTRUCOS: conocés 3 trucos de la lista de Clérigo; aprendés uno más a nv 4 y otro a nv 10 (3 → 4 → 5). Cada vez que ganás un nivel de Clérigo podés reemplazar un truco por otro de la lista de Clérigo.\n\nCONJUROS PREPARADOS (nv 1+): cantidad según nivel — 4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22 (nv 1 a 20). Deben ser de un nivel para el que tengas espacios. Al terminar un descanso largo podés cambiar cualquiera de la lista por otros conjuros de Clérigo.\n\nLos conjuros que otro rasgo de Clérigo te da siempre preparados (p. ej. los del dominio) no cuentan para ese número y cuentan como conjuros de Clérigo.\n\nESPACIOS: según la tabla de Clérigo; recuperás todos al terminar un descanso largo.' },
+        ...(nivel >= 2 ? [{ id:'channel-divinity', name:'Channel Divinity', source:`Clérigo · Nivel 2 (${nivel>=18?4:nivel>=6?3:2} usos)`, type:'active', action:'Acción', range:'Varía', recharge:'short1',
+          desc:`${nivel>=18?4:nivel>=6?3:2} usos. Descanso corto: recuperás 1; largo: todos. Opciones: Divine Spark y Turn Undead (+ las del dominio).`, fullDesc:'Canalizás energía divina para crear un efecto. Empezás con dos: Divine Spark y Turn Undead; cada vez que lo usás elegís cuál. Tu subclase puede darte más opciones (Balm of Peace).\n\nUsos: 2 (nv 2-5), 3 (nv 6-17), 4 (nv 18-20). Recuperás UN uso gastado al terminar un descanso corto y todos al terminar uno largo.\n\nSi un efecto pide salvación, la CD es tu CD de conjuros de Clérigo.\n\nDIVINE SPARK — Acción Mágica + 1 uso de Channel Divinity. Apuntás tu Símbolo Sagrado a otra criatura que puedas ver a 9 m o menos y tirás 1d8 + tu mod. de Sabiduría. Elegís:\n\n• CURAR: la criatura recupera PG iguales al total.\n• DAÑAR: la criatura hace una salvación de Constitución contra tu CD de conjuros de Clérigo. Si falla, recibe el total como daño Necrótico o Radiante (a tu elección); si tiene éxito, la mitad (redondeando hacia abajo).\n\nDados: 1d8 (nv 2), 2d8 (nv 7), 3d8 (nv 13), 4d8 (nv 18).\n\nTURN UNDEAD — Acción Mágica + 1 uso de Channel Divinity. Presentás tu Símbolo Sagrado: cada No-muerto que elijas a 9 m o menos hace una salvación de Sabiduría contra tu CD de conjuros de Clérigo. Si falla, queda Asustado e Incapacitado durante 1 minuto y, durante ese tiempo, en sus turnos intenta alejarse de vos lo más posible.\n\nEl efecto termina antes sobre esa criatura si recibe cualquier daño, si vos quedás Incapacitado o si morís.\n\nSear Undead (nv 5): además podés tirar tantos d8 como tu mod. de Sabiduría (mínimo 1d8); cada No-muerto que falle esta salvación recibe ese total como daño Radiante. Este daño NO termina el efecto de Turn Undead.' }] : []),
         ...(nivel >= 2 ? [{ id:'harness-divine-power', name:'Harness Divine Power', source:'Clérigo · Nivel 2', type:'active', action:'Acción bonus', range:'Personal', recharge:'long',
           desc:'Recuperas un slot de conjuro gastado (máx nivel = mitad Prof Bonus). 1 uso/Long Rest.', fullDesc:'' }] : []),
         // Divine Order es nivel 1 en 2024 y es una elección propia, distinta
@@ -1466,28 +1465,28 @@ const Characters = (() => {
         ...(nivel >= 3 ? [{ id:'cleric-subclass', name:'Subclase (Dominio Divino)', source:'Clérigo · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Elegís tu dominio divino, que otorga rasgos y conjuros siempre preparados.', fullDesc:'' }] : []),
         ...(nivel >= 4 ? [{ id:'cleric-asi-4', name:'Ability Score Improvement', source:'Clérigo · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'+2 a un stat o +1 a dos stats. Puedes tomar un Feat en su lugar.', fullDesc:'' }] : []),
+          desc:'Dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganás la dote Ability Score Improvement (+2 a una característica o +1 a dos características; ninguna puede superar 20) u otra dote de tu elección para la que cumplas los requisitos. Se gana a nv 4, 8, 12 y 16 de Clérigo (a nv 19 se gana Epic Boon en su lugar).' }] : []),
         ...(nivel >= 5 ? [{ id:'sear-undead', name:'Sear Undead', source:'Clérigo · Nivel 5', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Al usar Turn Undead, tirás d8 = tu mod. SAB (mín 1d8). Cada no-muerto que falle la salvación recibe ese total en daño radiante. El daño NO termina el efecto de Turn.', fullDesc:'Sear Undead (PHB 2024 · Clérigo nivel 5)\n\nSiempre que uses Turn Undead, podés tirar un número de d8 igual a tu modificador de Sabiduría (mínimo 1d8). Suma los dados: cada No-muerto que FALLE la salvación de ese Turn Undead recibe esa cantidad de daño Radiante.\n\nEl daño no termina el efecto de Turn Undead sobre la criatura.\n\nReemplaza a Destroy Undead, que no existe en 2024: en vez de destruir por umbral de CR, hace daño a todo no-muerto que falle sin importar su CR.' }] : []),
         ...(nivel >= 6 ? [{ id:'channel-divinity-2', name:'Channel Divinity (3 usos)', source:'Clérigo · Nivel 6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
           desc:'Channel Divinity pasa a 3 usos (4 a nivel 18). Un descanso corto devuelve 1 uso; el largo, todos.', fullDesc:'' }] : []),
         ...(nivel >= 7 ? [{ id:'blessed-strikes', name:'Blessed Strikes', source:'Clérigo · Nivel 7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Elegís una: Divine Strike (1 vez por turno, al impactar con arma +1d8 necrótico o radiante) o Potent Spellcasting (sumás mod. SAB al daño de tus trucos).',
-          fullDesc:`Blessed Strikes (PHB 2024 · Clérigo nivel 7)\n\nElegís UNA de estas dos opciones:\n\n• DIVINE STRIKE — Una vez por turno, al impactar con una tirada de ataque usando un arma, causás 1d8 de daño Necrótico o Radiante extra.\n\n• POTENT SPELLCASTING — Sumás tu modificador de Sabiduría al daño de cualquier truco de Clérigo.\n\nImproved Blessed Strikes (nivel 14): Divine Strike sube a 2d8. Potent Spellcasting pasa a darte, al dañar con un truco, PG temporales = 2× tu mod. de Sabiduría, para vos o una criatura a 18 m.\n\nSobre el Dominio de la Paz: en 2014 el dominio otorgaba Potent Spellcasting a nivel 8. El PHB 2024 dice que si una subclase de un libro antiguo te da esa opción, usás SOLO la que elijas acá. Por eso el dominio ya no la lista.${nivel >= 14 ? '\n\nYa tenés Improved Blessed Strikes.' : ''}` }] : []),
+          desc:'Elegís una: Divine Strike (una vez en cada uno de tus turnos, al impactar con un ataque con arma: +1d8 necrótico o radiante) o Potent Spellcasting (+mod. SAB al daño de tus trucos de Clérigo).',
+          fullDesc:'Blessed Strikes (PHB 2024 · Clérigo nivel 7)\n\nElegís UNA de estas opciones (si una subclase de un libro antiguo te da alguna de ellas, usás solo la que elijas acá):\n\n• DIVINE STRIKE — Una vez en cada uno de tus turnos, cuando impactás a una criatura con una tirada de ataque usando un arma, podés hacerle 1d8 de daño Necrótico o Radiante extra (a tu elección). No aplica en turnos ajenos (p. ej. ataques de oportunidad).\n\n• POTENT SPELLCASTING — Sumás tu mod. de Sabiduría al daño que hacés con cualquier truco de Clérigo.\n\nImproved Blessed Strikes (nv 14): Divine Strike sube a 2d8. Potent Spellcasting: cuando lanzás un truco de Clérigo y dañás a una criatura, podés dar PG temporales iguales a 2× tu mod. de Sabiduría a vos o a otra criatura a 18 m o menos.\n\nDominio de la Paz: el Potent Spellcasting de nivel 8 de Tasha\'s no se usa; vale solo lo elegido acá.' }] : []),
         ...(nivel >= 8 ? [{ id:'cleric-asi-8', name:'Ability Score Improvement', source:'Clérigo · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'+2 a un stat o +1 a dos stats. Puedes tomar un Feat en su lugar.', fullDesc:'' }] : []),
+          desc:'Dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganás la dote Ability Score Improvement (+2 a una característica o +1 a dos características; ninguna puede superar 20) u otra dote de tu elección para la que cumplas los requisitos. Se gana a nv 4, 8, 12 y 16 de Clérigo (a nv 19 se gana Epic Boon en su lugar).' }] : []),
         ...(nivel >= 10 ? [{ id:'divine-intervention', name:'Divine Intervention', source:'Clérigo · Nivel 10', type:'active', action:'Acción', range:'Personal', recharge:'long',
-          desc:'Invocas la ayuda directa de tu deidad. Siempre funciona a nivel 20.', fullDesc:'' }] : []),
+          desc:'Acción Mágica: lanzás cualquier conjuro de Clérigo de nivel 5 o menor (que no use Reacción) sin gastar espacio ni componentes materiales. 1/descanso largo.', fullDesc:'Acción Mágica. Elegís cualquier conjuro de Clérigo de nivel 5 o menor que no requiera una Reacción para lanzarse y, como parte de la misma acción, lo lanzás sin gastar un espacio de conjuro ni necesitar componentes Materiales. No podés volver a usar este rasgo hasta terminar un descanso largo.\n\nGreater Divine Intervention (nv 20): podés elegir Wish; si lo hacés, no podés volver a usar Divine Intervention hasta terminar 2d4 descansos largos.' }] : []),
         ...(nivel >= 12 ? [{ id:'cleric-asi-12', name:'Ability Score Improvement', source:'Clérigo · Nivel 12', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
+          desc:'Dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganás la dote Ability Score Improvement (+2 a una característica o +1 a dos características; ninguna puede superar 20) u otra dote de tu elección para la que cumplas los requisitos. Se gana a nv 4, 8, 12 y 16 de Clérigo (a nv 19 se gana Epic Boon en su lugar).' }] : []),
         ...(nivel >= 14 ? [{ id:'improved-blessed-strikes', name:'Improved Blessed Strikes', source:'Clérigo · Nivel 14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Blessed Strikes mejora: +2d8 daño radiante en lugar de +1d8.', fullDesc:'' }] : []),
+          desc:'Divine Strike sube a 2d8 necrótico o radiante. Si elegiste Potent Spellcasting: al dañar con un truco de Clérigo, das PG temporales = 2× mod. SAB a vos o a alguien a 18 m.', fullDesc:'La opción que elegiste en Blessed Strikes mejora:\n\n• DIVINE STRIKE — el daño extra sube a 2d8 Necrótico o Radiante (a tu elección), una vez en cada uno de tus turnos al impactar con un ataque con arma.\n\n• POTENT SPELLCASTING — cuando lanzás un truco de Clérigo y hacés daño a una criatura con él, podés dar PG temporales iguales al doble de tu mod. de Sabiduría a vos o a otra criatura a 18 m o menos.' }] : []),
         ...(nivel >= 16 ? [{ id:'cleric-asi-16', name:'Ability Score Improvement', source:'Clérigo · Nivel 16', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
+          desc:'Dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganás la dote Ability Score Improvement (+2 a una característica o +1 a dos características; ninguna puede superar 20) u otra dote de tu elección para la que cumplas los requisitos. Se gana a nv 4, 8, 12 y 16 de Clérigo (a nv 19 se gana Epic Boon en su lugar).' }] : []),
         ...(nivel >= 19 ? [{ id:'cleric-asi-19', name:'Epic Boon', source:'Clérigo · Nivel 19', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Ganas un Epic Boon feat.', fullDesc:'' }] : []),
+          desc:'Ganás una dote de Don Épico (Epic Boon) u otra dote para la que califiques. Recomendado: Boon of Fate.', fullDesc:'Ganás una dote de Don Épico (Epic Boon) u otra dote de tu elección para la que cumplas los requisitos. Se recomienda Boon of Fate.' }] : []),
         ...(nivel >= 20 ? [{ id:'greater-divine-intervention', name:'Greater Divine Intervention', source:'Clérigo · Nivel 20', type:'active', action:'Acción', range:'Personal', recharge:'long',
-          desc:'Divine Intervention siempre tiene éxito y no requiere Long Rest para volver a usarse.', fullDesc:'' }] : []),
+          desc:'Al usar Divine Intervention podés elegir Wish. Si lo hacés, no podés volver a usar Divine Intervention hasta terminar 2d4 descansos largos.', fullDesc:'Cuando usás Divine Intervention, podés elegir el conjuro Wish (se lanza sin espacio ni componentes materiales, como el resto de Divine Intervention). Si elegís Wish, no podés volver a usar Divine Intervention hasta terminar 2d4 descansos largos (tirá el d4 al lanzarlo). Si elegís otro conjuro, Divine Intervention se recupera normalmente con 1 descanso largo.' }] : []),
       ],
     },
     'Bárbaro': {
@@ -1504,8 +1503,8 @@ const Characters = (() => {
           desc:'Sin armadura: CA = 10 + mod DES + mod CON.', fullDesc:'' },
         { id:'weapon-mastery-barb', name:'Maestría con Armas',
           source:'Bárbaro · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:`Puedes usar la propiedad Mastery de ${nivel>=4?3:2} armas distintas. Cambias las armas elegidas al terminar un descanso largo.`,
-          fullDesc:`Puedes usar la propiedad Mastery de ${nivel>=4?3:2} armas con las que tengas competencia.\n\n• Bárbaro: 2 armas (nv1) → 3 (nv4)\n\nVer la feature Maestría con Armas del Guerrero para el detalle de cada propiedad (Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex).` },
+          desc:`Puedes usar la propiedad Mastery de ${nivel>=10?4:nivel>=4?3:2} armas distintas. Cambias UNA de las armas elegidas al terminar un descanso largo.`,
+          fullDesc:`Puedes usar la propiedad Mastery de ${nivel>=10?4:nivel>=4?3:2} armas con las que tengas competencia.\n\n• Bárbaro: 2 armas (nv1) → 3 (nv4) → 4 (nv10)\n\nVer la feature Maestría con Armas del Guerrero para el detalle de cada propiedad (Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex).` },
         ...(nivel >= 2 ? [{ id:'reckless-attack', name:'Reckless Attack', source:'Bárbaro · Nivel 2', type:'active', action:'Ninguna (parte del ataque)', range:'Personal', recharge:null,
           desc:'Ventaja en ataques cuerpo a cuerpo con STR este turno, pero los ataques contra ti tienen ventaja hasta tu próximo turno.', fullDesc:'' }] : []),
         ...(nivel >= 2 ? [{ id:'danger-sense', name:'Danger Sense', source:'Bárbaro · Nivel 2', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
@@ -1638,30 +1637,30 @@ const Characters = (() => {
         {
           id: 'favored-enemy', name: 'Favored Enemy',
           source: 'Explorador · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Hunter\'s Mark sin gastar espacio de conjuro (usos por Descanso Largo). Sigue requiriendo concentración.',
-          fullDesc: 'D&D 2024: Favored Enemy ya no es una lista de tipos para elegir. En su lugar, el Explorador tiene Hunter\'s Mark integrado:\n\n• Lanzas Hunter\'s Mark sin gastar slot de conjuro.\n• Usos gratuitos por Descanso Largo: 2 (nv1), 3 (nv5), 4 (nv9), 5 (nv13), 6 (nv17).\n• Hunter\'s Mark SIGUE requiriendo concentración: lo que cambia es que no gasta espacio de conjuro.\n• El daño extra (+1d6) se aplica a cualquier criatura que marques, sin restricción de tipo.',
+          desc: 'Hunter\'s Mark siempre preparado; lo lanzas sin gastar espacio de conjuro (2-6 usos por Long Rest). Sigue requiriendo concentración.',
+          fullDesc: 'Siempre tienes preparado el conjuro Hunter\'s Mark (no cuenta para tu número de conjuros preparados). Puedes lanzarlo sin gastar espacio de conjuro un número de veces según tu nivel de Explorador, y recuperas todos los usos al terminar un Long Rest:\n• 2 usos (nv1), 3 (nv5), 4 (nv9), 5 (nv13), 6 (nv17).\nTambién puedes lanzarlo gastando espacios de conjuro normalmente.\n\nHunter\'s Mark (nivel 1, Adivinación):\n• Tiempo de lanzamiento: Acción adicional. Alcance: 27 m (90 ft). Componente: V.\n• Duración: Concentración, hasta 1 hora (hasta 8 h con espacio de nivel 3-4; hasta 24 h con espacio de nivel 5+).\n• Marcas a una criatura que puedas ver dentro del alcance. Mientras dure, le infliges 1d6 de daño de Fuerza extra cada vez que la golpeas con una tirada de ataque (1d10 desde nv20, Foe Slayer).\n• Tienes Ventaja en las pruebas de Sabiduría (Percepción o Supervivencia) para encontrarla.\n• Si el objetivo llega a 0 PG antes de que termine el conjuro, puedes usar una Acción adicional para mover la marca a otra criatura que puedas ver dentro del alcance.\n\nNo hay restricción de tipo de criatura (las listas de enemigos predilectos eran de 2014).',
         },
         { id:'weapon-mastery-ranger', name:'Maestría con Armas',
           source:'Explorador · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:`Puedes usar la propiedad Mastery de ${nivel>=4?3:2} armas distintas. Cambias las armas elegidas al terminar un descanso largo.`,
-          fullDesc:`Puedes usar la propiedad Mastery de ${nivel>=4?3:2} armas con las que tengas competencia.\n\n• Explorador: 2 armas (nv1) → 3 (nv4)\n\nVer la feature Maestría con Armas del Guerrero para el detalle de cada propiedad (Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex).` },
+          desc:'Usas la propiedad de maestría de 2 tipos de armas simples o marciales con los que tengas competencia (p. ej., Longbow y Shortsword). Puedes cambiarlos al terminar un Long Rest.',
+          fullDesc:'Tu entrenamiento te permite usar la propiedad de maestría (Mastery) de 2 tipos de armas simples o marciales a tu elección con los que tengas competencia (p. ej., Longbow y Shortsword).\n\n• La cantidad no aumenta con el nivel (a diferencia del Guerrero o el Bárbaro).\n• Al terminar un Long Rest puedes cambiar los tipos de armas elegidos.\n\nVer la feature Maestría con Armas del Guerrero para el detalle de cada propiedad (Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex).' },
         {
           id: 'ranger-spellcasting', name: 'Spellcasting (SAB)',
           source: 'Explorador · Nivel 1', type: 'active', action: 'Varía', range: 'Varía', recharge: null,
-          desc: 'Lanzas conjuros de Ranger usando SAB. Half-caster: 2 slots de nivel 1 desde nv1.',
-          fullDesc: 'Desde nivel 1 canalizas la magia de la naturaleza.\n\nStat de conjuro: Sabiduría (SAB)\nCD de conjuros: 8 + Prof Bonus + mod SAB\nBonus de ataque: Prof Bonus + mod SAB\n\nConjuros preparados: empezás preparando 2 conjuros de nivel 1. El máximo sube según la tabla del Ranger (no se calcula con el modificador).\n\nSlots: Half-caster. Ya en nivel 1 tienes 2 slots de nivel 1. Los slots aumentan más lento que los full-casters y llegás a nivel de conjuro 5 como máximo.\n\nHunter\'s Mark: Desde el PHB 2024, Hunter\'s Mark es parte de la habilidad de clase del Ranger y puede lanzarse sin gastar slot un número de veces por Long Rest.',
+          desc: 'Lanzas conjuros de Explorador con SAB. Half-caster: 2 espacios de nivel 1 desde nv1. Cambias 1 conjuro preparado por Long Rest.',
+          fullDesc: 'Característica de conjuro: Sabiduría.\nCD de salvación: 8 + Bono de Competencia + mod SAB.\nBono de ataque de conjuro: Bono de Competencia + mod SAB.\nFoco: puedes usar un Druidic Focus como foco de lanzamiento.\n\nEspacios de conjuro: según la tabla del Explorador (half-caster; desde nv1 tienes 2 espacios de nivel 1; nivel de conjuro máximo 5, desde nv17). Recuperas todos los espacios al terminar un Long Rest.\n\nConjuros preparados: empiezas con 2 conjuros de Explorador de nivel 1 (recomendados Cure Wounds y Ensnaring Strike). El número sube con tu nivel (no depende del modificador): 2 (nv1), 3 (nv2), 4 (nv3), 5 (nv4), 6 (nv5-6), 7 (nv7-8), 9 (nv9-10), 10 (nv11-12), 11 (nv13-14), 12 (nv15-16), 14 (nv17-18), 15 (nv19-20). Deben ser de un nivel para el que tengas espacios.\nLos conjuros que otra feature de Explorador te da siempre preparados (como Hunter\'s Mark) no cuentan para ese número, pero cuentan como conjuros de Explorador.\n\nCambiar conjuros preparados: al terminar un Long Rest puedes reemplazar UN conjuro de tu lista por otro conjuro de Explorador para el que tengas espacios.',
         },
         ...(nivel >= 2 ? [{
           id: 'deft-explorer', name: 'Deft Explorer',
           source: 'Explorador · Nivel 2', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Expertise en 1 habilidad con proficiencia y conoces 2 idiomas más.',
-          fullDesc: 'A nivel 2 te conviertes en un explorador consumado:\n\n• Expertise: eliges 1 habilidad en la que tengas proficiencia. Tu Bono de Competencia se duplica para esa habilidad.\n• Idiomas: conoces 2 idiomas más a tu elección.\n\nNota: la Expertise de 2 habilidades adicionales llega a nivel 9 (feature Expertise).',
+          desc: 'Expertise en 1 habilidad con competencia (sin Expertise previa) y conoces 2 idiomas más.',
+          fullDesc: 'Gracias a tus viajes obtienes:\n\n• Expertise: eliges una de tus habilidades con competencia en la que no tengas Expertise. Ganas Expertise en ella (tu Bono de Competencia se duplica en sus pruebas).\n• Idiomas: conoces 2 idiomas a tu elección de las tablas de idiomas de creación de personaje.\n\nEn nv9 (Expertise) ganas Expertise en 2 habilidades más.',
         }] : []),
         ...(nivel >= 2 ? [{
           id: 'ranger-fighting-style', name: 'Fighting Style',
           source: 'Explorador · Nivel 2', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Estilo de combate especializado. El Ranger tiene acceso a un subconjunto de estilos.',
-          fullDesc: 'A nivel 2 adoptas un estilo de combate especializado. Las opciones disponibles para el Ranger son:\n\n• Archery — +2 a tiradas de ataque con armas a distancia.\n• Blind Fighting — Visión ciega 3 m. Puedes ver criaturas invisibles no ocultas.\n• Defense — +1 CA mientras llevas armadura.\n• Druidic Warrior — Aprendes dos cantrips de la lista del Druida (SAB como stat de conjuro). Cuentan como conjuros de Ranger.\n• Dueling — +2 al daño con arma de una mano sin otra arma en la otra mano.\n• Thrown Weapon Fighting — +2 al daño con armas arrojadizas; puedes sacarlas como parte del ataque.\n• Two-Weapon Fighting — Sumas el mod de stat al daño del ataque con la mano secundaria.',
+          desc: 'Ganas un feat de Fighting Style a tu elección (cualquiera), o la opción Druidic Warrior (2 cantrips de Druida).',
+          fullDesc: 'Ganas un feat de Fighting Style a tu elección. En lugar de un feat puedes elegir Druidic Warrior.\n\n• Archery — +2 a las tiradas de ataque con armas a distancia.\n• Blind Fighting — Tienes Visión Ciega (Blindsight) de 3 m (10 ft).\n• Defense — +1 a la CA mientras llevas armadura ligera, media o pesada.\n• Dueling — Si empuñas un arma cuerpo a cuerpo en una mano y ninguna otra arma, +2 al daño con esa arma.\n• Great Weapon Fighting — Al tirar daño de un ataque con un arma cuerpo a cuerpo empuñada a dos manos (con la propiedad Two-Handed o Versatile), puedes tratar cualquier 1 o 2 en un dado de daño como un 3.\n• Interception — Cuando una criatura que puedes ver golpea con una tirada de ataque a otra criatura a 1,5 m (5 ft) de ti, puedes usar tu Reacción para reducir el daño a ese objetivo en 1d10 + tu Bono de Competencia. Debes empuñar un escudo o un arma simple o marcial.\n• Protection — Cuando una criatura que puedes ver ataca a un objetivo distinto de ti que está a 1,5 m (5 ft), puedes usar tu Reacción para interponer tu escudo (si empuñas uno): impones Desventaja a ese ataque y a todos los demás ataques contra ese objetivo hasta el inicio de tu próximo turno, mientras sigas a 1,5 m de él.\n• Thrown Weapon Fighting — Cuando golpeas con una tirada de ataque a distancia usando un arma con la propiedad Thrown, +2 a la tirada de daño.\n• Two-Weapon Fighting — Cuando haces el ataque extra por usar un arma con la propiedad Light, puedes sumar tu modificador de característica al daño de ese ataque si no lo estás sumando ya.\n• Unarmed Fighting — Cuando golpeas con un Unarmed Strike y haces daño, puedes infligir 1d6 + mod FUE de daño contundente en lugar del normal; si no empuñas armas ni escudo al hacer la tirada de ataque, el d6 pasa a d8. Al inicio de cada uno de tus turnos puedes infligir 1d4 de daño contundente a una criatura que tengas Apresada (Grappled).\n• Druidic Warrior (opción del Explorador, no es feat) — Aprendes 2 cantrips de Druida a tu elección (recomendados Guidance y Starry Wisp). Cuentan como conjuros de Explorador y usan SAB. Cada vez que subes un nivel de Explorador puedes reemplazar uno de ellos por otro cantrip de Druida.',
         }] : []),
         ...(nivel >= 5 ? [{
           id: 'extra-attack-ranger', name: 'Extra Attack',
@@ -1678,8 +1677,8 @@ const Characters = (() => {
         ...(nivel >= 9 ? [{
           id: 'expertise-ranger', name: 'Expertise',
           source: 'Explorador · Nivel 9', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Eliges 2 habilidades más con proficiencia: tu Prof Bonus se duplica para ellas.',
-          fullDesc: 'A nivel 9 eliges 2 habilidades más en las que tengas proficiencia. Tu Bono de Competencia se duplica para esas habilidades.\n\nSe suman a la habilidad que ya elegiste con Deft Explorer en nivel 2.',
+          desc: 'Ganas Expertise en 2 habilidades con competencia en las que aún no la tengas.',
+          fullDesc: 'Eliges 2 de tus habilidades con competencia en las que no tengas Expertise. Ganas Expertise en ellas (tu Bono de Competencia se duplica en sus pruebas).\n\nSe suman a la habilidad elegida con Deft Explorer en nv2.',
         }] : []),
         ...(nivel >= 10 ? [{
           id: 'tireless', name: 'Tireless',
@@ -1714,7 +1713,7 @@ const Characters = (() => {
         ...(nivel >= 19 ? [{
           id: 'ranger-asi-19', name: 'Epic Boon',
           source: 'Explorador · Nivel 19', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Ganas un Epic Boon feat.', fullDesc: '',
+          desc: 'Ganas un feat de Epic Boon u otro feat para el que califiques.', fullDesc: 'Ganas un feat de Epic Boon (requisito nivel 19+) u otro feat para el que califiques. Recomendado: Boon of Dimensional Travel (+1 a una característica, máx. 30; inmediatamente después de usar la acción de Ataque o una Acción Mágica, puedes teletransportarte hasta 9 m (30 ft) a un espacio desocupado que puedas ver).',
         }] : []),
         ...(nivel >= 20 ? [{
           id: 'foe-slayer', name: 'Foe Slayer',
@@ -1730,16 +1729,16 @@ const Characters = (() => {
           current: nivel >= 17 ? 2 : 1, max: nivel >= 17 ? 2 : 1,
           recharge:'short', note:'Turno extra de acciones',
           action:'Sin acción', range:'Personal',
-          desc:`Tomas una acción adicional completa este turno.${nivel>=17?' 2 usos por descanso.':' 1 uso por descanso corto/largo.'}`,
-          fullDesc:'Puedes tomar una acción adicional en tu turno ademas de tu acción normal y de tu posible acción adicional. Una vez que usas esta habilidad, debes terminar un descanso corto o largo para poder usarla de nuevo (2 usos desde nivel 17).' },
+          desc:`En tu turno tomas 1 acción adicional (no puede ser la acción de Magia).${nivel>=17?' 2 usos por descanso (máx. 1 por turno).':' 1 uso por descanso corto/largo.'}`,
+          fullDesc:'Puedes superar tus límites por un momento. En tu turno, puedes realizar una acción adicional, excepto la acción de Magia (Magic).\n\nUna vez usado, no puedes volver a usarlo hasta terminar un descanso corto o largo.\n\nNv17: puedes usarlo dos veces antes de descansar, pero solo una vez por turno.' },
         { id:'second-wind', name:'Second Wind',
           current: nivel >= 10 ? 4 : nivel >= 4 ? 3 : 2,
           max:     nivel >= 10 ? 4 : nivel >= 4 ? 3 : 2,
-          recharge:'short',
+          recharge:'short1',
           note:`Recupera 1d10+${nivel} HP · acción bonus`,
           action:'Acción bonus', range:'Personal',
-          desc:`Recuperas 1d10+${nivel} HP. ${nivel>=10?4:nivel>=4?3:2} usos por descanso corto/largo.`,
-          fullDesc:`Tienes una reserva de resistencia que puedes usar para protegerte del daño.\n\nComo acción adicional, recuperas puntos de golpe iguales a 1d10 + tu nivel de Guerrero (${nivel}).\n\nUeres según nivel:\nNv1-3 → 2 usos · Nv4-9 → 3 usos · Nv10+ → 4 usos\n\nRecargas todos los usos con descanso corto o largo.\n\n✦ Mente Táctica (Nv2): puedes gastar 1 uso para sumar 1d10 a una prueba de característica fallida en lugar de recuperar HP. Si aun así fallas, el uso no se gasta.\n✦ Desplazamiento Táctico (Nv5): al usar Second Wind, puedes moverte hasta la mitad de tu velocidad sin provocar ataques de oportunidad.` },
+          desc:`Acción adicional: recuperas 1d10+${nivel} PG. ${nivel>=10?4:nivel>=4?3:2} usos; descanso corto recupera 1, largo todos.`,
+          fullDesc:'Tienes una reserva limitada de resistencia física y mental.\n\nComo acción adicional, recuperas puntos de golpe iguales a 1d10 + tu nivel de Guerrero.\n\nUsos: 2 (nv1-3) · 3 (nv4-9) · 4 (nv10+).\nRecarga: recuperas 1 uso gastado al terminar un descanso corto, y todos los usos al terminar un descanso largo.\n\n✦ Mente Táctica (nv2): al fallar una prueba de característica puedes gastar 1 uso para sumar 1d10 a la prueba en vez de curarte; si aun así fallas, el uso no se gasta.\n✦ Desplazamiento Táctico (nv5): cuando usas Second Wind como acción adicional, puedes moverte hasta la mitad de tu velocidad sin provocar ataques de oportunidad.' },
         ...(nivel >= 2 ? [{
           id:'tactical-mind', name:'Mente Táctica',
           current: 0, max: 0,
@@ -1753,21 +1752,21 @@ const Characters = (() => {
           current: nivel>=17?3:nivel>=13?2:1, max: nivel>=17?3:nivel>=13?2:1,
           recharge:'long',
           action:'Ninguna (al fallar save)', range:'Personal',
-          desc:`Repetís una tirada de salvación fallida. ${nivel>=17?3:nivel>=13?2:1} uso${nivel>=13?'s':''} por Long Rest. Debes usar el nuevo resultado.`,
-          fullDesc:`A partir del nivel 9, cuando fallas una tirada de salvación puedes volver a tirarla. Debes usar el nuevo resultado.\n\n1 uso (nv9) · 2 usos (nv13) · 3 usos (nv17). Se recarga con Long Rest.` }] : []),
+          desc:`Al fallar una salvación, la repites sumando tu nivel de Guerrero (+${nivel}); debes usar el nuevo resultado. ${nivel>=17?3:nivel>=13?2:1} uso${nivel>=13?'s':''} por descanso largo.`,
+          fullDesc:'Si fallas una tirada de salvación, puedes repetirla con un bonificador igual a tu nivel de Guerrero. Debes usar el nuevo resultado.\n\nUsos: 1 (nv9) · 2 (nv13) · 3 (nv17). Se recuperan al terminar un descanso largo.' }] : []),
       ],
       features: (nivel) => [
         {
           id: 'fighting-style', name: 'Fighting Style',
           source: 'Guerrero · Nivel 1', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
-          desc: 'Elige un estilo de combate especializado que te da un beneficio pasivo permanente.',
-          fullDesc: 'Adoptas un estilo de combate particular como especialidad. Elige una de las siguientes opciones (no puedes tomar la misma opción dos veces):\n\n• Archery — +2 a tiradas de ataque con armas a distancia.\n• Blind Fighting — Tienes visión ciega en 3 m. Puedes ver criaturas invisibles que no estén ocultas.\n• Defense — +1 CA mientras llevas armadura.\n• Dueling — +2 al daño con arma de una mano cuando no llevas otra arma (escudo sí está permitido).\n• Great Weapon Fighting — Cuando sacas 1 o 2 en un dado de daño con arma de dos manos o versátil (dos manos), vuelves a tirar ese dado y usas el nuevo resultado.\n• Interception — Reacción: reduces el daño de un aliado cercano en 1d10 + Prof Bonus.\n• Protection — Reacción: impones desventaja en el ataque de un enemigo visible a un aliado a 1,5 m. Requiere escudo.\n• Superior Technique — Aprendes una maniobra de Battle Master (1 Superiority Die d6, recarga Short Rest).\n• Thrown Weapon Fighting — +2 al daño con armas arrojadizas; puedes sacar un arma arrojadiza como parte del ataque.\n• Two-Weapon Fighting — Al atacar con arma ligera en la mano secundaria, puedes sumar el mod de stat al daño.\n• Unarmed Fighting — Ataques desarmados hacen 1d6 de daño (1d8 si las dos manos libres). Agarras → 1d4 daño al inicio del turno.',
+          desc: 'Ganas una dote de Estilo de Combate a tu elección (Defense recomendada). Puedes cambiarla cada vez que subes de nivel de Guerrero.',
+          fullDesc: 'Ganas una dote de Estilo de Combate (Fighting Style) a tu elección. Cada vez que ganas un nivel de Guerrero, puedes reemplazarla por otra dote de Estilo de Combate.\n\n• Archery — +2 a las tiradas de ataque con armas a distancia.\n• Blind Fighting — Tienes Vista ciega (Blindsight) 3 m (10 ft).\n• Defense — +1 CA mientras llevas armadura ligera, media o pesada.\n• Dueling — Empuñando un arma cuerpo a cuerpo en una mano y ninguna otra arma, +2 al daño con esa arma.\n• Great Weapon Fighting — Al tirar daño con un arma cuerpo a cuerpo empuñada a dos manos (propiedad Two-Handed o Versatile), puedes tratar cualquier 1 o 2 en un dado de daño como un 3.\n• Interception — Reacción: cuando una criatura que puedes ver impacta con una tirada de ataque a otra criatura a 1,5 m de ti, reduces el daño a ese objetivo en 1d10 + tu bonificador de competencia. Debes empuñar un escudo o un arma sencilla o marcial.\n• Protection — Reacción: cuando una criatura que puedes ver ataca a un objetivo distinto de ti a 1,5 m de ti, interpones tu escudo (debes empuñarlo). Impones desventaja a ese ataque y a todos los demás ataques contra ese objetivo hasta el inicio de tu próximo turno, si sigues a 1,5 m de él.\n• Thrown Weapon Fighting — Cuando impactas con una tirada de ataque a distancia usando un arma con la propiedad Thrown, +2 al daño.\n• Two-Weapon Fighting — Cuando haces el ataque extra por usar un arma con la propiedad Light, puedes sumar tu modificador de característica al daño de ese ataque si no lo estás sumando ya.\n• Unarmed Fighting — Cuando impactas con un Golpe sin armas e infliges daño, puedes infligir 1d6 + mod. FUE de daño contundente en vez del normal; 1d8 si al atacar no empuñas armas ni escudo. Al inicio de cada uno de tus turnos puedes infligir 1d4 de daño contundente a una criatura que tengas Agarrada (Grappled).',
         },
         {
           id: 'second-wind', name: 'Second Wind',
           source: 'Guerrero · Nivel 1', type: 'active', action: 'Acción bonus', range: 'Personal', recharge: 'short',
-          desc: 'Recuperas 1d10 + nivel de Guerrero HP como acción bonus.',
-          fullDesc: 'Tienes una reserva de resistencia que puedes usar para protegerte del daño.\n\nComo acción adicional, recuperas puntos de golpe iguales a 1d10 + tu nivel de Guerrero.\n\nUna vez que usas esta habilidad, debes terminar un descanso corto o largo para poder usarla de nuevo.',
+          desc: 'Acción adicional: recuperas 1d10 + nivel de Guerrero PG. 2 usos (3 nv4, 4 nv10); descanso corto recupera 1 uso, largo todos.',
+          fullDesc: 'Tienes una reserva limitada de resistencia física y mental.\n\nComo acción adicional, recuperas puntos de golpe iguales a 1d10 + tu nivel de Guerrero.\n\nUsos: 2 (nv1-3) · 3 (nv4-9) · 4 (nv10+).\nRecarga: recuperas 1 uso gastado al terminar un descanso corto, y todos los usos al terminar un descanso largo.\n\n✦ Mente Táctica (nv2): al fallar una prueba de característica puedes gastar 1 uso para sumar 1d10 a la prueba en vez de curarte; si aun así fallas, el uso no se gasta.\n✦ Desplazamiento Táctico (nv5): cuando usas Second Wind como acción adicional, puedes moverte hasta la mitad de tu velocidad sin provocar ataques de oportunidad.',
         },
         ...(nivel >= 2 ? [{
           id: 'tactical-mind', name: 'Mente Táctica',
@@ -1777,15 +1776,15 @@ const Characters = (() => {
         }, {
           id: 'action-surge', name: `Action Surge${nivel >= 17 ? ' (×2)' : ''}`,
           source: `Guerrero · Nivel 2`, type: 'active', action: 'Sin acción', range: 'Personal', recharge: 'short',
-          desc: `Tomas una acción adicional completa en tu turno. ${nivel >= 17 ? '2 usos por descanso.' : '1 uso por descanso corto/largo.'}`,
-          fullDesc: 'A partir del nivel 2, puedes tomar una acción adicional en tu turno. 1 uso por Short/Long rest (2 usos desde nv17).',
+          desc: `En tu turno tomas 1 acción adicional (no puede ser la acción de Magia).${nivel>=17?' 2 usos por descanso (máx. 1 por turno).':' 1 uso por descanso corto/largo.'}`,
+          fullDesc: 'Puedes superar tus límites por un momento. En tu turno, puedes realizar una acción adicional, excepto la acción de Magia (Magic).\n\nUna vez usado, no puedes volver a usarlo hasta terminar un descanso corto o largo.\n\nNv17: puedes usarlo dos veces antes de descansar, pero solo una vez por turno.',
         }] : []),
         { id:'weapon-mastery', name:'Maestría con Armas',
           source:'Guerrero · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:`Puedes usar la propiedad Mastery de ${nivel>=16?6:nivel>=10?5:nivel>=4?4:3} armas distintas. Cambias las armas elegidas al terminar un descanso largo.`,
-          fullDesc:`Puedes usar la propiedad Mastery de ${nivel>=16?6:nivel>=10?5:nivel>=4?4:3} armas con las que tengas competencia. Cambiás las armas elegidas al terminar un Descanso Largo.\n\n• Guerrero: 3 armas (nv1) → 4 (nv4) → 5 (nv10) → 6 (nv16)\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPROPIEDADES MASTERY\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚔ Cleave — Al golpear a una criatura con un ataque de turno, puedes hacer un ataque adicional contra otra criatura adyacente (sin modificador de habilidad al daño).\n\n🩸 Graze — Si FALLAS el ataque, igual infliges daño igual a tu modificador de habilidad (mínimo 0). No aplica a críticos ni efectos adicionales.\n\n⚡ Nick — Con armas de la propiedad Light, cuando atacas con la acción de Ataque, el ataque extra de la propiedad Light se convierte en parte de la acción (no Bonus Action).\n\n💥 Push — Si GOLPEAS, puedes empujar al objetivo hasta 3 m (10 ft) directamente lejos de ti.\n\n😵 Sap — Si GOLPEAS, el objetivo tiene Desventaja en su próxima tirada de ataque antes de tu próximo turno.\n\n🐢 Slow — Si GOLPEAS, la velocidad del objetivo se reduce en 3 m (10 ft) hasta el inicio de tu próximo turno. Una criatura no puede ser ralentizada más de una vez por turno.\n\n🌊 Topple — Si GOLPEAS, el objetivo debe hacer un Save de CON (CD = 8 + Prof + modificador de habilidad) o queda Derribado (Prone).\n\n👁 Vex — Si GOLPEAS, tienes Ventaja en tu próximo ataque contra ese mismo objetivo antes del inicio de tu próximo turno.` },
-        ...(nivel >= 3 ? [{ id:'fighter-subclass', name:'Martial Archetype (Subclase)', source:'Guerrero · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Eliges tu Martial Archetype que define tu estilo de combate.', fullDesc:'' }] : []),
-        ...(nivel >= 4 ? [{ id:'fighter-asi-4', name:'Ability Score Improvement', source:'Guerrero · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
+          desc:`Usas la propiedad de maestría de ${nivel>=16?6:nivel>=10?5:nivel>=4?4:3} tipos de armas sencillas o marciales. Tras un descanso largo puedes cambiar UNA de ellas.`,
+          fullDesc:'Puedes usar las propiedades de maestría de 3 tipos de armas sencillas o marciales a tu elección. Al terminar un descanso largo puedes practicar y cambiar UNA de esas elecciones.\n\nCantidad: 3 (nv1) · 4 (nv4) · 5 (nv10) · 6 (nv16).\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPROPIEDADES DE MAESTRÍA\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚔ Cleave — Si impactas a una criatura con un ataque cuerpo a cuerpo con esta arma, puedes hacer otra tirada de ataque cuerpo a cuerpo con ella contra una segunda criatura a 1,5 m (5 ft) de la primera y dentro de tu alcance. Si impacta, recibe el daño del arma sin sumar tu modificador de característica (salvo que sea negativo). Solo 1 vez por turno.\n\n🩸 Graze — Si fallas la tirada de ataque, puedes infligir al objetivo daño igual al modificador de característica que usaste para el ataque, del mismo tipo que el arma. Ese daño solo aumenta subiendo el modificador.\n\n⚡ Nick — Cuando haces el ataque extra de la propiedad Light, puedes hacerlo como parte de la acción de Ataque en lugar de como acción adicional. Solo 1 vez por turno.\n\n💥 Push — Si impactas, puedes empujar a la criatura hasta 3 m (10 ft) en línea recta alejándola de ti, si es de tamaño Grande o menor.\n\n😵 Sap — Si impactas, la criatura tiene desventaja en su siguiente tirada de ataque antes del inicio de tu próximo turno.\n\n🐢 Slow — Si impactas e infliges daño, puedes reducir su velocidad en 3 m (10 ft) hasta el inicio de tu próximo turno. Aunque la impacten varias armas con Slow, la reducción no supera 3 m (10 ft).\n\n🌊 Topple — Si impactas, puedes obligarla a una salvación de CON (CD 8 + modificador de característica del ataque + bonificador de competencia). Si falla, queda Derribada (Prone).\n\n👁 Vex — Si impactas e infliges daño, tienes ventaja en tu siguiente tirada de ataque contra esa criatura antes del FINAL de tu próximo turno.' },
+        ...(nivel >= 3 ? [{ id:'fighter-subclass', name:'Martial Archetype (Subclase)', source:'Guerrero · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Eliges una subclase de Guerrero; te da rasgos en los niveles 3, 7, 10, 15 y 18.', fullDesc:'Ganas una subclase de Guerrero a tu elección. Obtienes cada rasgo de la subclase cuyo nivel sea igual o menor a tu nivel de Guerrero.\n\nNiveles con rasgo de subclase: 3, 7, 10, 15 y 18.' }] : []),
+        ...(nivel >= 4 ? [{ id:'fighter-asi-4', name:'Ability Score Improvement', source:'Guerrero · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas la dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganas la dote Mejora de Característica (Ability Score Improvement) u otra dote a tu elección para la que cumplas los requisitos.\n\nAbility Score Improvement: aumenta una característica en 2, o dos características en 1. No puede subir una característica por encima de 20. Se puede tomar varias veces.\n\nEl Guerrero gana este rasgo en los niveles 4, 6, 8, 12, 14 y 16.' }] : []),
         ...(nivel >= 5 ? [{
           id: 'extra-attack', name: `Extra Attack${nivel >= 20 ? ' (×4)' : nivel >= 11 ? ' (×3)' : ' (×2)'}`,
           source: `Guerrero · Nivel 5`, type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
@@ -1797,29 +1796,29 @@ const Characters = (() => {
           desc: 'Cuando usas Second Wind con una acción bonus, puedes moverte hasta la mitad de tu velocidad sin provocar ataques de oportunidad.',
           fullDesc: 'A partir del nivel 5, cuando usas tu rasgo Second Wind (Tomar aliento) con una acción adicional, puedes moverte hasta la mitad de tu velocidad. Este movimiento no provoca ataques de oportunidad.',
         }] : []),
-        ...(nivel >= 6 ? [{ id:'fighter-asi-6', name:'Ability Score Improvement', source:'Guerrero · Nivel 6', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 8 ? [{ id:'fighter-asi-8', name:'Ability Score Improvement', source:'Guerrero · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
+        ...(nivel >= 6 ? [{ id:'fighter-asi-6', name:'Ability Score Improvement', source:'Guerrero · Nivel 6', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas la dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganas la dote Mejora de Característica (Ability Score Improvement) u otra dote a tu elección para la que cumplas los requisitos.\n\nAbility Score Improvement: aumenta una característica en 2, o dos características en 1. No puede subir una característica por encima de 20. Se puede tomar varias veces.\n\nEl Guerrero gana este rasgo en los niveles 4, 6, 8, 12, 14 y 16.' }] : []),
+        ...(nivel >= 8 ? [{ id:'fighter-asi-8', name:'Ability Score Improvement', source:'Guerrero · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas la dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganas la dote Mejora de Característica (Ability Score Improvement) u otra dote a tu elección para la que cumplas los requisitos.\n\nAbility Score Improvement: aumenta una característica en 2, o dos características en 1. No puede subir una característica por encima de 20. Se puede tomar varias veces.\n\nEl Guerrero gana este rasgo en los niveles 4, 6, 8, 12, 14 y 16.' }] : []),
         ...(nivel >= 9 ? [{
           id: 'indomitable', name: `Indomitable (${nivel>=17?3:nivel>=13?2:1} uso${nivel>=13?'s':''})`,
           source: 'Guerrero · Nivel 9', type: 'active', action: 'Ninguna (al fallar save)', range: 'Personal', recharge: 'long',
-          desc: `Repetís una tirada de salvación fallida. ${nivel>=17?3:nivel>=13?2:1} uso${nivel>=13?'s':''} por Long Rest.`,
-          fullDesc: 'A partir del nivel 9, puedes volver a tirar una tirada de salvación fallida. Debes usar el nuevo resultado.\n\n1 uso (nv9) · 2 usos (nv13) · 3 usos (nv17). Se recarga con Long Rest.',
+          desc: `Al fallar una salvación, la repites sumando tu nivel de Guerrero (+${nivel}); debes usar el nuevo resultado. ${nivel>=17?3:nivel>=13?2:1} uso${nivel>=13?'s':''} por descanso largo.`,
+          fullDesc: 'Si fallas una tirada de salvación, puedes repetirla con un bonificador igual a tu nivel de Guerrero. Debes usar el nuevo resultado.\n\nUsos: 1 (nv9) · 2 (nv13) · 3 (nv17). Se recuperan al terminar un descanso largo.',
         }, {
           id: 'tactical-master', name: 'Maestro Táctico',
           source: 'Guerrero · Nivel 9', type: 'passive', action: 'Pasiva', range: 'Personal', recharge: null,
           desc: 'Cuando atacas con un arma cuya propiedad Mastery conoces, puedes reemplazar esa propiedad por Push, Sap o Slow para ese ataque.',
           fullDesc: 'A partir del nivel 9, cuando atacas con un arma cuya propiedad Mastery conoces, puedes reemplazar esa propiedad Mastery por una de las siguientes para ese ataque: Push, Sap o Slow.',
         }] : []),
-        ...(nivel >= 12 ? [{ id:'fighter-asi-12', name:'Ability Score Improvement', source:'Guerrero · Nivel 12', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
+        ...(nivel >= 12 ? [{ id:'fighter-asi-12', name:'Ability Score Improvement', source:'Guerrero · Nivel 12', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas la dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganas la dote Mejora de Característica (Ability Score Improvement) u otra dote a tu elección para la que cumplas los requisitos.\n\nAbility Score Improvement: aumenta una característica en 2, o dos características en 1. No puede subir una característica por encima de 20. Se puede tomar varias veces.\n\nEl Guerrero gana este rasgo en los niveles 4, 6, 8, 12, 14 y 16.' }] : []),
         ...(nivel >= 13 ? [{
           id: 'studied-attacks', name: 'Ataques Estudiados',
           source: 'Guerrero · Nivel 13', type: 'active', action: 'Ninguna (al fallar ataque)', range: 'Personal', recharge: null,
-          desc: 'Cuando fallas un ataque, ganas ventaja en tu próximo ataque contra ese mismo objetivo en el mismo turno.',
-          fullDesc: 'A partir del nivel 13, estudias meticulosamente a tus enemigos durante el combate. Cuando fallas un ataque con un arma o ataque sin arma, ganas ventaja en tu próxima tirada de ataque contra ese mismo objetivo antes del final de tu turno actual.',
+          desc: 'Si fallas una tirada de ataque contra una criatura, tienes ventaja en tu siguiente ataque contra ella antes del final de tu próximo turno.',
+          fullDesc: 'Estudias a tus oponentes y aprendes de cada ataque. Si haces una tirada de ataque contra una criatura y fallas, tienes ventaja en tu siguiente tirada de ataque contra esa criatura antes del final de tu próximo turno.',
         }] : []),
-        ...(nivel >= 14 ? [{ id:'fighter-asi-14', name:'Ability Score Improvement', source:'Guerrero · Nivel 14', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 16 ? [{ id:'fighter-asi-16', name:'Ability Score Improvement', source:'Guerrero · Nivel 16', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 19 ? [{ id:'fighter-asi-19', name:'Epic Boon', source:'Guerrero · Nivel 19', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas un Epic Boon feat.', fullDesc:'' }] : []),
+        ...(nivel >= 14 ? [{ id:'fighter-asi-14', name:'Ability Score Improvement', source:'Guerrero · Nivel 14', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas la dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganas la dote Mejora de Característica (Ability Score Improvement) u otra dote a tu elección para la que cumplas los requisitos.\n\nAbility Score Improvement: aumenta una característica en 2, o dos características en 1. No puede subir una característica por encima de 20. Se puede tomar varias veces.\n\nEl Guerrero gana este rasgo en los niveles 4, 6, 8, 12, 14 y 16.' }] : []),
+        ...(nivel >= 16 ? [{ id:'fighter-asi-16', name:'Ability Score Improvement', source:'Guerrero · Nivel 16', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas la dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'Ganas la dote Mejora de Característica (Ability Score Improvement) u otra dote a tu elección para la que cumplas los requisitos.\n\nAbility Score Improvement: aumenta una característica en 2, o dos características en 1. No puede subir una característica por encima de 20. Se puede tomar varias veces.\n\nEl Guerrero gana este rasgo en los niveles 4, 6, 8, 12, 14 y 16.' }] : []),
+        ...(nivel >= 19 ? [{ id:'fighter-asi-19', name:'Epic Boon', source:'Guerrero · Nivel 19', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas una dote de Don Épico (recomendada: Boon of Combat Prowess) u otra dote para la que califiques.', fullDesc:'Ganas una dote de Don Épico (Epic Boon) u otra dote a tu elección para la que cumplas los requisitos.\n\nRecomendada: Boon of Combat Prowess — +1 a una característica (máx. 30). Puntería sin par: cuando fallas una tirada de ataque, puedes impactar en su lugar; no puedes volver a usarlo hasta el inicio de tu próximo turno.' }] : []),
       ],
     },
     'Hechicero': {
@@ -2185,15 +2184,15 @@ const Characters = (() => {
             current: conMod, max: conMod,
             recharge:'long',
             action:'Ninguna (en tu turno)', range:'9 m (Echo)',
-            desc:`Cuando usas Extra Attack, el Echo hace un ataque cuerpo a cuerpo adicional desde su posición. ${conMod} uso${conMod!==1?'s':''} (CON mod) por Long Rest.`,
-            fullDesc:`Cuando usas la función de Ataque múltiple, puedes hacer uno de tus ataques desde la posición de tu Echo en lugar de la tuya.\n\nUsos: ${conMod} (CON mod). Se recargan con Long Rest.` },
+            desc:'Al realizar la acción de Ataque, puedes hacer 1 ataque cuerpo a cuerpo adicional desde la posición del eco. Usos = mod. CON (mín. 1) por descanso largo.',
+            fullDesc:'Cada vez que realizas la acción de Ataque, puedes hacer un ataque cuerpo a cuerpo adicional desde la posición de tu eco.\n\nUsos: igual a tu modificador de Constitución (mínimo 1). Recuperas todos al terminar un descanso largo.\n\nNv18 (Legion of One): si al tirar iniciativa no te quedan usos, recuperas 1.' },
           ...(nivel >= 10 ? [{
             id:'echo-shadow-martyr', name:'Shadow Martyr',
             current: 1, max: 1,
             recharge:'short',
             action:'Reacción', range:'Ilimitado (Echo)',
-            desc:`Cuando una criatura que puedes ver ataca a alguien que no seas tú, teletransportas el Echo junto a ese aliado. El ataque impacta al Echo en su lugar. 1 uso por Short Rest.`,
-            fullDesc:`A nivel 10, puedes hacer que tu Echo se interponga entre un atacante y un aliado.\n\nCuando una criatura que puedes ver ataca a otra criatura (que no seas tú), puedes usar tu Reacción para teletransportar tu Echo a un espacio desocupado a 1,5 m del objetivo. El ataque es contra el Echo en lugar del aliado.\n\nSi el ataque impacta, el Echo recibe el daño (y probablemente es destruido).\n\n1 uso por Short o Long Rest.`
+            desc:'Reacción, antes de la tirada: si una criatura ataca a otra criatura que puedes ver, teletransportas el eco a 1,5 m del objetivo y el ataque se hace contra el eco. 1/descanso corto o largo.',
+            fullDesc:'Cuando una criatura ataca a otra criatura que puedes ver, antes de que se haga la tirada de ataque puedes usar tu reacción para teletransportar tu eco a un espacio desocupado a 1,5 m (5 ft) de la criatura objetivo. La tirada de ataque se hace contra tu eco en su lugar.\n\nUsos: 1. Se recupera al terminar un descanso corto o largo.'
           }] : []),
           ...(nivel >= 15 ? [{
             id:'echo-reclaim-potential', name:'Reclaim Potential',
@@ -2211,33 +2210,33 @@ const Characters = (() => {
           { id:'ek-manifest-echo', name:'Manifest Echo',
             source:'Echo Knight · Nv3', type:'active', action:'Acción bonus', range:'Personal',
             recharge:null,
-            desc:'Invocas una copia fantasmal de ti mismo en un espacio desocupado a 4,5 m. El Echo tiene 1 HP + tu CA y usa tu tirada de iniciativa. Puedes moverlo 9 m (acción bonus). Puedes atacar desde su posición. Si el Echo es destruido o te apartás más de 9 m de él, desaparece.',
-            fullDesc:'Como acción adicional, puedes crear un echo mágico de ti mismo en un espacio desocupado que puedas ver a 4,5 metros de ti. Este echo es una criatura mágica con 1 punto de golpe, CA igual a la tuya, inmune a conditions y tiene tu velocidad.\n\nEn tu turno, como acción adicional, puedes moverlo hasta 9 metros hacia cualquier espacio desocupado que puedas ver.\n\nSi el eco está a 9 metros o menos de ti, puedes atacar desde su posición en lugar de la tuya. Puedes hacer que tus ataques de oportunidad surjan desde la posición del eco.\n\nEl eco desaparece si es destruido, si usas esta habilidad de nuevo, o si quedas incapacitado.\n\nPuedes teleportarte al espacio del eco como acción bonus.' },
+            desc:'Acción adicional: creas un eco a 4,5 m (CA 14 + competencia, 1 PG, inmune a condiciones). Lo mueves 9 m por turno sin acción; tus ataques de la acción Atacar pueden salir desde él.',
+            fullDesc:'Como acción adicional, manifiestas un eco de ti en un espacio desocupado que puedas ver a 4,5 m (15 ft) o menos. Dura hasta que es destruido, lo descartas (acción adicional), manifiestas otro eco o quedas incapacitado.\n\nEco: CA 14 + tu bonificador de competencia, 1 PG, inmune a todas las condiciones. Si debe hacer una salvación, usa tu bonificador de salvación. Es de tu tamaño y ocupa su espacio.\n\nMovimiento: en tu turno puedes ordenarle mentalmente moverse hasta 9 m (30 ft) en cualquier dirección (sin acción). Si al final de tu turno está a más de 9 m de ti, es destruido.\n\nUsos del eco:\n• Intercambio: como acción adicional, te teletransportas intercambiando posición con el eco, a cambio de 4,5 m (15 ft) de tu movimiento, sin importar la distancia.\n• Ataque: cuando realizas la acción de Ataque en tu turno, cada ataque de esa acción puede originarse desde tu espacio o el del eco (eliges por ataque).\n• Ataque de oportunidad: cuando una criatura que puedes ver a 1,5 m del eco se aleja al menos 1,5 m de él, puedes usar tu reacción para hacerle un ataque de oportunidad como si estuvieras en el espacio del eco.' },
           { id:'ek-unleash-incarnation', name:'Unleash Incarnation',
             source:'Echo Knight · Nv3', type:'active', action:'Ninguna (en tu turno)',
             range:'9 m (Echo)', recharge:'long',
-            desc:`CON mod usos/Long Rest ${conModNote}. Cuando usas Extra Attack, el Echo puede hacer un ataque cuerpo a cuerpo adicional desde su posición.`,
-            fullDesc:'Cuando usas la función de Ataque múltiple, puedes hacer uno de estos ataques desde la posición de tu eco en lugar de la tuya. Puedes usar esta habilidad un número de veces igual a tu modificador de Constitución (mínimo 1). Recuperas todos los usos después de un descanso largo.' },
+            desc:'Al realizar la acción de Ataque, puedes hacer 1 ataque cuerpo a cuerpo adicional desde la posición del eco. Usos = mod. CON (mín. 1) por descanso largo.',
+            fullDesc:'Cada vez que realizas la acción de Ataque, puedes hacer un ataque cuerpo a cuerpo adicional desde la posición de tu eco.\n\nUsos: igual a tu modificador de Constitución (mínimo 1). Recuperas todos al terminar un descanso largo.\n\nNv18 (Legion of One): si al tirar iniciativa no te quedan usos, recuperas 1.' },
           ...(nivel >= 7 ? [{ id:'ek-echo-avatar', name:'Echo Avatar',
             source:'Echo Knight · Nv7', type:'active', action:'Acción',
             range:'Personal', recharge:null,
-            desc:'Puedes extender tu consciencia al Echo durante 10 min. Ves/oís desde su posición en lugar de la tuya (no percibes con tus sentidos propios). El Echo puede moverse contigo en la distancia.',
-            fullDesc:'A nivel 7, puedes proyectarte a través de tu eco. Como acción, puedes ver y oír a través de los sentidos de tu eco en lugar de los tuyos propios. Duran hasta 10 minutos, mientras estés concentrado. Durante este tiempo, eres sordo y ciego. El eco puede estar a cualquier distancia de ti sin desaparecer.' }] : []),
+            desc:'Acción: ves y oyes a través del eco hasta 10 min (quedas cegado y ensordecido). El eco puede alejarse hasta 300 m sin destruirse.',
+            fullDesc:'Como acción, transfieres temporalmente tu conciencia al eco: ves por sus ojos y oyes por sus oídos. Mientras dura, estás cegado y ensordecido.\n\nDuración: hasta 10 minutos; puedes terminarlo en cualquier momento (sin acción).\n\nMientras lo usas así, el eco puede estar hasta a 300 m (1.000 ft) de ti sin ser destruido.' }] : []),
           ...(nivel >= 10 ? [{ id:'ek-shadow-martyr', name:'Shadow Martyr',
             source:'Echo Knight · Nv10', type:'active', action:'Reacción',
             range:'Ilimitado (Echo)', recharge:'short',
-            desc:'1/Short Rest — cuando una criatura que puedes ver ataca a alguien que no seas tú, puedes teletransportar el Echo a ese espacio y hacer que el Echo sea el objetivo del ataque.',
-            fullDesc:'A nivel 10, puedes hacer que tu eco se interponga entre un ataque y otro. Cuando una criatura ataca a una criatura que no eres tú dentro del alcance de tu eco, puedes usar tu reacción para hacer que el eco sea el objetivo del ataque en su lugar. El eco se teletransporta al espacio de la criatura objetivo. Se considera que el eco es alcanzado por el ataque si el ataque impacta, destruyendo el eco si el ataque tiene éxito. Puedes usar esta característica una vez y recuperas su uso tras un descanso corto o largo.' }] : []),
+            desc:'Reacción, antes de la tirada: si una criatura ataca a otra criatura que puedes ver, teletransportas el eco a 1,5 m del objetivo y el ataque se hace contra el eco. 1/descanso corto o largo.',
+            fullDesc:'Cuando una criatura ataca a otra criatura que puedes ver, antes de que se haga la tirada de ataque puedes usar tu reacción para teletransportar tu eco a un espacio desocupado a 1,5 m (5 ft) de la criatura objetivo. La tirada de ataque se hace contra tu eco en su lugar.\n\nUsos: 1. Se recupera al terminar un descanso corto o largo.' }] : []),
           ...(nivel >= 15 ? [{ id:'ek-reclaim-potential', name:'Reclaim Potential',
             source:'Echo Knight · Nv15', type:'active', action:'Ninguna (cuando destruyen el Echo)',
             range:'Personal', recharge:'long',
-            desc:`${conModNote} usos/Long Rest — cuando el Echo es destruido puedes ganar ${nivel >= 15 ? '2d6 + CON mod' : '2d6'} HP temporales.`,
-            fullDesc:'A nivel 15, has aprendido a absorber la energía de tu eco cuando es destruido. Cuando tu eco es destruido por recibir daño, puedes ganar puntos de golpe temporales iguales a 2d6 + tu modificador de Constitución. Puedes usar esta característica un número de veces igual a tu modificador de Constitución (mínimo 1). Recuperas todos los usos tras un descanso largo.' }] : []),
+            desc:'Cuando un eco tuyo es destruido por daño, ganas 2d6 + mod. CON PG temporales (si no tienes ya). Usos = mod. CON (mín. 1) por descanso largo.',
+            fullDesc:'Cuando un eco tuyo es destruido por recibir daño, puedes ganar puntos de golpe temporales iguales a 2d6 + tu modificador de Constitución, siempre que no tengas ya puntos de golpe temporales.\n\nUsos: igual a tu modificador de Constitución (mínimo 1). Recuperas todos al terminar un descanso largo.' }] : []),
           ...(nivel >= 18 ? [{ id:'ek-legion-of-one', name:'Legion of One',
             source:'Echo Knight · Nv18', type:'active', action:'Acción bonus',
             range:'Personal', recharge:'short',
-            desc:'Puedes crear 2 Ecos simultáneamente. Unleash Incarnation se recarga con Short Rest. Cada Echo puede hacer su propio ataque de Unleash Incarnation.',
-            fullDesc:'A nivel 18, puedes usar Manifest Echo dos veces, creando dos ecos en lugar de uno. Cada uno puede tener una posición diferente. Si debes elegir cuál eco usar para una habilidad, usas el que prefieras.\nAdemás, Unleash Incarnation ahora se recarga con descanso corto o largo.' }] : []),
+            desc:'Con una acción adicional creas dos ecos que coexisten. Al tirar iniciativa sin usos de Unleash Incarnation, recuperas 1.',
+            fullDesc:'Puedes usar una acción adicional para crear dos ecos con Manifest Echo, y ambos pueden coexistir. Si intentas crear un tercero, los dos anteriores son destruidos.\n\nTodo lo que puedes hacer desde la posición de un eco lo puedes hacer desde la del otro.\n\nAdemás, cuando tiras iniciativa y no te quedan usos de Unleash Incarnation, recuperas 1 uso.' }] : []),
         ];
       },
     },
@@ -2276,20 +2275,20 @@ const Characters = (() => {
         // ganada (el diff entre niveles daba vacío).
         ...(nivel >= 3 ? [{ id:'bm-ranger-companion', name:'Primal Companion',
           source:'Beast Master · Nv3', type:'active', action:'Acción Mágica', range:'Personal', recharge:null,
-          desc:'Acción Mágica para invocar la bestia (Tierra, Mar o Cielo); actúa en tu iniciativa. Para que ataque: Acción Adicional, o sacrificá uno de tus ataques al usar la acción de Ataque. Si no la comandás, solo Esquiva. Vuelve a invocarse tras un Descanso Largo, y ahí podés cambiar de bestia.',
-          fullDesc:'A nivel 3 usás una Acción Mágica para invocar tu compañero sin gastar espacio de conjuro: elegís el bloque Bestia de la Tierra, del Mar o del Cielo, y decidís qué animal es. La bestia actúa en tu iniciativa y se mueve y usa su reacción por su cuenta; si no la comandás, solo toma la acción de Esquivar. Para que ataque usás tu Acción Adicional, o sacrificás uno de tus ataques cuando tomás la acción de Ataque. Sus PG y su daño escalan con tu nivel de Explorador y tu modificador de Sabiduría. Si muere, podés revivirla tocándola con una Acción Mágica y gastando un espacio de conjuro. Vuelve a invocarse gratis al terminar un Descanso Largo, y ahí podés cambiar de bloque de bestia.' }] : []),
+          desc:'Bestia primal (Tierra, Mar o Cielo) que actúa durante tu turno. Solo Esquiva salvo que la comandes con Acción adicional, o sacrificando uno de tus ataques para Beast\'s Strike.',
+          fullDesc:'Invocas mágicamente una bestia primal. Eliges su bloque de estadísticas (Beast of the Land, Beast of the Sea o Beast of the Sky) y qué tipo de animal es; lleva marcas primales que delatan su origen sobrenatural. Es Amistosa contigo y tus aliados y obedece tus órdenes. Desaparece si mueres.\n\nEn combate:\n• Actúa durante tu turno. Se mueve y usa su Reacción por su cuenta, pero la única acción que toma es Esquivar (Dodge).\n• Acción adicional: le ordenas tomar una acción de su bloque o cualquier otra acción.\n• Al usar la acción de Ataque puedes sacrificar uno de tus ataques para ordenarle Beast\'s Strike.\n• Si estás Incapacitado, actúa por su cuenta y no se limita a Esquivar.\n\nRevivir: si murió hace 1 hora o menos, puedes usar una Acción Mágica para tocarla y gastar un espacio de conjuro (de cualquier nivel). Vuelve a la vida tras 1 minuto con todos sus PG.\n\nReemplazar: cada vez que terminas un Long Rest puedes invocar una bestia primal distinta (eliges bloque y apariencia), que aparece en un espacio desocupado a 1,5 m (5 ft) de ti; la anterior desaparece.\n\nBloque común: CA 13 + tu mod SAB. Ataque de Beast\'s Strike = tu bono de ataque de conjuro, alcance 1,5 m; daño suma tu mod SAB. Primal Bond: suma tu Bono de Competencia a sus pruebas de característica y salvaciones. Entiende los idiomas que conoces. Dados de golpe = tu nivel de Explorador.' }] : []),
         ...(nivel >= 7 ? [{ id:'bm-exceptional-training', name:'Exceptional Training',
           source:'Beast Master · Nv7', type:'active', action:'Acción bonus', range:'Personal', recharge:null,
-          desc:'Cuando usás tu Acción Adicional para comandar a la bestia, esta también puede hacer Dash, Disengage, Dodge o Help con su propia Acción Adicional. Además, sus ataques pueden infligir daño de fuerza en lugar de su tipo normal.',
-          fullDesc:'A nivel 7, en cualquiera de tus turnos cuando tu compañero no ataque, puedes usar una acción adicional para ordenarle que haga la acción Dash, Disengage, Dodge o Help. Además los ataques de tu compañero ahora cuentan como mágicos.' }] : []),
+          desc:'Cuando usas tu Acción adicional para comandar a la bestia, también puede hacer Dash, Disengage, Dodge o Help con su propia Acción adicional. Sus golpes pueden hacer daño de Fuerza o su tipo normal.',
+          fullDesc:'Cuando usas una Acción adicional para ordenar a tu bestia de Primal Companion que tome una acción, también puedes ordenarle que tome la acción de Dash, Disengage, Dodge o Help usando su propia Acción adicional.\n\nAdemás, cada vez que golpea con una tirada de ataque y hace daño, puede infligir daño de Fuerza o su tipo de daño normal, a tu elección.' }] : []),
         ...(nivel >= 11 ? [{ id:'bm-bestial-fury', name:'Bestial Fury',
           source:'Beast Master · Nv11', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:"Cuando comandás Beast's Strike, la bestia lo usa dos veces. Además, la primera vez en cada turno que golpea a una criatura marcada con tu Hunter's Mark, inflige daño de fuerza extra igual al daño adicional de ese conjuro.",
-          fullDesc:'A nivel 11, cuando ordenas a tu compañero usar Beast\'s Strike, puede hacerlo dos veces. Además, si tienes Hunter\'s Mark activo sobre el objetivo, los ataques de la bestia también aplican el daño extra de la marca.' }] : []),
+          desc:'Cuando comandas Beast\'s Strike, la bestia lo usa dos veces. La primera vez en cada turno que golpea a la criatura de tu Hunter\'s Mark, hace daño de Fuerza extra igual al del conjuro.',
+          fullDesc:'Cuando ordenas a tu bestia de Primal Companion tomar la acción Beast\'s Strike, puede usarla dos veces (también al sacrificar uno de tus ataques).\n\nAdemás, la primera vez en cada turno que golpea a una criatura afectada por tu conjuro Hunter\'s Mark, la bestia inflige daño de Fuerza extra igual al daño adicional de ese conjuro (1d6; 1d10 desde nv20 con Foe Slayer).' }] : []),
         ...(nivel >= 15 ? [{ id:'bm-share-spells', name:'Share Spells',
           source:'Beast Master · Nv15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Cuando te lanzás un conjuro que te tiene como objetivo, podés afectar también a tu bestia si está a 30 ft (9 m) de vos.',
-          fullDesc:'A nivel 15, cuando lanzas un conjuro que solo te afecta a ti, puedes hacer que también afecte a tu compañero bestial si está a 9 metros.' }] : []),
+          desc:'Cuando lanzas un conjuro que te tiene como objetivo, también puedes afectar a tu bestia si está a 9 m (30 ft) o menos.',
+          fullDesc:'Cuando lanzas un conjuro que te tiene a ti como objetivo, también puedes afectar con ese conjuro a tu bestia de Primal Companion si está a 9 m (30 ft) o menos de ti.' }] : []),
       ],
     },
 
@@ -2416,10 +2415,11 @@ const Characters = (() => {
           recharge:'short1',
           note:'Balm of Peace · Divine Spark · Turn Undead' },
         { id:'bond', name:'Emboldening Bond',
-          current: nivel >= 9 ? 4 : nivel >= 5 ? 3 : nivel >= 2 ? 2 : 1,
-          max:     nivel >= 9 ? 4 : nivel >= 5 ? 3 : nivel >= 2 ? 2 : 1,
+          // Usos = bono de competencia (Tasha's).
+          current: nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : 2,
+          max:     nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : 2,
           recharge:'long',
-          note:'1d4 en ataque/save/check · 9m · max = prof bonus' },
+          note:'1d4 en ataque/save/check · 9m · max = prof bonus', fullDesc:'Acción. Elegís un número de criaturas dispuestas a 9 m o menos de vos igual a tu Bono de Competencia (podés incluirte). Creás un vínculo mágico entre ellas durante 10 minutos o hasta que vuelvas a usar este rasgo.\n\nMientras una criatura vinculada esté a 9 m o menos de otra criatura vinculada, puede tirar 1d4 y sumarlo a una tirada de ataque, prueba de característica o salvación que haga. Cada criatura puede sumar el d4 como máximo una vez por turno.\n\nUsos: igual a tu Bono de Competencia; recuperás todos al terminar un descanso largo. No gasta Channel Divinity.\n\nExpansive Bond (nv 17): la distancia entre vinculadas pasa a 18 m.', desc:'Acción · vinculás BC criaturas (incluida vos) por 10 min. Mientras una vinculada esté a 9 m de otra, puede sumar 1d4 a un ataque, prueba o salvación, máx. 1 vez por turno.' },
       ],
       subclassSpells: () => [
         { id:'heroism',        name:'Heroism ◆',             level:1, castTime:'Acción',       range:'Toque',  duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Inmune a Asustado + HP temp = SAB mod/turno. Siempre preparado.' },
@@ -2427,7 +2427,7 @@ const Characters = (() => {
         { id:'aid',            name:'Aid ◆',                 level:2, castTime:'Acción',       range:'9 m',    duration:'8 h',         concentration:false, combat:false, domain:true, desc:'Hasta 3 criaturas +5 HP máximos y actuales. Siempre preparado.' },
         { id:'warding-bond',   name:'Warding Bond ◆',        level:2, castTime:'Acción',       range:'Toque',  duration:'Conc. 1 h',   concentration:true,  combat:false, domain:true, desc:'+1 CA, +1 saves, resist al daño. Receptor recibe mitad del daño que tú. Siempre preparado.' },
         { id:'beacon-of-hope', name:'Beacon of Hope ◆',      level:3, castTime:'Acción',       range:'9 m',    duration:'Conc. 1 min', concentration:true,  combat:false, domain:true, desc:'Ventaja en SAB saves y saves de muerte + máximo en dados de curación. Siempre preparado.' },
-        { id:'slow',           name:'Slow ◆',                level:3, castTime:'Acción',       range:'36 m',   duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Hasta 6 criaturas · save SAB · vel÷2, -2 CA/DES saves, 1 acción/turno. Siempre preparado.' },
+        { id:'sending',        name:'Sending ◆',             level:3, castTime:'Acción',       range:'Ilimitado', duration:'1 ronda', concentration:false, combat:false, domain:true, desc:'Mensaje de hasta 25 palabras a una criatura que conozcas, en cualquier lugar del mismo plano; puede responder de inmediato con 25 palabras.' },
         { id:'aura-of-purity', name:'Aura of Purity ◆',      level:4, castTime:'Acción',       range:'9 m',    duration:'Conc. 10 min',concentration:true,  combat:false, domain:true, desc:'Tú y aliados: inmunes a enfermedades + ventaja en saves de múltiples condiciones. Siempre preparado.' },
         { id:'otiluke-sphere',  name:"Otiluke's Resilient Sphere ◆", level:4, castTime:'Acción',range:'9 m',   duration:'Conc. 1 min', concentration:true,  combat:true,  domain:true, desc:'Esfera impenetrable alrededor de criatura · save DES. Inmune al daño y fuerza aérea. Siempre preparado.' },
         { id:'greater-restoration', name:'Greater Restoration ◆', level:5, castTime:'Acción',  range:'Toque',  duration:'Inst.',       concentration:false, combat:false, domain:true, desc:'Reduce agotamiento, elimina encantamiento/maldición/petrificación, restaura HP max. Siempre preparado.' },
@@ -2438,15 +2438,15 @@ const Characters = (() => {
          de Paz creado desde cero no veía ninguna feature del dominio. */
       features: (nivel) => [
         { id:'implement-of-peace', name:'Implement of Peace', source:'Dominio de la Paz · Nivel 1 (Tasha\'s)', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Competencia en Perspicacia, Interpretación o Persuasión (a elección).', fullDesc:'' },
+          desc:'Competencia en una habilidad a elección: Perspicacia, Interpretación o Persuasión.', fullDesc:'Ganás competencia en una de estas habilidades, a tu elección: Perspicacia (Insight), Interpretación (Performance) o Persuasión (Persuasion).' },
         { id:'emboldening-bond', name:'Emboldening Bond', source:'Dominio de la Paz · Nivel 1 (Tasha\'s)', type:'active', action:'Acción', range:'9 m', recharge:'long',
-          desc:'Vinculás hasta PB criaturas por 10 min: 1d4 a ataque/prueba/salvación, 1 vez por turno cada una, mientras estén a 9 m entre sí.', fullDesc:'' },
+          desc:'Acción: vinculás a BC criaturas dispuestas a 9 m (podés incluirte) por 10 min. Vinculada a ≤9 m de otra: +1d4 a ataque, prueba o salvación, 1 vez por turno. Usos = BC/descanso largo.', fullDesc:'Acción. Elegís un número de criaturas dispuestas a 9 m o menos de vos igual a tu Bono de Competencia (podés incluirte). Creás un vínculo mágico entre ellas durante 10 minutos o hasta que vuelvas a usar este rasgo.\n\nMientras una criatura vinculada esté a 9 m o menos de otra criatura vinculada, puede tirar 1d4 y sumarlo a una tirada de ataque, prueba de característica o salvación que haga. Cada criatura puede sumar el d4 como máximo una vez por turno.\n\nUsos: igual a tu Bono de Competencia; recuperás todos al terminar un descanso largo. No gasta Channel Divinity.\n\nExpansive Bond (nv 17): la distancia entre vinculadas pasa a 18 m.' },
         ...(nivel >= 2 ? [{ id:'cd-balm', name:'Balm of Peace', source:'Channel Divinity · Dominio de la Paz (Tasha\'s)', type:'active', action:'Acción', range:'1,5 m al moverte', recharge:'short1',
-          desc:'Gastás Channel Divinity: te movés sin provocar OA y curás 2d6+SAB a cada criatura que pases al lado (una vez cada una).', fullDesc:'' }] : []),
+          desc:'Acción + 1 Channel Divinity: te movés hasta tu velocidad sin provocar ataques de oportunidad y curás 2d6 + SAB (mín. 1) a cada otra criatura a la que pases a 1,5 m (1 vez cada una).', fullDesc:'Acción + 1 uso de Channel Divinity. Te movés hasta tu velocidad sin provocar ataques de oportunidad. Cuando durante ese movimiento te movés a 1,5 m o menos de cualquier OTRA criatura, podés hacer que recupere 2d6 + tu mod. de Sabiduría PG (mínimo 1). Cada criatura solo puede recibir esta curación una vez por uso. No te cura a vos.' }] : []),
         ...(nivel >= 6 ? [{ id:'protective-bond', name:'Protective Bond', source:'Dominio de la Paz · Nivel 6 (Tasha\'s)', type:'active', action:'Reacción', range:'9 m', recharge:null,
-          desc:'Una criatura vinculada puede usar su reacción para teleportarse junto a otra vinculada que vaya a recibir daño y recibirlo en su lugar.', fullDesc:'' }] : []),
+          desc:'Reacción de una vinculada: cuando otra vinculada a 9 m va a recibir daño, se teletransporta a un espacio desocupado a 1,5 m de ella y recibe todo ese daño en su lugar.', fullDesc:'Reacción de la criatura que interviene (no tuya, salvo que seas vos quien interviene). Cuando una criatura afectada por tu Emboldening Bond está a punto de recibir daño, una segunda criatura vinculada que esté a 9 m o menos de la primera puede usar su reacción para teletransportarse a un espacio desocupado a 1,5 m o menos de la primera. La segunda criatura recibe entonces todo ese daño en su lugar.\n\nRequiere que ambas sigan vinculadas (vínculo de 10 min activo). Cualquier vinculada puede intervenir por cualquier otra, incluida vos.\n\nExpansive Bond (nv 17): el alcance sube a 18 m y quien recibe el daño ajeno tiene Resistencia a ese daño.' }] : []),
         ...(nivel >= 17 ? [{ id:'expansive-bond', name:'Expansive Bond', source:'Dominio de la Paz · Nivel 17 (Tasha\'s)', type:'passive', action:'Pasiva', range:'18 m', recharge:null,
-          desc:'El alcance de ambos vínculos sube a 18 m, y quien use Protective Bond tiene resistencia al daño que recibe por otro.', fullDesc:'' }] : []),
+          desc:'Emboldening Bond y Protective Bond funcionan a 18 m; quien usa Protective Bond tiene Resistencia al daño que recibe por otro.', fullDesc:'Los beneficios de Emboldening Bond y Protective Bond ahora funcionan cuando las criaturas están a 18 m o menos entre sí (antes 9 m). Además, cuando una criatura usa Protective Bond para recibir el daño de otra, tiene Resistencia a ese daño.' }] : []),
       ],
     },
 
@@ -4516,17 +4516,16 @@ const Characters = (() => {
      potent-spellcasting, y los Divine Strike de dominio que escalan dentro de
      un mismo id. */
   const PASSIVE_DAMAGE_FEATURES = {
-    // Clérigo nv7: "Cuando causas daño con conjuro o ataque de arma:
-    // +1d8 daño radiante (1 vez por turno)." → inequívoco en dados, tipo y contexto.
+    // Divine Strike (PHB 2024): solo al impactar con un arma, necrótico o
+    // radiante a elección, una vez en cada uno de TUS turnos.
     'blessed-strikes': {
-      dice: '1d8', damageType: 'radiante', label: 'Blessed Strikes',
-      appliesTo: ['spell', 'weapon'], note: '1×/turno',
+      dice: '1d8', damageType: 'necrótico o radiante', label: 'Divine Strike',
+      appliesTo: ['weapon'], note: '1× en cada uno de tus turnos',
     },
-    // Clérigo nv14: "Blessed Strikes mejora: +2d8 daño radiante en lugar de +1d8."
-    // El "en lugar de" es explícito → supersedes.
+    // Nv14: Divine Strike pasa a 2d8 "en lugar de" 1d8 → supersedes.
     'improved-blessed-strikes': {
-      dice: '2d8', damageType: 'radiante', label: 'Improved Blessed Strikes',
-      appliesTo: ['spell', 'weapon'], note: '1×/turno',
+      dice: '2d8', damageType: 'necrótico o radiante', label: 'Divine Strike mejorado',
+      appliesTo: ['weapon'], note: '1× en cada uno de tus turnos',
       supersedes: 'blessed-strikes',
     },
     // Paladín nv11: "+1d8 daño radiante a tus ataques de arma y ataques
@@ -5169,28 +5168,31 @@ const Characters = (() => {
        pickSkills → elige N skills para proficiencia/expertise
   ══════════════════════════════════════════════════════ */
 
-  const FIGHTING_STYLES_FIGHTER = [
-    { id:'fs-archery',         name:'Archery',              desc:'+2 a tiradas de ataque con armas a distancia.' },
-    { id:'fs-blind-fighting',  name:'Blind Fighting',       desc:'Visión ciega 3 m. Puedes ver criaturas invisibles no ocultas.' },
-    { id:'fs-defense',         name:'Defense',              desc:'+1 CA mientras llevas armadura.' },
-    { id:'fs-dueling',         name:'Dueling',              desc:'+2 al daño con arma de una mano (sin otra arma).' },
-    { id:'fs-great-weapon',    name:'Great Weapon Fighting',desc:'Tiras de nuevo 1s y 2s en dados de daño con armas de dos manos.' },
-    { id:'fs-interception',    name:'Interception',         desc:'Reacción: reduces daño a aliado cercano en 1d10+Prof Bonus.' },
-    { id:'fs-protection',      name:'Protection',           desc:'Reacción: desventaja al atacante de un aliado a 1,5 m. Requiere escudo.' },
-    { id:'fs-superior-technique', name:'Superior Technique',desc:'Aprendes 1 maniobra de BM (1 Superiority Die d6).' },
-    { id:'fs-thrown-weapon',   name:'Thrown Weapon Fighting',desc:'+2 al daño con armas arrojadizas.' },
-    { id:'fs-two-weapon',      name:'Two-Weapon Fighting',  desc:'Sumas mod de stat al daño del ataque con mano secundaria.' },
-    { id:'fs-unarmed',         name:'Unarmed Fighting',     desc:'Ataques sin arma hacen 1d6 (1d8 manos libres). Agarre: 1d4/turno.' },
+  // Dotes de estilo de combate del PHB 2024 (texto verificado con el SRD 5.2.1).
+  const _FS_2024 = [
+    { id:'fs-archery',         name:'Archery',              desc:'+2 a las tiradas de ataque con armas a distancia.' },
+    { id:'fs-blind-fighting',  name:'Blind Fighting',       desc:'Vista ciega (Blindsight) 3 m.' },
+    { id:'fs-defense',         name:'Defense',              desc:'+1 CA mientras llevas armadura ligera, media o pesada.' },
+    { id:'fs-dueling',         name:'Dueling',              desc:'Con un arma cuerpo a cuerpo en una mano y ninguna otra arma: +2 al daño con esa arma.' },
+    { id:'fs-great-weapon',    name:'Great Weapon Fighting',desc:'Arma cuerpo a cuerpo a dos manos (Two-Handed o Versatile): tratas cada 1 o 2 del dado de daño como un 3.' },
+    { id:'fs-interception',    name:'Interception',         desc:'Reacción: si una criatura que ves impacta a otra a 1,5 m de ti, reduces ese daño en 1d10 + tu bono de competencia. Requiere escudo o arma sencilla/marcial.' },
+    { id:'fs-protection',      name:'Protection',           desc:'Reacción con escudo: si una criatura que ves ataca a otro objetivo a 1,5 m de ti, ese ataque y los demás contra él tienen desventaja hasta el inicio de tu próximo turno.' },
+    { id:'fs-thrown-weapon',   name:'Thrown Weapon Fighting',desc:'+2 al daño cuando impactas un ataque a distancia con un arma Thrown.' },
+    { id:'fs-two-weapon',      name:'Two-Weapon Fighting',  desc:'Sumas tu modificador de característica al daño del ataque extra de la propiedad Light.' },
+    { id:'fs-unarmed',         name:'Unarmed Fighting',     desc:'Golpe sin armas: 1d6 + FUE contundente (1d8 sin armas ni escudo). Al inicio de tu turno, 1d4 contundente a quien tengas Agarrado.' },
   ];
 
+  const FIGHTING_STYLES_FIGHTER = [
+    ..._FS_2024,
+    // Tasha's (2014): no es dote de estilo en el PHB 2024. Queda para no
+    // romper personajes que ya la eligieron.
+    { id:'fs-superior-technique', name:'Superior Technique',desc:'(Tasha\'s 2014, no existe en el PHB 2024) Aprendes 1 maniobra de Battle Master y ganas 1 Superiority Die d6.' },
+  ];
+
+  // En 2024 el Explorador elige cualquier dote de estilo, o Druidic Warrior.
   const FIGHTING_STYLES_RANGER = [
-    { id:'fs-archery',         name:'Archery',              desc:'+2 a tiradas de ataque con armas a distancia.' },
-    { id:'fs-blind-fighting',  name:'Blind Fighting',       desc:'Visión ciega 3 m. Puedes ver criaturas invisibles no ocultas.' },
-    { id:'fs-defense',         name:'Defense',              desc:'+1 CA mientras llevas armadura.' },
-    { id:'fs-druidic-warrior', name:'Druidic Warrior',      desc:'Aprendes 2 cantrips de Druida (SAB). Cuentan como conjuros de Ranger.' },
-    { id:'fs-dueling',         name:'Dueling',              desc:'+2 al daño con arma de una mano (sin otra arma).' },
-    { id:'fs-thrown-weapon',   name:'Thrown Weapon Fighting',desc:'+2 al daño con armas arrojadizas.' },
-    { id:'fs-two-weapon',      name:'Two-Weapon Fighting',  desc:'Sumas mod de stat al daño del ataque con mano secundaria.' },
+    ..._FS_2024,
+    { id:'fs-druidic-warrior', name:'Druidic Warrior',      desc:'Aprendes 2 trucos de Druida (SAB); cuentan como conjuros de Explorador. Al subir de nivel puedes cambiar uno.' },
   ];
 
   const FAVORED_ENEMIES = [
@@ -5401,10 +5403,9 @@ const Characters = (() => {
 
   // ── PRIMAL COMPANION BEASTS (Beast Master Ranger · D&D 2024) ─────────────────
   // Estadísticas base; AC y HP escalan con nivel del Explorador (nivel = nivel de clase Ranger)
-  // AC = 13 + PB(nivel)
-  // HP Land/Sea = 5 + 5*nivel
-  // HP Sky = 4 + 4*nivel
-  // Ataque: modificador(stat)+PB como bonus, daño incluye PB
+  // CA = 13 + mod SAB del Explorador
+  // HP Land/Sea = 5 + 5*nivel · HP Sky = 4 + 4*nivel
+  // Ataque = tu modificador de ataque de conjuro; daño = dado + fijo + mod SAB
   const PRIMAL_COMPANION_BEASTS = {
     land: {
       id: 'land',
@@ -5416,7 +5417,7 @@ const Characters = (() => {
       speed: '40 ft · Trepa 40 ft',
       stats: { for:14, des:14, con:15, int:8, sab:14, car:11 },
       calcMaxHP: (nivel) => 5 + 5 * nivel,
-      senses: 'Percepción pasiva 14',
+      senses: 'Visión en la oscuridad 18 m · Percepción pasiva 12 (+ tu BC por Primal Bond)',
       languages: 'Entiende los idiomas de su Ranger pero no habla',
       attacks: [
         {
@@ -5425,18 +5426,18 @@ const Characters = (() => {
           // bonus to hit = WIS mod + PB (se calcula dinámicamente)
           damageDie: '1d8',
           damageBonus: 2,  // +2 fijo, más mod SAB (PHB 2024)
-          damageType: 'cortante',
-          desc: 'Ataque cuerpo a cuerpo: bono de golpe = tu modificador de ataque de conjuro. Daño: 1d8 + 2 + mod SAB.',
+          damageType: 'contundente, perforante o cortante (a elección al invocarla)',
+          desc: 'Ataque cuerpo a cuerpo, alcance 1,5 m: bono de golpe = tu modificador de ataque de conjuro. Daño: 1d8 + 2 + mod SAB (contundente, perforante o cortante, elegido al invocarla). Si se movió al menos 6 m en línea recta hacia el objetivo antes de golpear: +1d6 del mismo tipo y queda Derribado si es Grande o menor.',
         }
       ],
       traits: [
         {
           name: 'Charge',
-          desc: 'Si se mueve al menos 6 m (20 ft) en línea recta hacia un objetivo y lo golpea con Beast\'s Strike en el mismo turno, inflige 1d6 de daño extra del mismo tipo que el golpe, y si es una criatura debe superar una salvación de FUE (CD = tu CD de conjuros) o queda Derribado.',
+          desc: 'Parte de Beast\'s Strike: si la bestia se movió al menos 6 m (20 ft) en línea recta hacia el objetivo antes de golpearlo, este recibe 1d6 de daño extra del mismo tipo y queda Derribado (Prone) si es una criatura Grande o menor. Sin tirada de salvación.',
         },
         {
           name: 'Primal Bond',
-          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica y tirada de salvación que haga la bestia (no a sus tiradas de ataque ni a su daño). Actúa en tu iniciativa.',
+          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica o tirada de salvación que haga la bestia (no a sus ataques ni a su daño).',
         },
       ],
       cr: '—',
@@ -5451,7 +5452,7 @@ const Characters = (() => {
       speed: '5 ft · Nada 60 ft',
       stats: { for:14, des:14, con:15, int:8, sab:14, car:11 },
       calcMaxHP: (nivel) => 5 + 5 * nivel,
-      senses: 'Percepción pasiva 14',
+      senses: 'Visión en la oscuridad 27 m · Percepción pasiva 12 (+ tu BC por Primal Bond)',
       languages: 'Entiende los idiomas de su Ranger pero no habla',
       attacks: [
         {
@@ -5460,7 +5461,7 @@ const Characters = (() => {
           damageDie: '1d6',
           damageBonus: 2,
           damageType: 'perforante o contundente',
-          desc: 'Ataque cuerpo a cuerpo: bono de golpe = tu modificador de ataque de conjuro. Daño: 1d6 + 2 + mod SAB. Si el objetivo es Grande o menor, queda Apresado (CD de escape = tu CD de salvación de conjuros).',
+          desc: 'Ataque cuerpo a cuerpo: bono de golpe = tu modificador de ataque de conjuro. Daño: 1d6 + 2 + mod SAB (contundente o perforante, elegido al invocarla) y el objetivo queda Apresado, sin límite de tamaño (CD de escape = tu CD de salvación de conjuros).',
         }
       ],
       traits: [
@@ -5470,7 +5471,7 @@ const Characters = (() => {
         },
         {
           name: 'Primal Bond',
-          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica y tirada de salvación que haga la bestia (no a sus tiradas de ataque ni a su daño). Actúa en tu iniciativa.',
+          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica o tirada de salvación que haga la bestia (no a sus ataques ni a su daño).',
         },
       ],
       cr: '—',
@@ -5485,7 +5486,7 @@ const Characters = (() => {
       speed: '10 ft · Vuela 60 ft',
       stats: { for:6, des:16, con:13, int:8, sab:14, car:11 },
       calcMaxHP: (nivel) => 4 + 4 * nivel,
-      senses: 'Percepción pasiva 14',
+      senses: 'Visión en la oscuridad 18 m · Percepción pasiva 12 (+ tu BC por Primal Bond)',
       languages: 'Entiende los idiomas de su Ranger pero no habla',
       attacks: [
         {
@@ -5504,7 +5505,7 @@ const Characters = (() => {
         },
         {
           name: 'Primal Bond',
-          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica y tirada de salvación que haga la bestia (no a sus tiradas de ataque ni a su daño). Actúa en tu iniciativa.',
+          desc: 'Suma tu Bono de Competencia a cualquier prueba de característica o tirada de salvación que haga la bestia (no a sus ataques ni a su daño).',
         },
       ],
       cr: '—',
@@ -6263,9 +6264,9 @@ const Characters = (() => {
     'Guerrero':  [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,6,6,6,6,6],
     // Bárbaro: 2 a nv1, 3 a nv4, 4 a nv10
     'Bárbaro':   [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
-    // Paladín y Explorador: 2 a nv1, 3 a nv9
-    'Paladín':   [2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3],
-    'Explorador':[2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3],
+    // Paladín y Explorador: 2 tipos, sin aumento (no tienen columna en su tabla)
+    'Paladín':   [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    'Explorador':[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     // Pícaro y Monje: 2, sin aumento
     'Pícaro':    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     'Monje':     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],

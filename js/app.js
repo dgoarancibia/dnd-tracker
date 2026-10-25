@@ -35,6 +35,24 @@ const App = (() => {
       (f.source && /trasfondo/i.test(f.source)) || (f.id && f.id.startsWith('bg-'));
     const conservadas = (c.features || []).filter(f => esDeSubclase(f) || esDeTrasfondo(f));
     const conservadasIds = new Set(conservadas.map(f => f.id));
+    // Las de subclase se conservan, pero sus textos salen del catálogo: si no,
+    // una corrección de reglas nunca llegaba a un personaje ya creado.
+    const subCatalogo = {};
+    const subs = _subclasesDe(c);
+    if (!subs.length && c.subclase) subs.push([c.subclase, nivel]);
+    for (const [sn, slv] of subs) {
+      const sub = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[sn];
+      if (sub && typeof sub.features === 'function') {
+        sub.features(slv || nivel).forEach(f => { if (f && f.id) subCatalogo[f.id] = f; });
+      }
+    }
+    conservadas.forEach(f => {
+      const n = subCatalogo[f.id];
+      if (!n) return;
+      ['name', 'source', 'type', 'action', 'range', 'recharge', 'desc', 'fullDesc'].forEach(k => {
+        if (n[k] !== undefined) f[k] = n[k];
+      });
+    });
     c.features = [
       ...claseFeatList.filter(f => !conservadasIds.has(f.id)),
       ...conservadas,
@@ -540,10 +558,9 @@ const App = (() => {
     } else {
       // Otros personajes: sync de catálogo de spells por clase
       _syncSpellCatalog(_char);
-      Storage.saveCharRaw(_char);
-
       // _syncCharData ya se encargó del sync de recursos (clase + subclase + raza)
       _refreshCharFeatures(_char);
+      Storage.saveCharRaw(_char);
     }
 
     _applyTheme(localStorage.getItem('dnd_theme') || 'dark');
@@ -4085,7 +4102,7 @@ const App = (() => {
         <button class="bs-toggle ${listo ? 'on' : ''}" onclick="App.toggleCharge()">
           ${listo ? '⚡ CHARGE LISTO' : 'Se movió 6 m (20 ft) en línea recta'}
         </button>
-        ${listo ? `<div class="bs-note">Si Beast's Strike impacta: +1d6 perforante y salvación de FUE o Derribado.</div>` : ''}
+        ${listo ? `<div class="bs-note">Si Beast's Strike impacta: +1d6 del mismo tipo y Derribado si es Grande o menor (sin salvación).</div>` : ''}
       </div>`;
   }
 
@@ -4097,7 +4114,7 @@ const App = (() => {
       return `
         <div class="beast-special">
           <button class="bs-toggle" onclick="App.registrarGrapple()">Registrar presa</button>
-          <div class="bs-note">Beast's Strike apresa si el objetivo es Grande o menor.</div>
+          <div class="bs-note">Beast's Strike apresa al impactar (sin límite de tamaño). Escape CD ${cd}.</div>
         </div>`;
     }
     return `
@@ -4713,7 +4730,7 @@ const App = (() => {
       <div class="companion-attack">
         <span class="companion-atk-name">${a.name}</span>
         <span class="companion-atk-bonus">${hitStr}</span>
-        <span class="companion-atk-dmg">${a.damageDie}+${a.damageBonus + wisMod} ${dmgFuerza ? 'fuerza' : a.damageType}${nivelRanger >= 11 ? ' ×2' : ''}</span>
+        <span class="companion-atk-dmg">${a.damageDie}+${a.damageBonus + wisMod} ${dmgFuerza ? 'fuerza' : a.damageType.replace(/\s*\(.*\)$/, '')}${nivelRanger >= 11 ? ' ×2' : ''}</span>
       </div>`).join('');
 
     // Traits
