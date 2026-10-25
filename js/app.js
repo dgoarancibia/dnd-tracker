@@ -2408,7 +2408,8 @@ const App = (() => {
 
       const weaponCards = weaponSlots.map(w => {
         const item = eq[w.slot];
-        const typeLabel = item.type === 'ranged' ? 'Distancia' : 'Cuerpo a cuerpo';
+        const _calc = Characters.calcArma(_char, w.slot);
+        const typeLabel = (_calc ? _calc.aDistancia : item.type === 'ranged') ? 'Distancia' : 'Cuerpo a cuerpo';
         const prop = _masteryDe(item);
         const m = prop ? (Characters.WEAPON_MASTERIES[prop] || {}) : null;
         return `
@@ -2575,7 +2576,7 @@ const App = (() => {
         // Mostrar tenue con opción de restaurar individualmente
         return `<div class="feat-card feat-card--hidden-preview" style="opacity:0.45;border-style:dashed;">
           <div class="feat-top">
-            <span class="feat-name">${f.name}</span>
+            <span class="feat-name">${_nmEs(f.name)}</span>
             <button class="feat-hide-btn" title="Restaurar" onclick="event.stopPropagation();App.toggleHideFeature('${f.id}')" style="color:var(--gold);">👁 Restaurar</button>
           </div>
           <div class="feat-source">${f.source || ''}</div>
@@ -2587,7 +2588,7 @@ const App = (() => {
       if (f.id.endsWith('-subclass') && !c.subclase) {
         return `<div class="feat-card feat-card--pending" onclick="App.openSubclaseModal()">
           <div class="feat-top">
-            <span class="feat-name">${f.name}</span>
+            <span class="feat-name">${_nmEs(f.name)}</span>
             <span class="feat-badge feat-active" style="background:rgba(201,151,58,0.2);color:var(--gold);">Pendiente</span>
           </div>
           <div class="feat-source">${f.source}</div>
@@ -2618,7 +2619,7 @@ const App = (() => {
       }
       const hideBtn = `<button class="feat-hide-btn" title="Ocultar" onclick="event.stopPropagation();App.toggleHideFeature('${f.id}')">👁</button>`;
       return `<div class="feat-card" onclick="App.openFeatureDetail('${f.id}')">
-        <div class="feat-top"><span class="feat-name">${f.name}</span>${badge}${choiceBtn}${hideBtn}</div>
+        <div class="feat-top"><span class="feat-name">${_nmEs(f.name)}</span>${badge}${choiceBtn}${hideBtn}</div>
         <div class="feat-source">${f.source}</div>
         <div class="feat-desc">${displayDesc}</div>
       </div>`;
@@ -2654,7 +2655,7 @@ const App = (() => {
         const mDef = allManeuverDefs.find(m => m.id === mId);
         if (!mDef) return;
         html += `<div class="feat-card">
-          <div class="feat-top"><span class="feat-name">${mDef.name}</span><span class="feat-badge feat-active">1 dado</span></div>
+          <div class="feat-top"><span class="feat-name">${_nmEs(mDef.name)}</span><span class="feat-badge feat-active">1 dado</span></div>
           <div class="feat-desc">${fmtDesc(mDef.desc)}</div>
         </div>`;
       });
@@ -2708,7 +2709,7 @@ const App = (() => {
           if (!_showingHidden) return;
           html += `<div class="feat-card feat-card--hidden-preview" style="opacity:0.45;border-style:dashed;">
             <div class="feat-top">
-              <span class="feat-name">${f.name}</span>
+              <span class="feat-name">${_nmEs(f.name)}</span>
               <span class="feat-badge feat-passive" style="background:rgba(80,60,140,0.25);color:#b8a0e8;border-color:rgba(120,90,200,0.3);">Feat</span>
               <button class="feat-hide-btn" title="Restaurar" onclick="App.toggleHideFeature('${hideId}')" style="color:var(--gold);">👁 Restaurar</button>
             </div>
@@ -2718,7 +2719,7 @@ const App = (() => {
         }
         html += `<div class="feat-card">
           <div class="feat-top">
-            <span class="feat-name">${f.name}</span>
+            <span class="feat-name">${_nmEs(f.name)}</span>
             <span class="feat-badge feat-passive" style="background:rgba(80,60,140,0.25);color:#b8a0e8;border-color:rgba(120,90,200,0.3);">Feat</span>
             <button class="feat-hide-btn" title="Ocultar" onclick="App.toggleHideFeature('${hideId}')">👁</button>
           </div>
@@ -2859,13 +2860,29 @@ const App = (() => {
     return tags;
   }
 
+  /* Nombre en inglés + español entre paréntesis ("Favored Enemy (Enemigo
+     predilecto)"). La tabla es la misma que usan las copias a Roll20. */
+  function _nmEs(nombre) {
+    const n = String(nombre || '');
+    const es = window.Roll20Es ? Roll20Es.nombre(n) : null;
+    const base = n.replace(/\s*[◆†○]/g, '').trim();
+    if (!es || es === base) return n;
+    // "Spellcasting (SAB)" → "Spellcasting (Lanzamiento de conjuros) (SAB)":
+    // el sufijo va al final, no dentro del paréntesis del español.
+    const suf = base.match(/^(.*?)\s*(\([^)]*\))$/);
+    if (suf && es.endsWith(suf[2])) {
+      return `${suf[1]}<span class="nm-es"> (${es.slice(0, -suf[2].length).trim()})</span> ${suf[2]}${n.slice(base.length)}`;
+    }
+    return `${n}<span class="nm-es"> (${es})</span>`;
+  }
+
   /* El nombre de Lursey ya trae el ◆; los del catálogo de clase no. Para
      esos se agrega un ◆ que solo se ve en ventana angosta, donde el chip
      "Dominio" se oculta. En escritorio el nombre queda como estaba. */
   function _nombreConjuro(sp) {
     const nombre = String(sp.name || '');
-    if (!sp.domain || /◆/.test(nombre)) return nombre;
-    return `${nombre}<span class="spell-dom" title="Siempre preparado${sp.alwaysLabel ? ' (' + sp.alwaysLabel + ')' : ''}">&nbsp;◆</span>`;
+    if (!sp.domain || /◆/.test(nombre)) return _nmEs(nombre);
+    return `${_nmEs(nombre)}<span class="spell-dom" title="Siempre preparado${sp.alwaysLabel ? ' (' + sp.alwaysLabel + ')' : ''}">&nbsp;◆</span>`;
   }
 
   /* ══════════════════════════════════════════════════════
@@ -8493,7 +8510,7 @@ const App = (() => {
           <label class="choice-option feat-pick-option${f.obsoleto2014 ? ' feat-obsoleto' : ''}">
             <input type="radio" name="asiFeat" value="${f.id}" onchange="App._onASIFeatChange(this)">
             <div class="choice-opt-content">
-              <strong>${f.name}</strong>${asiHTML && asi.length === 1 ? ' ' + asiHTML : ''}
+              <strong>${_nmEs(f.name)}</strong>${asiHTML && asi.length === 1 ? ' ' + asiHTML : ''}
               ${f.obsoleto2014 ? '<span style="font-size:10px;color:var(--red-light,#e05c2a);display:block;">No existe en el PHB 2024</span>' : ''}
               ${f.prereq ? `<span style="font-size:10px;color:var(--gold-dim);display:block;">Req: ${f.prereq}</span>` : ''}
               <span class="choice-opt-desc">${f.desc}</span>
@@ -9483,7 +9500,7 @@ const App = (() => {
       html += secHd('Nuevas capacidades');
       html += features.map(f => `
         <div style="margin-bottom:10px;padding:10px 12px;background:var(--surface2,rgba(255,255,255,0.05));border-radius:8px;border-left:3px solid var(--accent,#c9a84c);">
-          <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${f.name}</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${_nmEs(f.name)}</div>
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">${f.source || ''}</div>
           <div style="font-size:13px;line-height:1.5;">${f.desc || ''}</div>
         </div>`).join('');
@@ -11196,7 +11213,7 @@ ${notesText}`;
 
     document.getElementById('sdmBadge').textContent = levelLabel;
     document.getElementById('sdmBadge').className = `sdm-level-badge ${badgeClass}`;
-    document.getElementById('sdmName').textContent = sp.name.replace(/\s*[◆†○]/g, '');
+    document.getElementById('sdmName').innerHTML = _nmEs(sp.name.replace(/\s*[◆†○]/g, ''));
     document.getElementById('sdmCastTime').textContent = sp.castTime || '—';
     document.getElementById('sdmDuration').textContent = sp.duration || '—';
     document.getElementById('sdmRange').textContent = fmtDistGrid(sp.range) || '—';
@@ -11460,7 +11477,7 @@ ${notesText}`;
       : `<span class="feat-badge feat-active" style="font-size:11px;padding:2px 8px;">Activa</span>`;
 
     document.getElementById('fdmBadge').innerHTML = badge;
-    document.getElementById('fdmName').textContent = f.name;
+    document.getElementById('fdmName').innerHTML = _nmEs(f.name);
     document.getElementById('fdmSource').textContent = f.source;
 
     // Stats row: Acción + Distancia + Recarga

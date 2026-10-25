@@ -1,7 +1,8 @@
 /* ═══════════════════════════════════════════════════════
-   roll20_es.js — Nombres en español para lo que se copia a Roll20.
-   La app sigue mostrando los nombres en inglés; esto solo traduce el
-   texto que se pega en el chat. Lo que no está en la tabla sale como está.
+   roll20_es.js — Nombres en español de conjuros, rasgos, dotes y armas.
+   Las copias a Roll20 salen en español; la app muestra el nombre en
+   inglés con el español entre paréntesis. Lo que no está en la tabla
+   sale como está.
    ═══════════════════════════════════════════════════════ */
 
 const Roll20Es = (() => {

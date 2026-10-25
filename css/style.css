@@ -9805,3 +9805,6 @@ mark.diary-highlight {
 .stat-block .r20-btn { position: absolute; top: 3px; right: 3px; }
 .r20-row { gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .r20-row .btn { font-size: 11px; padding: 5px 10px; }
+
+/* Nombre en español junto al inglés: secundario, no compite con el nombre. */
+.nm-es { font-weight: 400; color: var(--text-dim); font-size: 0.85em; letter-spacing: 0; text-transform: none; font-family: 'Jost', sans-serif; }
