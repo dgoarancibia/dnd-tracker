@@ -930,8 +930,8 @@ const Characters = (() => {
   const LURSEY_SPELLS = [
     // ── CANTRIPS ──
     { id:'toll-dead',    name:'Toll the Dead',    level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:true,
-      castTime:'Acción', range:'18 m', duration:'Instantáneo', damage:'1d8 necrótico (2d12 si ya tiene daño)', upcast:null,
-      desc:'Acción · 18 m · save WIS · 1d8 necrótico (2d12 si el objetivo ya tiene daño) · sin slot · sin ataque', tags:[],
+      castTime:'Acción', range:'18 m', duration:'Instantáneo', damage:'1d8 necrótico (1d12 si ya tiene daño)', upcast:null,
+      desc:'Acción · 18 m · save WIS · 1d8 necrótico (1d12 si el objetivo ya tiene daño) · escala en nv 5/11/17 · sin slot · sin ataque', tags:[],
       fullDesc:'Haces sonar una campana fúnebre invisible. La criatura hace save WIS o recibe 1d8 necrótico. Si ya le faltan HP al castear, el dado aumenta a 1d12. Escala a 2d8/2d12 a nivel 5, 3d8/3d12 a nivel 11, 4d8/4d12 a nivel 17.' },
     { id:'sacred-flame', name:'Sacred Flame',     level:0, concentration:false, domain:false, mi:false, bonus:false, ritual:false, combat:true,
       castTime:'Acción', range:'18 m', duration:'Instantáneo', damage:'1d8 radiante', upcast:null,

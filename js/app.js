@@ -2862,7 +2862,12 @@ const App = (() => {
     }
     if (sp.desc) {
       const dmgMatch = sp.desc.match(/(\d+d\d+(?:[+\-]\w+)?)\s*(radiante|necrótico|fuego|frío|rayo|trueno|ácido|veneno|psíquico|fuerza|HP)?/i);
-      if (dmgMatch) tags += `<span class="tag tag-quick" style="color:var(--gold-light)">${_tagDoble(dmgMatch[0].trim(), dmgMatch[1])}</span>`;
+      if (dmgMatch) {
+        const pot = _TIPO_DAÑO.test(dmgMatch[0]) ? _bonoPotente(sp) : 0;
+        const conTipo = _escalarTruco(sp, dmgMatch[0].trim());
+        const soloDados = conTipo === dmgMatch[0].trim() ? dmgMatch[1] : conTipo.match(/\d+d\d+/)[0];
+        tags += `<span class="tag tag-quick" style="color:var(--gold-light)"${pot ? ` title="Incluye +${pot} de Potent Spellcasting"` : ''}>${_tagDoble(_sumarADados(conTipo, pot), _sumarADados(soloDados, pot))}</span>`;
+      }
     }
     if (sp.concentration) tags += `<span class="tag tag-c">${_tagDoble('Conc', 'C')}</span>`;
     // "Bonus" aparte solo si el tiempo de lanzamiento no lo dice ya.
@@ -5958,6 +5963,41 @@ const App = (() => {
     ];
   }
 
+  /* Potent Spellcasting (Blessed Strikes 2024, nv7 de Clérigo): suma el mod.
+     de SAB al daño de los trucos de Clérigo. Devuelve el bono o 0. Los trucos
+     de Magic Initiate (†) son de otra lista y no cuentan. */
+  function _bonoPotente(sp) {
+    const c = _char;
+    if (!c || !sp || sp.level !== 0 || sp.mi) return 0;
+    const bs = c.choices && c.choices['blessed-strikes'];
+    if ((bs && (bs.id || bs)) !== 'bs-potent-spellcasting') return 0;
+    const cl = Array.isArray(c.classes) && c.classes.length
+      ? (c.classes.find(x => x.name === 'Clérigo') || {}).level || 0
+      : (c.clase === 'Clérigo' ? c.nivel : 0);
+    return cl >= 7 ? Characters.calcMod(c.stats.sab) : 0;
+  }
+
+  /* Los trucos de daño suben de dados con el nivel del personaje: ×2 en nv5,
+     ×3 en nv11, ×4 en nv17. Solo si el texto es daño (trae tipo de daño): así
+     Guidance o Resistance (1d4) no escalan. Shillelagh y Eldritch Blast escalan
+     distinto (dado mayor / más rayos) y quedan fuera. */
+  const _TIPO_DAÑO = /(radiante|necrótico|fuego|frío|rayo|relámpago|trueno|ácido|veneno|psíquico|fuerza|perforante|cortante|contundente)/i;
+  const _TRUCOS_SIN_ESCALA = /^(shillelagh|eldritch-blast|booming-blade|green-flame)/;
+  function _escalarTruco(sp, txt) {
+    if (!txt || !sp || sp.level !== 0 || _TRUCOS_SIN_ESCALA.test(sp.id || '') || !_TIPO_DAÑO.test(txt)) return txt;
+    const nv = (_char && _char.nivel) || 1;
+    const k = nv >= 17 ? 4 : nv >= 11 ? 3 : nv >= 5 ? 2 : 1;
+    return k === 1 ? txt : String(txt).replace(/(\d+)d(\d+)/g, (m, n, d) => `${n * k}d${d}`);
+  }
+  // Daño de un truco ya escalado y con Potent Spellcasting si corresponde.
+  const _dañoTruco = (sp, txt) => _sumarADados(_escalarTruco(sp, txt), _TIPO_DAÑO.test(txt || '') ? _bonoPotente(sp) : 0);
+
+  // "1d8 necrótico (1d12 si…)" + 4 → "1d8+4 necrótico (1d12+4 si…)"
+  function _sumarADados(txt, n) {
+    if (!txt || !n) return txt;
+    return String(txt).replace(/(\d+d\d+)(?:\s*\+\s*(\d+))?/g, (m, d, fijo) => `${d}+${(parseInt(fijo) || 0) + n}`);
+  }
+
   function _spellRefData(sp) {
     const kind = _inferSpellRefKind(sp);
     // Bonuses pasivos de la tabla curada que aplican al daño de conjuros
@@ -5969,7 +6009,7 @@ const App = (() => {
       return {
         kind, title: sp.name, icon: '✨', passiveBonuses,
         attackFormula: atkBonus != null ? `d20+${atkBonus}` : null,
-        damage: sp.damage || null,
+        damage: _dañoTruco(sp, sp.damage) || null,
         meta: [], note: null,
       };
     }
@@ -5978,7 +6018,7 @@ const App = (() => {
         kind, title: sp.name, icon: '✨', passiveBonuses,
         cd: Characters.calcCD(_char),
         saveStat: _inferSaveStat(sp),
-        damage: sp.damage || null,
+        damage: _dañoTruco(sp, sp.damage) || null,
         meta: [], note: null,
       };
     }
