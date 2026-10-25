@@ -1133,6 +1133,8 @@ const Characters = (() => {
       nivel: 6,
       xp: 14000,
       classes: [{ name: 'Clérigo', level: 6, subclass: 'Dominio de la Paz' }],
+      // Blessed Strikes (nv7): eligió Potent Spellcasting.
+      choices: { 'blessed-strikes': 'bs-potent-spellcasting' },
 
       stats: { for:10, des:14, con:14, int:9, sab:19, car:14 },
 
@@ -1195,8 +1197,9 @@ const Characters = (() => {
           current: 2, max: 2,
           recharge: 'long',
           action: 'Acción adicional',
-          desc: 'Gastás un uso de Channel Divinity para recuperar un espacio de conjuro gastado de nivel 2 o menor.',
-          note: 'Recupera 1 slot gastado (máx nv2) · acción bonus'
+          desc: 'Regla de mesa (Tasha\'s): gastás un uso de Channel Divinity para recuperar un espacio de conjuro gastado de nivel 2 o menor.',
+          fullDesc: 'REGLA DE MESA (Tasha\'s Cauldron, opcional): no existe en el Clérigo del PHB 2024; se usa porque tu mesa la permite.\n\nComo acción adicional, tocas tu símbolo sagrado, pronuncias una oración y gastas un uso de Channel Divinity para recuperar un espacio de conjuro gastado. El nivel del espacio no puede ser mayor que la mitad de tu bono de competencia (redondeando hacia arriba): nivel 1 con BC +2, nivel 2 con BC +3 o +4, nivel 3 con BC +5 o +6.\n\nUsos: 1 (nv2), 2 (nv6), 3 (nv18). Recuperas todos al terminar un descanso largo.',
+          note: 'Regla de mesa · recupera 1 slot (máx nv2) · acción bonus'
         },
       ],
 
@@ -1300,24 +1303,36 @@ const Characters = (() => {
         {
           id: 'servirse-poder-divino',
           name: 'Servirse del Poder Divino',
-          source: 'Clérigo base · Nivel 2',
+          source: 'Regla de mesa (Tasha\'s) · Nivel 2',
           type: 'active',
           recharge: 'long',
           action: 'Acción adicional',
           range: 'Personal',
-          desc: 'Gasta un uso de Channel Divinity para recuperar un slot gastado (máx nivel 2 a nivel 6).',
-          fullDesc: 'Como acción adicional, tocas tu símbolo sagrado, pronuncias una oración y recuperas un espacio de conjuro gastado, cuyo nivel no puede ser superior a la mitad de tu bonificador por competencia redondeando hacia arriba.\n\nA nivel 6 con Prof.Bonus +3: puedes recuperar slots de hasta nivel 2 (mitad de 3 = 1,5 → redondeado arriba = 2).\n\nUeres por descanso largo:\n· Nivel 2: 1 uso\n· Nivel 6: 2 usos ← actual\n· Nivel 18: 3 usos\n\nMuy útil para recuperar un slot de nivel 2 después de un encuentro corto sin necesitar descanso largo.'
+          desc: 'Regla de mesa (Tasha\'s): gasta un uso de Channel Divinity para recuperar un espacio de conjuro gastado (máx. nivel 2 con tu BC actual). 2 usos por descanso largo.',
+          fullDesc: 'REGLA DE MESA (Tasha\'s Cauldron, opcional): no existe en el Clérigo del PHB 2024; se usa porque tu mesa la permite.\n\nComo acción adicional, tocas tu símbolo sagrado, pronuncias una oración y gastas un uso de Channel Divinity para recuperar un espacio de conjuro gastado. El nivel del espacio no puede ser mayor que la mitad de tu bono de competencia (redondeando hacia arriba): nivel 1 con BC +2, nivel 2 con BC +3 o +4, nivel 3 con BC +5 o +6.\n\nUsos: 1 (nv2), 2 (nv6), 3 (nv18). Recuperas todos al terminar un descanso largo.'
         },
         {
-          id: 'versatilidad-trucos',
-          name: 'Versatilidad de Trucos',
-          source: 'Clérigo base · Nivel 4',
+          id: 'lursey-potent-spellcasting',
+          name: 'Blessed Strikes: Potent Spellcasting',
+          nivelMin: 7,
+          source: 'Clérigo · Nivel 7',
           type: 'passive',
           recharge: null,
           action: 'Pasiva',
           range: 'Personal',
-          desc: 'Al obtener una Mejora de Característica puedes cambiar un cantrip por otro de la lista de clérigo.',
-          fullDesc: 'Cuando alcanzas un nivel en esta clase que otorga el rasgo Mejora de Característica (niveles 4, 8, 12, 16, 19), puedes sustituir un truco que hayas aprendido con el rasgo Lanzamiento de Conjuros de esta clase por otro truco de la lista de conjuros de clérigo.\n\nEsto te permite adaptar tus cantrips a medida que la campaña avanza. Por ejemplo, si Toll the Dead deja de ser útil en algún momento, puedes cambiarlo por Guidance o Sacred Flame en el siguiente nivel con Mejora de Característica.'
+          desc: 'Sumas tu modificador de Sabiduría al daño que haces con cualquier truco de Clérigo (Toll the Dead, Sacred Flame…).',
+          fullDesc: 'Blessed Strikes (PHB 2024 · nivel 7): elegiste Potent Spellcasting en vez de Divine Strike.\n\nSumas tu modificador de Sabiduría al daño que haces con cualquier truco de Clérigo.\n\nImproved Blessed Strikes (nv14): cuando lanzas un truco de Clérigo y dañas a una criatura con él, puedes dar puntos de golpe temporales iguales al doble de tu modificador de Sabiduría a ti o a otra criatura a 18 m o menos.\n\nEl Potent Spellcasting de nivel 8 del Dominio de la Paz de Tasha\'s no se suma: vale solo este.'
+        },
+        {
+          id: 'versatilidad-trucos',
+          name: 'Versatilidad de Trucos',
+          source: 'Regla de mesa (Tasha\'s) · Nivel 4',
+          type: 'passive',
+          recharge: null,
+          action: 'Pasiva',
+          range: 'Personal',
+          desc: 'Regla de mesa (Tasha\'s): al obtener una Mejora de Característica puedes cambiar un truco por otro de la lista de Clérigo.',
+          fullDesc: 'REGLA DE MESA (Tasha\'s Cauldron, opcional).\n\nCuando alcanzas un nivel de Clérigo que otorga Mejora de Característica (4, 8, 12, 16 y 19), puedes reemplazar un truco que aprendiste con Lanzamiento de conjuros por otro truco de la lista de Clérigo.\n\nNota 2024: el Lanzamiento de conjuros del PHB 2024 ya permite cambiar un truco cada vez que subes un nivel de Clérigo, así que esta regla queda cubierta por la de 2024.'
         },
         {
           id: 'war-caster',
@@ -1455,8 +1470,9 @@ const Characters = (() => {
           desc:'Lanzás conjuros de Clérigo con Sabiduría. CD = 8 + BC + SAB; ataque = BC + SAB. Preparás conjuros tras cada descanso largo.', fullDesc:'Característica: Sabiduría. CD de salvación = 8 + Bono de Competencia + mod. SAB. Ataque de conjuro = Bono de Competencia + mod. SAB. Foco: Símbolo Sagrado.\n\nTRUCOS: conocés 3 trucos de la lista de Clérigo; aprendés uno más a nv 4 y otro a nv 10 (3 → 4 → 5). Cada vez que ganás un nivel de Clérigo podés reemplazar un truco por otro de la lista de Clérigo.\n\nCONJUROS PREPARADOS (nv 1+): cantidad según nivel — 4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22 (nv 1 a 20). Deben ser de un nivel para el que tengas espacios. Al terminar un descanso largo podés cambiar cualquiera de la lista por otros conjuros de Clérigo.\n\nLos conjuros que otro rasgo de Clérigo te da siempre preparados (p. ej. los del dominio) no cuentan para ese número y cuentan como conjuros de Clérigo.\n\nESPACIOS: según la tabla de Clérigo; recuperás todos al terminar un descanso largo.' },
         ...(nivel >= 2 ? [{ id:'channel-divinity', name:'Channel Divinity', source:`Clérigo · Nivel 2 (${nivel>=18?4:nivel>=6?3:2} usos)`, type:'active', action:'Acción', range:'Varía', recharge:'short1',
           desc:`${nivel>=18?4:nivel>=6?3:2} usos. Descanso corto: recuperás 1; largo: todos. Opciones: Divine Spark y Turn Undead (+ las del dominio).`, fullDesc:'Canalizás energía divina para crear un efecto. Empezás con dos: Divine Spark y Turn Undead; cada vez que lo usás elegís cuál. Tu subclase puede darte más opciones (Balm of Peace).\n\nUsos: 2 (nv 2-5), 3 (nv 6-17), 4 (nv 18-20). Recuperás UN uso gastado al terminar un descanso corto y todos al terminar uno largo.\n\nSi un efecto pide salvación, la CD es tu CD de conjuros de Clérigo.\n\nDIVINE SPARK — Acción Mágica + 1 uso de Channel Divinity. Apuntás tu Símbolo Sagrado a otra criatura que puedas ver a 9 m o menos y tirás 1d8 + tu mod. de Sabiduría. Elegís:\n\n• CURAR: la criatura recupera PG iguales al total.\n• DAÑAR: la criatura hace una salvación de Constitución contra tu CD de conjuros de Clérigo. Si falla, recibe el total como daño Necrótico o Radiante (a tu elección); si tiene éxito, la mitad (redondeando hacia abajo).\n\nDados: 1d8 (nv 2), 2d8 (nv 7), 3d8 (nv 13), 4d8 (nv 18).\n\nTURN UNDEAD — Acción Mágica + 1 uso de Channel Divinity. Presentás tu Símbolo Sagrado: cada No-muerto que elijas a 9 m o menos hace una salvación de Sabiduría contra tu CD de conjuros de Clérigo. Si falla, queda Asustado e Incapacitado durante 1 minuto y, durante ese tiempo, en sus turnos intenta alejarse de vos lo más posible.\n\nEl efecto termina antes sobre esa criatura si recibe cualquier daño, si vos quedás Incapacitado o si morís.\n\nSear Undead (nv 5): además podés tirar tantos d8 como tu mod. de Sabiduría (mínimo 1d8); cada No-muerto que falle esta salvación recibe ese total como daño Radiante. Este daño NO termina el efecto de Turn Undead.' }] : []),
-        ...(nivel >= 2 ? [{ id:'harness-divine-power', name:'Harness Divine Power', source:'Clérigo · Nivel 2', type:'active', action:'Acción bonus', range:'Personal', recharge:'long',
-          desc:'Recuperas un slot de conjuro gastado (máx nivel = mitad Prof Bonus). 1 uso/Long Rest.', fullDesc:'' }] : []),
+        // Regla opcional de Tasha's: no existe en el PHB 2024; queda como regla de mesa.
+        ...(nivel >= 2 ? [{ id:'harness-divine-power', name:'Harness Divine Power', source:'Regla de mesa (Tasha\'s) · Nivel 2', type:'active', action:'Acción bonus', range:'Personal', recharge:'long',
+          desc:`Regla de mesa (Tasha's): gastás un uso de Channel Divinity para recuperar un espacio de conjuro gastado (nivel ≤ mitad de tu BC, hacia arriba). ${nivel>=18?3:nivel>=6?2:1} uso${nivel>=6?'s':''} por descanso largo.`, fullDesc:'REGLA DE MESA (Tasha\'s Cauldron, opcional): no existe en el Clérigo del PHB 2024; se usa porque tu mesa la permite.\n\nComo acción adicional, tocas tu símbolo sagrado, pronuncias una oración y gastas un uso de Channel Divinity para recuperar un espacio de conjuro gastado. El nivel del espacio no puede ser mayor que la mitad de tu bono de competencia (redondeando hacia arriba): nivel 1 con BC +2, nivel 2 con BC +3 o +4, nivel 3 con BC +5 o +6.\n\nUsos: 1 (nv2), 2 (nv6), 3 (nv18). Recuperas todos al terminar un descanso largo.' }] : []),
         // Divine Order es nivel 1 en 2024 y es una elección propia, distinta
         // de la subclase (que llega a nivel 3).
         { id:'divine-order', name:'Divine Order', source:'Clérigo · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
@@ -2415,9 +2431,9 @@ const Characters = (() => {
           recharge:'short1',
           note:'Balm of Peace · Divine Spark · Turn Undead' },
         { id:'bond', name:'Emboldening Bond',
-          // Usos = bono de competencia (Tasha's).
-          current: nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : 2,
-          max:     nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : 2,
+          // Usos = bono de competencia (Tasha's); desde nv3 en el híbrido 2024.
+          current: nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : nivel >= 3 ? 2 : 0,
+          max:     nivel >= 17 ? 6 : nivel >= 13 ? 5 : nivel >= 9 ? 4 : nivel >= 5 ? 3 : nivel >= 3 ? 2 : 0,
           recharge:'long',
           note:'1d4 en ataque/save/check · 9m · max = prof bonus', fullDesc:'Acción. Elegís un número de criaturas dispuestas a 9 m o menos de vos igual a tu Bono de Competencia (podés incluirte). Creás un vínculo mágico entre ellas durante 10 minutos o hasta que vuelvas a usar este rasgo.\n\nMientras una criatura vinculada esté a 9 m o menos de otra criatura vinculada, puede tirar 1d4 y sumarlo a una tirada de ataque, prueba de característica o salvación que haga. Cada criatura puede sumar el d4 como máximo una vez por turno.\n\nUsos: igual a tu Bono de Competencia; recuperás todos al terminar un descanso largo. No gasta Channel Divinity.\n\nExpansive Bond (nv 17): la distancia entre vinculadas pasa a 18 m.', desc:'Acción · vinculás BC criaturas (incluida vos) por 10 min. Mientras una vinculada esté a 9 m de otra, puede sumar 1d4 a un ataque, prueba o salvación, máx. 1 vez por turno.' },
       ],
@@ -2437,11 +2453,13 @@ const Characters = (() => {
          Los niveles son los de Tasha's. Antes esto estaba vacío y un Clérigo
          de Paz creado desde cero no veía ninguna feature del dominio. */
       features: (nivel) => [
-        { id:'implement-of-peace', name:'Implement of Peace', source:'Dominio de la Paz · Nivel 1 (Tasha\'s)', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Competencia en una habilidad a elección: Perspicacia, Interpretación o Persuasión.', fullDesc:'Ganás competencia en una de estas habilidades, a tu elección: Perspicacia (Insight), Interpretación (Performance) o Persuasión (Persuasion).' },
-        { id:'emboldening-bond', name:'Emboldening Bond', source:'Dominio de la Paz · Nivel 1 (Tasha\'s)', type:'active', action:'Acción', range:'9 m', recharge:'long',
-          desc:'Acción: vinculás a BC criaturas dispuestas a 9 m (podés incluirte) por 10 min. Vinculada a ≤9 m de otra: +1d4 a ataque, prueba o salvación, 1 vez por turno. Usos = BC/descanso largo.', fullDesc:'Acción. Elegís un número de criaturas dispuestas a 9 m o menos de vos igual a tu Bono de Competencia (podés incluirte). Creás un vínculo mágico entre ellas durante 10 minutos o hasta que vuelvas a usar este rasgo.\n\nMientras una criatura vinculada esté a 9 m o menos de otra criatura vinculada, puede tirar 1d4 y sumarlo a una tirada de ataque, prueba de característica o salvación que haga. Cada criatura puede sumar el d4 como máximo una vez por turno.\n\nUsos: igual a tu Bono de Competencia; recuperás todos al terminar un descanso largo. No gasta Channel Divinity.\n\nExpansive Bond (nv 17): la distancia entre vinculadas pasa a 18 m.' },
-        ...(nivel >= 2 ? [{ id:'cd-balm', name:'Balm of Peace', source:'Channel Divinity · Dominio de la Paz (Tasha\'s)', type:'active', action:'Acción', range:'1,5 m al moverte', recharge:'short1',
+        // Híbrido 2024: la subclase llega en nv3, así que los rasgos de nv1-2
+        // de Tasha's se reciben juntos ahí.
+        ...(nivel >= 3 ? [{ id:'implement-of-peace', name:'Implement of Peace', source:'Dominio de la Paz · Nivel 3 (Tasha\'s nv1)', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Competencia en una habilidad a elección: Perspicacia, Interpretación o Persuasión.', fullDesc:'Ganás competencia en una de estas habilidades, a tu elección: Perspicacia (Insight), Interpretación (Performance) o Persuasión (Persuasion).' }] : []),
+        ...(nivel >= 3 ? [{ id:'emboldening-bond', name:'Emboldening Bond', source:'Dominio de la Paz · Nivel 3 (Tasha\'s nv1)', type:'active', action:'Acción', range:'9 m', recharge:'long',
+          desc:'Acción: vinculás a BC criaturas dispuestas a 9 m (podés incluirte) por 10 min. Vinculada a ≤9 m de otra: +1d4 a ataque, prueba o salvación, 1 vez por turno. Usos = BC/descanso largo.', fullDesc:'Acción. Elegís un número de criaturas dispuestas a 9 m o menos de vos igual a tu Bono de Competencia (podés incluirte). Creás un vínculo mágico entre ellas durante 10 minutos o hasta que vuelvas a usar este rasgo.\n\nMientras una criatura vinculada esté a 9 m o menos de otra criatura vinculada, puede tirar 1d4 y sumarlo a una tirada de ataque, prueba de característica o salvación que haga. Cada criatura puede sumar el d4 como máximo una vez por turno.\n\nUsos: igual a tu Bono de Competencia; recuperás todos al terminar un descanso largo. No gasta Channel Divinity.\n\nExpansive Bond (nv 17): la distancia entre vinculadas pasa a 18 m.' }] : []),
+        ...(nivel >= 3 ? [{ id:'cd-balm', name:'Balm of Peace', source:'Channel Divinity · Dominio de la Paz · Nivel 3 (Tasha\'s nv2)', type:'active', action:'Acción', range:'1,5 m al moverte', recharge:'short1',
           desc:'Acción + 1 Channel Divinity: te movés hasta tu velocidad sin provocar ataques de oportunidad y curás 2d6 + SAB (mín. 1) a cada otra criatura a la que pases a 1,5 m (1 vez cada una).', fullDesc:'Acción + 1 uso de Channel Divinity. Te movés hasta tu velocidad sin provocar ataques de oportunidad. Cuando durante ese movimiento te movés a 1,5 m o menos de cualquier OTRA criatura, podés hacer que recupere 2d6 + tu mod. de Sabiduría PG (mínimo 1). Cada criatura solo puede recibir esta curación una vez por uso. No te cura a vos.' }] : []),
         ...(nivel >= 6 ? [{ id:'protective-bond', name:'Protective Bond', source:'Dominio de la Paz · Nivel 6 (Tasha\'s)', type:'active', action:'Reacción', range:'9 m', recharge:null,
           desc:'Reacción de una vinculada: cuando otra vinculada a 9 m va a recibir daño, se teletransporta a un espacio desocupado a 1,5 m de ella y recibe todo ese daño en su lugar.', fullDesc:'Reacción de la criatura que interviene (no tuya, salvo que seas vos quien interviene). Cuando una criatura afectada por tu Emboldening Bond está a punto de recibir daño, una segunda criatura vinculada que esté a 9 m o menos de la primera puede usar su reacción para teletransportarse a un espacio desocupado a 1,5 m o menos de la primera. La segunda criatura recibe entonces todo ese daño en su lugar.\n\nRequiere que ambas sigan vinculadas (vínculo de 10 min activo). Cualquier vinculada puede intervenir por cualquier otra, incluida vos.\n\nExpansive Bond (nv 17): el alcance sube a 18 m y quien recibe el daño ajeno tiene Resistencia a ese daño.' }] : []),
@@ -4557,6 +4575,11 @@ const Characters = (() => {
     }
 
     const activeIds = new Set(active.map(f => f.id));
+    // Blessed Strikes es una elección: con Potent Spellcasting no hay Divine Strike.
+    const bs = char.choices && char.choices['blessed-strikes'];
+    if ((bs && (bs.id || bs)) === 'bs-potent-spellcasting') {
+      activeIds.delete('blessed-strikes'); activeIds.delete('improved-blessed-strikes');
+    }
 
     // Ids que quedan anulados porque el personaje tiene su versión mejorada
     const superseded = new Set();
@@ -5597,11 +5620,19 @@ const Characters = (() => {
       { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
     ],
     'Clérigo': [
-      { id:'subclase-1', level:1, type:'pick1', label:'Divine Domain (Subclase)',
+      // PHB 2024: la subclase se elige en nivel 3 (el id se mantiene para no
+      // perder lo que ya eligieron los personajes existentes).
+      { id:'subclase-1', level:3, type:'pick1', label:'Divine Domain (Subclase)',
         prompt:'Elige tu dominio divino:',
         options: CLERIGO_SUBCLASES,
         appliesSubclass: true },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'blessed-strikes', level:7, type:'pick1', label:'Blessed Strikes',
+        prompt:'Elige tu golpe bendito:',
+        options: [
+          { id:'bs-divine-strike', name:'Divine Strike', desc:'Una vez en cada uno de tus turnos, al impactar con un arma: +1d8 necrótico o radiante (2d8 a nv14).' },
+          { id:'bs-potent-spellcasting', name:'Potent Spellcasting', desc:'Sumas tu mod. de SAB al daño de tus trucos de Clérigo (a nv14 además das PG temporales = 2× SAB).' },
+        ] },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
       { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },

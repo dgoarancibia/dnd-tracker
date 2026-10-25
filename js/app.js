@@ -530,7 +530,9 @@ const App = (() => {
       _syncSpellCatalog(_char);
 
       if (!_char.ifttt || _char.ifttt.length === 0) _char.ifttt = freshLursey.ifttt;
-      _char.features     = freshLursey.features;
+      // Rasgos con nivelMin (los que ganó al subir de nivel) solo si ya los tiene.
+      _char.features     = freshLursey.features.filter(f => !f.nivelMin || f.nivelMin <= (_char.nivel || 1));
+      _char.choices = { ...(freshLursey.choices || {}), ...(_char.choices || {}) };
       _char.slotPriority = freshLursey.slotPriority;
       _char.combatTips   = freshLursey.combatTips;
 
