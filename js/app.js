@@ -279,11 +279,15 @@ const App = (() => {
       const subConf = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG[_subNombre];
       if (subConf && typeof subConf.subclassSpells === 'function') {
         const nivel = _subNivel || 1;
-        const subclSpells = subConf.subclassSpells(nivel);
+        // Solo hasta el nivel de conjuro que el personaje ya puede lanzar: varias
+        // subclases devuelven la lista completa sin mirar el nivel.
+        const maxLvl = Characters.getMaxSpellLevel ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1) : 9;
+        const subclSpells = subConf.subclassSpells(nivel).filter(s => !(s.level > maxLvl));
         if (!c.spells) c.spells = [];
         subclSpells.forEach(s => {
           const existing = c.spells.find(e => e.id === s.id);
           if (existing) {
+            _CAMPOS_CONJURO.forEach(k => { if (s[k] !== undefined && existing[k] !== s[k]) { existing[k] = s[k]; changed = true; } });
             if (s.domain && !existing.domain)                       { existing.domain = true;           changed = true; }
             if (s.cantrip_subclass && !existing.cantrip_subclass)   { existing.cantrip_subclass = true; changed = true; }
           } else {
@@ -484,8 +488,20 @@ const App = (() => {
      Solo prepare casters (Clérigo, Druida, Mago, Paladín, Explorador): los
      known casters (Hechicero, Bardo, Brujo) eligen a mano y auto-agregar
      les rompería el límite de conocidos. */
+  // Campos de reglas que manda el catálogo. No se tocan `prepared` ni marcas
+  // propias del personaje (domain, mi, alwaysLabel…).
+  const _CAMPOS_CONJURO = ['castTime', 'range', 'duration', 'concentration', 'ritual', 'combat', 'desc', 'fullDesc', 'damage', 'upcast'];
+
   function _syncSpellCatalog(c) {
     const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase]) || [];
+    // Los conjuros ya copiados toman las correcciones del catálogo: antes solo
+    // se agregaban los que faltaban y un texto corregido nunca llegaba.
+    const porId = new Map(catalog.map(s => [s.id, s]));
+    (c.spells || []).forEach(sp => {
+      const fresh = porId.get(sp.id);
+      if (!fresh) return;
+      _CAMPOS_CONJURO.forEach(k => { if (fresh[k] !== undefined) sp[k] = fresh[k]; });
+    });
     if (!catalog.length || Characters.isKnownCaster(c)) return 0;
 
     const savedPrepared = c.preparedToday || [];
@@ -1709,7 +1725,7 @@ const App = (() => {
     { id:'caido',         label:'Caído',         effect:'Desventaja en ataques · Ataques cuerpo a cuerpo contra ti con ventaja · Vel 0' },
     { id:'envenenado',    label:'Envenenado',     effect:'Desventaja en ataques y checks de habilidad' },
     { id:'aturdido',      label:'Aturdido',       effect:'Incapacitado · no puede moverse · falla STR/DEX saves · ataques contra ti con ventaja' },
-    { id:'agarrado',      label:'Agarrado',       effect:'Velocidad 0 · termina si el agarrador queda incapacitado' },
+    { id:'agarrado',      label:'Agarrado',       effect:'Velocidad 0 · desventaja en ataques contra quien no sea tu agarrador · te puede arrastrar · termina si queda incapacitado' },
     { id:'asustado',      label:'Asustado',       effect:'Desventaja en ataques y checks mientras vea la fuente · no puede acercarse a ella' },
     { id:'incapacitado',  label:'Incapacitado',   effect:'No puede realizar acciones ni reacciones' },
     { id:'cegado',        label:'Cegado',         effect:'Falla checks que requieran vista · desventaja en ataques · ventaja contra ti' },
@@ -1717,7 +1733,7 @@ const App = (() => {
     { id:'ensordecido',   label:'Ensordecido',    effect:'Falla checks que requieran oído' },
     { id:'invisible',     label:'Invisible',      effect:'Ventaja en ataques · desventaja en ataques contra ti · no se puede ver sin magia' },
     { id:'paralizado',    label:'Paralizado',     effect:'Incapacitado · falla STR/DEX saves · ataques con ventaja · golpes a 5ft son críticos' },
-    { id:'apresado',      label:'Apresado',       effect:'Restringido: sin vel, sin reacciones · desventaja en ataques · ventaja contra ti' },
+    { id:'apresado',      label:'Apresado',       effect:'Velocidad 0 · desventaja en tus ataques y salvaciones de DES · ventaja en ataques contra ti' },
   ];
 
   // Condiciones: se movió al sidebar fijo (antes vivía en Combate-izquierda),
@@ -4121,13 +4137,13 @@ const App = (() => {
       return `
         <div class="beast-special">
           <button class="bs-toggle" onclick="App.registrarGrapple()">Registrar presa</button>
-          <div class="bs-note">Beast's Strike apresa al impactar (sin límite de tamaño). Escape CD ${cd}.</div>
+          <div class="bs-note">Beast's Strike agarra al impactar (sin límite de tamaño). Escape CD ${cd}.</div>
         </div>`;
     }
     return `
       <div class="beast-special activo">
         <div class="bs-grapple">
-          <span class="bs-target">🩸 Apresado: <b>${objetivo.replace(/</g,'&lt;')}</b></span>
+          <span class="bs-target">🩸 Agarrado: <b>${objetivo.replace(/</g,'&lt;')}</b></span>
           <span class="bs-dc">Escape CD ${cd}</span>
         </div>
         <div class="bs-actions">
@@ -5900,12 +5916,16 @@ const App = (() => {
 
   function _spellDurationToRounds(sp) {
     if (!sp || !sp.duration) return null;
+    // Acepta las formas cortas de los datos ('1 min', 'Conc. 1 h', '10 min'):
+    // antes solo '1 minuto'/'1 hora' y el contador de rondas casi nunca arrancaba.
     const d = sp.duration.toLowerCase();
-    if (d.includes('1 minuto') || d.includes('1 minute')) return 10;
-    if (d.includes('10 minutos') || d.includes('10 minutes')) return 100;
-    if (d.includes('1 hora') || d.includes('1 hour')) return 600;
-    if (d.includes('1 round') || d.includes('1 ronda')) return 1;
-    return null;
+    const m = d.match(/(\d+)\s*(rondas?|rounds?|min(?:utos?|utes?)?|h(?:oras?|ours?)?)\b/);
+    if (!m) return null;
+    const n = parseInt(m[1], 10);
+    if (/^r/.test(m[2])) return n;
+    if (/^min/.test(m[2])) return n * 10;
+    // Más de 1 hora no se cuenta en rondas (no tiene sentido en combate).
+    return n <= 1 ? n * 600 : null;
   }
 
   /* ══════════════════════════════════════════════════════
