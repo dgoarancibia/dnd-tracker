@@ -569,6 +569,22 @@ const App = (() => {
       });
       _char.consumables = savedCons;
 
+      // Recursos de raza (Stonecunning): no vienen en buildLursey y sus usos
+      // dependen del nivel actual, no del nivel con que se construyó.
+      const _razaLursey = Characters.RAZAS_CONFIG && Characters.RAZAS_CONFIG[_char.raza];
+      if (_razaLursey && typeof _razaLursey.resources === 'function') {
+        if (!_char.resources) _char.resources = [];
+        _razaLursey.resources(_char.nivel || 1).forEach(fresh => {
+          const saved = _char.resources.find(r => r.id === fresh.id);
+          if (!saved) { _char.resources.push({ ...fresh }); return; }
+          const gained = fresh.max - saved.max;
+          Object.assign(saved, { name: fresh.name, max: fresh.max, action: fresh.action, range: fresh.range,
+            recharge: fresh.recharge, desc: fresh.desc, fullDesc: fresh.fullDesc });
+          if (gained > 0) saved.current = Math.min((saved.current || 0) + gained, saved.max);
+          if (saved.current > saved.max) saved.current = saved.max;
+        });
+      }
+
       freshLursey.resources.forEach(fresh => {
         const saved = (_char.resources || []).find(r => r.id === fresh.id);
         if (saved) {

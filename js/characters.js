@@ -363,6 +363,18 @@ const Characters = (() => {
         'Dwarven Toughness — HP máximo +1, y +1 más cada vez que subes de nivel',
         'Stonecunning — acción bonus: Tremorsense 18 m por 10 min estando sobre o tocando una superficie de piedra (Prof Bonus usos/Long Rest)',
       ],
+      // Usos = bonificador de competencia: sube solo con el nivel.
+      resources: (nivel) => {
+        const prof = Math.floor(((nivel || 1) - 1) / 4) + 2;
+        return [
+          { id:'stonecunning', name:'Stonecunning',
+            current: prof, max: prof,
+            recharge:'long',
+            action:'Acción bonus', range:'Personal',
+            desc:`Tremorsense 18 m durante 10 min, mientras estés sobre una superficie de piedra o tocándola. ${prof} usos (BC) por descanso largo.`,
+            fullDesc:`Como acción adicional, ganas Tremorsense (sentido sísmico) con un alcance de 18 metros durante 10 minutos. Debes estar sobre una superficie de piedra o tocándola para usar este sentido. La piedra puede ser natural o trabajada.\n\nPuedes usar esta acción adicional un número de veces igual a tu bonificador de competencia (actualmente ${prof}) y recuperas todos los usos al terminar un descanso largo.` },
+        ];
+      },
       resistances: ['Veneno'], languages: ['Común'],
       skillProfs: [], weaponProfs: [],
     },

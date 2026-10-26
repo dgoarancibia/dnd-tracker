@@ -50,6 +50,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `potente.js`: trucos con Potent Spellcasting.
   - `stats.js`: el popup de stats refresca la ficha.
   - `paquetes.js`: la mochila cerrada de Torvald se abre en objetos (solo él) y el wizard muestra el contenido de los paquetes (termina en `TODO OK`).
+  - `stonecunning.js`: Stonecunning como recurso del Enano con usos = BC, también en Lursey (termina en `TODO OK`).
   - `municion.js`: atacar con un arco equipado desde la mochila descuenta flechas (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
