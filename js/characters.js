@@ -6349,16 +6349,25 @@ const Characters = (() => {
   };
 
   // Devuelve el tipo de munición de un arma equipada, o null si no usa.
+  // Las armas equipadas desde la mochila o a mano tienen id 'w-<fecha>', así
+  // que el id solo no basta: se busca también por nombre (inglés o español).
+  const _AMMO_POR_NOMBRE = [
+    [/ballesta|crossbow/i, 'light-crossbow'],
+    [/honda|sling/i,       'sling'],
+    [/cerbatana|blowgun/i, 'blowgun'],
+    [/arco|bow/i,          'shortbow'],
+  ];
   function getAmmoType(item) {
-    if (!item || item.kind !== 'weapon' || !item.id) return null;
-    const direct = AMMO_TYPES[item.id];
-    if (direct) return direct;
-    // Arma homebrew/mágica: mirar la propiedad en el catálogo base.
-    const base = WEAPONS_DB.find(w => w.id === item.id);
+    if (!item || item.kind !== 'weapon') return null;
+    if (AMMO_TYPES[item.id]) return AMMO_TYPES[item.id];
+    const base = _baseArma(item);
+    if (base && AMMO_TYPES[base.id]) return AMMO_TYPES[base.id];
     if (base && (base.properties || []).some(p => /^Ammunition/.test(p))) {
       return { key:'arrow', label:'Munición' };
     }
-    return null;
+    if (base || item.type === 'melee') return null;
+    const porNombre = _AMMO_POR_NOMBRE.find(([re]) => re.test(item.name || ''));
+    return porNombre ? AMMO_TYPES[porNombre[1]] : null;
   }
 
   // Armas que el personaje puede elegir para maestría (las que tienen una).

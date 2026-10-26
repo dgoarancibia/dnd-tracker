@@ -49,6 +49,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `lursey.js`: Lursey en nivel 6 vs 7.
   - `potente.js`: trucos con Potent Spellcasting.
   - `stats.js`: el popup de stats refresca la ficha.
+  - `municion.js`: atacar con un arco equipado desde la mochila descuenta flechas (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
 ## Reglas que no se negocian (decisiones de Diego)
