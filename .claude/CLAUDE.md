@@ -24,3 +24,7 @@
 ## Contexto
 - Sin asumir nada del proyecto — lo doy al inicio de cada sesión.
 - Si el contexto es insuficiente → pregunta antes de proceder.
+
+## Proyecto
+- Al empezar, lee `agent_docs/CONTEXTO.md`: arquitectura, cómo publicar, pruebas y decisiones de reglas.
+- Si en la sesión se decide algo nuevo que deba sobrevivir, agrégalo ahí.
