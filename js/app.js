@@ -33,7 +33,12 @@ const App = (() => {
       f.source && c.subclase && f.source.toLowerCase().includes(c.subclase.toLowerCase());
     const esDeTrasfondo = (f) =>
       (f.source && /trasfondo/i.test(f.source)) || (f.id && f.id.startsWith('bg-'));
-    const conservadas = (c.features || []).filter(f => esDeSubclase(f) || esDeTrasfondo(f));
+    // Un rasgo narrativo de trasfondo que ya no está en el catálogo (p. ej.
+    // Wanderer, que era de 2014) se quita.
+    const bgCfg = Characters.TRASFONDOS_CONFIG && Characters.TRASFONDOS_CONFIG[c.trasfondo];
+    const rasgoObsoleto = (f) =>
+      f.id && f.id.startsWith('bg-trait-') && bgCfg && f.name !== bgCfg.feature;
+    const conservadas = (c.features || []).filter(f => (esDeSubclase(f) || esDeTrasfondo(f)) && !rasgoObsoleto(f));
     const conservadasIds = new Set(conservadas.map(f => f.id));
     // Las de subclase se conservan, pero sus textos salen del catálogo: si no,
     // una corrección de reglas nunca llegaba a un personaje ya creado.

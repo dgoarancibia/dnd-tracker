@@ -220,8 +220,9 @@ const Characters = (() => {
       toolProfs: ['Instrumento musical (a elección)', 'Herramientas de cartógrafo'],
       statOptions: ['for', 'des', 'sab'],
       feat: 'Lucky',
-      feature: 'Wanderer',
-      featureDesc: 'Tienes una memoria excelente para mapas y geografía. Siempre puedes recordar el camino de vuelta.',
+      // Wanderer era el rasgo del Outlander de 2014; en 2024 no existe
+      feature: '',
+      featureDesc: '',
     },
     'Soldado': {
       emoji: '⚔️', skillProfs: ['atletismo', 'intimidacion'],
@@ -268,8 +269,9 @@ const Characters = (() => {
       toolProfs: ['Herramientas de cartógrafo', 'Instrumento musical (a elección)'],
       statOptions: ['des', 'con', 'sab'],
       feat: 'Magic Initiate (Druida)',
-      feature: 'Wanderer',
-      featureDesc: 'Tienes una memoria excelente para mapas y geografía. Siempre puedes recordar el camino de vuelta y encuentras doble comida al buscar en tu terreno natural.',
+      // Wanderer era el rasgo del Outlander de 2014; en 2024 no existe
+      feature: '',
+      featureDesc: '',
     },
     'Mercader': {
       emoji: '⚖️', skillProfs: ['perspicacia', 'persuasion'],
