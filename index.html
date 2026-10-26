@@ -1144,6 +1144,7 @@
     line-height: 1.4;
   }
   .equip-opt-row.selected .equip-opt-items { color: var(--text); }
+  .equip-opt-pack { opacity: 0.75; font-size: 0.92em; }
 </style>
 </head>
 <body>
@@ -1502,7 +1503,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=59"></script>
-<script src="js/characters.js?v=139"></script>
+<script src="js/characters.js?v=140"></script>
 <script type="module" src="js/firebase.js?v=6"></script>
 <!-- cloud.js también aquí: sincroniza la LISTA de personajes al iniciar sesión -->
 <script type="module" src="js/cloud.js?v=8"></script>
@@ -2058,7 +2059,7 @@ function _buildTrasEquipOpts(nombre) {
       <span class="equip-opt-radio">${isSel ? '◉' : '○'}</span>
       <span class="equip-opt-content">
         <strong class="equip-opt-label">${labels[key] || key}</strong>
-        <span class="equip-opt-items">${items.join(' · ')}</span>
+        <span class="equip-opt-items">${items.map(_conContenidoPaquete).join(' · ')}</span>
       </span>
     </label>`;
   }).join('');
@@ -2103,10 +2104,17 @@ function _buildClaseEquipOpts(clase) {
       <span class="equip-opt-radio">${isSelected ? '◉' : '○'}</span>
       <span class="equip-opt-content">
         <strong class="equip-opt-label">${labels[key]}</strong>
-        <span class="equip-opt-items">${items.join(' · ')}</span>
+        <span class="equip-opt-items">${items.map(_conContenidoPaquete).join(' · ')}</span>
       </span>
     </label>`;
   }).join('');
+}
+
+// 'Mochila de explorador' → 'Mochila de explorador (Mochila, Petate, 2× Frasco de aceite…)'
+function _conContenidoPaquete(item) {
+  const paq = Characters.contenidoPaquete && Characters.contenidoPaquete(item);
+  if (!paq) return item;
+  return `${item} <span class="equip-opt-pack">(${paq.items.map(o => (o.qty > 1 ? o.qty + '× ' : '') + o.name).join(', ')})</span>`;
 }
 
 function _selectEquipOpt(key, clase) {
@@ -2925,6 +2933,8 @@ function saveCreateModal() {
     const trasEquipOpts = TRASFONDO_EQUIP[_selectedTrasfondo];
     const trasEquipList = trasEquipOpts ? (trasEquipOpts[_selectedTrasEquipOpt] || trasEquipOpts['A']) : [];
     _applyEquipList(trasEquipList, 'trasfondo');
+    // Los paquetes (Mochila de explorador…) quedan abiertos, objeto por objeto
+    Characters.abrirPaquetes(newChar.consumables);
 
     Storage.saveChar(newChar);
     Storage.setActiveId(newChar.id);
@@ -3129,7 +3139,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 468;
+var _SW_EXPECTED_IDX = 469;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {

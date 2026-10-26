@@ -6370,6 +6370,82 @@ const Characters = (() => {
     return porNombre ? AMMO_TYPES[porNombre[1]] : null;
   }
 
+  /* Paquetes de equipo (PHB 2024). Al elegirlos se abren: en el inventario
+     queda cada objeto por separado, no "Mochila de explorador" cerrada.
+     Contenido verificado en 5etools (XPHB) y dnd2024.wikidot. */
+  const _G = 'Adventuring gear';
+  const PAQUETES_EQUIPO = {
+    'explorador': [
+      ['Mochila', 1, _G], ['Petate', 1, _G], ['Frasco de aceite', 2, _G], ['Raciones (1 día)', 10, 'Food'],
+      ['Cuerda (15 m)', 1, _G], ['Yesquero', 1, _G], ['Antorcha', 10, _G], ['Odre', 1, _G],
+    ],
+    'mazmorrero': [
+      ['Mochila', 1, _G], ['Abrojos (bolsa)', 1, _G], ['Palanca', 1, _G], ['Frasco de aceite', 2, _G],
+      ['Raciones (1 día)', 10, 'Food'], ['Cuerda (15 m)', 1, _G], ['Yesquero', 1, _G], ['Antorcha', 10, _G], ['Odre', 1, _G],
+    ],
+    'saqueador': [
+      ['Mochila', 1, _G], ['Rodamientos de bolas (bolsa)', 1, _G], ['Campana', 1, _G], ['Vela', 10, _G], ['Palanca', 1, _G],
+      ['Linterna sorda', 1, _G], ['Frasco de aceite', 7, _G], ['Raciones (1 día)', 5, 'Food'], ['Cuerda (15 m)', 1, _G],
+      ['Yesquero', 1, _G], ['Odre', 1, _G],
+    ],
+    'diplomático': [
+      ['Cofre', 1, _G], ['Ropa fina', 1, 'Apparel'], ['Tinta', 1, _G], ['Pluma', 5, _G], ['Lámpara', 1, _G],
+      ['Estuche para mapas o pergaminos', 2, _G], ['Frasco de aceite', 4, _G], ['Hoja de papel', 5, _G],
+      ['Hoja de pergamino', 5, _G], ['Perfume', 1, _G], ['Yesquero', 1, _G],
+    ],
+    'entretenido': [
+      ['Mochila', 1, _G], ['Petate', 1, _G], ['Campana', 1, _G], ['Linterna de ojo de buey', 1, _G], ['Disfraz', 3, 'Apparel'],
+      ['Espejo', 1, _G], ['Frasco de aceite', 8, _G], ['Raciones (1 día)', 9, 'Food'], ['Yesquero', 1, _G], ['Odre', 1, _G],
+    ],
+    'sacerdote': [
+      ['Mochila', 1, _G], ['Manta', 1, _G], ['Agua bendita', 1, _G], ['Lámpara', 1, _G], ['Raciones (1 día)', 7, 'Food'],
+      ['Túnica', 1, 'Apparel'], ['Yesquero', 1, _G],
+    ],
+    'erudito': [
+      ['Mochila', 1, _G], ['Libro', 1, _G], ['Tinta', 1, _G], ['Pluma', 1, _G], ['Lámpara', 1, _G],
+      ['Frasco de aceite', 10, _G], ['Hoja de pergamino', 10, _G], ['Yesquero', 1, _G],
+    ],
+  };
+
+  const _PAQUETE_EN = { explorer:'explorador', dungeoneer:'mazmorrero', burglar:'saqueador', diplomat:'diplomático',
+    entertainer:'entretenido', priest:'sacerdote', scholar:'erudito' };
+  // 'Mochila de explorador' / 'Paquete de explorador' / "Explorer's Pack"
+  // → { clave, items:[{name, qty, category}] }, o null.
+  function contenidoPaquete(nombre) {
+    const n = String(nombre || '').trim();
+    const es = /^(?:mochila|paquete) de (\S+)$/i.exec(n);
+    const en = /^(\w+)['’]s pack$/i.exec(n);
+    const clave = es ? es[1].toLowerCase() : en ? _PAQUETE_EN[en[1].toLowerCase()] : null;
+    const lista = clave && PAQUETES_EQUIPO[clave];
+    if (!lista) return null;
+    return { clave, items: lista.map(([name, qty, category]) => ({ name, qty, category })) };
+  }
+
+  /* Reemplaza en la lista de ítems cada paquete cerrado por su contenido.
+     Si el objeto ya estaba (p. ej. Raciones), suma la cantidad. Los ids son
+     fijos para que dos dispositivos que abren el mismo paquete queden iguales
+     y la nube no lo vea como conflicto. Devuelve true si cambió algo. */
+  function abrirPaquetes(lista) {
+    if (!Array.isArray(lista)) return false;
+    let cambio = false;
+    for (let i = lista.length - 1; i >= 0; i--) {
+      const it = lista[i];
+      const paq = it && contenidoPaquete(it.name);
+      if (!paq) continue;
+      const veces = Math.max(1, parseInt(it.qty) || 1);
+      lista.splice(i, 1);
+      paq.items.forEach(obj => {
+        const ya = lista.find(x => x && String(x.name).toLowerCase() === obj.name.toLowerCase());
+        if (ya) { ya.qty = (parseInt(ya.qty) || 0) + obj.qty * veces; return; }
+        const slug = obj.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        lista.push({ id: `pack-${paq.clave}-${slug}`, name: obj.name, qty: obj.qty * veces, category: obj.category,
+          desc: `Del paquete de ${paq.clave}`, slot: 'bag' });
+      });
+      cambio = true;
+    }
+    return cambio;
+  }
+
   // Armas que el personaje puede elegir para maestría (las que tienen una).
   function getWeaponMasteryOptions() {
     return WEAPONS_DB
@@ -6592,6 +6668,7 @@ const Characters = (() => {
     getWeaponMasteryOptions,
     ajustarHPPorCON, partirNombre,
     AMMO_TYPES, getAmmoType,
+    PAQUETES_EQUIPO, contenidoPaquete, abrirPaquetes,
     applySubraza,
     applySubclase,
     buildLursey,

@@ -129,6 +129,10 @@ const App = (() => {
       });
     }
 
+    // 0. Torvald se creó con la mochila cerrada: se abre en sus objetos.
+    //    Solo él; los demás ya tienen su equipo cargado a mano.
+    if (/^torvald/i.test(c.name || '') && Characters.abrirPaquetes(c.consumables)) changed = true;
+
     // 1a. Salvaciones guardadas como 'fue': la clave de Fuerza es 'for', así
     //     que la salvación de FUE nunca contaba como competente.
     if (Array.isArray(c.savingThrows) && c.savingThrows.includes('fue')) {
