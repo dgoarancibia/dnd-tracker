@@ -2097,13 +2097,13 @@ function _buildClaseEquipOpts(clase) {
   const equip = CLASE_EQUIP[clase];
   if (!equip) { sec.style.display = 'none'; return; }
   sec.style.display = '';
-  const labels = { A: 'Opción A', B: 'Opción B', C: 'Opción C (solo dinero)' };
   opts.innerHTML = Object.entries(equip).map(([key, items]) => {
     const isSelected = key === _selectedEquipOpt;
+    const soloDinero = items.every(i => /^\d+\s*gp$/.test(i));
     return `<label class="equip-opt-row ${isSelected ? 'selected' : ''}" onclick="_selectEquipOpt('${key}','${clase}')">
       <span class="equip-opt-radio">${isSelected ? '◉' : '○'}</span>
       <span class="equip-opt-content">
-        <strong class="equip-opt-label">${labels[key]}</strong>
+        <strong class="equip-opt-label">Opción ${key}${soloDinero ? ' (solo dinero)' : ''}</strong>
         <span class="equip-opt-items">${items.map(_conContenidoPaquete).join(' · ')}</span>
       </span>
     </label>`;
@@ -2356,9 +2356,8 @@ const CLASE_EQUIP = {
     C: ['150 gp'],
   },
   'Explorador': {
-    A: ['Cota de escamas', 'Espada corta (2)', 'Arco largo', 'Carcaj (20 flechas)', 'Mochila de mazmorrero', '3 gp'],
-    B: ['Cuero tachonado', 'Espada corta (2)', 'Arco largo', 'Carcaj (20 flechas)', 'Mochila de explorador', '11 gp'],
-    C: ['150 gp'],
+    A: ['Cuero tachonado', 'Cimitarra', 'Espada corta', 'Arco largo', 'Carcaj (20 flechas)', 'Foco druídico (ramita de muérdago)', 'Mochila de explorador', '7 gp'],
+    B: ['150 gp'],
   },
   'Hechicero': {
     A: ['Daga (2)', 'Foco arcano', 'Bolsa de componentes', 'Mochila de explorador', '28 gp'],
@@ -3139,7 +3138,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 470;
+var _SW_EXPECTED_IDX = 471;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
