@@ -51,6 +51,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `stats.js`: el popup de stats refresca la ficha.
   - `paquetes.js`: la mochila cerrada de Torvald se abre en objetos (solo él) y el wizard muestra el contenido de los paquetes (termina en `TODO OK`).
   - `stonecunning.js`: Stonecunning como recurso del Enano con usos = BC, también en Lursey (termina en `TODO OK`).
+  - `auditoria.js`: indicador de auditoría (HU-19) en el inicio; arma sin competencia no suma BC (termina en `TODO OK`).
   - `municion.js`: atacar con un arco equipado desde la mochila descuenta flechas (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
@@ -79,6 +80,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
 - **CD de conjuros 16**: el +1 del Arcane Grimoire es solo para Mago, pero el DM lo permite.
 - **Blessed Strikes (nv7)**: eligió Potent Spellcasting (`choices['blessed-strikes']='bs-potent-spellcasting'`). La app suma SAB al daño de trucos y escala trucos ×2/×3/×4 en niveles 5/11/17.
 - **Servirse del poder divino** y **Versatilidad de trucos** (Tasha's, no existen en 2024) quedan como **regla de mesa**, marcadas en el texto.
+- **Divine Order: Protector** (`choices['divine-order']='protector'`): competente con armas marciales y armadura pesada (Maza de Guerra +1, Cota de malla).
 - Dominio de la Paz: reglas de clase 2024 con subclase Tasha's. Para clérigos nuevos, la subclase y sus rasgos llegan en nv3.
 
 ## Pendientes conocidos
@@ -93,7 +95,6 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   | Brujo | 27 | ~70 |
 
   Clérigo y Hechicero tienen de más. Faltan conjuros SRD de Druida: Elementalism, Message, Spare the Dying, Ice Knife, Protection from Evil and Good y Purify Food and Drink. Si Diego crea un personaje de esas clases, avisarle.
-- **Modelar la competencia con armas** (hoy no se valida).
 - **Backlog del Ranger** (HU-17 a HU-47), en 7 fases en este orden. Las fases 1 y 2 son prerequisito.
   1. Integridad: HU-17 a HU-19.
   2. Motor de turno: HU-20, HU-21, HU-44 (metadata de activación) y HU-45 (estado por turno).

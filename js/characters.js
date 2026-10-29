@@ -755,7 +755,8 @@ const Characters = (() => {
       : statUsed === 'choice' ? (calcMod(char.stats.des) > calcMod(char.stats.for) ? 'des' : 'for')
       : 'for';
     const mod = calcMod(char.stats[statKey]);
-    const prof = calcProfBonus(char.nivel);
+    const sinCompetencia = competenteConArma(char, w) === false;
+    const prof = sinCompetencia ? 0 : calcProfBonus(char.nivel);
 
     // El +1 de un arma mágica puede venir en `bonus` ("+1") o en `bonuses`;
     // si los dos dicen lo mismo es el mismo +1, no dos.
@@ -763,6 +764,7 @@ const Characters = (() => {
     const extra = (stat) => { const v = _itemStatBonus(w, stat); return v === magico ? 0 : v; };
 
     const notas = [];
+    if (sinCompetencia) notas.push('Sin competencia: no suma tu BC ni puedes usar su maestría');
     // Desglose de lo que suma cada número (para mostrarlo, ej. en Roll20).
     const STAT_ABR = { for: 'FUE', des: 'DES' };
     const otrosAtq = extra('attack') + _sumBuffs(w.buffs, 'attack') + _sumBuffs(char.statBuffs && char.statBuffs.attack, null);
@@ -799,7 +801,7 @@ const Characters = (() => {
     const dado = w.die || '1d4';
     const fmtNum = n => (n > 0 ? `+${n}` : n < 0 ? `${n}` : '');
     return {
-      ataque, statKey, mod, prof, magico, aDistancia,
+      ataque, statKey, mod, prof, magico, aDistancia, sinCompetencia,
       desgloseAtaque: desgloseAtaque.filter(x => x.v),
       desgloseDaño: desgloseDaño.filter(x => x.v),
       dado, dañoFijo,
@@ -1148,7 +1150,7 @@ const Characters = (() => {
       xp: 14000,
       classes: [{ name: 'Clérigo', level: 6, subclass: 'Dominio de la Paz' }],
       // Blessed Strikes (nv7): eligió Potent Spellcasting.
-      choices: { 'blessed-strikes': 'bs-potent-spellcasting' },
+      choices: { 'blessed-strikes': 'bs-potent-spellcasting', 'divine-order': 'protector' },
 
       stats: { for:10, des:14, con:14, int:9, sab:19, car:14 },
 
@@ -6312,9 +6314,8 @@ const Characters = (() => {
     // Paladín y Explorador: 2 tipos, sin aumento (no tienen columna en su tabla)
     'Paladín':   [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     'Explorador':[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-    // Pícaro y Monje: 2, sin aumento
+    // Pícaro: 2, sin aumento. El Monje 2024 no tiene Weapon Mastery.
     'Pícaro':    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-    'Monje':     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
   };
 
   // Cuántas maestrías le corresponden al personaje (suma multiclase).
@@ -6456,6 +6457,104 @@ const Characters = (() => {
       cambio = true;
     }
     return cambio;
+  }
+
+  /* ── Competencia con armas (PHB 2024) ──────────────────────────────
+     Sin competencia el ataque no suma el bonificador de competencia y no
+     se puede usar la maestría del arma. */
+  const _ARMAS_SIMPLES = new Set(['club','dagger','greatclub','handaxe','javelin','light-hammer','mace','quarterstaff',
+    'sickle','spear','unarmed','light-crossbow','dart','shortbow','sling','dagger-venom']);
+  // Armas con nombre propio (sin id del catálogo): se reconocen por el nombre en español.
+  const _SIMPLES_ES = /^(daga|garrote|gran garrote|hacha de mano|jabalina|martillo ligero|maza|bast[oó]n|hoz|lanza|ballesta ligera|dardo|arco corto|honda)\b(?! de guerra)/i;
+  const _MARCIALES_ES = /^(espada larga|espada corta|cimitarra|estoque|arco largo|hacha de (batalla|guerra)|mangual|alabarda|guja|gran hacha|hacha grande|espad[oó]n|mandoble|lucero del alba|pica|tridente|pico de guerra|martillo de guerra|l[aá]tigo|maza de guerra|mazo|ballesta de mano|ballesta pesada|cerbatana|lanza de caballer[ií]a|mosquete|pistola)\b/i;
+
+  // 'simple' | 'martial' | null (no se sabe: arma inventada)
+  function categoriaArma(w) {
+    if (!w) return null;
+    const base = _baseArma(w);
+    if (base) return _ARMAS_SIMPLES.has(base.id) ? 'simple' : 'martial';
+    const n = String(w.name || '').trim();
+    if (_MARCIALES_ES.test(n)) return 'martial';
+    if (_SIMPLES_ES.test(n)) return 'simple';
+    return null;
+  }
+
+  // Marciales que da cada clase: true = todas, o la propiedad que deben tener.
+  const _MARCIALES_CLASE = { 'Guerrero': true, 'Paladín': true, 'Explorador': true, 'Bárbaro': true,
+    'Pícaro': /^(Finesse|Light)$/, 'Monje': /^Light$/ };
+  const _MARCIALES_MULTICLASE = new Set(['Guerrero', 'Paladín', 'Explorador', 'Bárbaro']);
+
+  // true / false, o null si no se puede saber (arma sin categoría conocida).
+  function competenteConArma(char, w) {
+    const cat = categoriaArma(w);
+    if (!cat) return null;
+    if (cat === 'simple') return true;   // todas las clases 2024 tienen armas simples
+    const ch = (char && char.choices) || {};
+    if (ch['divine-order'] === 'protector' || ch['primal-order'] === 'warden') return true;
+    const extra = ((char && char.weaponProfs) || []).map(x => String(x).toLowerCase());
+    const base = _baseArma(w);
+    if (extra.some(x => /marcial|martial/.test(x) || x === String(w.name || '').toLowerCase() || (base && (x === base.id || x === base.name.toLowerCase())))) return true;
+    const clases = (Array.isArray(char.classes) && char.classes.length)
+      ? char.classes.map((c, i) => ({ nombre: c.name, principal: i === 0 }))
+      : [{ nombre: char.clase, principal: true }];
+    const props = base ? (base.properties || []) : [];
+    return clases.some(({ nombre, principal }) => {
+      if (!principal) return _MARCIALES_MULTICLASE.has(nombre);
+      const regla = _MARCIALES_CLASE[nombre];
+      if (regla === true) return true;
+      return !!regla && props.some(p => regla.test(p));
+    });
+  }
+
+  /* ── Auditoría del personaje (HU-19) ───────────────────────────────
+     Revisa la instancia concreta (check_rules.js revisa el catálogo).
+     Devuelve [{ sev:'error'|'warn'|'info', cat, msg }]. No corrige nada. */
+  const _HABILIDADES_CLASE = { 'Bardo': 3, 'Explorador': 3, 'Pícaro': 4 };
+  function auditarPersonaje(char) {
+    const out = [];
+    if (!char) return out;
+    const add = (sev, cat, msg) => out.push({ sev, cat, msg });
+    const nivel = char.nivel || 1;
+    const eq = char.equipment || {};
+
+    // Armas
+    ['mainHand', 'offHand'].forEach(slot => {
+      const w = eq[slot];
+      if (!w || w.kind !== 'weapon') return;
+      if (competenteConArma(char, w) === false) add('error', 'Armas', `${w.name}: sin competencia, el ataque no suma tu BC`);
+    });
+
+    // Maestrías
+    const maxM = getWeaponMasteryCount(char);
+    if (maxM) {
+      const elegidas = Array.isArray(char.weaponMasteries) ? char.weaponMasteries : [];
+      if (elegidas.length < maxM) add('warn', 'Maestrías', `Tienes ${elegidas.length} de ${maxM} maestrías de arma elegidas`);
+      if (elegidas.length > maxM) add('error', 'Maestrías', `Tienes ${elegidas.length} maestrías y te corresponden ${maxM}`);
+      elegidas.forEach(id => {
+        const w = WEAPONS_DB.find(x => x.id === id);
+        if (w && competenteConArma(char, { ...w, kind: 'weapon' }) === false) add('warn', 'Maestrías', `${w.name}: no tienes competencia, no puedes usar su maestría`);
+      });
+    }
+
+    // Elecciones de clase sin resolver (Lursey se arma fuera del flujo de elecciones)
+    if (char.id !== 'lursey-brumaclara') {
+      getPendingChoices(char, nivel, 0).forEach(p => add('error', 'Elecciones', `Falta elegir: ${p.label}`));
+    }
+
+    // Habilidades: se cuenta el total; da igual de qué fuente vino cada una
+    const esperadas = (_HABILIDADES_CLASE[char.clase] || 2) + (char.trasfondo && char.trasfondo !== 'Custom' ? 2 : 0);
+    const tiene = new Set(char.skillProfs || []).size;
+    if (tiene < esperadas) add('warn', 'Habilidades', `Tienes ${tiene} habilidades con competencia; deberías tener al menos ${esperadas}`);
+
+    // Idiomas: Común + 2, y Deft Explorer suma 2 al Explorador nv2+
+    const idiomas = (char.languages || []).filter(l => !/elecci[óo]n|adicional/i.test(l));
+    const esExplorador = (char.classes || []).some(c => c.name === 'Explorador' && (c.level || 1) >= 2) || (char.clase === 'Explorador' && nivel >= 2);
+    const minIdiomas = 3 + (esExplorador ? 2 : 0);
+    if (idiomas.length < minIdiomas) add('warn', 'Idiomas', `Tienes ${idiomas.length} idiomas; te corresponden al menos ${minIdiomas}${esExplorador ? ' (incluye 2 de Deft Explorer)' : ''}`);
+    const vistos = new Set();
+    idiomas.forEach(l => { const k = l.toLowerCase(); if (vistos.has(k)) add('warn', 'Idiomas', `Idioma repetido: ${l}`); vistos.add(k); });
+
+    return out;
   }
 
   // Armas que el personaje puede elegir para maestría (las que tienen una).
@@ -6681,6 +6780,7 @@ const Characters = (() => {
     ajustarHPPorCON, partirNombre,
     AMMO_TYPES, getAmmoType,
     PAQUETES_EQUIPO, contenidoPaquete, abrirPaquetes,
+    categoriaArma, competenteConArma, auditarPersonaje,
     applySubraza,
     applySubclase,
     buildLursey,
