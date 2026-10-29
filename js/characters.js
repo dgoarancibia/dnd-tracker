@@ -6506,57 +6506,6 @@ const Characters = (() => {
     });
   }
 
-  /* ── Auditoría del personaje (HU-19) ───────────────────────────────
-     Revisa la instancia concreta (check_rules.js revisa el catálogo).
-     Devuelve [{ sev:'error'|'warn'|'info', cat, msg }]. No corrige nada. */
-  const _HABILIDADES_CLASE = { 'Bardo': 3, 'Explorador': 3, 'Pícaro': 4 };
-  function auditarPersonaje(char) {
-    const out = [];
-    if (!char) return out;
-    const add = (sev, cat, msg) => out.push({ sev, cat, msg });
-    const nivel = char.nivel || 1;
-    const eq = char.equipment || {};
-
-    // Armas
-    ['mainHand', 'offHand'].forEach(slot => {
-      const w = eq[slot];
-      if (!w || w.kind !== 'weapon') return;
-      if (competenteConArma(char, w) === false) add('error', 'Armas', `${w.name}: sin competencia, el ataque no suma tu BC`);
-    });
-
-    // Maestrías
-    const maxM = getWeaponMasteryCount(char);
-    if (maxM) {
-      const elegidas = Array.isArray(char.weaponMasteries) ? char.weaponMasteries : [];
-      if (elegidas.length < maxM) add('warn', 'Maestrías', `Tienes ${elegidas.length} de ${maxM} maestrías de arma elegidas`);
-      if (elegidas.length > maxM) add('error', 'Maestrías', `Tienes ${elegidas.length} maestrías y te corresponden ${maxM}`);
-      elegidas.forEach(id => {
-        const w = WEAPONS_DB.find(x => x.id === id);
-        if (w && competenteConArma(char, { ...w, kind: 'weapon' }) === false) add('warn', 'Maestrías', `${w.name}: no tienes competencia, no puedes usar su maestría`);
-      });
-    }
-
-    // Elecciones de clase sin resolver (Lursey se arma fuera del flujo de elecciones)
-    if (char.id !== 'lursey-brumaclara') {
-      getPendingChoices(char, nivel, 0).forEach(p => add('error', 'Elecciones', `Falta elegir: ${p.label}`));
-    }
-
-    // Habilidades: se cuenta el total; da igual de qué fuente vino cada una
-    const esperadas = (_HABILIDADES_CLASE[char.clase] || 2) + (char.trasfondo && char.trasfondo !== 'Custom' ? 2 : 0);
-    const tiene = new Set(char.skillProfs || []).size;
-    if (tiene < esperadas) add('warn', 'Habilidades', `Tienes ${tiene} habilidades con competencia; deberías tener al menos ${esperadas}`);
-
-    // Idiomas: Común + 2, y Deft Explorer suma 2 al Explorador nv2+
-    const idiomas = (char.languages || []).filter(l => !/elecci[óo]n|adicional/i.test(l));
-    const esExplorador = (char.classes || []).some(c => c.name === 'Explorador' && (c.level || 1) >= 2) || (char.clase === 'Explorador' && nivel >= 2);
-    const minIdiomas = 3 + (esExplorador ? 2 : 0);
-    if (idiomas.length < minIdiomas) add('warn', 'Idiomas', `Tienes ${idiomas.length} idiomas; te corresponden al menos ${minIdiomas}${esExplorador ? ' (incluye 2 de Deft Explorer)' : ''}`);
-    const vistos = new Set();
-    idiomas.forEach(l => { const k = l.toLowerCase(); if (vistos.has(k)) add('warn', 'Idiomas', `Idioma repetido: ${l}`); vistos.add(k); });
-
-    return out;
-  }
-
   // Armas que el personaje puede elegir para maestría (las que tienen una).
   function getWeaponMasteryOptions() {
     return WEAPONS_DB
@@ -6780,7 +6729,7 @@ const Characters = (() => {
     ajustarHPPorCON, partirNombre,
     AMMO_TYPES, getAmmoType,
     PAQUETES_EQUIPO, contenidoPaquete, abrirPaquetes,
-    categoriaArma, competenteConArma, auditarPersonaje,
+    categoriaArma, competenteConArma,
     applySubraza,
     applySubclase,
     buildLursey,

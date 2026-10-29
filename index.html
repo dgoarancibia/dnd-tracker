@@ -360,14 +360,6 @@
   .stat-pill.hp-crit { border-color: rgba(138,58,58,0.4);  color: #e07070; }
   .stat-pill.conc    { border-color: rgba(201,151,58,0.4); color: var(--gold); }
   .stat-pill.tmp     { border-color: rgba(122,179,212,0.4);color: #7ab3d4; }
-  .stat-pill.audit   { cursor: pointer; font: inherit; font-size: inherit; background: transparent; }
-  .stat-pill.audit.ok    { border-color: rgba(74,138,90,0.4);  color: #70b880; }
-  .stat-pill.audit.warn  { border-color: rgba(200,140,50,0.4); color: #e0a050; }
-  .stat-pill.audit.error { border-color: rgba(138,58,58,0.4);  color: #e07070; }
-  .audit-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--border); }
-  .audit-row:first-child { border-top: 0; }
-  .audit-ico { flex: 0 0 18px; text-align: center; }
-  .audit-cat { font-size: 11px; color: var(--text-dim); }
 
   .char-play-btn {
     margin-top: 4px;
@@ -1508,22 +1500,10 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="auditModal">
-  <div class="modal" style="max-width:520px;">
-    <button class="modal-close-x" onclick="closeAuditModal()">✕</button>
-    <div class="modal-title" id="auditTitle">Estado del personaje</div>
-    <div id="auditList"></div>
-    <div class="modal-btns" style="margin-top:16px;justify-content:space-between;">
-      <button class="btn btn-ghost" id="auditPlayBtn">▶ Abrir ficha</button>
-      <button class="btn-cancel" onclick="closeAuditModal()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=59"></script>
-<script src="js/characters.js?v=142"></script>
+<script src="js/characters.js?v=143"></script>
 <script type="module" src="js/firebase.js?v=6"></script>
 <!-- cloud.js también aquí: sincroniza la LISTA de personajes al iniciar sesión -->
 <script type="module" src="js/cloud.js?v=8"></script>
@@ -1731,36 +1711,6 @@ async function openSyncDiag() {
   }
   el.textContent = L.join('\n');
 }
-// ── Auditoría del personaje (HU-19): avisa, no corrige ──
-const _AUDIT_ICO = { error: '⛔', warn: '⚠', info: 'ℹ' };
-function _auditDe(c) {
-  try { return (typeof Characters !== 'undefined' && Characters.auditarPersonaje) ? Characters.auditarPersonaje(c) : []; }
-  catch (e) { console.warn('[auditoría]', e); return []; }
-}
-function _auditPill(c) {
-  // La lista del inicio trae un resumen; la auditoría necesita el personaje completo
-  const items = _auditDe(Storage.getChar(c.id) || c).filter(x => x.sev !== 'info');
-  const errores = items.filter(x => x.sev === 'error').length;
-  const cls = errores ? 'error' : items.length ? 'warn' : 'ok';
-  const txt = errores ? `⛔ ${errores} ${errores === 1 ? 'error' : 'errores'}`
-    : items.length ? `⚠ ${items.length} por revisar` : '✓ Completo';
-  return `<button class="stat-pill audit ${cls}" onclick="openAuditModal('${c.id}')">${txt}</button>`;
-}
-function openAuditModal(id) {
-  const c = Storage.getChar(id);
-  if (!c) return;
-  const orden = { error: 0, warn: 1, info: 2 };
-  const items = _auditDe(c).sort((a, b) => orden[a.sev] - orden[b.sev]);
-  document.getElementById('auditTitle').textContent = `Estado de ${c.name}`;
-  document.getElementById('auditList').innerHTML = items.length
-    ? items.map(x => `<div class="audit-row"><span class="audit-ico">${_AUDIT_ICO[x.sev]}</span>
-        <div><div>${_esc(x.msg)}</div><div class="audit-cat">${_esc(x.cat)}</div></div></div>`).join('')
-    : '<p style="margin:0;color:#70b880;">✓ Todo cuadra con las reglas</p>';
-  document.getElementById('auditPlayBtn').onclick = () => { closeAuditModal(); playChar(id); };
-  document.getElementById('auditModal').classList.add('show');
-}
-function closeAuditModal() { document.getElementById('auditModal').classList.remove('show'); }
-
 function closeSyncDiag() { document.getElementById('syncDiagModal').classList.remove('show'); }
 function copySyncDiag() {
   const t = document.getElementById('syncDiagText').textContent;
@@ -1882,7 +1832,6 @@ function renderGrid() {
         <span class="stat-pill ${hpCls}">HP ${c.hp.current}/${c.hp.max}</span>
         ${c.hp.temp > 0 ? `<span class="stat-pill tmp">+${c.hp.temp} tmp</span>` : ''}
         ${c.concentration ? `<span class="stat-pill conc">◆ Conc</span>` : ''}
-        ${_auditPill(c)}
       </div>
       ${cuentaNombres[(c.name || '').trim().toLowerCase()] > 1 ? `<div class="char-dup">Nombre repetido · creado ${fecha(c.createdAt)} · modificado ${fecha(c.updatedAt)}</div>` : ''}
       ${_conflictosLista.has(c.id) ? `<div class="char-dup conflicto">☁ Distinto en la nube: te preguntará cuál usar al abrirlo</div>` : ''}
@@ -3189,7 +3138,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 472;
+var _SW_EXPECTED_IDX = 473;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
