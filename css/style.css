@@ -9808,3 +9808,14 @@ mark.diary-highlight {
 
 /* Nombre en español junto al inglés: secundario, no compite con el nombre. */
 .nm-es { font-weight: 400; color: var(--text-dim); font-size: 0.85em; letter-spacing: 0; text-transform: none; font-family: 'Jost', sans-serif; }
+
+/* Botones flotantes (⚔️ 📓 📝): espacio al final de cada columna para
+   poder subir lo último por encima de ellos, y se esconden mientras se
+   escribe para no tapar el texto. */
+.stats-sidebar,
+.one-col-pane,
+.two-col-left, .two-col-right,
+.tab-panel--single.active { padding-bottom: 96px; }
+.fab, .fab-note { transition: opacity 0.15s, transform 0.15s, border-color 0.15s; }
+body.escribiendo .fab,
+body.escribiendo .fab-note { opacity: 0; pointer-events: none; transform: scale(0.8); }

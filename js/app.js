@@ -663,6 +663,23 @@ const App = (() => {
       }
     });
 
+    /* Mientras escribís, los botones flotantes se esconden: en iPad tapaban
+       justo la línea que estabas escribiendo. */
+    if (!document.body.dataset.fabFoco) {
+      document.body.dataset.fabFoco = '1';
+      const editable = el => !!el && (el.isContentEditable || el.tagName === 'TEXTAREA' ||
+        (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|range|color|file)$/i.test(el.type)));
+      document.addEventListener('focusin', e => {
+        if (editable(e.target)) document.body.classList.add('escribiendo');
+      });
+      document.addEventListener('focusout', () => {
+        // El foco puede saltar a otro campo: se mira dónde quedó después.
+        setTimeout(() => {
+          if (!editable(document.activeElement)) document.body.classList.remove('escribiendo');
+        }, 0);
+      });
+    }
+
     // Shortcuts para abrir nota rápida:
     // - Alt+Space (Option+Space) → Mac
     // - Cmd+Shift+Space → Mac/iPad
