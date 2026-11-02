@@ -53,6 +53,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `stonecunning.js`: Stonecunning como recurso del Enano con usos = BC, también en Lursey (termina en `TODO OK`).
   - `competencia.js`: un arma sin competencia no suma BC al ataque; Lursey (Protector) sí (termina en `TODO OK`).
   - `municion.js`: atacar con un arco equipado desde la mochila descuenta flechas (termina en `TODO OK`).
+  - `turno.js`: en combate, Atacar descuenta ataques; la mano secundaria usa la Acción adicional salvo con Nick; usar un recurso marca su activación (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
 ## Reglas que no se negocian (decisiones de Diego)
@@ -95,7 +96,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   | Brujo | 27 | ~70 |
 
   Clérigo y Hechicero tienen de más. Faltan conjuros SRD de Druida: Elementalism, Message, Spare the Dying, Ice Knife, Protection from Evil and Good y Purify Food and Drink. Si Diego crea un personaje de esas clases, avisarle.
-- **Backlog del Ranger** (HU-17 a HU-47), en 7 fases en este orden. Las fases 1 y 2 son prerequisito.
+- **Backlog del Ranger** (HU-17 a HU-47), en 7 fases en este orden. Las fases 1 y 2 están hechas (2026-11-02).
   1. Integridad: HU-17 a HU-19.
   2. Motor de turno: HU-20, HU-21, HU-44 (metadata de activación) y HU-45 (estado por turno).
   3. Combate Beast Master: HU-22 a HU-27.

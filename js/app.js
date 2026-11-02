@@ -2454,17 +2454,7 @@ const App = (() => {
     if (weaponSlots.length) {
       // Maestría activa del arma: solo si el personaje la eligió. Es lo que
       // más se olvida en mesa, así que va en la tarjeta del ataque.
-      const _masterias = Array.isArray(c.weaponMasteries) ? c.weaponMasteries : [];
-      const _opcMastery = _masterias.length ? Characters.getWeaponMasteryOptions() : [];
-      const _masteryDe = (item) => {
-        if (!_masterias.length || !item) return null;
-        const nombre = (item.name || '').toLowerCase();
-        // El ítem equipado puede tener nombre propio ("Maza +1"), así que se
-        // busca por coincidencia con el arma base.
-        const w = _opcMastery.find(o => _masterias.includes(o.id) &&
-          (nombre === o.name.toLowerCase() || nombre.includes(o.name.toLowerCase())));
-        return w ? w.mastery : null;
-      };
+      const _masteryDe = (item) => _maestriaDe(c, item);
 
       const weaponCards = weaponSlots.map(w => {
         const item = eq[w.slot];
@@ -4514,6 +4504,65 @@ const App = (() => {
     return 2;
   }
 
+  /* Maestría activa de un arma equipada: solo si el personaje la eligió.
+     El ítem puede tener nombre propio ("Maza +1"), así que se busca por id
+     o por coincidencia con el nombre del arma base. */
+  function _maestriaDe(c, item) {
+    const elegidas = Array.isArray(c && c.weaponMasteries) ? c.weaponMasteries : [];
+    if (!elegidas.length || !item) return null;
+    const nombre = (item.name || '').toLowerCase();
+    const w = Characters.getWeaponMasteryOptions().find(o => elegidas.includes(o.id) &&
+      (item.id === o.id || nombre === o.name.toLowerCase() || nombre.includes(o.name.toLowerCase())));
+    return w ? w.mastery : null;
+  }
+
+  /* Qué gasta del turno atacar con el arma de `slot` (HU-21):
+     - Mano principal: uno de los ataques de la acción de Ataque.
+     - Mano secundaria (extra de Light): la Acción adicional, salvo que una
+       de las dos armas tenga Nick, que lo mete en la acción de Ataque.
+     Devuelve el aviso si ya no quedaba, o '' si se pudo gastar. */
+  function _costoAtaque(c, slot) {
+    const t = _turnoDe(c);
+    if (slot === 'offHand') {
+      const eq = c.equipment || {};
+      const nick = [eq.mainHand, eq.offHand].some(it => _maestriaDe(c, it) === 'Nick');
+      if (nick) return '';
+      return t.bonus ? 'Ya usaste tu Acción adicional este turno (el ataque extra de Light la usa).' : '';
+    }
+    const max = _ataquesDelTurno(c);
+    return (t.attacksUsed || 0) >= max
+      ? `Ya hiciste ${max === 1 ? 'tu ataque' : `tus ${max} ataques`} de la acción de Ataque este turno.`
+      : '';
+  }
+
+  function _gastarAtaque(c, slot) {
+    const t = _turnoDe(c);
+    if (slot === 'offHand') {
+      const eq = c.equipment || {};
+      const nick = [eq.mainHand, eq.offHand].some(it => _maestriaDe(c, it) === 'Nick');
+      if (nick) t.action = true; else t.bonus = true;
+    } else {
+      t.attacksUsed = Math.min(_ataquesDelTurno(c), (t.attacksUsed || 0) + 1);
+      t.action = true;
+    }
+  }
+
+  /* Usar un recurso marca lo que pide su activación (HU-44): Stonecunning
+     la Acción adicional, Channel Divinity la Acción… Solo en combate, y
+     no bloquea: si ya estaba usado, avisa. */
+  function _gastarActivacionRecurso(r) {
+    if (!_combatActive || !r) return;
+    const act = Characters.getActivation(r);
+    const campo = { action: 'action', bonusAction: 'bonus', reaction: 'reaction' }[act];
+    if (!campo) return;
+    const t = _turnoDe(_char);
+    const etiqueta = Characters.ACTIVATION_LABEL[act];
+    if (t[campo]) showToast(`⚠ Ya habías usado tu ${etiqueta} este turno`);
+    else showToast(`${etiqueta} marcada`);
+    t[campo] = true;
+    _renderTurnTracker();
+  }
+
   function _turnoDe(c) {
     if (!c.turn || typeof c.turn !== 'object') {
       c.turn = { action: false, bonus: false, reaction: false, movement: false };
@@ -6447,10 +6496,24 @@ const App = (() => {
       </div>`;
   }
 
-  function attackWithWeapon(slot) {
+  function attackWithWeapon(slot, forzar) {
     if (!_char) return;
     const w = _char.equipment && _char.equipment[slot];
     if (!w || w.kind !== 'weapon') return;
+
+    // En combate, cada ataque se descuenta del turno. Si ya no quedaba, se
+    // pregunta antes de gastar munición (el DM puede permitirlo).
+    if (_combatActive) {
+      const aviso = _costoAtaque(_char, slot);
+      if (aviso && !forzar) {
+        _confirmChoice('⚠ Economía de acciones', `${aviso}\n\n¿Atacar igual?`,
+          'Atacar igual', 'Cancelar', () => attackWithWeapon(slot, true));
+        return;
+      }
+      _gastarAtaque(_char, slot);
+      _saveChar(true);
+      _renderTurnTracker();
+    }
 
     // Munición: se descuenta una pieza por disparo; si no queda, se avisa
     // pero no se bloquea (puede tener flechas sueltas sin registrar).
@@ -6725,7 +6788,9 @@ const App = (() => {
     if (!_char) return;
     const r = _char.resources.find(r => r.id === id);
     if (!r) return;
+    const antes = r.current;
     r.current = Math.max(0, Math.min(r.max, r.current + delta));
+    if (r.current < antes) _gastarActivacionRecurso(r);
     _saveChar(true);
     _refreshResourceDots(id);
   }
@@ -6734,11 +6799,13 @@ const App = (() => {
     if (!_char) return;
     const r = _char.resources.find(r => r.id === id);
     if (!r) return;
+    const antes = r.current;
     if (dotIndex === r.current - 1) {
       r.current = dotIndex;
     } else {
       r.current = dotIndex + 1;
     }
+    if (r.current < antes) _gastarActivacionRecurso(r);
     _saveChar(true);
     _refreshResourceDots(id);
   }
