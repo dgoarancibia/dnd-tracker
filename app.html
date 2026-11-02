@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 475;
+const _SW_EXPECTED = 476;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 475;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=140">
+<link rel="stylesheet" href="css/style.css?v=141">
 </head>
 <body>
 
@@ -183,6 +183,9 @@ const _SW_EXPECTED = 475;
     <div class="stat-box"><div class="sl">Atk</div><div class="sv" id="hdrPROF">—</div></div>
     <div class="stat-box" title="Percepción Pasiva"><div class="sl">Perc.</div><div class="sv" id="hdrPERC">—</div></div>
     <button class="insp-btn" id="hdrInspBtn" onclick="App.toggleInspiration()" title="Inspiración">✦</button>
+
+    <!-- COMBATE: fuera de combate lo inicia; en combate abre el panel -->
+    <button class="hdr-rest-btn combat" id="hdrCombatBtn" onclick="App.botonCombate()" title="Iniciar combate">⚔️ Combate</button>
 
     <!-- DESCANSOS en header -->
     <div class="hdr-rest-btns">
@@ -1319,7 +1322,7 @@ const _SW_EXPECTED = 475;
 <script src="js/roll20_es.js?v=2"></script>
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=3"></script>
-<script src="js/app.js?v=279"></script>
+<script src="js/app.js?v=280"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>

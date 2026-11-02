@@ -1929,6 +1929,8 @@ const App = (() => {
       };
       Object.values(Characters.CLASE_FEATURES || {}).forEach(recolecta);
       Object.values(Characters.SUBCLASES_CONFIG || {}).forEach(recolecta);
+      // Recursos de raza (Stonecunning del Enano).
+      Object.values(Characters.RAZAS_CONFIG || {}).forEach(recolecta);
       // Recursos de Lursey que no vienen de un preset de clase.
       ['guiding-bolt-mi', 'servirse-poder-divino'].forEach(id => _catalogResourceIds.add(id));
     }
@@ -5635,6 +5637,7 @@ const App = (() => {
     _enemies = [];
     _combatants = [];
     _activeTurnId = null;
+    if (_combatPanelOpen) toggleCombatPanel();
     _updateRoundDisplay();
     _updateCombatHUD();
     _renderCombateDer();
@@ -5886,7 +5889,27 @@ const App = (() => {
   let _etDragId = null;
   function _etDragStart() {} function _etDragOver() {} function _etDrop() {} function _etDragEnd() {}
 
+  /* El ⚔️ flotante solo existe en combate: fuera de él tapaba la lectura.
+     Se inicia desde el botón del encabezado, que en combate muestra la
+     ronda y abre el panel. */
+  function _syncBotonesCombate() {
+    const fab = document.getElementById('combatFab');
+    if (fab) fab.style.display = _combatActive ? '' : 'none';
+    const btn = document.getElementById('hdrCombatBtn');
+    if (btn) {
+      btn.textContent = _combatActive ? `⚔️ Ronda ${_combatRound}` : '⚔️ Combate';
+      btn.title = _combatActive ? 'Abrir panel de combate' : 'Iniciar combate';
+      btn.classList.toggle('activo', _combatActive);
+    }
+  }
+
+  function botonCombate() {
+    if (!_combatActive) startCombat();
+    if (!_combatPanelOpen) toggleCombatPanel();
+  }
+
   function _updateRoundDisplay() {
+    _syncBotonesCombate();
     const el = document.getElementById('roundDisplay');
     if (!el) return;
     if (!_combatActive) {
@@ -12378,7 +12401,7 @@ ${notesText}`;
 
     // Turn & Rounds
     toggleTurn, endTurn,
-    startCombat, nextCombatTurn, nextCombatRound, resetCombat,
+    startCombat, nextCombatTurn, nextCombatRound, resetCombat, botonCombate,
     addEnemy, moveEnemy, toggleEnemyBleeding, removeEnemy, editEnemyAC, _saveEnemyAC,
     _etDragStart, _etDragOver, _etDrop, _etDragEnd,
     addCombatant, removeCombatant, cycleCombatantStatus,
