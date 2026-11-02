@@ -386,6 +386,13 @@ const App = (() => {
 
   async function init() {
     if (_hojasOk() && !_hojasIniciado) { Hojas.init(_hojasCtx()); _hojasIniciado = true; }
+    if (typeof Bastion !== 'undefined') Bastion.init({
+      getChar: () => _char,
+      save: (silencioso) => _saveChar(silencioso),
+      toast: (t) => showToast(t),
+      confirm: (msg, ok) => _confirmChoice('🏰 Bastión', msg, 'Sí', 'Cancelar', ok),
+      refresh: () => { if (_activeTab === 'combate') _renderCombateTab(); },
+    });
     // Guard de concurrencia: si ya hay un init() corriendo, esperar a que
     // termine en vez de solaparse (evita que dos corridas escriban _char en
     // paralelo y una pise datos que la otra acaba de traer de la nube).
@@ -558,6 +565,9 @@ const App = (() => {
       // Rasgos con nivelMin (los que ganó al subir de nivel) solo si ya los tiene.
       _char.features     = freshLursey.features.filter(f => !f.nivelMin || f.nivelMin <= (_char.nivel || 1));
       _char.choices = { ...(freshLursey.choices || {}), ...(_char.choices || {}) };
+      // Bastión (DMG 2024): la mesa lo agregó en 2026-11; se crea vacío y
+      // ella elige sus instalaciones.
+      if (!_char.bastion && typeof Bastion !== 'undefined') _char.bastion = Bastion.nuevo();
       _char.slotPriority = freshLursey.slotPriority;
       _char.combatTips   = freshLursey.combatTips;
 
@@ -1746,11 +1756,16 @@ const App = (() => {
       equipo: _renderEquipoTab,
       habilidades: _renderHabilidadesTab,
       biblioteca: () => { if (typeof Biblioteca !== 'undefined') Biblioteca.onTabActivated(); },
+      bastion: () => { if (typeof Bastion !== 'undefined') Bastion.render(); },
     };
     if (renders[name]) renders[name]();
   }
 
   function _renderActiveTab() {
+    // La pestaña Bastión solo existe si el personaje tiene uno.
+    const tabBastion = document.getElementById('tabBtnBastion');
+    if (tabBastion) tabBastion.style.display = _char && _char.bastion ? '' : 'none';
+    if (_activeTab === 'bastion' && !(_char && _char.bastion)) _activeTab = 'combate';
     switchTab(_activeTab);
   }
 

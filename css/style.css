@@ -9822,3 +9822,49 @@ body.escribiendo .fab-note { opacity: 0; pointer-events: none; transform: scale(
 .hdr-rest-btn.combat { flex-shrink: 0; }
 .hdr-rest-btn.combat:hover { border-color: var(--red-light); color: var(--red-light); background: rgba(138,58,58,0.12); }
 .hdr-rest-btn.combat.activo { border-color: var(--red-light); color: var(--red-light); }
+
+/* ═══ BASTIÓN ═══ */
+#col-bastion { max-width: 860px; }
+.bst-head { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.bst-nombre { font-family: 'Cinzel', serif; font-size: 18px; color: var(--gold-light); background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 4px 0; }
+.bst-nivel { color: var(--text-mid); font-size: 13px; }
+.bst-hito { color: var(--text-dim); font-size: 12px; font-style: italic; }
+.bst-descanso { align-self: flex-start; }
+.bst-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; }
+.bst-card-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bst-card-name { font-family: 'Cinzel', serif; color: var(--gold-light); font-size: 14px; margin-right: auto; }
+.bst-tag { font-size: 10px; color: var(--text-dim); border: 1px solid var(--border); border-radius: 10px; padding: 1px 7px; white-space: nowrap; }
+.bst-x { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; padding: 2px 6px; }
+.bst-x:hover { color: var(--red-light); }
+.bst-resumen { font-size: 13px; color: var(--text-mid); margin-top: 6px; line-height: 1.45; }
+.bst-prereq { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+.bst-charm { font-size: 12px; color: var(--text-dim); margin-top: 6px; padding: 5px 8px; border-left: 2px solid var(--border); }
+.bst-charm.activo { color: var(--gold-light); border-left-color: var(--gold); }
+.bst-orden { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.bst-orden label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.bst-orden select, .bst-orden input, .bst-add-row select, .bst-add-row input, .bst-tabla input, .bst-notas {
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); padding: 5px 8px; font-size: 13px; min-height: 32px; }
+.bst-orden input { flex: 1 1 200px; }
+.bst-add-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 12px; }
+.bst-add-row input[type="text"] { flex: 1 1 180px; }
+.bst-add-row input[type="number"] { width: 80px; }
+.bst-vacio { color: var(--text-dim); font-size: 12px; font-style: italic; padding: 6px 0; }
+.bst-ayuda { color: var(--text-dim); font-size: 12px; }
+.bst-almacen { margin-top: 8px; }
+.bst-almacen-reglas { font-size: 12px; color: var(--text-mid); margin-bottom: 6px; }
+.bst-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+.bst-tabla th { text-align: left; color: var(--text-dim); font-weight: 400; font-size: 11px; padding: 3px 4px; border-bottom: 1px solid var(--border); }
+.bst-tabla td { padding: 3px 4px; border-bottom: 1px solid var(--border); }
+.bst-tabla input { width: 100%; min-height: 28px; padding: 3px 6px; font-size: 12px; }
+.bst-tabla input[type="number"] { width: 70px; }
+.bst-tabla tfoot td { color: var(--text-mid); font-weight: 600; }
+.bst-num { text-align: right; white-space: nowrap; }
+.bst-venta { color: var(--green-light); }
+.bst-basica { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.bst-basica > span:first-child { margin-right: auto; }
+.bst-defensores { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.bst-turnos { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.bst-turno { font-size: 12px; color: var(--text-mid); background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; }
+.bst-turno-top { display: flex; justify-content: space-between; align-items: center; color: var(--gold-light); }
+.bst-turno-nota { color: var(--text-dim); font-style: italic; margin-top: 3px; }
+.bst-notas { width: 100%; resize: vertical; font-family: inherit; }

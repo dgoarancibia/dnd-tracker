@@ -22,6 +22,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
 | `js/storage.js` | localStorage, papelera |
 | `js/cloud.js` + `js/firebase.js` | Sync con Firestore (`users/{uid}/characters`, tombstones en `users/{uid}/deleted`) |
 | `js/roll20_es.js` | Diccionario inglés→español solo para lo que se copia a Roll20 |
+| `js/bastion.js` | Pestaña Bastión (DMG 2024): instalaciones, órdenes, turnos, Charms como recursos, Storehouse. Datos en `c.bastion`; la pestaña solo aparece si existe |
 | `js/hojas.js` | Notetaker "Hojas" (TipTap empaquetado en `js/vendor/`, fuente en `tools/tiptap/`) |
 | `sw.js` | Service worker (caché offline) |
 | `firestore.rules` | Reglas de Firestore: se publican a mano en la consola Firebase |
@@ -53,6 +54,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `stonecunning.js`: Stonecunning como recurso del Enano con usos = BC, también en Lursey (termina en `TODO OK`).
   - `competencia.js`: un arma sin competencia no suma BC al ataque; Lursey (Protector) sí (termina en `TODO OK`).
   - `municion.js`: atacar con un arco equipado desde la mochila descuenta flechas (termina en `TODO OK`).
+  - `bastion.js`: bastión de Lursey: cupos por nivel, Storehouse con recargo, turno registrado y Charm del Sanctuary (termina en `TODO OK`).
   - `turno.js`: en combate, Atacar descuenta ataques; la mano secundaria usa la Acción adicional salvo con Nick; usar un recurso marca su activación (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
@@ -82,6 +84,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
 - **Blessed Strikes (nv7)**: eligió Potent Spellcasting (`choices['blessed-strikes']='bs-potent-spellcasting'`). La app suma SAB al daño de trucos y escala trucos ×2/×3/×4 en niveles 5/11/17.
 - **Servirse del poder divino** y **Versatilidad de trucos** (Tasha's, no existen en 2024) quedan como **regla de mesa**, marcadas en el texto.
 - **Divine Order: Protector** (`choices['divine-order']='protector'`): competente con armas marciales y armadura pesada (Maza de Guerra +1, Cota de malla).
+- **Bastión** (agregado a la mesa en 2026-11): Lursey tiene `c.bastion` (se crea vacío en su sync). La app no tira eventos del bastión: los tira el DM.
 - Dominio de la Paz: reglas de clase 2024 con subclase Tasha's. Para clérigos nuevos, la subclase y sus rasgos llegan en nv3.
 
 ## Pendientes conocidos
