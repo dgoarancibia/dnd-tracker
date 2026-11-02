@@ -96,7 +96,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   | Brujo | 27 | ~70 |
 
   Clérigo y Hechicero tienen de más. Faltan conjuros SRD de Druida: Elementalism, Message, Spare the Dying, Ice Knife, Protection from Evil and Good y Purify Food and Drink. Si Diego crea un personaje de esas clases, avisarle.
-- **Backlog del Ranger** (HU-17 a HU-47), en 7 fases en este orden. Las fases 1 y 2 están hechas (2026-11-02).
+- **Backlog del Ranger** (HU-17 a HU-47), en 7 fases en este orden. Fases 1 a 4 hechas (2026-11-02; HU-19 auditoría descartada por Diego). Quedan la 5 (Turn Assistant), la 6 salvo HU-35/38 y la 7 salvo HU-40.
   1. Integridad: HU-17 a HU-19.
   2. Motor de turno: HU-20, HU-21, HU-44 (metadata de activación) y HU-45 (estado por turno).
   3. Combate Beast Master: HU-22 a HU-27.
