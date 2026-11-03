@@ -9868,3 +9868,9 @@ body.escribiendo .fab-note { opacity: 0; pointer-events: none; transform: scale(
 .bst-turno-top { display: flex; justify-content: space-between; align-items: center; color: var(--gold-light); }
 .bst-turno-nota { color: var(--text-dim); font-style: italic; margin-top: 3px; }
 .bst-notas { width: 100%; resize: vertical; font-family: inherit; }
+.bst-aviso { font-size: 12px; color: var(--red-light); }
+.bst-maintain { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-mid); margin: 6px 0; cursor: pointer; }
+.bst-orden select:disabled, .bst-orden input:disabled { opacity: 0.45; }
+.bst-reglas { margin: 12px 0; font-size: 12px; color: var(--text-mid); }
+.bst-reglas summary { cursor: pointer; color: var(--gold-light); font-size: 13px; }
+.bst-reglas ul { margin: 6px 0 0 18px; padding: 0; line-height: 1.5; }

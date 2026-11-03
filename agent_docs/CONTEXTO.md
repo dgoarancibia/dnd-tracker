@@ -84,7 +84,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
 - **Blessed Strikes (nv7)**: eligió Potent Spellcasting (`choices['blessed-strikes']='bs-potent-spellcasting'`). La app suma SAB al daño de trucos y escala trucos ×2/×3/×4 en niveles 5/11/17.
 - **Servirse del poder divino** y **Versatilidad de trucos** (Tasha's, no existen en 2024) quedan como **regla de mesa**, marcadas en el texto.
 - **Divine Order: Protector** (`choices['divine-order']='protector'`): competente con armas marciales y armadura pesada (Maza de Guerra +1, Cota de malla).
-- **Bastión** (agregado a la mesa en 2026-11): Lursey tiene `c.bastion` (se crea vacío en su sync). La app no tira eventos del bastión: los tira el DM.
+- **Bastión** (agregado a la mesa en 2026-11): Lursey tiene `c.bastion` (se crea vacío en su sync). La app no tira eventos del bastión: los tira el DM. Reglas auditadas contra el DMG 2024 cap. 8 (5etools `book-xdmg.json` + `bastions.json`, y dnd2024.wikidot): Maintain es para todo el bastión y excluye otras órdenes; ausente = Maintain; Barrack/Garden/Stable/Training Area son repetibles.
 - Dominio de la Paz: reglas de clase 2024 con subclase Tasha's. Para clérigos nuevos, la subclase y sus rasgos llegan en nv3.
 
 ## Pendientes conocidos

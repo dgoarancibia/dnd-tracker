@@ -48,6 +48,23 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   x = await b();
   chk('turno registrado y órdenes limpias', x.turnos.length === 1 && x.turnos[0].ordenes[0].orden === 'trade' && x.especiales.every(e => !e.orden), x.turnos);
 
+  // Maintain: excluye órdenes y queda en el historial.
+  await p.evaluate(() => {
+    const sel = [...document.querySelectorAll('.bst-orden select')];
+    sel[0].value = 'craft'; sel[0].dispatchEvent(new Event('change'));
+    Bastion.toggleMaintain();
+  }); await sleep(200);
+  x = await b();
+  chk('Maintain limpia órdenes', x.maintain === true && x.especiales.every(e => !e.orden));
+  chk('select deshabilitado con Maintain', await p.evaluate(() => document.querySelector('.bst-orden select').disabled));
+  chk('Maintain no está por instalación', await p.evaluate(() => ![...document.querySelectorAll('.bst-orden option')].some(o => o.value === 'maintain')));
+  await p.evaluate(() => Bastion.cerrarTurno()); await sleep(200);
+  x = await b();
+  chk('turno Maintain registrado', x.turnos[0].maintain === true && !x.maintain, x.turnos[0]);
+
+  // Repetibles: un segundo Barrack sí; un segundo Sanctuary no.
+  chk('Barrack repetible / Sanctuary no', await p.evaluate(() => Bastion.ESPECIALES.barrack.multiple === true && !Bastion.ESPECIALES.sanctuary.multiple));
+
   await p.evaluate(() => Bastion.descansoEnBastion()); await sleep(300);
   const charm = await p.evaluate(() => (Storage.getChar('lursey-brumaclara').resources || []).find(r => r.id === 'charm-sanctuary'));
   chk('Charm del Sanctuary en recursos', charm && charm.current === 1 && /Healing Word/.test(charm.desc), charm && charm.desc);
