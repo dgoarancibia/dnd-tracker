@@ -1340,6 +1340,8 @@ const App = (() => {
 
   function _renderHeader() {
     if (!_char) return;
+    // Pergamino muestra motivos propios de la clase en la cabecera (css/pergamino.css)
+    document.documentElement.dataset.clase = _char.clase || '';
     const prof = Characters.calcProfBonus(_char.nivel);
     const cd   = Characters.calcCD(_char);
     const atq  = Characters.calcAtaqueBonus(_char);
@@ -2490,7 +2492,7 @@ const App = (() => {
           <div class="ability-card-top">
             <div class="ability-card-info">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
-                <span class="ability-card-name">⚔️ ${item.name}</span>
+                <span class="ability-card-name"><span class="arma-ic" data-grabado="${_grabadoArma(item)}" aria-hidden="true">⚔️</span> ${item.name}</span>
                 ${prop ? `<button class="mastery-badge" onclick="event.stopPropagation();App.openMasteryDetail('${prop}')"
                   title="${(m.short||'').replace(/"/g,'&quot;')}">${prop}</button>` : ''}
               </div>
@@ -4530,6 +4532,18 @@ const App = (() => {
   /* Maestría activa de un arma equipada: solo si el personaje la eligió.
      El ítem puede tener nombre propio ("Maza +1"), así que se busca por id
      o por coincidencia con el nombre del arma base. */
+  // Grabado de Pergamino según el tipo de arma; '' = grabado genérico.
+  function _grabadoArma(item) {
+    const n = `${item.id || ''} ${item.name || ''}`;
+    if (/bow|crossbow|arco|ballesta/i.test(n)) return 'arco';
+    if (/axe|hacha|pick|pico/i.test(n)) return 'hacha';
+    if (/mace|maza|hammer|martillo|maul|club|garrote|morningstar|lucero|flail|mangual/i.test(n)) return 'maza';
+    if (/dagger|daga|sickle|hoz/i.test(n)) return 'daga';
+    if (/spear|lanza|javelin|jabalina|pike|pica|glaive|guja|trident|tridente|halberd|alabarda|staff|baston|bastón/i.test(n)) return 'lanza';
+    if (/sword|espada|scimitar|cimitarra|rapier|estoque|blade|brand|avenger|stealer|sharpness|flametongue/i.test(n)) return 'espada';
+    return '';
+  }
+
   function _maestriaDe(c, item) {
     const elegidas = Array.isArray(c && c.weaponMasteries) ? c.weaponMasteries : [];
     if (!elegidas.length || !item) return null;
@@ -4924,7 +4938,7 @@ const App = (() => {
       <!-- Header: nombre y animal son editables (se guardan en companion) -->
       <div class="companion-header">
         <div class="companion-title">
-          <span class="companion-emoji">${beast.emoji}</span>
+          <span class="companion-emoji" data-bestia="${beastId || ''}" aria-hidden="true">${beast.emoji}</span>
           <div style="flex:1;min-width:0;">
             <input class="companion-name-input" value="${(companion.name || '').replace(/"/g,'&quot;')}"
                    placeholder="${beast.name}" maxlength="40"

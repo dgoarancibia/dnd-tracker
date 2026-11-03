@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v479';
+const CACHE = 'dnd-tracker-v480';
 
 // IMPORTANTE: app.html e index.html NO se cachean aquí intencionalmente.
 // Si se cachean, el SW viejo puede servir el HTML viejo y el nuevo SW nunca
@@ -16,6 +16,26 @@ self.addEventListener('install', e => {
       './js/bastion.js',
       './js/tema.js',
       './css/tema.css',
+      './css/pergamino.css',
+      './assets/pergamino/arma-arco.svg',
+      './assets/pergamino/arma-daga.svg',
+      './assets/pergamino/arma-espada.svg',
+      './assets/pergamino/arma-generica.svg',
+      './assets/pergamino/arma-hacha.svg',
+      './assets/pergamino/arma-lanza.svg',
+      './assets/pergamino/arma-maza.svg',
+      './assets/pergamino/estandarte.svg',
+      './assets/pergamino/huella.svg',
+      './assets/pergamino/medallon-cielo.svg',
+      './assets/pergamino/medallon-generico.svg',
+      './assets/pergamino/medallon-mar.svg',
+      './assets/pergamino/medallon-tierra.svg',
+      './assets/pergamino/montanas.svg',
+      './assets/pergamino/papel.svg',
+      './assets/pergamino/remache-bl.svg',
+      './assets/pergamino/remache-br.svg',
+      './assets/pergamino/remache-tr.svg',
+      './assets/pergamino/remache.svg',
       './js/vendor/tiptap.min.js',
       './js/characters.js',
       './js/storage.js',
@@ -36,7 +56,7 @@ self.addEventListener('activate', e => {
       .then(() => {
         // Notificar a todos los clientes que el SW nuevo está activo
         self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 479 }));
+          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 480 }));
         });
       })
   );
@@ -47,7 +67,7 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
   // Cliente pregunta la versión del SW activo
   if (e.data && e.data.type === 'GET_VERSION') {
-    e.source.postMessage({ type: 'SW_VERSION', version: 479 });
+    e.source.postMessage({ type: 'SW_VERSION', version: 480 });
   }
 });
 

@@ -1,0 +1,305 @@
+/* ═══════════════════════════════════════════════════════════
+   pergamino.css — Tema Pergamino (bitácora de campaña)
+   Papel miel, tinta, granate y cuero. Solo colores y adornos:
+   no cambia tamaños ni posiciones de nada.
+   :root[data-theme="light"] le gana a los [data-theme="light"] de style.css.
+   ═══════════════════════════════════════════════════════════ */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg:  #D5B68E;   /* papel miel (con grano) */
+  --bg1: #D5B68E;
+  --bg2: #DDC19C;   /* paneles */
+  --bg3: #E5CAA6;   /* tarjetas */
+  --bg4: #EBD3AF;   /* botones secundarios, hover */
+  --bg5: #F1DDBE;   /* campos */
+  --gold: #702D31;  /* granate: acción principal, pestaña activa */
+  --gold-light: #81383C;
+  --gold-dim: #634630;
+  --gold-faint: rgba(112,45,49,0.08);
+  --green: #31553A;
+  --green-light: #31553A;
+  --red: #8C2427;
+  --red-light: #8C2427;
+  --red-bright: #8C2427;
+  --blue: #1F3F6E;
+  --blue-light: #1F3F6E;
+  --purple: #4B2A6E;
+  --purple-light: #4B2A6E;
+  --orange: #7A3E12;
+  --text: #302019;
+  --text-mid: #573D2A;
+  --text-dim: #634630;
+  --border: #A48361;        /* decorativo */
+  --border-strong: #7E6043; /* controles (≥ 3:1) */
+  --cuero: #3D281E;
+  --crema: #FFF0D8;
+  --granate-hover: #81383C;
+  --granate-press: #552026;
+  --gratis: #1F3F6E;
+  --hp-crit: #8C2427;
+  --hp-mid: #7A3E12;
+  --hp-bar-ok: #31553A;
+  --hp-bar-mid: #8A6420;
+  --hp-bar-crit: #8C2427;
+}
+
+/* ── Papel: grano solo en el fondo general; tarjetas y campos lisos ── */
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(80,50,28,0.22) 100%) fixed,
+    url(../assets/pergamino/papel.svg) repeat,
+    var(--bg);
+  color: var(--text);
+}
+
+/* ── Cuero y costura en el perímetro: decoración fija, no ocupa espacio ── */
+:root[data-theme="light"] body::before,
+:root[data-theme="light"] body::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  z-index: 9000;
+}
+:root[data-theme="light"] body::before {
+  inset: 0;
+  border: 6px solid var(--cuero);
+  box-shadow: inset 0 0 0 1px #2A1B13, inset 0 0 14px rgba(42,27,19,0.35);
+}
+/* Costura + remaches de las esquinas */
+:root[data-theme="light"] body::after {
+  inset: 0;
+  border: 1px dashed rgba(229,202,166,0.7);
+  margin: 2.5px;
+  background:
+    url(../assets/pergamino/remache.svg) left -2px top -2px / 30px no-repeat,
+    url(../assets/pergamino/remache-tr.svg) right -2px top -2px / 30px no-repeat,
+    url(../assets/pergamino/remache-bl.svg) left -2px bottom -2px / 30px no-repeat,
+    url(../assets/pergamino/remache-br.svg) right -2px bottom -2px / 30px no-repeat;
+}
+:root[data-theme="light"] body::after { background-origin: border-box; }
+/* Pantalla dividida / móvil: una línea fina y las esquinas */
+@media (max-width: 760px) {
+  :root[data-theme="light"] body::before { border-width: 2px; box-shadow: none; }
+  :root[data-theme="light"] body::after { border: none; margin: 0; background-size: 16px; }
+}
+
+/* ── Cabecera: papel claro con lomo de cuero ── */
+:root[data-theme="light"] .app-header,
+:root[data-theme="light"] .idx-header,
+:root[data-theme="light"] .index-header {
+  background: var(--bg3);
+  border-bottom: 3px solid var(--cuero);
+}
+:root[data-theme="light"] .tab-nav {
+  background: linear-gradient(var(--bg2), var(--bg3));
+  border-bottom: 1px solid var(--border-strong);
+}
+
+/* ── Pestañas: papel en relieve; la activa rellena de granate con filete dorado ── */
+:root[data-theme="light"] .tab-btn {
+  color: var(--text-mid);
+  border-radius: 6px 6px 0 0;
+}
+:root[data-theme="light"] .tab-btn:hover { color: var(--text); background: rgba(255,240,216,0.45); }
+:root[data-theme="light"] .tab-btn.active {
+  color: var(--crema);
+  background: linear-gradient(#7B3438, var(--gold) 60%, #5E2428);
+  border-bottom: 2px solid #C9973A;
+  box-shadow: inset 0 1px 0 rgba(255,240,216,0.25);
+  font-weight: 600;
+}
+
+/* ── Títulos de sección: tinta, línea y rombo central ── */
+:root[data-theme="light"] .section-hd {
+  color: var(--text);
+  font-weight: 600;
+  position: relative;
+  border-bottom-color: var(--cuero);
+}
+:root[data-theme="light"] .section-hd::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  transform: rotate(45deg);
+  background: #B8893F;
+  border: 1px solid var(--cuero);
+  pointer-events: none;
+}
+
+/* ── Acciones primarias: granate, texto crema ── */
+:root[data-theme="light"] .cast-btn,
+:root[data-theme="light"] .ability-use-btn:not(:disabled):not(.disabled),
+:root[data-theme="light"] .btn-primary,
+:root[data-theme="light"] .btn-gold,
+:root[data-theme="light"] .round-btn.gold,
+:root[data-theme="light"] .share-btn.primary {
+  background: linear-gradient(#7E3539, var(--gold) 55%, #61262A);
+  color: var(--crema);
+  border: 1px solid #3F1519;
+  box-shadow: inset 0 1px 0 rgba(255,240,216,0.28), 0 2px 0 #3F1519;
+}
+:root[data-theme="light"] .cast-btn:hover,
+:root[data-theme="light"] .ability-use-btn:not(:disabled):not(.disabled):hover,
+:root[data-theme="light"] .btn-primary:hover,
+:root[data-theme="light"] .btn-gold:hover,
+:root[data-theme="light"] .round-btn.gold:hover,
+:root[data-theme="light"] .share-btn.primary:hover {
+  background: var(--granate-hover);
+  color: var(--crema);
+}
+:root[data-theme="light"] .cast-btn:active,
+:root[data-theme="light"] .ability-use-btn:not(:disabled):not(.disabled):active,
+:root[data-theme="light"] .btn-primary:active,
+:root[data-theme="light"] .btn-gold:active,
+:root[data-theme="light"] .round-btn.gold:active,
+:root[data-theme="light"] .share-btn.primary:active {
+  background: var(--granate-press);
+}
+
+/* ── Acciones secundarias: papel claro, tinta, borde café ── */
+:root[data-theme="light"] .btn-ghost,
+:root[data-theme="light"] .btn-secondary,
+:root[data-theme="light"] .btn-cancel,
+:root[data-theme="light"] .btn-edit-stats,
+:root[data-theme="light"] .hdr-rest-btn,
+:root[data-theme="light"] .header-menu-toggle {
+  background: linear-gradient(var(--bg5), var(--bg4));
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  box-shadow: inset 0 1px 0 rgba(255,250,240,0.7), 0 1px 0 rgba(61,40,30,0.3);
+}
+:root[data-theme="light"] .btn-ghost:hover,
+:root[data-theme="light"] .btn-secondary:hover,
+:root[data-theme="light"] .btn-cancel:hover,
+:root[data-theme="light"] .btn-edit-stats:hover,
+:root[data-theme="light"] .hdr-rest-btn:hover,
+:root[data-theme="light"] .header-menu-toggle:hover {
+  background: var(--bg5);
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+/* CD / ataque con bonus de ítem: morado de tinta en vez de lila */
+:root[data-theme="light"] .stat-box.has-bonus { border-color: var(--purple); }
+:root[data-theme="light"] .stat-box.has-bonus .sv,
+:root[data-theme="light"] .stat-box.has-bonus .sl::after { color: var(--purple); }
+
+/* Daño / curación del encabezado */
+:root[data-theme="light"] .hp-hdr-btn.dmg { background: #EBD3AF; border-color: var(--red); color: var(--red); }
+:root[data-theme="light"] .hp-hdr-btn.heal { background: #EBD3AF; border-color: var(--green); color: var(--green); }
+
+/* ── Tarjetas, paneles y diálogos: superficie lisa ── */
+:root[data-theme="light"] .ability-card,
+:root[data-theme="light"] .spell-card,
+:root[data-theme="light"] .resource-row,
+:root[data-theme="light"] .item-row,
+:root[data-theme="light"] .weapon-row,
+:root[data-theme="light"] .stat-box,
+:root[data-theme="light"] .modal,
+:root[data-theme="light"] .overlay-modal,
+:root[data-theme="light"] .header-menu-dropdown,
+:root[data-theme="light"] .tema-pop {
+  background: var(--bg3);
+  border-color: var(--border);
+}
+:root[data-theme="light"] .ability-card,
+:root[data-theme="light"] .spell-card,
+:root[data-theme="light"] .resource-row,
+:root[data-theme="light"] .item-row,
+:root[data-theme="light"] .weapon-row,
+:root[data-theme="light"] .stat-box,
+:root[data-theme="light"] .slots-card,
+:root[data-theme="light"] .conditions-block {
+  box-shadow: inset 0 1px 0 rgba(255,245,228,0.65), 0 1px 3px rgba(61,40,30,0.28);
+}
+:root[data-theme="light"] .modal,
+:root[data-theme="light"] .header-menu-dropdown { box-shadow: 0 10px 36px rgba(61,40,30,0.35); }
+
+/* Campos */
+:root[data-theme="light"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] select {
+  background: var(--bg5);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder { color: var(--text-dim); }
+
+/* Foco de teclado y deshabilitados */
+:root[data-theme="light"] :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+:root[data-theme="light"] button:disabled {
+  opacity: 1;
+  color: var(--text-dim);
+  background: transparent;
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+/* Avisos */
+:root[data-theme="light"] .toast { background: var(--cuero); color: var(--crema); border-color: var(--cuero); }
+
+/* Scrollbars */
+:root[data-theme="light"] ::-webkit-scrollbar-track { background: var(--bg2); }
+:root[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ── Grabados de armas: reemplazan el ⚔️ en el mismo espacio ── */
+:root[data-theme="light"] .arma-ic {
+  display: inline-block;
+  width: 1.45em;
+  height: 1.45em;
+  vertical-align: -0.35em;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background-color: var(--bg5) !important;
+  background-origin: content-box !important;
+  padding: 2px;
+  box-shadow: inset 0 1px 0 rgba(255,250,240,0.8), 0 1px 2px rgba(61,40,30,0.3);
+  color: transparent;
+  overflow: hidden;
+  background: url(../assets/pergamino/arma-generica.svg) center / contain no-repeat;
+}
+:root[data-theme="light"] .arma-ic[data-grabado="espada"] { background-image: url(../assets/pergamino/arma-espada.svg); }
+:root[data-theme="light"] .arma-ic[data-grabado="hacha"]  { background-image: url(../assets/pergamino/arma-hacha.svg); }
+:root[data-theme="light"] .arma-ic[data-grabado="arco"]   { background-image: url(../assets/pergamino/arma-arco.svg); }
+:root[data-theme="light"] .arma-ic[data-grabado="maza"]   { background-image: url(../assets/pergamino/arma-maza.svg); }
+:root[data-theme="light"] .arma-ic[data-grabado="daga"]   { background-image: url(../assets/pergamino/arma-daga.svg); }
+:root[data-theme="light"] .arma-ic[data-grabado="lanza"]  { background-image: url(../assets/pergamino/arma-lanza.svg); }
+
+/* ── Medallón del compañero: reemplaza el emoji de la bestia ── */
+:root[data-theme="light"] .companion-emoji {
+  display: inline-block;
+  /* 40px con margen negativo: ocupa lo mismo que el emoji de 24px */
+  width: 40px;
+  height: 40px;
+  margin: -8px 0;
+  flex-shrink: 0;
+  color: transparent;
+  overflow: hidden;
+  font-size: 0;
+  background: url(../assets/pergamino/medallon-generico.svg) center / contain no-repeat;
+}
+:root[data-theme="light"] .companion-emoji[data-bestia="land"] { background-image: url(../assets/pergamino/medallon-tierra.svg); }
+:root[data-theme="light"] .companion-emoji[data-bestia="sea"]  { background-image: url(../assets/pergamino/medallon-mar.svg); }
+:root[data-theme="light"] .companion-emoji[data-bestia="sky"]  { background-image: url(../assets/pergamino/medallon-cielo.svg); }
+
+/* ── Cabecera: motivos en el espacio libre de la derecha (solo si hay lugar) ── */
+@media (min-width: 1280px) {
+  :root[data-theme="light"] .app-header {
+    background:
+      url(../assets/pergamino/estandarte.svg) right 28px top 4px / 40px 70px no-repeat,
+      var(--bg3);
+  }
+  /* Explorador (Torvald): montañas a tinta y la huella de Grum */
+  :root[data-theme="light"][data-clase="Explorador"] .app-header {
+    background:
+      url(../assets/pergamino/huella.svg) right 22px bottom 8px / 40px no-repeat,
+      url(../assets/pergamino/estandarte.svg) right 78px top 4px / 40px 70px no-repeat,
+      url(../assets/pergamino/montanas.svg) right 130px bottom 2px / 200px 64px no-repeat,
+      var(--bg3);
+  }
+}

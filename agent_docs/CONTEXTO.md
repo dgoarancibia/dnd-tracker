@@ -24,6 +24,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
 | `js/roll20_es.js` | Diccionario inglés→español solo para lo que se copia a Roll20 |
 | `js/bastion.js` | Pestaña Bastión (DMG 2024): instalaciones, órdenes, turnos, Charms como recursos, Storehouse. Datos en `c.bastion`; la pestaña solo aparece si existe |
 | `js/tema.js` + `css/tema.css` | Selector de Apariencia (Clásico `dark`, Pizarra y latón `slate-brass`, Pergamino `light`). Se carga en `<head>` de index y app para pintar ya con tema. Guarda en `dnd_theme` y `dnd_theme_v1` (antes cada página usaba una; al leer gana `dnd_theme`). Inválido → Clásico. `ficha.html` (ficha compartida con el DM) conserva su paleta propia |
+| `css/pergamino.css` + `assets/pergamino/` | Tema Pergamino (bitácora): papel miel con grano, cuero con costura y remaches, granate en acciones primarias y pestaña activa, grabados de armas (`.arma-ic[data-grabado]`, `_grabadoArma`), medallón del compañero (`.companion-emoji[data-bestia]`) y motivos de cabecera ≥1280px: estandarte para todos, montañas + huella solo si `html[data-clase="Explorador"]`. Solo colores y adornos: no cambia tamaños ni posiciones |
 | `js/hojas.js` | Notetaker "Hojas" (TipTap empaquetado en `js/vendor/`, fuente en `tools/tiptap/`) |
 | `sw.js` | Service worker (caché offline) |
 | `firestore.rules` | Reglas de Firestore: se publican a mano en la consola Firebase |
@@ -57,6 +58,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `municion.js`: atacar con un arco equipado desde la mochila descuenta flechas (termina en `TODO OK`).
   - `bastion.js`: bastión de Lursey: cupos por nivel, Storehouse con recargo, turno registrado y Charm del Sanctuary (termina en `TODO OK`).
   - `tema.js`: preferencias viejas, persistencia inicio→ficha, cambio en vivo sin perder pestaña/scroll, teclado, iPad 600px y auditoría de contraste WCAG en Pizarra (Lursey y Torvald, todas las pestañas, vida crítica, combate, aviso y diálogo). Capturas `tema_*.png` (termina en `TODO OK`).
+  - `pergamino.js`: contraste sobre el papel más oscuro (`#C4A47C`) en todas las pestañas y estados, adornos sin interceptar toques, grabados/medallón, ficha sin arma ni compañero, 375/480/560 px, recursos offline (termina en `TODO OK`). `pergamino_capturas.js [carpeta]` saca las capturas de revisión. `contraste.js` es la auditoría WCAG compartida con `tema.js`.
   - `turno.js`: en combate, Atacar descuenta ataques; la mano secundaria usa la Acción adicional salvo con Nick; usar un recurso marca su activación (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
