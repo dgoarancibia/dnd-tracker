@@ -43,7 +43,7 @@ Usan `puppeteer-core` con el Chrome instalado. Si Chrome está en otra ruta, usa
 Estas deben terminar en `TODO OK`:
 
 ```bash
-for t in lista lista2 lista_tarde conflicto paquetes stonecunning competencia municion bastion turno; do echo "== $t"; node tools/e2e/$t.js | tail -3; done
+for t in lista lista2 lista_tarde conflicto paquetes stonecunning competencia municion bastion turno tema; do echo "== $t"; node tools/e2e/$t.js | tail -3; done
 ```
 
 Estas imprimen resultados para revisar a ojo y dejan capturas en `tools/e2e/out/`: `r20`, `es`, `rasgos`, `lursey`, `potente` y `stats`.

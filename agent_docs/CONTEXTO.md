@@ -23,6 +23,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
 | `js/cloud.js` + `js/firebase.js` | Sync con Firestore (`users/{uid}/characters`, tombstones en `users/{uid}/deleted`) |
 | `js/roll20_es.js` | Diccionario inglés→español solo para lo que se copia a Roll20 |
 | `js/bastion.js` | Pestaña Bastión (DMG 2024): instalaciones, órdenes, turnos, Charms como recursos, Storehouse. Datos en `c.bastion`; la pestaña solo aparece si existe |
+| `js/tema.js` + `css/tema.css` | Selector de Apariencia (Clásico `dark`, Pizarra y latón `slate-brass`, Pergamino `light`). Se carga en `<head>` de index y app para pintar ya con tema. Guarda en `dnd_theme` y `dnd_theme_v1` (antes cada página usaba una; al leer gana `dnd_theme`). Inválido → Clásico. `ficha.html` (ficha compartida con el DM) conserva su paleta propia |
 | `js/hojas.js` | Notetaker "Hojas" (TipTap empaquetado en `js/vendor/`, fuente en `tools/tiptap/`) |
 | `sw.js` | Service worker (caché offline) |
 | `firestore.rules` | Reglas de Firestore: se publican a mano en la consola Firebase |
@@ -55,6 +56,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `competencia.js`: un arma sin competencia no suma BC al ataque; Lursey (Protector) sí (termina en `TODO OK`).
   - `municion.js`: atacar con un arco equipado desde la mochila descuenta flechas (termina en `TODO OK`).
   - `bastion.js`: bastión de Lursey: cupos por nivel, Storehouse con recargo, turno registrado y Charm del Sanctuary (termina en `TODO OK`).
+  - `tema.js`: preferencias viejas, persistencia inicio→ficha, cambio en vivo sin perder pestaña/scroll, teclado, iPad 600px y auditoría de contraste WCAG en Pizarra (Lursey y Torvald, todas las pestañas, vida crítica, combate, aviso y diálogo). Capturas `tema_*.png` (termina en `TODO OK`).
   - `turno.js`: en combate, Atacar descuenta ataques; la mano secundaria usa la Acción adicional salvo con Nick; usar un recurso marca su activación (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
@@ -85,6 +87,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
 - **Servirse del poder divino** y **Versatilidad de trucos** (Tasha's, no existen en 2024) quedan como **regla de mesa**, marcadas en el texto.
 - **Divine Order: Protector** (`choices['divine-order']='protector'`): competente con armas marciales y armadura pesada (Maza de Guerra +1, Cota de malla).
 - **Bastión** (agregado a la mesa en 2026-11): Lursey tiene `c.bastion` (se crea vacío en su sync). La app no tira eventos del bastión: los tira el DM. Reglas auditadas contra el DMG 2024 cap. 8 (5etools `book-xdmg.json` + `bastions.json`, y dnd2024.wikidot): Maintain es para todo el bastión y excluye otras órdenes; ausente = Maintain; Barrack/Garden/Stable/Training Area son repetibles.
+- **Temas**: Pizarra y latón se ajusta solo en `css/tema.css` con `:root[data-theme="slate-brass"]`; Clásico y Pergamino no se tocan. Colores fijos en JS que deban variar en Pizarra usan `var(--x, colorClásico)` (p. ej. `--hp-crit`, `--gratis`).
 - Dominio de la Paz: reglas de clase 2024 con subclase Tasha's. Para clérigos nuevos, la subclase y sus rasgos llegan en nv3.
 
 ## Pendientes conocidos

@@ -616,7 +616,7 @@ const App = (() => {
       Storage.saveCharRaw(_char);
     }
 
-    _applyTheme(localStorage.getItem('dnd_theme') || 'dark');
+    Tema.montar(document.getElementById('temaSelectorApp'));
     _applyDistUnit(localStorage.getItem('dnd_dist_unit') || 'm');
     document.documentElement.setAttribute('data-layout', _layoutEfectivo());
     const layoutLabel = document.getElementById('layoutModeLabel');
@@ -1235,18 +1235,6 @@ const App = (() => {
     a.click();
   }
 
-  function _applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('dnd_theme', theme);
-    const btn = document.getElementById('themeToggleBtn');
-    if (btn) btn.textContent = theme === 'light' ? '🌙 Modo oscuro' : '☀ Modo claro';
-  }
-
-  function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    _applyTheme(current === 'dark' ? 'light' : 'dark');
-  }
-
   /* ══════════════════════════════════════════════════════
      LAYOUT — barra lateral fija (tipo DnDBeyond) vs. clásico por pestañas
   ══════════════════════════════════════════════════════ */
@@ -1615,8 +1603,9 @@ const App = (() => {
     if (!_char) return;
     const { current, max, temp } = _char.hp;
     const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0;
-    const col = pct > 50 ? '#4a8a5a' : pct > 25 ? '#a0802a' : '#8a3a3a';
-    const textCol = pct <= 0 ? '#ff4040' : pct <= 25 ? '#e05050' : pct <= 50 ? '#e08050' : 'var(--text)';
+    // Las variables --hp-* solo existen en Pizarra y latón (css/tema.css); el resto usa el color fijo.
+    const col = pct > 50 ? 'var(--hp-bar-ok,#4a8a5a)' : pct > 25 ? 'var(--hp-bar-mid,#a0802a)' : 'var(--hp-bar-crit,#8a3a3a)';
+    const textCol = pct <= 0 ? 'var(--hp-crit,#ff4040)' : pct <= 25 ? 'var(--hp-crit,#e05050)' : pct <= 50 ? 'var(--hp-mid,#e08050)' : 'var(--text)';
 
     const hdrHP = document.getElementById('hdrHP');
     if (hdrHP) { hdrHP.textContent = current; hdrHP.style.color = textCol; }
@@ -3269,14 +3258,14 @@ const App = (() => {
           const isSubcls  = sp.cantrip_subclass;
           const isFree    = isRacial || isSubcls;
           const badgeHtml = isRacial
-            ? `<span style="font-size:9px;background:rgba(80,160,220,0.2);color:#60a8d8;border:1px solid rgba(80,160,220,0.35);border-radius:3px;padding:1px 4px;margin-left:4px;">🔒 gratis</span>`
+            ? `<span style="font-size:9px;background:rgba(80,160,220,0.2);color:var(--gratis,#60a8d8);border:1px solid rgba(80,160,220,0.35);border-radius:3px;padding:1px 4px;margin-left:4px;">🔒 gratis</span>`
             : isSubcls
               ? `<span style="font-size:9px;background:rgba(201,151,58,0.2);color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:1px 4px;margin-left:4px;">◆ subclase</span>`
               : '';
           const toggleBtn = !isFree
-            ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.12);border:1px solid rgba(80,160,220,0.3);border-radius:3px;color:#60a8d8;cursor:pointer;white-space:nowrap;" title="Marcar como cantrip gratuito de raza o feat de origen (no cuenta al límite)">+ gratis</button>`
+            ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.12);border:1px solid rgba(80,160,220,0.3);border-radius:3px;color:var(--gratis,#60a8d8);cursor:pointer;white-space:nowrap;" title="Marcar como cantrip gratuito de raza o feat de origen (no cuenta al límite)">+ gratis</button>`
             : isRacial
-              ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.2);border:1px solid rgba(80,160,220,0.4);border-radius:3px;color:#60a8d8;cursor:pointer;" title="Quitar marca de gratuito">✕ gratis</button>`
+              ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.2);border:1px solid rgba(80,160,220,0.4);border-radius:3px;color:var(--gratis,#60a8d8);cursor:pointer;" title="Quitar marca de gratuito">✕ gratis</button>`
               : '';
           htmlDer += `
           <div class="spell-card" style="padding:4px 6px;margin-bottom:3px;">
@@ -5462,8 +5451,8 @@ const App = (() => {
 
     const { current, max, temp } = _char.hp;
     const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0;
-    const hpColor = pct <= 0 ? '#ff4040' : pct <= 25 ? '#e05050' : pct <= 50 ? '#e08050' : 'var(--green-light)';
-    const barColor = pct > 50 ? 'var(--green)' : pct > 25 ? '#a0802a' : '#8a3a3a';
+    const hpColor = pct <= 0 ? 'var(--hp-crit,#ff4040)' : pct <= 25 ? 'var(--hp-crit,#e05050)' : pct <= 50 ? 'var(--hp-mid,#e08050)' : 'var(--green-light)';
+    const barColor = pct > 50 ? 'var(--green)' : pct > 25 ? 'var(--hp-bar-mid,#a0802a)' : 'var(--hp-bar-crit,#8a3a3a)';
 
     // Concentration
     const concSpell = _char.concentration
@@ -12543,7 +12532,7 @@ ${notesText}`;
     toggleHeaderMenu, closeHeaderMenu, forceAppUpdate,
 
     // Cloud / Undo
-    undoLastChange, toggleTheme, toggleDistUnit, toggleLayout, fmtDist,
+    undoLastChange, toggleDistUnit, toggleLayout, fmtDist,
     saveToCloud,
     saveCheckpointManual, openLoadModal, closeLoadModal,
     restoreAutosave, restoreCheckpoint, removeCheckpoint,

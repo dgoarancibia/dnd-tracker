@@ -1,0 +1,173 @@
+/* ═══════════════════════════════════════════════════════════
+   tema.css — Selector de Apariencia + tema "Pizarra y latón"
+   Lo cargan index.html y app.html después de sus estilos.
+   Clásico (dark) y Pergamino (light) siguen definidos donde estaban;
+   aquí solo vive lo nuevo, con :root[...] para ganarle a :root.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Selector ── */
+.tema-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tema-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm, 5px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-mid);
+  font-family: 'Jost', system-ui, sans-serif;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.tema-opt:hover { background: var(--bg4); color: var(--text); }
+.tema-opt[aria-checked="true"] {
+  border-color: var(--gold);
+  color: var(--text);
+  font-weight: 600;
+}
+.tema-opt[aria-checked="true"]::after {
+  content: '✓';
+  margin-left: auto;
+  color: var(--gold);
+}
+.tema-opt:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.tema-sw {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid var(--text-dim);
+}
+.hm-tema { padding: 4px 4px 6px; }
+.hm-tema-lbl {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-mid);
+  padding: 4px 8px 6px;
+}
+
+/* Popover del inicio (index.html) */
+.tema-wrap { position: relative; }
+.tema-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 300;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.tema-pop[hidden] { display: none; }
+
+/* ═══════════════════════════════════════════════════════════
+   PIZARRA Y LATÓN — [data-theme="slate-brass"]
+   Contrastes medidos (WCAG): texto ≥ 4.5:1 sobre --bg..--bg4,
+   bordes de controles ≥ 3:1 sobre --bg3.
+   ═══════════════════════════════════════════════════════════ */
+:root[data-theme="slate-brass"] {
+  color-scheme: dark;
+  --bg:  #11171F;   /* fondo general */
+  --bg1: #11171F;   /* algunos estilos usan --bg1 (no existía en los otros temas) */
+  --bg2: #161F2A;
+  --bg3: #1B2532;   /* paneles y tarjetas */
+  --bg4: #253244;
+  --bg5: #2F3E53;
+  --gold: #D9AE65;  /* acción principal y selección activa */
+  --gold-light: #E9C88E;
+  --gold-dim: #B0966A;
+  --gold-faint: rgba(217,174,101,0.10);
+  --green: #3E7A57;
+  --green-light: #8BD6AA; /* curación y confirmaciones */
+  --red: #8E3B37;
+  --red-light: #FF938C;   /* peligro, error, vida crítica */
+  --red-bright: #FF938C;
+  --blue: #34557F;
+  --blue-light: #8DB8F0;
+  --purple: #5E4387;
+  --purple-light: #C4A2E8;
+  --orange: #F0A868;
+  --text: #F2EBDD;
+  --text-mid: #AEBBCD;
+  --text-dim: #8E9BAE;
+  --border: rgba(174,187,205,0.20);
+  --border-strong: #6B7E96;
+}
+
+:root[data-theme="slate-brass"] body { background: var(--bg); color: var(--text); }
+
+/* Campos: borde visible (≥ 3:1) y foco de latón */
+:root[data-theme="slate-brass"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root[data-theme="slate-brass"] textarea,
+:root[data-theme="slate-brass"] select {
+  border-color: var(--border-strong);
+}
+:root[data-theme="slate-brass"] input::placeholder,
+:root[data-theme="slate-brass"] textarea::placeholder { color: var(--text-dim); }
+:root[data-theme="slate-brass"] :focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Relleno rojo claro (contador del diario): texto oscuro */
+:root[data-theme="slate-brass"] .nb-badge { color: #11171F; }
+
+/* Rellenos de latón: siempre texto oscuro */
+:root[data-theme="slate-brass"] .btn-gold:hover,
+:root[data-theme="slate-brass"] .btn-primary:hover,
+:root[data-theme="slate-brass"] .cast-btn:hover,
+:root[data-theme="slate-brass"] .bib-upload-btn,
+:root[data-theme="slate-brass"] .share-copy:hover,
+:root[data-theme="slate-brass"] .share-btn.primary:hover,
+:root[data-theme="slate-brass"] .diary-edit-btn.save:hover,
+:root[data-theme="slate-brass"] .companion-revive-btn:hover {
+  color: #11171F;
+}
+
+/* Colores fijos de los otros temas que aquí no llegaban a 4.5:1 */
+:root[data-theme="slate-brass"] {
+  --gratis: var(--blue-light);
+  /* Vida: número y barra (app.js usa estos con el color de Clásico como respaldo) */
+  --hp-crit: var(--red-light);
+  --hp-mid: #F2B27A;
+  --hp-bar-ok: var(--green-light);
+  --hp-bar-mid: var(--gold);
+  --hp-bar-crit: var(--red-light);
+}
+:root[data-theme="slate-brass"] .tag-c { color: var(--red-light); }
+:root[data-theme="slate-brass"] .tag-r { color: var(--purple-light); }
+/* ★ de salvación sin competencia: indicador de control, ≥ 3:1 */
+:root[data-theme="slate-brass"] .save-prof-toggle:not(.active) { color: var(--text-dim); }
+
+/* Encabezados y botones flotantes: en Clásico usan un degradado cálido fijo */
+:root[data-theme="slate-brass"] .app-header,
+:root[data-theme="slate-brass"] .index-header,
+:root[data-theme="slate-brass"] .idx-header,
+:root[data-theme="slate-brass"] .combat-panel-header,
+:root[data-theme="slate-brass"] .diary-header,
+:root[data-theme="slate-brass"] .ifttt-overlay-header {
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+}
+:root[data-theme="slate-brass"] .fab,
+:root[data-theme="slate-brass"] .fab-combat {
+  background: linear-gradient(135deg, var(--bg4), var(--bg5));
+}
+:root[data-theme="slate-brass"] .conc-alert {
+  background: linear-gradient(135deg, #2A1A1F, #3A1F24);
+}
+
+/* Scrollbars */
+:root[data-theme="slate-brass"] ::-webkit-scrollbar-track { background: var(--bg2); }
+:root[data-theme="slate-brass"] ::-webkit-scrollbar-thumb { background: var(--bg5); }

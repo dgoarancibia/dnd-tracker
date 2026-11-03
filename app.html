@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 478;
+const _SW_EXPECTED = 479;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -104,6 +104,8 @@ const _SW_EXPECTED = 478;
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=143">
+<link rel="stylesheet" href="css/tema.css?v=1">
+<script src="js/tema.js?v=1"></script>
 </head>
 <body>
 
@@ -289,7 +291,10 @@ const _SW_EXPECTED = 478;
       <div class="hm-divider"></div>
 
       <!-- Tema -->
-      <button class="hm-btn" id="themeToggleBtn" onclick="App.toggleTheme();App.closeHeaderMenu()">☀ Modo claro</button>
+      <div class="hm-tema">
+        <div class="hm-tema-lbl">🎨 Apariencia · <span data-tema-nombre></span></div>
+        <div class="tema-group" id="temaSelectorApp"></div>
+      </div>
 
       <!-- Unidades de distancia -->
       <button class="hm-btn" id="distUnitBtn" onclick="App.toggleDistUnit();App.closeHeaderMenu()" title="Alterna metros / pies en habilidades y conjuros">📏 Unidades: <span id="distUnitLabel">m</span></button>
@@ -1329,7 +1334,7 @@ const _SW_EXPECTED = 478;
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=3"></script>
 <script src="js/bastion.js?v=2"></script>
-<script src="js/app.js?v=281"></script>
+<script src="js/app.js?v=282"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>

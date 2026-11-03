@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>D&D Tracker</title>
 <script>;/* index.html no necesita lock de URL — solo app.html (PWA icon) lo requiere */;</script>
+<script src="js/tema.js?v=1"></script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/favicon.png">
@@ -697,9 +698,13 @@
     border: 1px solid var(--gold-dim);
     border-radius: var(--radius-sm);
     color: var(--text-mid);
-    font-size: 15px;
-    width: 36px;
+    font-family: 'Jost', system-ui, sans-serif;
+    font-size: 13px;
+    min-width: 36px;
     height: 36px;
+    padding: 0 10px;
+    gap: 6px;
+    white-space: nowrap;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -707,6 +712,8 @@
     transition: border-color 0.15s, color 0.15s;
   }
   .theme-btn:hover { border-color: var(--gold); color: var(--text); }
+  /* En ventana angosta (iPad dividido) el nombre se ve dentro del selector */
+  @media (max-width: 760px) { .theme-btn [data-tema-nombre] { display: none; } }
 
   /* ── Wizard de creación ── */
   .modal-wizard { max-width: 520px; width: 95vw; }
@@ -1146,6 +1153,7 @@
   .equip-opt-row.selected .equip-opt-items { color: var(--text); }
   .equip-opt-pack { opacity: 0.75; font-size: 0.92em; }
 </style>
+<link rel="stylesheet" href="css/tema.css?v=1">
 </head>
 <body>
 
@@ -1189,7 +1197,13 @@
         <img id="userAvatar" class="idx-user-avatar" src="" alt="" onerror="this.style.display='none'">
         <span id="userName" class="idx-user-name"></span>
       </div>
-      <button class="theme-btn" id="idxThemeBtn" onclick="toggleIndexTheme()" title="Cambiar tema">☀</button>
+      <div class="tema-wrap" id="idxTemaWrap">
+        <button class="theme-btn" id="idxThemeBtn" onclick="toggleTemaPop()" aria-haspopup="true" aria-expanded="false" aria-controls="idxTemaPop" title="Apariencia" aria-label="Apariencia">🎨 <span data-tema-nombre></span></button>
+        <div class="tema-pop" id="idxTemaPop" hidden>
+          <div class="hm-tema-lbl">Apariencia</div>
+          <div class="tema-group" id="temaSelectorIdx"></div>
+        </div>
+      </div>
       <button class="btn btn-ghost" onclick="openTrashModal()" id="trashBtn" title="Papelera">🗑</button>
       <button class="btn btn-ghost" onclick="document.getElementById('importInput').click()">📥 Importar</button>
       <button class="btn btn-gold" onclick="openCreateModal()">+ Nuevo personaje</button>
@@ -1516,13 +1530,8 @@ let _editId = null;
 let _confirmCallback = null;
 let _toastTimer = null;
 
-// Aplicar tema guardado inmediatamente
-(function() {
-  const saved = localStorage.getItem('dnd_theme_v1') || 'dark';
-  if (saved === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-  }
-})();
+// El tema ya lo aplicó js/tema.js en <head>; aquí solo se monta el selector.
+Tema.montar(document.getElementById('temaSelectorIdx'));
 
 // Esperar a que firebase.js exponga window.FirebaseApp
 function waitForFirebase(cb, attempts) {
@@ -1554,11 +1563,6 @@ function showCharsScreen(user) {
     if (user.photoURL) avatarEl.src = user.photoURL;
     userInfo.style.display  = 'flex';
     logoutBtn.style.display = 'inline-flex';
-
-    // Actualizar ícono del botón de tema
-    const saved = localStorage.getItem('dnd_theme_v1') || 'dark';
-    const themeBtn = document.getElementById('idxThemeBtn');
-    if (themeBtn) themeBtn.textContent = saved === 'light' ? '🌙' : '☀';
   }
 
   initCharsScreen();
@@ -3103,13 +3107,22 @@ function showToast(msg, ms) {
   _toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2400);
 }
 
-function toggleIndexTheme() {
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-  const next = isLight ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('dnd_theme_v1', next);
-  document.getElementById('idxThemeBtn').textContent = next === 'light' ? '🌙' : '☀';
+function toggleTemaPop(abrir) {
+  const pop = document.getElementById('idxTemaPop');
+  const btn = document.getElementById('idxThemeBtn');
+  const open = abrir === undefined ? pop.hidden : abrir;
+  pop.hidden = !open;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) pop.querySelector('[aria-checked="true"]')?.focus();
 }
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('idxTemaWrap');
+  if (wrap && !wrap.contains(e.target)) toggleTemaPop(false);
+});
+document.addEventListener('keydown', e => {
+  const pop = document.getElementById('idxTemaPop');
+  if (e.key === 'Escape' && pop && !pop.hidden) { toggleTemaPop(false); document.getElementById('idxThemeBtn').focus(); }
+});
 </script>
 <script>
 // Patch estructural: arregla personajes importados con _dataVersion alto que saltean migraciones
@@ -3138,7 +3151,7 @@ function toggleIndexTheme() {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 478;
+var _SW_EXPECTED_IDX = 479;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
