@@ -62,7 +62,7 @@ const Mesa = (() => {
         <button class="mesa-volver" onclick="Mesa.original('${tab}')">◂ Volver a la vista Mesa</button>`);
     }
     const nav = document.querySelector('.tab-nav');
-    if (nav && !$('mesaTurnoNav')) nav.insertAdjacentHTML('beforeend', '<div class="mesa-turno-nav" id="mesaTurnoNav"></div>');
+    if (nav && !$('mesaTurnoNav')) nav.insertAdjacentHTML('beforeend', '<button class="mesa-volver-nav" id="mesaVolverNav" onclick="Mesa.original()">◂ Volver a la vista Mesa</button><div class="mesa-turno-nav" id="mesaTurnoNav"></div>');
     if (!$('mesaFab')) {
       document.body.insertAdjacentHTML('beforeend', `
         <button class="mesa-fab" id="mesaFab" onclick="Mesa.hoja(true)"><i class="mesa-ico" style="--m:url(../assets/iconos/d20.svg)"></i>Tiradas</button>
@@ -99,7 +99,10 @@ const Mesa = (() => {
     $('mesa-combate').innerHTML = _combate(c);
     $('mesa-conjuros').innerHTML = _conjuros(c);
     const tabActiva = document.querySelector('.tab-btn.active');
-    document.documentElement.dataset.mesaTab = tabActiva ? tabActiva.dataset.tab : '';
+    const tab = tabActiva ? tabActiva.dataset.tab : '';
+    document.documentElement.dataset.mesaTab = tab;
+    // Con la vista completa abierta, el botón para volver va también en la barra de pestañas
+    document.documentElement.toggleAttribute('data-mesa-original', !!st.original[tab]);
   }
 
   /* ══ Cabecera: identidad, vida, defensas y el turno en una franja ══ */
@@ -274,7 +277,7 @@ const Mesa = (() => {
             ${columna('action', 'Acción', 'action')}
             <div class="mesa-pila">${columna('bonusAction', 'Adicional', 'bonus')}${columna('reaction', 'Reacción', 'reaction')}</div>
           </div>
-          <button class="mesa-link" onclick="Mesa.original('combate')">Ver Combate completo (iniciativa, maestrías, compañero) ▸</button>
+          <button class="mesa-link" onclick="Mesa.original('combate')">Abrir la vista completa de Combate (iniciativa, maestrías, compañero) ▸</button>
         </div>
         <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
       </div>`;
@@ -390,7 +393,7 @@ const Mesa = (() => {
             <span class="mc-esp"></span><input class="mesa-buscar" id="mesaBuscar" placeholder="Buscar conjuro…" value="${esc(st.buscar)}" oninput="Mesa.buscar(this.value)">
           </div>
           <div id="mesaLista">${_lista(c)}</div>
-          <button class="mesa-link" onclick="Mesa.original('conjuros')">Preparar o agregar conjuros (vista completa) ▸</button>
+          <button class="mesa-link" onclick="Mesa.original('conjuros')">Abrir la vista completa de Conjuros (preparar o agregar) ▸</button>
         </div>
         <aside class="mesa-der">${_apoyo(c, 'conjuros')}</aside>
       </div>`;
@@ -457,6 +460,7 @@ const Mesa = (() => {
   }
   // Muestra la pestaña de siempre (para lo que la vista Mesa aún no cubre)
   function original(tab) {
+    tab = tab || document.documentElement.dataset.mesaTab;
     st.original[tab] = !st.original[tab];
     _pintar();
     if (st.original[tab]) window.scrollTo({ top: 0 });

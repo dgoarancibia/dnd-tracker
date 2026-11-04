@@ -139,6 +139,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   cel.cerrada = !(await visible('#mesaHoja'));
   chk('celular: botón Tiradas abre la hoja con salvaciones y se cierra tocando afuera', cel.fab && !cel.tiradas && cel.hoja && cel.salv === 6 && cel.cerrada, cel);
 
+  // Vista completa de Combate y vuelta a Mesa desde la barra de pestañas
+  await ficha('tv');
+  await p.evaluate(() => [...document.querySelectorAll('.mesa-link')].find(b => b.offsetParent).click()); await sleep(300);
+  const comp = { original: await visible('#col-combate-stack'), volver: await visible('#mesaVolverNav'), cab: await visible('#mesaCab') };
+  await p.click('#mesaVolverNav'); await sleep(300);
+  comp.devuelta = await visible('#mesa-combate') && !(await visible('#mesaVolverNav'));
+  chk('la vista completa de Combate muestra "Volver a la vista Mesa" en las pestañas y vuelve', comp.original && comp.volver && comp.cab && comp.devuelta, comp);
+
   // 8. Volver a la vista actual
   await ficha('lursey-brumaclara');
   await p.evaluate(() => Mesa.alternar()); await sleep(400);

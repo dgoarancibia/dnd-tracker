@@ -4,7 +4,9 @@
    así funciona igual en Clásico, Pizarra, Pergamino y Ónix.
    Sin la vista activa, nada de esto aplica y lo de siempre no cambia.
    ═══════════════════════════════════════════════════════════ */
-.mesa-cab, .mesa-tiradas, .mesa-panel, .mesa-turno-nav, .mesa-fab, .mesa-velo, .mesa-hoja, .mesa-volver { display: none; }
+.mesa-cab, .mesa-tiradas, .mesa-panel, .mesa-turno-nav, .mesa-fab, .mesa-velo, .mesa-hoja, .mesa-volver, .mesa-volver-nav { display: none; }
+:root[data-vista="mesa"][data-mesa-original] .mesa-volver-nav { display: inline-flex; align-items: center; margin: 6px 0 6px 10px; padding: 5px 14px; flex: none;
+  border-radius: 999px; border: none; background: var(--gold); color: var(--bg); font: 700 12.5px 'Jost', sans-serif; cursor: pointer; white-space: nowrap; }
 
 :root[data-vista="mesa"] {
   --m-acento: var(--gold);
