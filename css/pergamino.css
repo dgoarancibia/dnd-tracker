@@ -13,8 +13,8 @@
   --bg4: #EBD3AF;   /* botones secundarios, hover */
   --bg5: #F1DDBE;   /* campos */
   --gold: #702D31;  /* granate: acción principal, pestaña activa */
-  --gold-light: #81383C;
-  --gold-dim: #634630;
+  --gold-light: #552026;   /* se usa como color de texto: el granate oscuro se lee en toda la viñeta */
+  --gold-dim: #4F3626;
   --gold-faint: rgba(112,45,49,0.08);
   --green: #31553A;
   --green-light: #31553A;
@@ -27,8 +27,9 @@
   --purple-light: #4B2A6E;
   --orange: #7A3E12;
   --text: #302019;
-  --text-mid: #573D2A;
-  --text-dim: #634630;
+  /* #634630 no llegaba a 4.5:1 en la viñeta: mismo tono, 12% más oscuro */
+  --text-mid: #4F3626;
+  --text-dim: #4F3626;
   --border: #A48361;        /* decorativo */
   --border-strong: #7E6043; /* controles (≥ 3:1) */
   --cuero: #3D281E;
@@ -41,6 +42,23 @@
   --hp-bar-ok: #31553A;
   --hp-bar-mid: #8A6420;
   --hp-bar-crit: #8C2427;
+
+  /* Sistema de controles */
+  --ink: #302019;
+  --ink-2: #4F3626;
+  --line: #A48361;          /* decorativo: tarjetas, separadores */
+  --line-ctl: #7E6043;      /* controles: 3.66:1 sobre tarjeta */
+  --granate: #702D31;
+
+  --hundido: rgba(96,58,24,0.06);          /* fondo de campos: café cálido, no gris */
+  --hundido-hover: rgba(96,58,24,0.10);
+  --velo: rgba(61,40,30,0.08);            /* botones secundarios, chips: sin caja */
+  --tinte-granate: rgba(112,45,49,0.11);
+  --tinte-granate-2: rgba(112,45,49,0.20);
+  --tinte-rojo: rgba(140,36,39,0.10);
+  --tinte-verde: rgba(49,85,58,0.12);
+  --costura: rgba(255,240,216,0.26);       /* hilo interior en botones granate */
+  --radio-ctl: 6px;
 }
 
 /* ── Papel: grano solo en el fondo general; tarjetas y campos lisos ── */
@@ -103,13 +121,13 @@
 :root[data-theme="light"] .tab-btn:hover { color: var(--text); background: rgba(255,240,216,0.45); }
 :root[data-theme="light"] .tab-btn.active {
   color: var(--crema);
-  background: linear-gradient(#7B3438, var(--gold) 60%, #5E2428);
+  background: var(--gold);
   border-bottom: 2px solid #C9973A;
-  box-shadow: inset 0 1px 0 rgba(255,240,216,0.25);
+  box-shadow: none;
   font-weight: 600;
 }
 
-/* ── Títulos de sección: tinta, línea y rombo central ── */
+/* ── Títulos de sección: tinta, línea y rombo al inicio ── */
 :root[data-theme="light"] .section-hd {
   color: var(--text);
   font-weight: 600;
@@ -119,78 +137,20 @@
 :root[data-theme="light"] .section-hd::after {
   content: '';
   position: absolute;
-  left: 50%;
+  left: 0;
   bottom: -4px;
   width: 7px;
   height: 7px;
-  margin-left: -3.5px;
   transform: rotate(45deg);
   background: #B8893F;
   border: 1px solid var(--cuero);
   pointer-events: none;
 }
 
-/* ── Acciones primarias: granate, texto crema ── */
-:root[data-theme="light"] .cast-btn,
-:root[data-theme="light"] .ability-use-btn:not(:disabled):not(.disabled),
-:root[data-theme="light"] .btn-primary,
-:root[data-theme="light"] .btn-gold,
-:root[data-theme="light"] .round-btn.gold,
-:root[data-theme="light"] .share-btn.primary {
-  background: linear-gradient(#7E3539, var(--gold) 55%, #61262A);
-  color: var(--crema);
-  border: 1px solid #3F1519;
-  box-shadow: inset 0 1px 0 rgba(255,240,216,0.28), 0 2px 0 #3F1519;
-}
-:root[data-theme="light"] .cast-btn:hover,
-:root[data-theme="light"] .ability-use-btn:not(:disabled):not(.disabled):hover,
-:root[data-theme="light"] .btn-primary:hover,
-:root[data-theme="light"] .btn-gold:hover,
-:root[data-theme="light"] .round-btn.gold:hover,
-:root[data-theme="light"] .share-btn.primary:hover {
-  background: var(--granate-hover);
-  color: var(--crema);
-}
-:root[data-theme="light"] .cast-btn:active,
-:root[data-theme="light"] .ability-use-btn:not(:disabled):not(.disabled):active,
-:root[data-theme="light"] .btn-primary:active,
-:root[data-theme="light"] .btn-gold:active,
-:root[data-theme="light"] .round-btn.gold:active,
-:root[data-theme="light"] .share-btn.primary:active {
-  background: var(--granate-press);
-}
-
-/* ── Acciones secundarias: papel claro, tinta, borde café ── */
-:root[data-theme="light"] .btn-ghost,
-:root[data-theme="light"] .btn-secondary,
-:root[data-theme="light"] .btn-cancel,
-:root[data-theme="light"] .btn-edit-stats,
-:root[data-theme="light"] .hdr-rest-btn,
-:root[data-theme="light"] .header-menu-toggle {
-  background: linear-gradient(var(--bg5), var(--bg4));
-  color: var(--text);
-  border: 1px solid var(--border-strong);
-  box-shadow: inset 0 1px 0 rgba(255,250,240,0.7), 0 1px 0 rgba(61,40,30,0.3);
-}
-:root[data-theme="light"] .btn-ghost:hover,
-:root[data-theme="light"] .btn-secondary:hover,
-:root[data-theme="light"] .btn-cancel:hover,
-:root[data-theme="light"] .btn-edit-stats:hover,
-:root[data-theme="light"] .hdr-rest-btn:hover,
-:root[data-theme="light"] .header-menu-toggle:hover {
-  background: var(--bg5);
-  color: var(--gold);
-  border-color: var(--gold);
-}
-
 /* CD / ataque con bonus de ítem: morado de tinta en vez de lila */
 :root[data-theme="light"] .stat-box.has-bonus { border-color: var(--purple); }
 :root[data-theme="light"] .stat-box.has-bonus .sv,
 :root[data-theme="light"] .stat-box.has-bonus .sl::after { color: var(--purple); }
-
-/* Daño / curación del encabezado */
-:root[data-theme="light"] .hp-hdr-btn.dmg { background: #EBD3AF; border-color: var(--red); color: var(--red); }
-:root[data-theme="light"] .hp-hdr-btn.heal { background: #EBD3AF; border-color: var(--green); color: var(--green); }
 
 /* ── Tarjetas, paneles y diálogos: superficie lisa ── */
 :root[data-theme="light"] .ability-card,
@@ -214,31 +174,10 @@
 :root[data-theme="light"] .stat-box,
 :root[data-theme="light"] .slots-card,
 :root[data-theme="light"] .conditions-block {
-  box-shadow: inset 0 1px 0 rgba(255,245,228,0.65), 0 1px 3px rgba(61,40,30,0.28);
+  box-shadow: inset 0 1px 0 rgba(255,245,228,0.6), 0 1px 2px rgba(61,40,30,0.22);
 }
 :root[data-theme="light"] .modal,
 :root[data-theme="light"] .header-menu-dropdown { box-shadow: 0 10px 36px rgba(61,40,30,0.35); }
-
-/* Campos */
-:root[data-theme="light"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
-:root[data-theme="light"] textarea,
-:root[data-theme="light"] select {
-  background: var(--bg5);
-  color: var(--text);
-  border-color: var(--border-strong);
-}
-:root[data-theme="light"] input::placeholder,
-:root[data-theme="light"] textarea::placeholder { color: var(--text-dim); }
-
-/* Foco de teclado y deshabilitados */
-:root[data-theme="light"] :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-:root[data-theme="light"] button:disabled {
-  opacity: 1;
-  color: var(--text-dim);
-  background: transparent;
-  border-style: dashed;
-  cursor: not-allowed;
-}
 
 /* Avisos */
 :root[data-theme="light"] .toast { background: var(--cuero); color: var(--crema); border-color: var(--cuero); }
@@ -303,3 +242,523 @@
       var(--bg3);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Sistema de controles (auditoría UX nov-2026)
+   Plano, sin bisel: el granate lleno es solo para la acción principal;
+   lo demás es un velo de tinta sobre el papel.
+   ═══════════════════════════════════════════════════════════ */
+/* ── 1. TIPOGRAFÍA DE APOYO: etiquetas que el tema oscuro dejó en gris ── */
+:root[data-theme="light"] .sl,
+:root[data-theme="light"] .hp-header-label,
+:root[data-theme="light"] .slot-lv,
+:root[data-theme="light"] .rc-name { color: var(--ink-2); }
+:root[data-theme="light"] .hp-temp-inline-label { color: var(--blue); }
+:root[data-theme="light"] .hp-temp-inline-input { color: var(--ink); }
+:root[data-theme="light"] .bst-ayuda b,
+:root[data-theme="light"] .bst-maintain { color: var(--ink); }
+:root[data-theme="light"] .nm-apellido { opacity: 1; }
+/* 📓 de la versión: el v481 baja a tinta, sin opacidad */
+:root[data-theme="light"] .app-version,
+:root[data-theme="light"] .hdr-ver { opacity: 1; color: var(--ink-2); }
+
+/* ── 2. BOTONES ────────────────────────────────────────────────────────── */
+/* 2a. Primario: granate liso con "costura" interior. Sin degradado ni sombra dura. */
+:root[data-theme="light"] button.cast-btn,
+:root[data-theme="light"] button.ability-use-btn:not(:disabled):not(.disabled),
+:root[data-theme="light"] .btn-primary,
+:root[data-theme="light"] .btn-gold,
+:root[data-theme="light"] .round-btn.gold,
+:root[data-theme="light"] .share-btn.primary {
+  --b: var(--granate);
+  background: var(--b);
+  color: #FFF0D8;
+  border: 1px solid var(--granate-press);
+  border-radius: var(--radio-ctl);
+  box-shadow: inset 0 0 0 2px var(--b), inset 0 0 0 3px var(--costura);
+  text-shadow: none;
+  transition: background-color .15s, box-shadow .15s;
+}
+:root[data-theme="light"] button.cast-btn:hover,
+:root[data-theme="light"] button.ability-use-btn:not(:disabled):not(.disabled):hover,
+:root[data-theme="light"] .btn-primary:hover,
+:root[data-theme="light"] .btn-gold:hover,
+:root[data-theme="light"] .round-btn.gold:hover,
+:root[data-theme="light"] .share-btn.primary:hover { --b: var(--granate-hover); background: var(--b); color: #FFF0D8; }
+:root[data-theme="light"] button.cast-btn:active,
+:root[data-theme="light"] button.ability-use-btn:not(:disabled):not(.disabled):active,
+:root[data-theme="light"] .btn-primary:active,
+:root[data-theme="light"] .btn-gold:active,
+:root[data-theme="light"] .round-btn.gold:active,
+:root[data-theme="light"] .share-btn.primary:active { --b: var(--granate-press); background: var(--b); }
+
+/* 2b. Primario "suave" (acción propia pero no la principal de la pantalla):
+   hoy son fondos dorados del tema oscuro con texto granate (4.0:1). */
+:root[data-theme="light"] button.xp-add-btn,
+:root[data-theme="light"] button.levelup-btn,
+:root[data-theme="light"] button.qn-save,
+:root[data-theme="light"] button.diary-send-btn,
+:root[data-theme="light"] button.it-add-btn {
+  background: var(--tinte-granate);
+  color: var(--granate-press);
+  border: 1px solid var(--granate);
+  border-radius: var(--radio-ctl);
+  box-shadow: none;
+  transition: background-color .15s, color .15s;
+}
+:root[data-theme="light"] button.it-add-btn { border-radius: 50%; }
+:root[data-theme="light"] button.xp-add-btn:hover,
+:root[data-theme="light"] button.levelup-btn:hover,
+:root[data-theme="light"] button.qn-save:hover,
+:root[data-theme="light"] button.diary-send-btn:hover,
+:root[data-theme="light"] button.it-add-btn:hover { background: var(--granate); color: #FFF0D8; }
+:root[data-theme="light"] button.xp-add-btn:active,
+:root[data-theme="light"] button.levelup-btn:active,
+:root[data-theme="light"] button.qn-save:active,
+:root[data-theme="light"] button.diary-send-btn:active,
+:root[data-theme="light"] button.it-add-btn:active { background: var(--granate-press); color: #FFF0D8; }
+
+/* 2c. Secundario: sin caja. Un velo de tinta sobre el papel, sin borde ni
+   sombra; al pasar se tiñe de granate. Así solo el granate lleno grita. */
+:root[data-theme="light"] button.hdr-rest-btn,
+:root[data-theme="light"] button.btn-ghost,
+:root[data-theme="light"] .btn-secondary,
+:root[data-theme="light"] button.btn-cancel,
+:root[data-theme="light"] button.btn-edit-stats,
+:root[data-theme="light"] button.header-menu-toggle,
+:root[data-theme="light"] button.btn-sm,
+:root[data-theme="light"] button.mastery-edit-btn,
+:root[data-theme="light"] button.cond-btn,
+:root[data-theme="light"] button.choice-history-btn,
+:root[data-theme="light"] button.round-start-btn,
+:root[data-theme="light"] button.backup-btn {
+  background: var(--velo);
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: var(--radio-ctl);
+  box-shadow: none;
+  text-shadow: none;
+  transition: background-color .15s, color .15s;
+}
+:root[data-theme="light"] button.hdr-rest-btn:hover,
+:root[data-theme="light"] button.btn-ghost:hover,
+:root[data-theme="light"] .btn-secondary:hover,
+:root[data-theme="light"] button.btn-cancel:hover,
+:root[data-theme="light"] button.btn-edit-stats:hover,
+:root[data-theme="light"] button.header-menu-toggle:hover,
+:root[data-theme="light"] button.btn-sm:hover,
+:root[data-theme="light"] button.mastery-edit-btn:hover,
+:root[data-theme="light"] button.cond-btn:hover,
+:root[data-theme="light"] button.choice-history-btn:hover,
+:root[data-theme="light"] button.round-start-btn:hover,
+:root[data-theme="light"] button.backup-btn:hover {
+  background: var(--tinte-granate);
+  border-color: transparent;
+  color: var(--granate-press);
+}
+:root[data-theme="light"] button.hdr-rest-btn:active,
+:root[data-theme="light"] button.btn-ghost:active,
+:root[data-theme="light"] .btn-secondary:active,
+:root[data-theme="light"] button.btn-cancel:active,
+:root[data-theme="light"] button.btn-edit-stats:active,
+:root[data-theme="light"] button.header-menu-toggle:active,
+:root[data-theme="light"] button.btn-sm:active,
+:root[data-theme="light"] button.mastery-edit-btn:active,
+:root[data-theme="light"] button.cond-btn:active,
+:root[data-theme="light"] button.choice-history-btn:active,
+:root[data-theme="light"] button.round-start-btn:active,
+:root[data-theme="light"] button.backup-btn:active { background: var(--tinte-granate-2); color: var(--granate-press); }
+/* Condición activa: tinte rojo con filo, como un chip elegido */
+:root[data-theme="light"] button.cond-btn.active { background: var(--tinte-rojo); border-color: var(--red); color: var(--red); }
+
+/* 2d. Daño / curación del encabezado: velo de color; rellenan al pasar. */
+:root[data-theme="light"] button.hp-hdr-btn.dmg,
+:root[data-theme="light"] button.hp-hdr-btn.heal {
+  border: 1px solid transparent;
+  border-radius: var(--radio-ctl);
+  box-shadow: none;
+  text-shadow: none;
+  transition: background-color .15s, color .15s;
+}
+:root[data-theme="light"] button.hp-hdr-btn.dmg  { background: var(--tinte-rojo);  color: var(--red); }
+:root[data-theme="light"] button.hp-hdr-btn.heal { background: var(--tinte-verde); color: var(--green); }
+:root[data-theme="light"] button.hp-hdr-btn.dmg:hover  { background: var(--red);   color: #FFF0D8; }
+:root[data-theme="light"] button.hp-hdr-btn.heal:hover { background: var(--green); color: #FFF0D8; }
+:root[data-theme="light"] button.hp-hdr-btn.dmg:active  { background: #6E1B1E; color: #FFF0D8; }
+:root[data-theme="light"] button.hp-hdr-btn.heal:active { background: #243F2B; color: #FFF0D8; }
+
+/* 2e. Terciario / icono: sin caja hasta que se toca. */
+:root[data-theme="light"] button.item-edit,
+:root[data-theme="light"] button.item-del,
+:root[data-theme="light"] button.diary-close-btn,
+:root[data-theme="light"] button.ifttt-overlay-close,
+:root[data-theme="light"] button.conc-alert-close,
+:root[data-theme="light"] button.qn-close,
+:root[data-theme="light"] button.diary-attach-btn {
+  background: transparent;
+  color: var(--ink-2);
+  border: 0;
+  box-shadow: none;
+  transition: background-color .15s, color .15s;
+}
+:root[data-theme="light"] button.item-edit:hover,
+:root[data-theme="light"] button.item-del:hover,
+:root[data-theme="light"] button.diary-close-btn:hover,
+:root[data-theme="light"] button.ifttt-overlay-close:hover,
+:root[data-theme="light"] button.conc-alert-close:hover,
+:root[data-theme="light"] button.qn-close:hover,
+:root[data-theme="light"] button.diary-attach-btn:hover { background: var(--hundido-hover); color: var(--ink); }
+:root[data-theme="light"] button.item-del:hover { color: var(--red); }
+:root[data-theme="light"] button.diary-attach-btn { opacity: 1; }
+
+/* ── 3. CHIPS Y SEGMENTADOS (filtros, Land/Sea/Sky, categorías) ───────── */
+/* Velo sin borde; el elegido se rellena de granate (se ve de lejos). */
+:root[data-theme="light"] button.sf-chip,
+:root[data-theme="light"] button.diary-cat-chip,
+:root[data-theme="light"] button.bag-filter-chip,
+:root[data-theme="light"] button.companion-beast-chip {
+  background: var(--velo);
+  color: var(--ink);
+  border: 1px solid transparent;
+  box-shadow: none;
+  transition: background-color .15s, color .15s;
+}
+:root[data-theme="light"] button.sf-chip:hover,
+:root[data-theme="light"] button.diary-cat-chip:hover,
+:root[data-theme="light"] button.bag-filter-chip:hover,
+:root[data-theme="light"] button.companion-beast-chip:hover { background: var(--tinte-granate); border-color: transparent; color: var(--granate-press); }
+:root[data-theme="light"] button.sf-chip.active,
+:root[data-theme="light"] button.diary-cat-chip.active,
+:root[data-theme="light"] button.bag-filter-chip--active,
+:root[data-theme="light"] button.companion-beast-chip.active,
+:root[data-theme="light"] button.sf-chip.active:hover,
+:root[data-theme="light"] button.diary-cat-chip.active:hover,
+:root[data-theme="light"] button.bag-filter-chip--active:hover,
+:root[data-theme="light"] button.companion-beast-chip.active:hover {
+  background: var(--granate);
+  color: #FFF0D8;
+  border-color: var(--granate-press);
+  box-shadow: none;
+}
+/* Selectores de categoría con emoji (Diario / nota rápida) */
+:root[data-theme="light"] button.diary-new-cat-btn,
+:root[data-theme="light"] button.qn-cat {
+  background: var(--velo);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+:root[data-theme="light"] button.diary-new-cat-btn.active,
+:root[data-theme="light"] button.qn-cat.active { background: var(--tinte-granate-2); border-color: var(--granate); }
+/* Subpestañas (Biblioteca, Diario): subrayado de tinta */
+:root[data-theme="light"] button.bib-stab,
+:root[data-theme="light"] button.nb-tab { color: var(--ink-2); }
+:root[data-theme="light"] button.bib-stab.active,
+:root[data-theme="light"] button.nb-tab.active { color: var(--granate); }
+
+/* ── 4. BOTONES NUMÉRICOS PEQUEÑOS (−10 −5 −1 +1 +5 +10, ±, cantidades) ── */
+:root[data-theme="light"] button.companion-adj-btn,
+:root[data-theme="light"] button.exh-btn,
+:root[data-theme="light"] button.ammo-btn,
+:root[data-theme="light"] button.qty-btn,
+:root[data-theme="light"] button.sr-qty-btn,
+:root[data-theme="light"] button.res-btn,
+:root[data-theme="light"] button.companion-hp-btn,
+:root[data-theme="light"] button.equip-slot-add-buff,
+:root[data-theme="light"] button.stat-chip-add-buff,
+:root[data-theme="light"] button.ifttt-add-btn {
+  background: var(--velo);
+  color: var(--ink);
+  border: 1px solid transparent;
+  box-shadow: none;
+  font-variant-numeric: tabular-nums;
+  transition: background-color .15s, color .15s;
+}
+/* −/+ del compañero: sobre tarjeta sólida para que rojo y verde pasen 4.5:1 en la viñeta */
+:root[data-theme="light"] button.companion-adj-btn { background: var(--bg3); }
+:root[data-theme="light"] button.companion-adj-btn.dmg  { color: var(--red); }
+:root[data-theme="light"] button.companion-adj-btn.heal { color: var(--green); }
+:root[data-theme="light"] button.companion-adj-btn.dmg:hover  { background: var(--red);   color: #FFF0D8; }
+:root[data-theme="light"] button.companion-adj-btn.heal:hover { background: var(--green); color: #FFF0D8; }
+:root[data-theme="light"] button.exh-btn:hover:not(:disabled),
+:root[data-theme="light"] button.ammo-btn:hover:not(:disabled),
+:root[data-theme="light"] button.qty-btn:hover,
+:root[data-theme="light"] button.sr-qty-btn:hover,
+:root[data-theme="light"] button.res-btn:hover,
+:root[data-theme="light"] button.companion-hp-btn:hover,
+:root[data-theme="light"] button.equip-slot-add-buff:hover,
+:root[data-theme="light"] button.stat-chip-add-buff:hover,
+:root[data-theme="light"] button.ifttt-add-btn:hover { background: var(--tinte-granate); color: var(--granate-press); }
+:root[data-theme="light"] button.exh-btn:active:not(:disabled),
+:root[data-theme="light"] button.ammo-btn:active:not(:disabled),
+:root[data-theme="light"] button.qty-btn:active,
+:root[data-theme="light"] button.sr-qty-btn:active,
+:root[data-theme="light"] button.res-btn:active,
+:root[data-theme="light"] button.companion-hp-btn:active { background: var(--tinte-granate-2); }
+/* Monedas: el verde y rojo claros del tema oscuro daban 1.5:1 sobre papel */
+:root[data-theme="light"] button.currency-btn-add { background: var(--tinte-verde); color: var(--green); border: 1px solid transparent; box-shadow: none; }
+:root[data-theme="light"] button.currency-btn-sub { background: var(--tinte-rojo);  color: var(--red);   border: 1px solid transparent; box-shadow: none; }
+:root[data-theme="light"] button.currency-btn-add:hover { background: var(--green); color: #FFF0D8; }
+:root[data-theme="light"] button.currency-btn-sub:hover { background: var(--red);   color: #FFF0D8; }
+
+/* ── 5. CAMPOS ─────────────────────────────────────────────────────────── */
+/* 5a. Cajas: hundidas (más oscuras que la tarjeta). Mismo :not() que
+   pergamino.css para ganar en especificidad sin !important. */
+:root[data-theme="light"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] select {
+  background: var(--hundido);
+  color: var(--ink);
+  border: 1px solid var(--line-ctl);
+  border-radius: var(--radio-ctl);
+  box-shadow: inset 0 1px 2px rgba(61,40,30,0.16);
+  transition: border-color .15s, box-shadow .15s, background-color .15s;
+}
+:root[data-theme="light"] input:not([type=checkbox]):not([type=radio]):not([type=range]):hover,
+:root[data-theme="light"] textarea:hover,
+:root[data-theme="light"] select:hover { background: var(--hundido-hover); }
+:root[data-theme="light"] input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+:root[data-theme="light"] textarea:focus,
+:root[data-theme="light"] select:focus {
+  outline: none;
+  border-color: var(--granate);
+  background: rgba(255,240,216,0.45);
+  box-shadow: 0 0 0 3px rgba(112,45,49,0.22);
+}
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder { color: var(--ink-2); opacity: 1; }
+:root[data-theme="light"] input[type=checkbox],
+:root[data-theme="light"] input[type=radio],
+:root[data-theme="light"] input[type=range] { accent-color: var(--granate); }
+
+/* 5b. Campos EN LÍNEA (nombre y animal del compañero, HP máx, velocidad,
+   nombre del bastión): sin caja. Una línea de bitácora que se subraya
+   en granate al editar. Antes heredaban el fondo claro (#F1DDBE) de la regla
+   general porque ésta pesa más que `.companion-name-input{background:transparent}`. */
+:root[data-theme="light"] input.companion-name-input:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root[data-theme="light"] input.companion-kind-input:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root[data-theme="light"] input.hp-header-max:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root[data-theme="light"] input.speed-input:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root[data-theme="light"] input.bst-nombre:not([type=checkbox]):not([type=radio]):not([type=range]) {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted var(--line-ctl);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ink);
+}
+:root[data-theme="light"] input.companion-name-input:not([type=checkbox]):not([type=radio]):not([type=range]) { color: var(--granate); }
+:root[data-theme="light"] input.companion-kind-input:not([type=checkbox]):not([type=radio]):not([type=range]) { color: var(--ink-2); }
+:root[data-theme="light"] input.companion-name-input::placeholder { color: var(--granate); opacity: .7; }
+:root[data-theme="light"] input.companion-name-input:not([type=checkbox]):not([type=radio]):not([type=range]):hover,
+:root[data-theme="light"] input.companion-kind-input:not([type=checkbox]):not([type=radio]):not([type=range]):hover,
+:root[data-theme="light"] input.hp-header-max:not([type=checkbox]):not([type=radio]):not([type=range]):hover,
+:root[data-theme="light"] input.speed-input:not([type=checkbox]):not([type=radio]):not([type=range]):hover,
+:root[data-theme="light"] input.bst-nombre:not([type=checkbox]):not([type=radio]):not([type=range]):hover { background: var(--hundido); border-bottom-style: solid; }
+:root[data-theme="light"] input.companion-name-input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+:root[data-theme="light"] input.companion-kind-input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+:root[data-theme="light"] input.hp-header-max:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+:root[data-theme="light"] input.speed-input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,
+:root[data-theme="light"] input.bst-nombre:not([type=checkbox]):not([type=radio]):not([type=range]):focus {
+  background: rgba(112,45,49,0.07);
+  border-bottom: 2px solid var(--granate);
+  box-shadow: none;
+}
+/* Buscador de la Biblioteca: ocupaba todo el ancho como un bloque pegado al borde */
+:root[data-theme="light"] input.bib-search-input:not([type=checkbox]):not([type=radio]):not([type=range]) {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+:root[data-theme="light"] input.bib-search-input:not([type=checkbox]):not([type=radio]):not([type=range]):focus { background: rgba(255,240,216,0.35); box-shadow: inset 0 -2px 0 var(--granate); }
+:root[data-theme="light"] .bib-search-icon { opacity: 1; filter: sepia(1) saturate(.6) brightness(.55); }
+/* Cifras de los campos numéricos pequeños: alineadas */
+:root[data-theme="light"] input.bonus-input,
+:root[data-theme="light"] input.bonus-input-sm,
+:root[data-theme="light"] input.hp-hdr-free,
+:root[data-theme="light"] input.ammo-input,
+:root[data-theme="light"] input.companion-hp-input { font-variant-numeric: tabular-nums; }
+
+/* ── 6. TARJETAS ───────────────────────────────────────────────────────── */
+/* Nivel 1 "folio": ya existe (papel #E5CAA6 + filo #A48361 + sombra tenue).
+   Solo se afinan radios y la sombra para que no parezcan cajas de formulario. */
+:root[data-theme="light"] .ability-card,
+:root[data-theme="light"] .spell-card,
+:root[data-theme="light"] .resource-row,
+:root[data-theme="light"] .item-row,
+:root[data-theme="light"] .weapon-row,
+:root[data-theme="light"] .stat-box,
+:root[data-theme="light"] .slots-card,
+:root[data-theme="light"] .conditions-block {
+  border-color: var(--line);
+  box-shadow: inset 0 1px 0 rgba(255,245,228,0.6), 0 1px 2px rgba(61,40,30,0.22);
+}
+/* Nivel 2 "hundido": bloques DENTRO de una tarjeta (no más tarjetas flotando
+   dentro de tarjetas). Sin sombra, filo suave. */
+:root[data-theme="light"] .companion-ac-badge,
+:root[data-theme="light"] .stat-chip-eq,
+:root[data-theme="light"] .note-block,
+:root[data-theme="light"] .bst-card-inner {
+  background: var(--bg3);
+  border: 1px solid rgba(126,96,67,0.45);
+  box-shadow: none;
+  color: var(--ink);
+}
+:root[data-theme="light"] .companion-ac-val { color: var(--granate-press); }
+:root[data-theme="light"] .companion-ac-lbl,
+:root[data-theme="light"] .companion-ac-det,
+:root[data-theme="light"] .companion-senses,
+:root[data-theme="light"] .companion-hp-label,
+:root[data-theme="light"] .companion-hp-sep,
+:root[data-theme="light"] .companion-attacks-header { color: var(--ink); }
+/* Texto granate chico directo sobre papel: usar el tono "pressed" (4.24:1 → 8:1 en la viñeta) */
+:root[data-theme="light"] .bib-welcome-title,
+:root[data-theme="light"] summary { color: var(--granate-press); }
+:root[data-theme="light"] .equip-slot-icon { opacity: 1; filter: sepia(.8) saturate(.7) brightness(.8); }
+:root[data-theme="light"] .equip-slot-role,
+:root[data-theme="light"] .equip-slot-cta { color: var(--ink-2); }
+
+/* ── 7. ETIQUETAS Y BADGES: tinta de la paleta en vez de pasteles de noche ── */
+:root[data-theme="light"] .tag-c  { background: var(--tinte-rojo);  color: var(--red);    border-color: rgba(140,36,39,.45); }
+:root[data-theme="light"] .tag-b  { background: rgba(31,63,110,.10); color: var(--blue);   border-color: rgba(31,63,110,.45); }
+:root[data-theme="light"] .tag-d  { background: var(--tinte-verde); color: var(--green);  border-color: rgba(49,85,58,.5); }
+:root[data-theme="light"] .tag-r  { background: rgba(75,42,110,.09); color: var(--purple); border-color: rgba(75,42,110,.45); }
+:root[data-theme="light"] .tag-mi { background: rgba(122,62,18,.10); color: var(--orange); border-color: rgba(122,62,18,.45); }
+:root[data-theme="light"] .tag-dom { background: var(--tinte-granate); color: var(--granate); border-color: rgba(112,45,49,.5); }
+:root[data-theme="light"] .tag-quick { background: var(--hundido); color: var(--ink-2); border-color: rgba(126,96,67,.4); }
+:root[data-theme="light"] .feat-passive,
+:root[data-theme="light"] .ability-recharge-tag { background: var(--hundido); color: var(--ink-2); border-color: rgba(126,96,67,.5); }
+:root[data-theme="light"] .feat-active,
+:root[data-theme="light"] .ability-action-tag { background: var(--tinte-granate); color: var(--granate-press); border-color: rgba(112,45,49,.5); }
+:root[data-theme="light"] .act-a   { background: var(--tinte-granate); color: var(--granate-press); border-color: rgba(112,45,49,.5); }
+:root[data-theme="light"] .act-aa  { background: rgba(31,63,110,.10);  color: var(--blue);          border-color: rgba(31,63,110,.5); }
+:root[data-theme="light"] .act-r   { background: var(--tinte-verde);   color: var(--green);         border-color: rgba(49,85,58,.5); }
+:root[data-theme="light"] .act-otro,
+:root[data-theme="light"] .tag-dw  { background: var(--hundido);       color: var(--ink-2);         border-color: rgba(126,96,67,.45); }
+:root[data-theme="light"] .hdr-status-chip.cond { background: var(--tinte-rojo); border-color: rgba(140,36,39,.55); color: var(--red); }
+:root[data-theme="light"] .hdr-status-chip.conc { background: var(--tinte-granate); border-color: rgba(112,45,49,.55); color: var(--granate); }
+:root[data-theme="light"] .hdr-status-chip.exhaustion,
+:root[data-theme="light"] .hdr-status-chip.exhaustion-warn { background: rgba(122,62,18,.10); border-color: rgba(122,62,18,.5); color: var(--orange); }
+:root[data-theme="light"] .hdr-status-chip.exhaustion-dead { background: var(--tinte-rojo); border-color: rgba(140,36,39,.55); color: var(--red); }
+/* Categoría de objeto: el color viene en style="" desde JS (verde menta claro
+   sobre papel = 1.4:1). Parche con !important; la solución limpia es que JS
+   ponga data-cat y el tema decida (ver INFORME, sección "Solo HTML/JS"). */
+:root[data-theme="light"] .item-cat-badge { background: var(--hundido) !important; color: var(--ink) !important; border-color: var(--line-ctl) !important; }
+
+/* ── 8. SLOTS Y COMPETENCIAS ───────────────────────────────────────────── */
+/* Disponible = sello granate lleno; gastado = anillo vacío de tinta.
+   Antes: disponible = disco caqui con borde granate; gastado = casi invisible (1.1:1). */
+:root[data-theme="light"] .slot-dot {
+  background: radial-gradient(circle, var(--granate) 0 46%, transparent 48%);
+  border: 2px solid var(--granate);
+  box-shadow: none;
+  transition: background .15s, border-color .15s;
+}
+:root[data-theme="light"] .slot-dot:hover { background: radial-gradient(circle, var(--granate-hover) 0 58%, transparent 60%); border-color: var(--granate-hover); }
+:root[data-theme="light"] .slot-dot.used,
+:root[data-theme="light"] .slot-dot.used:hover { background: transparent; border: 2px solid var(--line-ctl); opacity: 1; }
+/* Competencia (disco) y pericia (blanco de tiro). El ✦ lila desaparece. */
+:root[data-theme="light"] .skill-prof-btn { border: 1px solid var(--line-ctl); background: transparent; }
+:root[data-theme="light"] .skill-prof-btn.active { background: var(--granate); border-color: var(--granate); }
+:root[data-theme="light"] .skill-prof-btn.expertise {
+  background: var(--granate);
+  border: 2px solid var(--granate);
+  box-shadow: inset 0 0 0 2px #E5CAA6;
+}
+:root[data-theme="light"] .skill-prof-btn.active::after,
+:root[data-theme="light"] .skill-prof-btn.expertise::after { content: none; }
+:root[data-theme="light"] .skill-val.prof { color: var(--granate); }
+:root[data-theme="light"] .skill-val.expertise { color: var(--granate-press); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+:root[data-theme="light"] .save-prof-toggle { color: var(--line-ctl); }
+:root[data-theme="light"] .save-prof-toggle.active { color: var(--granate); }
+
+/* ── 10. EMOJI EN TINTA (js/tema.js los envuelve en .emo) ─────────────── */
+:root[data-theme="light"] .emo { filter: grayscale(1) sepia(.5) saturate(1.3) brightness(.5); }
+/* Sobre granate o cuero: crema */
+:root[data-theme="light"] .tab-btn.active .emo,
+:root[data-theme="light"] .cast-btn .emo,
+:root[data-theme="light"] .ability-use-btn:not(:disabled):not(.disabled) .emo,
+:root[data-theme="light"] .btn-primary .emo,
+:root[data-theme="light"] .btn-gold .emo,
+:root[data-theme="light"] .share-btn.primary .emo,
+:root[data-theme="light"] .companion-beast-chip.active .emo,
+:root[data-theme="light"] .sf-chip.active .emo,
+:root[data-theme="light"] .diary-cat-chip.active .emo,
+:root[data-theme="light"] .bag-filter-chip--active .emo,
+:root[data-theme="light"] .fab .emo,
+:root[data-theme="light"] .toast .emo,
+:root[data-theme="light"] .combat-panel-header .emo,
+:root[data-theme="light"] .diary-header .emo,
+:root[data-theme="light"] .ifttt-overlay-header .emo { filter: grayscale(1) sepia(.3) brightness(2.2); }
+
+/* ── 11. PANELES LATERALES Y FLOTANTES ─────────────────────────────────── */
+:root[data-theme="light"] .combat-panel-header,
+:root[data-theme="light"] .diary-header,
+:root[data-theme="light"] .ifttt-overlay-header {
+  background: var(--cuero);
+  border-bottom: 2px solid #2A1B13;
+}
+:root[data-theme="light"] .combat-panel-title,
+:root[data-theme="light"] .ifttt-overlay-title,
+:root[data-theme="light"] .diary-header .nb-tab.active { color: #FFF0D8; }
+:root[data-theme="light"] .diary-header .nb-tab { color: #D9C3A0; }
+:root[data-theme="light"] .combat-panel-header button.diary-close-btn,
+:root[data-theme="light"] .diary-header button.diary-close-btn,
+:root[data-theme="light"] .ifttt-overlay-header button.ifttt-overlay-close { color: #FFF0D8; }
+:root[data-theme="light"] .combat-panel,
+:root[data-theme="light"] .diary-panel { box-shadow: 0 0 36px rgba(61,40,30,0.35); border-color: var(--cuero); }
+:root[data-theme="light"] .ifttt-overlay-header button.ifttt-add-btn { background: transparent; color: #FFF0D8; border: 1px solid rgba(255,240,216,0.6); }
+:root[data-theme="light"] .ifttt-overlay-header button.ifttt-add-btn:hover { background: rgba(255,240,216,0.16); border-color: #FFF0D8; color: #FFF0D8; }
+:root[data-theme="light"] .nb-beta { background: rgba(255,240,216,.14); color: #FFF0D8; border-color: rgba(255,240,216,.45); }   /* vive dentro de la cabecera de cuero */
+:root[data-theme="light"] button.fab {
+  background: var(--cuero);
+  color: #FFF0D8;
+  border: 2px solid #2A1B13;
+  box-shadow: 0 3px 10px rgba(61,40,30,0.4);
+}
+:root[data-theme="light"] button.fab-note { background: var(--bg4); border: 1px solid var(--line-ctl); box-shadow: 0 2px 8px rgba(61,40,30,0.3); }
+
+/* ── 12. MENÚ Y DIÁLOGOS ───────────────────────────────────────────────── */
+:root[data-theme="light"] .hm-btn { border-radius: var(--radio-ctl); transition: background-color .15s, color .15s; }
+:root[data-theme="light"] .hm-btn:hover { background: var(--tinte-granate); color: var(--granate); }
+:root[data-theme="light"] .header-menu-dropdown,
+:root[data-theme="light"] .header-menu { border: 1px solid var(--line-ctl); border-radius: 10px; }
+:root[data-theme="light"] .modal { border: 1px solid var(--line-ctl); border-radius: 12px; }
+
+/* ── 13. DESHABILITADO Y FOCO ──────────────────────────────────────────── */
+/* Papel liso apagado: sin borde punteado (parecía un hueco para soltar algo).
+   Sigue en opacity:1 para no romper la auditoría de contraste. */
+:root[data-theme="light"] button:disabled:disabled {
+  opacity: 1;
+  color: var(--ink-2);
+  background: var(--hundido);
+  border: 1px solid rgba(126,96,67,0.35);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+/* Foco de teclado: aro de cuero con holgura (el granate se perdía sobre los botones granate) */
+:root[data-theme="light"] :focus-visible { outline: 2px solid var(--cuero); outline-offset: 2px; }
+:root[data-theme="light"] button:focus-visible,
+:root[data-theme="light"] .tab-btn:focus-visible { outline: 2px solid var(--cuero); outline-offset: 2px; box-shadow: 0 0 0 5px rgba(255,240,216,0.75); }
+/* En el menú, una opción deshabilitada (Deshacer sin cambios) sigue siendo una línea, no una caja */
+:root[data-theme="light"] .hm-btn:disabled:disabled { background: transparent; border-color: transparent; }
+
+/* Textos que la auditoría corregida encontró bajo 4.5:1 */
+:root[data-theme="light"] {
+  /* Monedas (app.js usa estos con el color de Clásico como respaldo): metales en tinta */
+  --moneda-pp: #4B2A6E;
+  --moneda-gp: #5E400C;
+  --con-bonus: #4B2A6E;   /* total con bonus de ítem (Habilidades) */
+  --moneda-ep: #1D4E52;
+  --moneda-sp: #45403A;
+  --moneda-cp: #7A3E12;
+}
+:root[data-theme="light"] .combat-ref-title { color: var(--granate-press); }
+:root[data-theme="light"] .prio-num { color: var(--granate); }
+/* En el aviso de cuero, el "dorado" de los textos en línea vuelve a ser claro */
+:root[data-theme="light"] .toast { --gold: #E8C48A; --gold-light: #F0D3A0; }
+/* Inicio: pastillas de estado con tinta de la paleta */
+:root[data-theme="light"] .stat-pill.hp-ok   { color: var(--green); border-color: rgba(49,85,58,.5); }
+:root[data-theme="light"] .stat-pill.hp-low  { color: var(--orange); border-color: rgba(122,62,18,.5); }
+:root[data-theme="light"] .stat-pill.hp-crit { color: var(--red); border-color: rgba(140,36,39,.5); }
+:root[data-theme="light"] .stat-pill.tmp     { color: var(--blue); border-color: rgba(31,63,110,.5); }

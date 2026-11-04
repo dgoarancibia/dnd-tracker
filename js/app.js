@@ -923,6 +923,7 @@ const App = (() => {
     _notebookOpen = !_notebookOpen;
     const panel = document.getElementById('notebookPanel');
     if (panel) panel.classList.toggle('open', _notebookOpen);
+    document.body.classList.toggle('diario-abierto', _notebookOpen); // el 📓 flotante tapaba "Enviar"
     document.getElementById('overlayBackdrop').classList.toggle('show', _notebookOpen || _iftttOpen);
     if (_notebookOpen) {
       if (_notebookTab === 'diary') { _renderDiaryEntries(); _renderSessionBar(); }
@@ -1936,7 +1937,7 @@ const App = (() => {
         const used = d >= r.current;
         dotsHtml += `<div class="slot-dot${used ? ' used' : ''}" onclick="App.toggleResourceDot('${r.id}',${d})"></div>`;
       }
-      html += `<div class="resource-card"><div class="rc-top"><span class="rc-name">${r.name}</span><span class="rc-recharge">${rechargeLabel}</span>${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:9px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}</div><div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div></div>`;
+      html += `<div class="resource-card"><div class="rc-top"><span class="rc-name">${r.name}</span><span class="rc-recharge">${rechargeLabel}</span>${isCustom ? `<button class="btn-sm" style="color:var(--red-light);border-color:rgba(138,58,58,0.3);padding:1px 5px;min-height:20px;font-size:10px;" onclick="App.deleteResource('${r.id}')">✕</button>` : ''}</div><div class="slot-dots" id="rc-dots-${r.id}">${dotsHtml}</div></div>`;
     });
 
     html += `</div>`; // cierra resources-grid--3col
@@ -3288,14 +3289,14 @@ const App = (() => {
           const isSubcls  = sp.cantrip_subclass;
           const isFree    = isRacial || isSubcls;
           const badgeHtml = isRacial
-            ? `<span style="font-size:9px;background:rgba(80,160,220,0.2);color:var(--gratis,#60a8d8);border:1px solid rgba(80,160,220,0.35);border-radius:3px;padding:1px 4px;margin-left:4px;">🔒 gratis</span>`
+            ? `<span style="font-size:10px;background:rgba(80,160,220,0.2);color:var(--gratis,#60a8d8);border:1px solid rgba(80,160,220,0.35);border-radius:3px;padding:1px 4px;margin-left:4px;">🔒 gratis</span>`
             : isSubcls
-              ? `<span style="font-size:9px;background:rgba(201,151,58,0.2);color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:1px 4px;margin-left:4px;">◆ subclase</span>`
+              ? `<span style="font-size:10px;background:rgba(201,151,58,0.2);color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:1px 4px;margin-left:4px;">◆ subclase</span>`
               : '';
           const toggleBtn = !isFree
-            ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.12);border:1px solid rgba(80,160,220,0.3);border-radius:3px;color:var(--gratis,#60a8d8);cursor:pointer;white-space:nowrap;" title="Marcar como cantrip gratuito de raza o feat de origen (no cuenta al límite)">+ gratis</button>`
+            ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:10px;padding:1px 5px;background:rgba(80,160,220,0.12);border:1px solid rgba(80,160,220,0.3);border-radius:3px;color:var(--gratis,#60a8d8);cursor:pointer;white-space:nowrap;" title="Marcar como cantrip gratuito de raza o feat de origen (no cuenta al límite)">+ gratis</button>`
             : isRacial
-              ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:9px;padding:1px 5px;background:rgba(80,160,220,0.2);border:1px solid rgba(80,160,220,0.4);border-radius:3px;color:var(--gratis,#60a8d8);cursor:pointer;" title="Quitar marca de gratuito">✕ gratis</button>`
+              ? `<button onclick="App.toggleCantripRacial('${sp.id}')" style="font-size:10px;padding:1px 5px;background:rgba(80,160,220,0.2);border:1px solid rgba(80,160,220,0.4);border-radius:3px;color:var(--gratis,#60a8d8);cursor:pointer;" title="Quitar marca de gratuito">✕ gratis</button>`
               : '';
           htmlDer += `
           <div class="spell-card" style="padding:4px 6px;margin-bottom:3px;">
@@ -3794,8 +3795,8 @@ const App = (() => {
       return `
       <div class="currency-card" style="border-color:${m.color}33;">
         <div class="currency-card-top" style="background:${m.color}18;">
-          <span class="currency-card-amount" style="color:${m.color};">${val}</span>
-          <span class="currency-card-name" style="color:${m.color};">${m.name}</span>
+          <span class="currency-card-amount" style="color:var(--moneda-${coin},${m.color});">${val}</span>
+          <span class="currency-card-name" style="color:var(--moneda-${coin},${m.color});">${m.name}</span>
           <span class="currency-card-rate">${m.rate}</span>
         </div>
         <div class="currency-card-btns">
@@ -4091,7 +4092,7 @@ const App = (() => {
               <span style="color:var(--text-dim);font-size:13px;">+</span>
               <input type="number" class="bonus-input-sm" value="${initBonus}"
                      onchange="App.setBonus('init', this.value)" onclick="this.select()" title="Bonus extra a iniciativa">
-              ${initBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:#c49bff;">${fmt(initTotal)}</span>` : ''}`;
+              ${initBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:var(--con-bonus,#c49bff);">${fmt(initTotal)}</span>` : ''}`;
           })()}
         </div>
       </div>
@@ -4108,7 +4109,7 @@ const App = (() => {
               <span style="color:var(--text-dim);font-size:13px;">+</span>
               <input type="number" class="bonus-input-sm" value="${cdBonus}"
                      onchange="App.setBonus('cd', this.value)" onclick="this.select()" title="Bonus extra al CD (ítems, rasgos…)">
-              ${cdBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:#c49bff;">${cdTotal}</span>` : ''}`;
+              ${cdBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:var(--con-bonus,#c49bff);">${cdTotal}</span>` : ''}`;
           })()}
         </div>
       </div>
@@ -4126,7 +4127,7 @@ const App = (() => {
               <span style="color:var(--text-dim);font-size:13px;">+</span>
               <input type="number" class="bonus-input-sm" value="${atkBonus}"
                      onchange="App.setBonus('ataque', this.value)" onclick="this.select()" title="Bonus arma mágica">
-              ${atkBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:#c49bff;">${fmt(atkTotal)}</span>` : ''}`;
+              ${atkBonus ? `<span style="color:var(--text-dim);font-size:13px;">=</span><span class="passive-val" style="color:var(--con-bonus,#c49bff);">${fmt(atkTotal)}</span>` : ''}`;
           })()}
         </div>
       </div>
@@ -4904,7 +4905,7 @@ const App = (() => {
 
     // HP bar percentage
     const hpPct  = Math.max(0, Math.min(100, (curHp / maxHp) * 100));
-    const hpColor = hpPct > 60 ? '#4caf50' : hpPct > 25 ? '#f0c040' : '#e05c2a';
+    const hpColor = hpPct > 60 ? 'var(--hp-bar-ok,#4caf50)' : hpPct > 25 ? 'var(--hp-bar-mid,#f0c040)' : 'var(--hp-bar-crit,#e05c2a)';
 
     /* Extras que desbloquean los niveles de subclase. Solo informativo:
        recuerdan qué puede hacer la bestia, sin tirar nada. */
@@ -5636,7 +5637,7 @@ const App = (() => {
       readyParts.unshift(`<span style="color:${echoColor}">👻 Echo ${_char.echoActive ? 'activo' : 'listo'}</span>`);
     }
     const resourceSummary = readyParts.length
-      ? `<br><span style="opacity:0.7;font-size:9px;">${readyParts.join(' &nbsp;·&nbsp; ')}</span>`
+      ? `<br><span style="opacity:0.7;font-size:10px;">${readyParts.join(' &nbsp;·&nbsp; ')}</span>`
       : '';
     showToast(`⚔ Combate iniciado — Ronda 1${resourceSummary}`, 'combat', 5000);
   }

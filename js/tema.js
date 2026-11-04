@@ -10,7 +10,7 @@ const Tema = (() => {
   const OPCIONES = [
     { id: 'dark',        nombre: 'Clásico',         muestra: ['#0e0d09', '#c9973a'] },
     { id: 'slate-brass', nombre: 'Pizarra y latón', muestra: ['#11171F', '#D9AE65'] },
-    { id: 'light',       nombre: 'Pergamino',       muestra: ['#faf8f4', '#7a4e08'] },
+    { id: 'light',       nombre: 'Pergamino',       muestra: ['#D5B68E', '#702D31'] },
   ];
   const valido = id => OPCIONES.some(o => o.id === id);
 
@@ -28,8 +28,49 @@ const Tema = (() => {
     document.documentElement.setAttribute('data-theme', id);
     if (guardar) CLAVES.forEach(k => { try { localStorage.setItem(k, id); } catch (e) {} });
     _sincronizar(id);
+    if (id === 'light' && document.body) _entintar(document.body);
     return id;
   }
+
+  /* Pergamino: los emoji a todo color rompen el papel. Cada emoji va en un
+     <span class="emo"> que pergamino.css tiñe de tinta. El texto del nodo
+     queda dentro de un <span class="emo-t"> para no cambiar espacios en
+     botones flex. El texto visible (textContent) no cambia. */
+  const EMO = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*\uFE0F?/gu;
+  const SALTAR = '.emo, .ProseMirror, [contenteditable], .arma-ic, .companion-emoji, script, style, textarea, select';
+  function _entintar(raiz) {
+    const nodos = [];
+    const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      EMO.lastIndex = 0;
+      if (EMO.test(n.data) && !n.parentElement.closest(SALTAR)) nodos.push(n);
+    }
+    nodos.forEach(n => {
+      const t = document.createElement('span');
+      t.className = 'emo-t';
+      let i = 0;
+      n.data.replace(EMO, (m, pos) => {
+        if (pos > i) t.append(n.data.slice(i, pos));
+        const e = document.createElement('span');
+        e.className = 'emo';
+        e.textContent = m;
+        t.append(e);
+        i = pos + m.length;
+      });
+      if (i < n.data.length) t.append(n.data.slice(i));
+      n.replaceWith(t);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    if (actual() === 'light') _entintar(document.body);
+    new MutationObserver(ms => {
+      if (document.documentElement.dataset.theme !== 'light') return;
+      ms.forEach(m => m.addedNodes.forEach(n => {
+        const raiz = n.nodeType === 3 ? n.parentElement : n;
+        if (raiz && raiz.nodeType === 1) _entintar(raiz);
+      }));
+    }).observe(document.body, { childList: true, subtree: true });
+  });
 
   // Marca la opción activa en todos los selectores montados de la página.
   function _sincronizar(id) {

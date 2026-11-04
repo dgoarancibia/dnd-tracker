@@ -9847,7 +9847,9 @@ mark.diary-highlight {
 body.escribiendo .fab,
 body.escribiendo .fab-note,
 body.menu-abierto .fab,
-body.menu-abierto .fab-note { opacity: 0; pointer-events: none; transform: scale(0.8); }
+body.menu-abierto .fab-note,
+body.diario-abierto .fab,
+body.diario-abierto .fab-note { opacity: 0; pointer-events: none; transform: scale(0.8); }
 .hdr-rest-btn.combat { flex-shrink: 0; }
 .hdr-rest-btn.combat:hover { border-color: var(--red-light); color: var(--red-light); background: rgba(138,58,58,0.12); }
 .hdr-rest-btn.combat.activo { border-color: var(--red-light); color: var(--red-light); }
@@ -9903,3 +9905,9 @@ body.menu-abierto .fab-note { opacity: 0; pointer-events: none; transform: scale
 .bst-reglas { margin: 12px 0; font-size: 12px; color: var(--text-mid); }
 .bst-reglas summary { cursor: pointer; color: var(--gold-light); font-size: 13px; }
 .bst-reglas ul { margin: 6px 0 0 18px; padding: 0; line-height: 1.5; }
+
+/* ── Mínimo legible: nada por debajo de 10px (en iPad no se leía) ── */
+.spell-lvl, .r20-btn, .cond-btn, .rc-name, .turn-block .rc-name, .btn-sm,
+.spell-group-title, .feat-badge, .hp-temp-inline-label, .nb-beta, .btn-edit-stats,
+.rc-recharge, .stat-chip-label, .slot-lv, .sf-chip, .equip-slot-role,
+.item-cat-badge, .hm-ts { font-size: 10px; }
