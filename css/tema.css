@@ -47,6 +47,21 @@
   border: 1px solid var(--text-dim);
 }
 .hm-tema { padding: 4px 4px 6px; }
+/* En el menú de la ficha: una fila de 3 para que no alargue el menú */
+.tema-fila { flex-direction: row; }
+.tema-fila .tema-opt {
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: center;
+}
+.tema-fila .tema-opt[aria-checked="true"]::after { content: none; }
+.tema-fila .tema-opt[aria-checked="true"] { background: var(--gold-faint, transparent); }
 .hm-tema-lbl {
   font-family: 'Cinzel', serif;
   font-size: 10px;

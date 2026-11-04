@@ -6170,6 +6170,33 @@ input[type=number] { -moz-appearance: textfield; }
   margin: 3px 0;
 }
 
+/* Grupos plegables del menú (Partida, Guardado y respaldo, Ajustes) */
+.header-menu-dropdown { min-width: 236px; overflow-y: auto; overscroll-behavior: contain; }
+.hm-grupo > summary { list-style: none; color: var(--text); min-height: 44px; }
+.hm-grupo > summary::-webkit-details-marker { display: none; }
+.hm-grupo > summary::after {
+  content: '▸';
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+}
+.hm-grupo[open] > summary::after { transform: rotate(90deg); }
+.hm-grupo-n {
+  margin-left: auto;
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0;
+}
+.hm-grupo-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 4px 10px;
+  padding-left: 6px;
+  border-left: 1px solid var(--border);
+}
+
 /* ── DESCANSOS EN HEADER ── */
 .hdr-rest-btns {
   display: flex;
@@ -9818,7 +9845,9 @@ mark.diary-highlight {
 .tab-panel--single.active { padding-bottom: 96px; }
 .fab, .fab-note { transition: opacity 0.15s, transform 0.15s, border-color 0.15s; }
 body.escribiendo .fab,
-body.escribiendo .fab-note { opacity: 0; pointer-events: none; transform: scale(0.8); }
+body.escribiendo .fab-note,
+body.menu-abierto .fab,
+body.menu-abierto .fab-note { opacity: 0; pointer-events: none; transform: scale(0.8); }
 .hdr-rest-btn.combat { flex-shrink: 0; }
 .hdr-rest-btn.combat:hover { border-color: var(--red-light); color: var(--red-light); background: rgba(138,58,58,0.12); }
 .hdr-rest-btn.combat.activo { border-color: var(--red-light); color: var(--red-light); }

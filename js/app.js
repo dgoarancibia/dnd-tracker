@@ -666,6 +666,18 @@ const App = (() => {
       _undoBtn.addEventListener('click', undoLastChange);
     }
 
+    // Grupos del menú: recordar cuáles quedaron abiertos
+    const _gruposKey = 'dnd_menu_grupos';
+    let _gruposAbiertos = [];
+    try { _gruposAbiertos = JSON.parse(localStorage.getItem(_gruposKey)) || []; } catch (e) {}
+    document.querySelectorAll('.hm-grupo').forEach(g => {
+      g.open = _gruposAbiertos.includes(g.dataset.grupo);
+      g.addEventListener('toggle', () => {
+        const abiertos = [...document.querySelectorAll('.hm-grupo[open]')].map(x => x.dataset.grupo);
+        try { localStorage.setItem(_gruposKey, JSON.stringify(abiertos)); } catch (e) {}
+      });
+    });
+
     // Cerrar header menu al click fuera
     document.addEventListener('click', e => {
       if (_headerMenuOpen && !document.getElementById('headerMenuWrap')?.contains(e.target)) {
@@ -767,7 +779,10 @@ const App = (() => {
 
   function _pushUndo() {
     if (!_char) return;
-    _undoStack.push(JSON.parse(JSON.stringify(_char)));
+    // Quien llama ya modificó _char: lo guardado es el estado de antes del cambio.
+    const antes = Storage.getChar(_char.id);
+    if (!antes) return;
+    _undoStack.push(antes);
     if (_undoStack.length > UNDO_MAX) _undoStack.shift();
     if (_undoBtn) _undoBtn.disabled = false;
   }
@@ -1678,6 +1693,18 @@ const App = (() => {
     _headerMenuOpen = !_headerMenuOpen;
     const dd = document.getElementById('headerMenuDropdown');
     if (dd) dd.classList.toggle('open', _headerMenuOpen);
+    document.body.classList.toggle('menu-abierto', _headerMenuOpen); // que los flotantes no tapen el menú
+    if (dd && _headerMenuOpen) {
+      // Que nunca se salga de la pantalla: si no cabe, scroll dentro del menú
+      dd.style.maxHeight = Math.max(200, window.innerHeight - dd.getBoundingClientRect().top - 12) + 'px';
+      // Cuántas opciones hay en cada grupo (las de la nube solo existen con sesión)
+      dd.querySelectorAll('.hm-grupo').forEach(g => {
+        const n = [...g.querySelectorAll('.hm-grupo-body > .hm-btn')].filter(b => b.style.display !== 'none').length;
+        let el = g.querySelector('.hm-grupo-n');
+        if (!el) { el = document.createElement('span'); el.className = 'hm-grupo-n'; g.querySelector('summary').append(el); }
+        el.textContent = n;
+      });
+    }
     // Mostrar versión del SW activo
     if (_headerMenuOpen && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
       const lbl = document.getElementById('appVersionLabel');
@@ -1695,6 +1722,7 @@ const App = (() => {
     _headerMenuOpen = false;
     const dd = document.getElementById('headerMenuDropdown');
     if (dd) dd.classList.remove('open');
+    document.body.classList.remove('menu-abierto');
   }
 
   function forceAppUpdate() {

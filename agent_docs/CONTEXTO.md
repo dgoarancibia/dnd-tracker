@@ -59,6 +59,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `bastion.js`: bastión de Lursey: cupos por nivel, Storehouse con recargo, turno registrado y Charm del Sanctuary (termina en `TODO OK`).
   - `tema.js`: preferencias viejas, persistencia inicio→ficha, cambio en vivo sin perder pestaña/scroll, teclado, iPad 600px y auditoría de contraste WCAG en Pizarra (Lursey y Torvald, todas las pestañas, vida crítica, combate, aviso y diálogo). Capturas `tema_*.png` (termina en `TODO OK`).
   - `pergamino.js`: contraste sobre el papel más oscuro (`#C4A47C`) en todas las pestañas y estados, adornos sin interceptar toques, grabados/medallón, ficha sin arma ni compañero, 375/480/560 px, recursos offline (termina en `TODO OK`). `pergamino_capturas.js [carpeta]` saca las capturas de revisión. `contraste.js` es la auditoría WCAG compartida con `tema.js`.
+  - `menu.js`: menú ⋯ de la ficha con grupos plegables (Partida, Guardado y respaldo, Ajustes) que recuerdan su estado (`dnd_menu_grupos`), altura limitada con scroll en 1440×600/600/375, flotantes escondidos con el menú abierto y Deshacer = un cambio (termina en `TODO OK`).
   - `turno.js`: en combate, Atacar descuenta ataques; la mano secundaria usa la Acción adicional salvo con Nick; usar un recurso marca su activación (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 

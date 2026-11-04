@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 480;
+const _SW_EXPECTED = 481;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,8 +103,8 @@ const _SW_EXPECTED = 480;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=143">
-<link rel="stylesheet" href="css/tema.css?v=1">
+<link rel="stylesheet" href="css/style.css?v=144">
+<link rel="stylesheet" href="css/tema.css?v=2">
 <link rel="stylesheet" href="css/pergamino.css?v=1">
 <script src="js/tema.js?v=1"></script>
 </head>
@@ -221,13 +221,82 @@ const _SW_EXPECTED = 480;
         <select class="hm-char-selector" id="charSelector" onchange="App.switchChar(this.value);App.closeHeaderMenu()"></select>
       </div>
 
-      <!-- Navegación -->
+      <!-- Siempre a mano -->
       <a class="hm-btn" href="index.html" style="text-decoration:none;">← Todos los personajes</a>
       <button class="hm-btn" onclick="App.closeHeaderMenu();window.location.href='index.html?new=1'">+ Nuevo personaje</button>
+      <button class="hm-btn" id="undoBtn" onclick="App.closeHeaderMenu()" title="Deshacer último cambio">
+        ↩ Deshacer último cambio
+      </button>
 
       <div class="hm-divider"></div>
 
-      <!-- Auth -->
+      <!-- Grupos plegables: el menú ya no cabía en pantalla. Se recuerda cuál quedó abierto. -->
+      <details class="hm-grupo" data-grupo="partida">
+        <summary class="hm-btn hm-grupo-hd">📜 Partida</summary>
+        <div class="hm-grupo-body">
+          <button class="hm-btn" onclick="App.openPrepSesion();App.closeHeaderMenu()" title="Repaso antes de sentarse a jugar">
+            🎯 Antes de jugar
+          </button>
+          <button class="hm-btn" onclick="App.openIfttt();App.closeHeaderMenu()" title="Tus reglas de combate">
+            ⚔️ Guía de Combate
+          </button>
+          <button class="hm-btn" onclick="App.openShareModal();App.closeHeaderMenu()" title="Link de solo lectura para el DM">
+            🔗 Compartir con el DM
+          </button>
+          <button class="hm-btn" onclick="App.openDicePouchModal();App.closeHeaderMenu()" title="Qué dados físicos llevar a la sesión">
+            🎲 Tu pouch de dados
+          </button>
+        </div>
+      </details>
+      <details class="hm-grupo" data-grupo="guardado">
+        <summary class="hm-btn hm-grupo-hd">💾 Guardado y respaldo</summary>
+        <div class="hm-grupo-body">
+          <button class="hm-btn" id="cloudSaveBtn" onclick="App.saveToCloud();App.closeHeaderMenu()" style="display:none;" title="Sube este personaje a la nube ahora">
+            ☁ Guardar en nube
+            <span class="hm-ts" id="cloudSaveTs"></span>
+          </button>
+          <button class="hm-btn" id="checkpointBtn" onclick="App.saveCheckpointManual();App.closeHeaderMenu()" style="display:none;" title="Crea un punto de guardado con nombre que no se pisa">
+            🏁 Crear checkpoint
+          </button>
+          <button class="hm-btn" id="loadPointBtn" onclick="App.openLoadModal();App.closeHeaderMenu()" style="display:none;" title="Cargar el último guardado o un checkpoint anterior">
+            ↺ Cargar punto guardado
+          </button>
+          <button class="hm-btn" id="backupBtn" onclick="App.doBackup();App.closeHeaderMenu()">
+            ⬇ Backup JSON
+            <span class="hm-ts" id="backupTs">Sin backup</span>
+          </button>
+          <label class="hm-btn" style="cursor:pointer;">
+            ↑ Importar backup
+            <input type="file" accept=".json" style="display:none" onchange="App.importBackup(this);App.closeHeaderMenu()">
+          </label>
+          <button class="hm-btn" onclick="App.exportResumenPDF();App.closeHeaderMenu()" title="Hoja resumen con habilidades, slots, conjuros y recursos">
+            📄 Exportar hoja PDF
+          </button>
+        </div>
+      </details>
+      <details class="hm-grupo" data-grupo="ajustes">
+        <summary class="hm-btn hm-grupo-hd">⚙ Ajustes</summary>
+        <div class="hm-grupo-body">
+          <button class="hm-btn" id="distUnitBtn" onclick="App.toggleDistUnit();App.closeHeaderMenu()" title="Alterna metros / pies en habilidades y conjuros">📏 Unidades: <span id="distUnitLabel">m</span></button>
+          <button class="hm-btn" id="layoutToggleBtn" onclick="App.toggleLayout();App.closeHeaderMenu()" title="Cambia dónde se muestran Stats/Saves/Skills">▤ Vista: <span id="layoutModeLabel">Barra lateral</span></button>
+          <button class="hm-btn" onclick="App.forceAppUpdate()" title="Borra caché y descarga la versión más reciente">
+            🔄 Forzar actualización
+            <span style="font-size:9px;color:var(--text-dim);">v<span id="appVersionLabel">—</span></span>
+          </button>
+        </div>
+      </details>
+
+      <div class="hm-divider"></div>
+
+      <!-- Tema -->
+      <div class="hm-tema">
+        <div class="hm-tema-lbl">🎨 Apariencia · <span data-tema-nombre></span></div>
+        <div class="tema-group tema-fila" id="temaSelectorApp"></div>
+      </div>
+
+      <div class="hm-divider"></div>
+
+      <!-- Cuenta -->
       <button class="hm-btn" id="loginBtn" onclick="Cloud.signIn();App.closeHeaderMenu()">
         <svg width="13" height="13" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1h-9.2v2.82h5.28c-.24 1.32-1.04 2.44-2.2 3.18v2.64h3.56c2.08-1.92 3.28-4.74 3.28-8.08 0-.56-.06-1.12-.14-1.66z"/><path fill="currentColor" d="M12.15 22c2.7 0 4.96-.9 6.61-2.44l-3.56-2.64c-.9.6-2.06.96-3.05.96-2.35 0-4.34-1.59-5.05-3.73H3.46v2.72A9.98 9.98 0 0 0 12.15 22z"/><path fill="currentColor" d="M7.1 14.15A5.97 5.97 0 0 1 6.79 12c0-.74.13-1.45.31-2.15V7.13H3.46A9.98 9.98 0 0 0 2.15 12c0 1.61.38 3.14 1.31 4.87z"/><path fill="currentColor" d="M12.15 6.12c1.32 0 2.5.45 3.43 1.35l2.57-2.57C16.51 3.38 14.55 2 12.15 2A9.98 9.98 0 0 0 3.46 7.13l3.64 2.72c.71-2.14 2.7-3.73 5.05-3.73z"/></svg>
         Iniciar sesión Google
@@ -236,81 +305,6 @@ const _SW_EXPECTED = 480;
         ✕ Salir de la cuenta
         <span id="userLabel" style="font-size:9px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px;"></span>
       </button>
-      <button class="hm-btn" id="cloudSaveBtn" onclick="App.saveToCloud();App.closeHeaderMenu()" style="display:none;" title="Sube este personaje a la nube ahora">
-        ☁ Guardar en nube
-        <span class="hm-ts" id="cloudSaveTs"></span>
-      </button>
-      <button class="hm-btn" id="checkpointBtn" onclick="App.saveCheckpointManual();App.closeHeaderMenu()" style="display:none;" title="Crea un punto de guardado con nombre que no se pisa">
-        🏁 Crear checkpoint
-      </button>
-      <button class="hm-btn" id="loadPointBtn" onclick="App.openLoadModal();App.closeHeaderMenu()" style="display:none;" title="Cargar el último guardado o un checkpoint anterior">
-        ↺ Cargar punto guardado
-      </button>
-
-      <div class="hm-divider"></div>
-
-      <button class="hm-btn" onclick="App.openPrepSesion();App.closeHeaderMenu()" title="Repaso antes de sentarse a jugar">
-        🎯 Antes de jugar
-      </button>
-
-      <button class="hm-btn" onclick="App.openIfttt();App.closeHeaderMenu()" title="Tus reglas de combate">
-        ⚔️ Guía de Combate
-      </button>
-
-      <button class="hm-btn" onclick="App.openShareModal();App.closeHeaderMenu()" title="Link de solo lectura para el DM">
-        🔗 Compartir con el DM
-      </button>
-
-      <button class="hm-btn" onclick="App.openDicePouchModal();App.closeHeaderMenu()" title="Qué dados físicos llevar a la sesión">
-        🎲 Tu pouch de dados
-      </button>
-
-      <div class="hm-divider"></div>
-
-      <!-- Undo -->
-      <button class="hm-btn" id="undoBtn" onclick="App.undoLastChange();App.closeHeaderMenu()" title="Deshacer último cambio">
-        ↩ Deshacer último cambio
-      </button>
-
-      <div class="hm-divider"></div>
-
-      <!-- Backup -->
-      <button class="hm-btn" id="backupBtn" onclick="App.doBackup();App.closeHeaderMenu()">
-        ⬇ Backup JSON
-        <span class="hm-ts" id="backupTs">Sin backup</span>
-      </button>
-      <label class="hm-btn" style="cursor:pointer;">
-        ↑ Importar backup
-        <input type="file" accept=".json" style="display:none" onchange="App.importBackup(this);App.closeHeaderMenu()">
-      </label>
-
-      <!-- Exportar hoja de personaje PDF (resumen dibujado desde cero) -->
-      <button class="hm-btn" onclick="App.exportResumenPDF();App.closeHeaderMenu()" title="Hoja resumen con habilidades, slots, conjuros y recursos">
-        📄 Exportar hoja PDF
-      </button>
-
-      <div class="hm-divider"></div>
-
-      <!-- Tema -->
-      <div class="hm-tema">
-        <div class="hm-tema-lbl">🎨 Apariencia · <span data-tema-nombre></span></div>
-        <div class="tema-group" id="temaSelectorApp"></div>
-      </div>
-
-      <!-- Unidades de distancia -->
-      <button class="hm-btn" id="distUnitBtn" onclick="App.toggleDistUnit();App.closeHeaderMenu()" title="Alterna metros / pies en habilidades y conjuros">📏 Unidades: <span id="distUnitLabel">m</span></button>
-
-      <!-- Layout: barra lateral fija vs. clásico por pestañas -->
-      <button class="hm-btn" id="layoutToggleBtn" onclick="App.toggleLayout();App.closeHeaderMenu()" title="Cambia dónde se muestran Stats/Saves/Skills">▤ Vista: <span id="layoutModeLabel">Barra lateral</span></button>
-
-      <div class="hm-divider"></div>
-
-      <!-- Forzar actualización — útil en iOS PWA -->
-      <button class="hm-btn" onclick="App.forceAppUpdate()" title="Borra caché y descarga la versión más reciente">
-        🔄 Forzar actualización
-        <span style="font-size:9px;color:var(--text-dim);">v<span id="appVersionLabel">—</span></span>
-      </button>
-
     </div>
   </div>
 </header>
@@ -1335,7 +1329,7 @@ const _SW_EXPECTED = 480;
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=3"></script>
 <script src="js/bastion.js?v=2"></script>
-<script src="js/app.js?v=283"></script>
+<script src="js/app.js?v=284"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>
