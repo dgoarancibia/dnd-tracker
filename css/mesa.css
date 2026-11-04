@@ -207,6 +207,12 @@
   .mesa-grid { grid-template-columns: minmax(0, 1fr) 240px; gap: 12px; }
   .mesa-acciones { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 10px; }
   .mesa-tags .mesa-tg.a { display: none; }
+  .mesa-col .mesa-tags { display: none; }
+  /* Pestañas más compactas para que el turno quepa a la derecha */
+  :root[data-vista="mesa"] .tab-nav { padding: 0 8px; }
+  :root[data-vista="mesa"] .tab-btn { padding-left: 8px; padding-right: 8px; letter-spacing: .04em; }
+  :root[data-vista="mesa"] .tab-btn .tab-ic { display: none; }
+  .mesa-turno-nav { gap: 4px; padding-left: 6px; }
 }
 
 /* ══ Pantallas angostas: las tiradas pasan a un botón flotante ══ */
