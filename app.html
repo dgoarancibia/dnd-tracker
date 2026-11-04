@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 487;
+const _SW_EXPECTED = 488;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -107,8 +107,10 @@ const _SW_EXPECTED = 487;
 <link rel="stylesheet" href="css/tema.css?v=3">
 <link rel="stylesheet" href="css/pergamino.css?v=3">
 <link rel="stylesheet" href="css/onix.css?v=3">
+<link rel="stylesheet" href="css/mesa.css?v=1">
 <script src="js/tema.js?v=3"></script>
 <script src="js/iconos.js?v=2"></script>
+<script src="js/mesa.js?v=1"></script>
 </head>
 <body>
 
@@ -280,6 +282,7 @@ const _SW_EXPECTED = 487;
         <summary class="hm-btn hm-grupo-hd">⚙ Ajustes</summary>
         <div class="hm-grupo-body">
           <button class="hm-btn" id="distUnitBtn" onclick="App.toggleDistUnit();App.closeHeaderMenu()" title="Alterna metros / pies en habilidades y conjuros">📏 Unidades: <span id="distUnitLabel">m</span></button>
+          <button class="hm-btn" id="mesaToggleBtn" onclick="Mesa.alternar();App.closeHeaderMenu()" title="Prueba la vista nueva; vuelves a la actual con el mismo botón">🧭 Ficha: <span id="mesaLabel">Actual</span></button>
           <button class="hm-btn" id="layoutToggleBtn" onclick="App.toggleLayout();App.closeHeaderMenu()" title="Cambia dónde se muestran Stats/Saves/Skills">▤ Vista: <span id="layoutModeLabel">Barra lateral</span></button>
           <button class="hm-btn" onclick="App.forceAppUpdate()" title="Borra caché y descarga la versión más reciente">
             🔄 Forzar actualización
@@ -1331,7 +1334,7 @@ const _SW_EXPECTED = 487;
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=3"></script>
 <script src="js/bastion.js?v=2"></script>
-<script src="js/app.js?v=287"></script>
+<script src="js/app.js?v=288"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>

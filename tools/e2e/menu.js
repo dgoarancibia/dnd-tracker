@@ -31,7 +31,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   await abrir();
   let m = await medir();
-  chk('empieza con los grupos cerrados y con su cantidad (invitado: sin las 3 de la nube)', m.grupos.every(g => !g.open) && m.grupos.map(g => g.n).join() === '4,3,3', m.grupos);
+  chk('empieza con los grupos cerrados y con su cantidad (invitado: sin las 3 de la nube)', m.grupos.every(g => !g.open) && m.grupos.map(g => g.n).join() === '4,3,4', m.grupos);
   chk('cerrado cabe entero en 1440×760', m.abajo <= m.alto && !m.scroll, m);
   const temas = await p.evaluate(() => [...document.querySelectorAll('#temaSelectorApp .tema-opt')].map(b => { const r = b.getBoundingClientRect(); return { h: Math.round(r.height), top: Math.round(r.top) }; }));
   chk('Apariencia en una fila, opciones ≥ 44px', new Set(temas.map(t => t.top)).size === 1 && temas.every(t => t.h >= 44), temas);

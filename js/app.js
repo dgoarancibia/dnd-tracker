@@ -801,6 +801,8 @@ const App = (() => {
     if (window.Cloud && Cloud.isLoggedIn()) {
       Cloud.scheduleSave(_char);
     }
+    // Vista Mesa (js/mesa.js): se repinta con cada cambio guardado
+    if (window.Mesa) Mesa.render();
   }
 
   /* ── Indicador de cambios sin subir a la nube ── */
@@ -1415,6 +1417,7 @@ const App = (() => {
     _updateTempHPDisplay();
     _updateHeaderStatus();
     _renderAvatar();
+    if (window.Mesa) Mesa.render();
   }
 
   function _renderAvatar() {
@@ -1779,6 +1782,7 @@ const App = (() => {
       bastion: () => { if (typeof Bastion !== 'undefined') Bastion.render(); },
     };
     if (renders[name]) renders[name]();
+    if (window.Mesa) Mesa.render();
   }
 
   function _renderActiveTab() {
@@ -12473,6 +12477,8 @@ ${notesText}`;
     // Conjuros
     toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter, setSpellSearch,
     castSpell, castSpellAt,
+    // Reglas de espacios de un conjuro (la vista Mesa arma sus botones con esto)
+    castOptions(id) { const sp = _char && (_char.spells || []).find(s => s.id === id); return sp ? _castOptions(sp) : null; },
     openActionRefModal, closeActionRefModal, attackWithWeapon,
     confirmPendingCast, cancelPendingCast,
     openCantripPicker, closeCantripPicker, saveCantripPicker, _onCantripCheck,
