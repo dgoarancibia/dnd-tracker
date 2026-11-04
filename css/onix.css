@@ -132,10 +132,22 @@
 
 /* ── CA dentro de un escudo ── */
 :root[data-theme="onix"] .stats-strip .stat-box:first-child {
-  background: url(../assets/onix/escudo.svg) center / contain no-repeat;
+  position: relative;
+  isolation: isolate;
+  background: none;
   border-color: transparent;
   box-shadow: none;
 }
+/* El escudo es más grande que la caja y va detrás: la punta queda bajo el número */
+:root[data-theme="onix"] .stats-strip .stat-box:first-child::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -5px -4px -15px;
+  background: url(../assets/onix/escudo.svg) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+@media (max-width: 760px) { :root[data-theme="onix"] .stats-strip .stat-box:first-child::before { inset: -4px -4px -11px; } }
 :root[data-theme="onix"] .stat-box .sl { color: var(--text-mid); }
 :root[data-theme="onix"] .stat-box .sv { color: #FFF2E6; }
 
@@ -231,13 +243,15 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 84px;
-  height: 84px;
+  width: 100%;
+  height: 100%;
   transform: translate(-50%, -50%);
   background: url(../assets/onix/retrato.svg) center / contain no-repeat;
   pointer-events: none;
 }
-:root[data-theme="onix"] .char-avatar-circle { border-color: #C23845; }
+/* El marco ocupa el mismo lugar que el retrato: el círculo se achica por dentro
+   para no pisar el nombre ni la CA */
+:root[data-theme="onix"] .char-avatar-circle { border-color: #C23845; transform: scale(0.8); }
 :root[data-theme="onix"] .app-char-subtitle::before {
   content: '';
   display: inline-block;
