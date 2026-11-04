@@ -66,7 +66,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       cond: !!document.querySelector('.cond-btn .ico'),
       parentesis: getComputedStyle(stat.querySelector('.sbm-p')).display,
       ovalo: Math.round(val.bottom - caja.bottom),
-      escudo: /escudo/.test(getComputedStyle(document.querySelector('.stats-strip .stat-box')).backgroundImage),
+      escudo: /escudo/.test(getComputedStyle(document.querySelector('.stats-strip .stat-box'), '::before').backgroundImage),
       marco: /marco/.test(getComputedStyle(stat).borderImageSource),
       emblema: getComputedStyle(document.body, '::before').pointerEvents,
     };
