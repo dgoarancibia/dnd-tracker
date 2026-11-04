@@ -3890,7 +3890,7 @@ const App = (() => {
       <div class="stat-block" onclick="App.editStat('${stat}')">
         <div class="stat-block-name">${STAT_LABELS[stat]}</div>
         <div class="stat-block-val" id="statVal-${stat}">${val}</div>
-        <div class="stat-block-mod">(${mod >= 0 ? '+' : ''}${mod})</div>
+        <div class="stat-block-mod"><span class="sbm-p">(</span>${mod >= 0 ? '+' : ''}${mod}<span class="sbm-p">)</span></div>
         ${_r20Btn('stat', stat, 'Copiar prueba de característica para Roll20')}
       </div>`;
     });

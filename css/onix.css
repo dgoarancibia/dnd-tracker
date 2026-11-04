@@ -1,0 +1,283 @@
+/* ═══════════════════════════════════════════════════════════
+   onix.css — Tema "Ónix y granate" (inspirado en la hoja de D&D Beyond)
+   Carbón con resplandor granate, marcos con esquinas en chaflán,
+   características con el modificador grande y el puntaje en un óvalo,
+   CA en escudo, íconos grabados (js/iconos.js) y filigranas doradas.
+   Todo bajo :root[data-theme="onix"]: no toca los otros temas.
+   ═══════════════════════════════════════════════════════════ */
+:root[data-theme="onix"] {
+  color-scheme: dark;
+  --bg: #120F10;  --bg1: #120F10; --bg2: #181415; --bg3: #211B1C; --bg4: #2B2324; --bg5: #352C2D;
+  --gold: #EC7C83;        /* acento como texto: granate claro (≥ 4.5:1 también bajo el resplandor) */
+  --gold-light: #F5A0A5;
+  --gold-dim: #B9A08A;
+  --gold-faint: rgba(224,101,109,0.10);
+  --green: #3F7A55; --green-light: #8FD3A6;
+  --red: #9B2530;   --red-light: #FF8C8C; --red-bright: #FF8C8C;
+  --blue: #34557F;  --blue-light: #93BBF0;
+  --purple: #6A4A90; --purple-light: #C9A9EE;
+  --orange: #F0A868;
+  --text: #F2EAE0; --text-mid: #CDBFB3; --text-dim: #A99A8E;
+  --border: rgba(201,161,90,0.16);
+  --border-strong: #6E5A4A;
+  --granate: #8E1F2A; --granate-vivo: #A82835; --granate-osc: #5E121A;
+  --oro: #C9A15A;
+  --gratis: #93BBF0; --con-bonus: #C9A9EE;
+  --hp-crit: #FF8C8C; --hp-mid: #F2B27A; --hp-bar-ok: #6FBF8B; --hp-bar-mid: #C9A15A; --hp-bar-crit: #E0656D;
+}
+
+/* ── Fondo: carbón, resplandor granate arriba y el escudo de la clase gigante ── */
+:root[data-theme="onix"] body {
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -10%, rgba(142,31,42,0.24), transparent 60%),
+    radial-gradient(ellipse at 50% 120%, rgba(0,0,0,0.6), transparent 60%),
+    #120F10;
+  color: var(--text);
+}
+:root[data-theme="onix"] body::before {
+  content: '';
+  position: fixed;
+  right: -90px;
+  bottom: -90px;
+  width: 560px;
+  height: 560px;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--granate);
+  opacity: 0.07;
+  -webkit-mask: var(--crest, url(../assets/iconos/d20.svg)) center / contain no-repeat;
+  mask: var(--crest, url(../assets/iconos/d20.svg)) center / contain no-repeat;
+}
+
+/* ── Cabecera y barras ── */
+:root[data-theme="onix"] .app-header,
+:root[data-theme="onix"] .index-header,
+:root[data-theme="onix"] .idx-header {
+  background: linear-gradient(180deg, #241D1E, #171213);
+  border-bottom: 2px solid var(--granate);
+  box-shadow: 0 1px 0 var(--oro), 0 6px 18px rgba(0,0,0,0.5);
+}
+:root[data-theme="onix"] .stats-strip-bar { background: rgba(24,20,21,0.6); border-bottom-color: rgba(201,161,90,0.18); }
+:root[data-theme="onix"] .tab-nav { background: linear-gradient(#1B1617, #151112); border-bottom: 1px solid rgba(201,161,90,0.25); }
+:root[data-theme="onix"] .tab-btn { color: var(--text-mid); }
+:root[data-theme="onix"] .tab-btn.active {
+  color: #FFF2E6;
+  background: linear-gradient(180deg, var(--granate-vivo), #7A1822);
+  border-bottom: 2px solid var(--oro);
+  border-radius: 6px 6px 0 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 12px rgba(142,31,42,0.35);
+}
+:root[data-theme="onix"] .combat-panel-header,
+:root[data-theme="onix"] .diary-header,
+:root[data-theme="onix"] .ifttt-overlay-header { background: linear-gradient(180deg, #241D1E, #171213); }
+:root[data-theme="onix"] .section-hd { color: #EBD9C2; font-weight: 600; }
+
+/* ── Marcos con chaflán (como los recuadros de D&D Beyond) ──
+   border-image dibuja el marco sobre el padding: no cambia tamaños. */
+:root[data-theme="onix"] .ability-card,
+:root[data-theme="onix"] .spell-card,
+:root[data-theme="onix"] .resource-card,
+:root[data-theme="onix"] .conditions-block,
+:root[data-theme="onix"] .equip-section,
+:root[data-theme="onix"] .stat-block,
+:root[data-theme="onix"] .stats-strip .stat-box:not(:first-child),
+:root[data-theme="onix"] .slots-card,
+:root[data-theme="onix"] .companion-card,
+:root[data-theme="onix"] .modal {
+  background-color: transparent;
+  border-color: transparent;
+  border-image: url(../assets/onix/marco.svg) 12 fill / 12px / 0 stretch;
+  border-radius: 0;
+  box-shadow: none;
+}
+:root[data-theme="onix"] .ability-card:hover,
+:root[data-theme="onix"] .spell-card:hover,
+:root[data-theme="onix"] .stat-block:hover { border-image-source: url(../assets/onix/marco-activo.svg); }
+/* Filas de lista: fondo suave, sin marco (no recargar) */
+:root[data-theme="onix"] .item-row,
+:root[data-theme="onix"] .weapon-row {
+  background: rgba(33,27,28,0.85);
+  border: 1px solid #3A2F2E;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ── Características: modificador grande, puntaje en un óvalo que pisa el borde ── */
+:root[data-theme="onix"] .stats-strip-bar .stats-grid { row-gap: 16px; padding-bottom: 8px; }
+:root[data-theme="onix"] .stats-strip-bar .stat-block {
+  flex-direction: column;
+  gap: 0;
+  padding: 7px 6px 15px;
+  position: relative;
+}
+:root[data-theme="onix"] .stat-block-name { order: 1; font-size: 11px; letter-spacing: 1.5px; color: var(--text-mid); }
+:root[data-theme="onix"] .stats-strip-bar .stat-block-mod { order: 2; font-size: 26px; line-height: 1.1; color: #FFF2E6; margin: 2px 0 0; }
+:root[data-theme="onix"] .sbm-p { display: none; }
+:root[data-theme="onix"] .stats-strip-bar .stat-block-val {
+  order: 3;
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  min-width: 34px;
+  padding: 1px 9px;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+  color: var(--text);
+  background: #171213;
+  border: 1px solid var(--granate-vivo);
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #120F10;
+}
+
+/* ── CA dentro de un escudo ── */
+:root[data-theme="onix"] .stats-strip .stat-box:first-child {
+  background: url(../assets/onix/escudo.svg) center / contain no-repeat;
+  border-color: transparent;
+  box-shadow: none;
+}
+:root[data-theme="onix"] .stat-box .sl { color: var(--text-mid); }
+:root[data-theme="onix"] .stat-box .sv { color: #FFF2E6; }
+
+/* ── Botones ── */
+/* Principal: granate con brillo suave (sin bisel) */
+:root[data-theme="onix"] .cast-btn,
+:root[data-theme="onix"] .ability-use-btn:not(:disabled):not(.disabled),
+:root[data-theme="onix"] .btn-primary,
+:root[data-theme="onix"] .btn-gold,
+:root[data-theme="onix"] .round-btn.gold,
+:root[data-theme="onix"] .share-btn.primary {
+  background: linear-gradient(180deg, var(--granate-vivo), #821C27);
+  color: #FFF2E6;
+  border: 1px solid var(--granate-osc);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 3px 10px rgba(142,31,42,0.35);
+  text-shadow: none;
+}
+:root[data-theme="onix"] .cast-btn:hover,
+:root[data-theme="onix"] .ability-use-btn:not(:disabled):not(.disabled):hover,
+:root[data-theme="onix"] .btn-primary:hover,
+:root[data-theme="onix"] .btn-gold:hover { background: linear-gradient(180deg, #BE3140, #921F2C); color: #FFF2E6; }
+/* Secundario: contorno fino, mayúsculas chicas (como "Short Rest" de D&D Beyond) */
+:root[data-theme="onix"] .hdr-rest-btn,
+:root[data-theme="onix"] .btn-ghost,
+:root[data-theme="onix"] .btn-secondary,
+:root[data-theme="onix"] .btn-cancel,
+:root[data-theme="onix"] .btn-edit-stats,
+:root[data-theme="onix"] .header-menu-toggle,
+:root[data-theme="onix"] .btn-sm,
+:root[data-theme="onix"] .cond-btn {
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  border: 1px solid rgba(194,56,69,0.55);
+  border-radius: 4px;
+  box-shadow: none;
+}
+:root[data-theme="onix"] .hdr-rest-btn:hover,
+:root[data-theme="onix"] .btn-ghost:hover,
+:root[data-theme="onix"] .btn-secondary:hover,
+:root[data-theme="onix"] .btn-cancel:hover,
+:root[data-theme="onix"] .btn-edit-stats:hover,
+:root[data-theme="onix"] .header-menu-toggle:hover,
+:root[data-theme="onix"] .btn-sm:hover,
+:root[data-theme="onix"] .cond-btn:hover { background: rgba(142,31,42,0.35); border-color: #C23845; color: #FFF2E6; }
+:root[data-theme="onix"] .cond-btn.active { background: var(--granate); border-color: #C23845; color: #FFF2E6; }
+/* Curar / daño apilados en color, como el recuadro de vida de D&D Beyond */
+:root[data-theme="onix"] .hp-hdr-btn.dmg  { background: rgba(155,37,48,0.25); border: 1px solid #C23845; color: #FFB3B3; }
+:root[data-theme="onix"] .hp-hdr-btn.heal { background: rgba(63,122,85,0.25); border: 1px solid #5FA67A; color: #A8E6BD; }
+:root[data-theme="onix"] .hp-hdr-btn.dmg:hover  { background: #9B2530; color: #FFF2E6; }
+:root[data-theme="onix"] .hp-hdr-btn.heal:hover { background: #3F7A55; color: #FFF2E6; }
+/* Chips y segmentados: el elegido se rellena */
+:root[data-theme="onix"] .companion-beast-chip,
+:root[data-theme="onix"] .sf-chip,
+:root[data-theme="onix"] .diary-cat-chip,
+:root[data-theme="onix"] .bag-filter-chip {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(201,161,90,0.25);
+  color: var(--text-mid);
+}
+:root[data-theme="onix"] .companion-beast-chip.active,
+:root[data-theme="onix"] .sf-chip.active,
+:root[data-theme="onix"] .diary-cat-chip.active,
+:root[data-theme="onix"] .bag-filter-chip--active {
+  background: linear-gradient(180deg, var(--granate-vivo), #821C27);
+  border-color: var(--granate-osc);
+  color: #FFF2E6;
+}
+:root[data-theme="onix"] .fab { background: linear-gradient(180deg, var(--granate-vivo), #7A1822); border-color: var(--oro); }
+
+/* ── Slots y competencias: oro ── */
+:root[data-theme="onix"] .slot-dot { border-color: var(--oro); background: radial-gradient(circle, var(--oro) 0 42%, transparent 46%); }
+:root[data-theme="onix"] .slot-dot.used { background: transparent; border-color: #5A4A40; }
+:root[data-theme="onix"] .skill-prof-btn.active { background: var(--gold); border-color: var(--gold); }
+
+/* ── Campos ── */
+:root[data-theme="onix"] input:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root[data-theme="onix"] select,
+:root[data-theme="onix"] textarea { background: #171213; border-color: #5A4A44; color: var(--text); }
+:root[data-theme="onix"] :focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+
+/* ── Ornamentos: filigrana en títulos, retrato enmarcado, sello de clase ── */
+:root[data-theme="onix"] .section-hd {
+  border-bottom: none;
+  padding-bottom: 12px;
+  background:
+    url(../assets/onix/filigrana.svg) left bottom / 64px 14px no-repeat,
+    url(../assets/onix/linea.svg) left 63px bottom 6.5px / calc(100% - 63px) 1px no-repeat;
+}
+:root[data-theme="onix"] .char-avatar-wrap { position: relative; }
+:root[data-theme="onix"] .char-avatar-wrap::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 84px;
+  height: 84px;
+  transform: translate(-50%, -50%);
+  background: url(../assets/onix/retrato.svg) center / contain no-repeat;
+  pointer-events: none;
+}
+:root[data-theme="onix"] .char-avatar-circle { border-color: #C23845; }
+:root[data-theme="onix"] .app-char-subtitle::before {
+  content: '';
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 4px;
+  vertical-align: -2px;
+  background: var(--gold);
+  -webkit-mask: var(--crest) center / contain no-repeat;
+  mask: var(--crest) center / contain no-repeat;
+}
+
+/* ── Íconos grabados (js/iconos.js): visibles solo aquí, el emoji se oculta ── */
+:root[data-theme="onix"] .ico { display: inline-block; }
+:root[data-theme="onix"] .emo-orig { display: none; }
+:root[data-theme="onix"] .section-hd .ico,
+:root[data-theme="onix"] .stat-block-name .ico { color: var(--oro); }
+:root[data-theme="onix"] .stat-block-name .ico { width: 1.2em; height: 1.2em; margin-right: 0.3em; }
+
+/* Escudo de clase según la clase del personaje (data-clase en <html>) */
+:root[data-clase="Explorador"] { --crest: url(../assets/iconos/clase-explorador.svg); }
+:root[data-clase="Clérigo"]    { --crest: url(../assets/iconos/clase-clerigo.svg); }
+:root[data-clase="Guerrero"]   { --crest: url(../assets/iconos/clase-guerrero.svg); }
+:root[data-clase="Bárbaro"]    { --crest: url(../assets/iconos/clase-barbaro.svg); }
+:root[data-clase="Paladín"]    { --crest: url(../assets/iconos/clase-paladin.svg); }
+:root[data-clase="Monje"]      { --crest: url(../assets/iconos/clase-monje.svg); }
+:root[data-clase="Mago"]       { --crest: url(../assets/iconos/clase-mago.svg); }
+:root[data-clase="Bardo"]      { --crest: url(../assets/iconos/clase-bardo.svg); }
+:root[data-clase="Druida"]     { --crest: url(../assets/iconos/clase-druida.svg); }
+:root[data-clase="Pícaro"]     { --crest: url(../assets/iconos/clase-picaro.svg); }
+:root[data-clase="Hechicero"]  { --crest: url(../assets/iconos/clase-hechicero.svg); }
+:root[data-clase="Brujo"]      { --crest: url(../assets/iconos/clase-brujo.svg); }
+
+/* Colores fijos de Clásico que aquí no llegaban a 4.5:1 */
+:root[data-theme="onix"] .tag-c { color: var(--red-light); }
+:root[data-theme="onix"] .tag-r { color: var(--purple-light); }
+:root[data-theme="onix"] .save-prof-toggle:not(.active) { color: var(--text-dim); }
+:root[data-theme="onix"] .prio-num { color: var(--oro); }
+:root[data-theme="onix"] .fab { color: #FFF2E6; }
+
+/* Scrollbars */
+:root[data-theme="onix"] ::-webkit-scrollbar-track { background: var(--bg2); }
+:root[data-theme="onix"] ::-webkit-scrollbar-thumb { background: #4A3C38; }

@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v483';
+const CACHE = 'dnd-tracker-v486';
 
 // IMPORTANTE: app.html e index.html NO se cachean aquí intencionalmente.
 // Si se cachean, el SW viejo puede servir el HTML viejo y el nuevo SW nunca
@@ -17,6 +17,72 @@ self.addEventListener('install', e => {
       './js/tema.js',
       './css/tema.css',
       './css/pergamino.css',
+      './js/iconos.js',
+      './css/onix.css',
+      './assets/onix/escudo.svg',
+      './assets/onix/esquina-bl.svg',
+      './assets/onix/esquina-br.svg',
+      './assets/onix/esquina-tl.svg',
+      './assets/onix/esquina-tr.svg',
+      './assets/onix/filigrana.svg',
+      './assets/onix/linea.svg',
+      './assets/onix/marco-activo.svg',
+      './assets/onix/marco.svg',
+      './assets/onix/retrato.svg',
+      './assets/iconos/ataques.svg',
+      './assets/iconos/bastion.svg',
+      './assets/iconos/biblioteca.svg',
+      './assets/iconos/car.svg',
+      './assets/iconos/clase-barbaro.svg',
+      './assets/iconos/clase-bardo.svg',
+      './assets/iconos/clase-brujo.svg',
+      './assets/iconos/clase-clerigo.svg',
+      './assets/iconos/clase-druida.svg',
+      './assets/iconos/clase-explorador.svg',
+      './assets/iconos/clase-guerrero.svg',
+      './assets/iconos/clase-hechicero.svg',
+      './assets/iconos/clase-mago.svg',
+      './assets/iconos/clase-monje.svg',
+      './assets/iconos/clase-paladin.svg',
+      './assets/iconos/clase-picaro.svg',
+      './assets/iconos/combate.svg',
+      './assets/iconos/companero.svg',
+      './assets/iconos/con.svg',
+      './assets/iconos/cond-agarrado.svg',
+      './assets/iconos/cond-agotamiento.svg',
+      './assets/iconos/cond-apresado.svg',
+      './assets/iconos/cond-asustado.svg',
+      './assets/iconos/cond-aturdido.svg',
+      './assets/iconos/cond-cegado.svg',
+      './assets/iconos/cond-derribado.svg',
+      './assets/iconos/cond-ensordecido.svg',
+      './assets/iconos/cond-envenenado.svg',
+      './assets/iconos/cond-hechizado.svg',
+      './assets/iconos/cond-incapacitado.svg',
+      './assets/iconos/cond-inconsciente.svg',
+      './assets/iconos/cond-invisible.svg',
+      './assets/iconos/cond-paralizado.svg',
+      './assets/iconos/cond-petrificado.svg',
+      './assets/iconos/condiciones.svg',
+      './assets/iconos/conjuros.svg',
+      './assets/iconos/d10.svg',
+      './assets/iconos/d12.svg',
+      './assets/iconos/d20.svg',
+      './assets/iconos/d4.svg',
+      './assets/iconos/d6.svg',
+      './assets/iconos/d8.svg',
+      './assets/iconos/des.svg',
+      './assets/iconos/estadisticas.svg',
+      './assets/iconos/fue.svg',
+      './assets/iconos/habilidades.svg',
+      './assets/iconos/int.svg',
+      './assets/iconos/items.svg',
+      './assets/iconos/recursos.svg',
+      './assets/iconos/sab.svg',
+      './assets/iconos/salvaciones.svg',
+      './assets/iconos/skills.svg',
+      './assets/iconos/vacio-diario.svg',
+      './assets/iconos/vacio-mapa.svg',
       './assets/pergamino/arma-arco.svg',
       './assets/pergamino/arma-daga.svg',
       './assets/pergamino/arma-espada.svg',
@@ -56,7 +122,7 @@ self.addEventListener('activate', e => {
       .then(() => {
         // Notificar a todos los clientes que el SW nuevo está activo
         self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 483 }));
+          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 486 }));
         });
       })
   );
@@ -67,7 +133,7 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
   // Cliente pregunta la versión del SW activo
   if (e.data && e.data.type === 'GET_VERSION') {
-    e.source.postMessage({ type: 'SW_VERSION', version: 483 });
+    e.source.postMessage({ type: 'SW_VERSION', version: 486 });
   }
 });
 

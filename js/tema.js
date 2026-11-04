@@ -1,7 +1,8 @@
 /* ═══════════════════════════════════════════════════════════
    tema.js — Apariencia compartida por index.html y app.html
    Se carga sincrónico en <head> para aplicar el tema antes de pintar.
-   Valores: 'dark' (Clásico), 'slate-brass' (Pizarra y latón), 'light' (Pergamino).
+   Valores: 'dark' (Clásico), 'slate-brass' (Pizarra y latón), 'light' (Pergamino),
+   'onix' (Ónix y granate).
    ═══════════════════════════════════════════════════════════ */
 const Tema = (() => {
   // Antes cada página guardaba el tema en su propia clave; se leen las dos
@@ -11,6 +12,7 @@ const Tema = (() => {
     { id: 'dark',        nombre: 'Clásico',         muestra: ['#0e0d09', '#c9973a'] },
     { id: 'slate-brass', nombre: 'Pizarra y latón', muestra: ['#11171F', '#D9AE65'] },
     { id: 'light',       nombre: 'Pergamino',       muestra: ['#D5B68E', '#702D31'] },
+    { id: 'onix',        nombre: 'Ónix y granate',  muestra: ['#120F10', '#A82835'] },
   ];
   const valido = id => OPCIONES.some(o => o.id === id);
 

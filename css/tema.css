@@ -186,3 +186,20 @@
 /* Scrollbars */
 :root[data-theme="slate-brass"] ::-webkit-scrollbar-track { background: var(--bg2); }
 :root[data-theme="slate-brass"] ::-webkit-scrollbar-thumb { background: var(--bg5); }
+
+/* ── Íconos grabados (js/iconos.js) ──
+   Ocultos por defecto: cada tema que los use los muestra y oculta .emo-orig. */
+.ico {
+  display: none;
+  width: 1.35em;
+  height: 1.35em;
+  vertical-align: -0.32em;
+  margin-right: 0.4em;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: var(--m) center / contain no-repeat;
+  mask: var(--m) center / contain no-repeat;
+}
+.tab-ic .ico { width: 16px; height: 16px; margin: 0; vertical-align: -3px; }
+.section-hd .ico { width: 1.6em; height: 1.6em; vertical-align: -0.45em; }
+.cond-btn .ico { width: 1.3em; height: 1.3em; margin-right: 0.3em; }
