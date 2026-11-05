@@ -52,13 +52,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   chk('la preferencia se recuerda al recargar', await visible('#mesaCab'));
 
   // Fuera de combate: Combate muestra explorar/preparar; lanzar no marca el turno
-  await p.evaluate(() => Mesa.grupo('no-rituales')); await sleep(200);
   const fuera = await p.evaluate(() => ({ modo: !!document.querySelector('.mesa-modo'), titulos: [...document.querySelectorAll('#mesa-combate .mesa-col-hd')].map(h => h.textContent.trim()),
     ayuda: [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Ayudar/.test(x.textContent))?.textContent || '',
     rituales: [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Rituales/.test(x.textContent))?.textContent || '',
     turnoCab: !!document.querySelector('#mesaCab [onclick="App.toggleRecursoTurno(\'action\')"]'), iniciar: !!document.querySelector('#mesaCab [onclick="Mesa.combate(true)"]') }));
-  chk('fuera de combate: Ayudar en una prueba (Guidance), Rituales (Detect Magic) y guía; la cabecera ofrece Iniciar combate',
-    fuera.modo && /Guidance/.test(fuera.ayuda) && /Detect Magic/.test(fuera.rituales) && fuera.titulos.some(t => /guía/.test(t)) && !fuera.turnoCab && fuera.iniciar, fuera);
+  chk('fuera de combate: Ayudar en una prueba (Guidance) y guía; sin Rituales porque ninguno está preparado; la cabecera ofrece Iniciar combate',
+    fuera.modo && /Guidance/.test(fuera.ayuda) && !fuera.titulos.includes('Rituales') && fuera.titulos.some(t => /guía/.test(t)) && !fuera.turnoCab && fuera.iniciar, fuera);
   await p.evaluate(() => { Mesa.abrir('sp-fc-guidance'); }); await sleep(200);
   await p.evaluate(() => document.querySelector('.mesa-cj.abierto .mesa-acc .mesa-btn.p').click()); await sleep(300);
   chk('Guidance fuera de combate no marca la Acción', await p.evaluate(() => !App.getActiveChar().turn.action && App.getActiveChar().concentration === 'guidance'));
@@ -146,7 +145,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 5. Torvald: compañero y ataque de oportunidad (Reacción)
   await ficha('tv');
   await p.evaluate(() => Mesa.combate(true)); await sleep(300);
-  const tv = await p.evaluate(() => ({ grum: document.querySelector('.mesa-comp b')?.textContent, ordenar: !!document.querySelector('[onclick="Mesa.abrir(\'bestia\')"]'),
+  const tv = await p.evaluate(() => ({ grum: document.querySelector('#mesa-combate .mesa-inline-nom')?.value, ordenar: !!document.querySelector('[onclick="Mesa.abrir(\'bestia\')"]'),
     ao: !!document.querySelector('[onclick="Mesa.abrir(\'ao\')"]') }));
   chk('Torvald: Grum a la derecha, Ordenar en Adicional y ataque de oportunidad en Reacción', tv.grum === 'Grum' && tv.ordenar && tv.ao, tv);
   await p.evaluate(() => { Mesa.abrir('ao'); }); await sleep(150);
@@ -192,16 +191,33 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   cel.cerrada = !(await visible('#mesaHoja'));
   chk('celular: botón Tiradas abre la hoja con salvaciones y se cierra tocando afuera', cel.fab && !cel.tiradas && cel.hoja && cel.salv === 6 && cel.cerrada, cel);
 
-  // Ficha completa de Grum dentro de la vista Mesa (sin volver a la vista de siempre)
+  // Compañero nativo en Mesa: tipo con íconos, nombre editable y rasgos plegados
   await ficha('tv');
-  chk('Combate ya no tiene el enlace a la vista completa', await p.evaluate(() => ![...document.querySelectorAll('#mesa-combate .mesa-link')].length));
-  await p.evaluate(() => [...document.querySelectorAll('.mesa-comp .mesa-btn')].find(b => /Ficha completa/.test(b.textContent)).click()); await sleep(300);
-  const grum = { ficha: await visible('.mesa-ficha-bestia .companion-section'), mesa: await visible('#mesa-combate'), vieja: await visible('#col-combate-stack') };
-  await p.evaluate(() => [...document.querySelectorAll('.mesa-ficha-bestia .companion-beast-chip')].find(b => /Sea/.test(b.textContent)).click()); await sleep(300);
+  const grum = await p.evaluate(() => ({ tipos: [...document.querySelectorAll('#mesa-combate .mesa-comp .mesa-tipo')].map(b => b.textContent.trim()),
+    activo: document.querySelector('#mesa-combate .mesa-comp .mesa-tipo.on')?.textContent.trim(), nombre: document.querySelector('#mesa-combate .mesa-inline-nom')?.value,
+    emoji: /[🐾🦑🦅]/u.test(document.querySelector('#mesa-combate .mesa-comp').textContent) }));
+  await p.evaluate(() => [...document.querySelectorAll('#mesa-combate .mesa-comp .mesa-tipo')].find(b => /Mar/.test(b.textContent)).click()); await sleep(400);
   grum.mar = await p.evaluate(() => App.getActiveChar().companion.beast);
-  grum.sigue = await visible('.mesa-ficha-bestia .companion-section');
-  await p.evaluate(() => App.setCompanionBeast('land')); await sleep(200);
-  chk('Grum: la ficha completa se abre en Mesa y Land/Sea/Sky funciona ahí', grum.ficha && grum.mesa && !grum.vieja && grum.mar === 'sea' && grum.sigue, grum);
+  await p.evaluate(() => App.setCompanionBeast('land')); await sleep(300);
+  await p.evaluate(() => Mesa.grupo('bestia-rasgos')); await sleep(200);
+  grum.rasgos = await p.evaluate(() => document.querySelector('#mesa-combate .mesa-rasgos')?.textContent || '');
+  await p.evaluate(() => { const i = document.querySelector('#mesa-combate .mesa-inline-nom'); i.value = 'Grum el Grande'; i.dispatchEvent(new Event('change')); }); await sleep(300);
+  grum.renombrado = await p.evaluate(() => App.getActiveChar().companion.name);
+  chk('compañero en Mesa: Tierra/Mar/Cielo con íconos, sin emoji; cambia de tipo; rasgos plegados; nombre editable',
+    grum.tipos.join() === 'Tierra,Mar,Cielo' && grum.activo === 'Tierra' && !grum.emoji && grum.mar === 'sea' && /Charge/.test(grum.rasgos) && /Velocidad/.test(grum.rasgos) && grum.renombrado === 'Grum el Grande', grum);
+  await p.evaluate(() => App.setCompanionField('name', 'Grum')); await sleep(200);
+
+  // Sin flotantes encima de la columna derecha: nota y cuaderno en la cabecera; sin versión
+  const cab = await p.evaluate(() => ({ fabs: [...document.querySelectorAll('.fab, .fab-note')].filter(f => getComputedStyle(f).display !== 'none').length,
+    botones: document.querySelectorAll('#mesaCab .mc-ic').length, version: getComputedStyle(document.getElementById('appVersionBadge')).display }));
+  await p.evaluate(() => document.querySelectorAll('#mesaCab .mc-ic')[1].click()); await sleep(300);
+  cab.cuaderno = await p.evaluate(() => document.getElementById('notebookPanel').classList.contains('open'));
+  await p.evaluate(() => App.toggleNotebook()); await sleep(200);
+  chk('nota rápida y cuaderno en la cabecera; sin botones flotantes ni versión', cab.fabs === 0 && cab.botones === 2 && cab.version === 'none' && cab.cuaderno, cab);
+
+  // Fuera de combate: sin bloques vacíos (Torvald no tiene rituales preparados)
+  const bloques = await p.evaluate(() => [...document.querySelectorAll('#mesa-combate .mesa-col-hd')].map(h => h.textContent.trim()));
+  chk('fuera de combate no muestra bloques sin nada usable', !bloques.includes('Rituales'), bloques);
 
   // Habilidades como configuración: maestrías y recursos propios arriba, la pestaña de siempre debajo
   await p.evaluate(() => App.switchTab('habilidades')); await sleep(300);

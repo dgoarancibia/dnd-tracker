@@ -1,4 +1,4 @@
-const CACHE = 'dnd-tracker-v496';
+const CACHE = 'dnd-tracker-v497';
 
 // IMPORTANTE: app.html e index.html NO se cachean aquí intencionalmente.
 // Si se cachean, el SW viejo puede servir el HTML viejo y el nuevo SW nunca
@@ -49,6 +49,10 @@ self.addEventListener('install', e => {
       './assets/iconos/clase-picaro.svg',
       './assets/iconos/combate.svg',
       './assets/iconos/companero.svg',
+      './assets/iconos/cuaderno.svg',
+      './assets/iconos/nota.svg',
+      './assets/iconos/bestia-cielo.svg',
+      './assets/iconos/bestia-mar.svg',
       './assets/iconos/con.svg',
       './assets/iconos/cond-agarrado.svg',
       './assets/iconos/cond-agotamiento.svg',
@@ -124,7 +128,7 @@ self.addEventListener('activate', e => {
       .then(() => {
         // Notificar a todos los clientes que el SW nuevo está activo
         self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 496 }));
+          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: 497 }));
         });
       })
   );
@@ -135,7 +139,7 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
   // Cliente pregunta la versión del SW activo
   if (e.data && e.data.type === 'GET_VERSION') {
-    e.source.postMessage({ type: 'SW_VERSION', version: 496 });
+    e.source.postMessage({ type: 'SW_VERSION', version: 497 });
   }
 });
 

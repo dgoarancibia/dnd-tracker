@@ -23,7 +23,7 @@ const Mesa = (() => {
   const CAMPO = { action: 'action', bonusAction: 'bonus', reaction: 'reaction' };
 
   // Estado de la vista (no se guarda en el personaje)
-  const st = { abierto: null, grupos: new Set(), grum: false, filtro: 'preparados', tipo: null, buscar: '', original: {}, hoja: false };
+  const st = { abierto: null, grupos: new Set(), filtro: 'preparados', tipo: null, buscar: '', original: {}, hoja: false };
 
   const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const sg = n => (n >= 0 ? '+' : '') + n;
@@ -145,7 +145,11 @@ const Mesa = (() => {
         ${cd != null ? `<div><b>${cd}</b><span class="mesa-lbl">CD</span></div>` : ''}
       </div>
       <span class="mc-esp"></span>
-      <div class="mc-turno">${_turno(c, false)}</div>`;
+      <div class="mc-turno">${_turno(c, false)}</div>
+      <div class="mc-herr">
+        <button class="mc-ic" onclick="App.openQuickNote()" title="Nota rápida"><i class="mesa-ico" style="--m:url(../assets/iconos/nota.svg)"></i></button>
+        <button class="mc-ic" onclick="App.toggleNotebook()" title="Cuaderno: Hojas, notas rápidas, log"><i class="mesa-ico" style="--m:url(../assets/iconos/cuaderno.svg)"></i></button>
+      </div>`;
   }
 
   // Acción / Adicional / Reacción + fin de turno y descansos
@@ -261,10 +265,10 @@ const Mesa = (() => {
         sub: `${a.daño}${a.extra ? ' + ' + a.extra : ''}${maxAtq > 1 && slot === 'mainHand' ? ` · ataques ${usados}/${maxAtq}` : ''}${a.notas.length ? ' · ' + a.notas.join(' · ') : ''}`,
         det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
       }) });
-      // Cualquier arma cuerpo a cuerpo de la mano principal sirve para el ataque de oportunidad
-      if (slot === 'mainHand' && !a.aDistancia) {
+      // Ataque de oportunidad: con la primera arma cuerpo a cuerpo equipada (principal o secundaria)
+      if (!a.aDistancia && !col.reaction.some(x => x.ao)) {
         const no2 = t.reaction ? 'Ya usaste tu Reacción' : '';
-        col.reaction.push({ no: no2, html: _fila({
+        col.reaction.push({ ao: true, no: no2, html: _fila({
           id: 'ao', icono: _iconoArma(w), nombre: 'Ataque de oportunidad', num: sg(a.ataque), sub: `${w.name} · ${a.daño}`, no: no2,
           det: `<p>Cuando una criatura hostil que puedes ver sale de tu alcance.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.oportunidad()">⚔ Atacar</button></div>`,
         }) });
@@ -335,15 +339,9 @@ const Mesa = (() => {
             ${columna('action', 'Acción', 'action')}
             <div class="mesa-pila">${columna('bonusAction', 'Adicional', 'bonus')}${columna('reaction', 'Reacción', 'reaction')}</div>
           </div>
-          ${_fichaBestia(c, bestia)}
         </div>
         <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
       </div>`;
-  }
-
-  function _fichaBestia(c, bestia) {
-    return bestia && st.grum ? `<section class="mesa-ficha-bestia"><div class="mesa-sec">${esc(c.companion.name || 'Compañero')} · ficha completa
-      <button class="mesa-chip" onclick="Mesa.grum()">Cerrar</button></div>${App.mesaHTML.companion()}</section>` : '';
   }
 
   function _filaRecurso(c, r) {
@@ -364,39 +362,40 @@ const Mesa = (() => {
     const fila = sp => ({ no: _motivoConjuro(c, sp, 'other'), html: _filaConjuro(c, sp, { via: 'other' }) });
 
     // Ayudar en una prueba: lo que suma a pruebas, ataques o salvaciones de otros
-    const ayuda = toma(prep.filter(sp => !sp.damage && /prueba|check|habilidad/i.test(sp.desc || ''))).map(fila)
-      .concat((c.resources || []).filter(r => r.max && /prueba|check/i.test(`${r.desc || ''} ${r.note || ''}`)).map(r => _filaRecurso(c, r)));
+    // Solo lo que SUMA a pruebas (Guidance +1d4, Enhance Ability ventaja), no lo que obliga a
+    // hacer una (Entangle: "escapa con prueba de Atletismo")
+    const SUMA = /(1d4|ventaja)[^·.]*(prueba|check)/i;
+    const ayuda = toma(prep.filter(sp => !sp.damage && SUMA.test(sp.desc || ''))).map(fila)
+      .concat((c.resources || []).filter(r => r.max && SUMA.test(`${r.desc || ''} ${r.note || ''}`)).map(r => _filaRecurso(c, r)));
     // Rituales: sin espacio si está preparado (+10 min)
     const rituales = toma((c.spells || []).filter(sp => sp.ritual && sp.level > 0)).map(sp => ({
       no: preparado(c, sp) ? '' : 'No preparado: prepáralo para lanzarlo como ritual', html: _filaConjuro(c, sp, { via: 'other', ritual: true }) }));
     // Preparación y utilidad: lo que se lanza antes de pelear o lleva más de un turno
-    const utiles = toma(prep.filter(sp => sp.combat === false || Characters.getActivation(sp) === 'other' || /\b\d+ ?h\b|hora/i.test(sp.duration || ''))).map(fila);
+    const utiles = toma(prep.filter(sp => sp.combat === false || Characters.getActivation(sp) === 'other'
+      || (!sp.concentration && /\b\d+ ?h\b|hora/i.test(sp.duration || '')))).map(fila);
     const rasgos = (c.resources || []).filter(r => r.max && !ayuda.some(x => x.html.includes(`rec-${r.id}'`))).map(r => _filaRecurso(c, r));
     const guia = (c.ifttt || []).filter(x => /pre-?combate|antes/i.test(x.section || ''));
     const limpiar = h => esc(String(h || '').replace(/<[^>]+>/g, ''));
 
-    const bloque = (titulo, items, grupo, vacio) => `<section class="mesa-card mesa-col">
+    // Si no hay nada que se pueda usar, el bloque no aparece (Torvald sin rituales preparados)
+    const bloque = (titulo, items, grupo) => items.some(x => !x.no) ? `<section class="mesa-card mesa-col">
       <div class="mesa-col-hd">${titulo}</div>
-      <div class="mesa-col-bd">${_columnaItems(items, grupo) || `<p class="mesa-vacio">${vacio}</p>`}</div></section>`;
+      <div class="mesa-col-bd">${_columnaItems(items, grupo)}</div></section>` : '';
 
     const bestia = _bestia(c);
     return `
       <div class="mesa-grid">
         <div class="mesa-centro">
           <div class="mesa-modo">Fuera de combate · lo que puedes hacer al explorar, hablar o prepararte. <button class="mesa-chip on" onclick="Mesa.combate(true)">⚔ Iniciar combate</button></div>
-          <div class="mesa-acciones mesa-fuera">
-            <div class="mesa-pila">
-              ${bloque('Ayudar en una prueba', ayuda, 'no-ayuda', 'Nada que sume a pruebas.')}
-              ${bloque('Rasgos', rasgos, 'no-rasgos', 'Sin rasgos con usos.')}
-            </div>
-            <div class="mesa-pila">
-              ${bloque('Rituales', rituales, 'no-rituales', 'Sin rituales.')}
-              ${bloque('Preparación y utilidad', utiles, 'no-utiles', 'Sin conjuros de preparación.')}
+          ${[ayuda, rasgos, rituales, utiles].some(l => l.some(x => !x.no)) || guia.length ? '' : '<p class="mesa-vacio mesa-nada">Nada especial que usar fuera de combate. Tus tiradas están a la izquierda y tus recursos a la derecha.</p>'}
+          <div class="mesa-fuera">
+              ${bloque('Ayudar en una prueba', ayuda, 'no-ayuda')}
+              ${bloque('Rasgos', rasgos, 'no-rasgos')}
+              ${bloque('Rituales', rituales, 'no-rituales')}
+              ${bloque('Preparación y utilidad', utiles, 'no-utiles')}
               ${guia.length ? `<section class="mesa-card mesa-col"><div class="mesa-col-hd">Tu guía antes de pelear</div><div class="mesa-col-bd mesa-guia">${
                 guia.map(x => `<div><small>${limpiar(x.trigger)}</small>${limpiar(x.action)}</div>`).join('')}</div></section>` : ''}
-            </div>
           </div>
-          ${_fichaBestia(c, bestia)}
         </div>
         <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
       </div>`;
@@ -429,6 +428,43 @@ const Mesa = (() => {
     App.showToast('Reacción marcada');
   }
 
+  /* Tarjeta del compañero (Beast Master): tipo, vida, números y, plegados,
+     sus rasgos. Todo llama a App: mismas reglas que la vista de siempre. */
+  const ICONO_BESTIA = { land: 'iconos/companero', sea: 'iconos/bestia-mar', sky: 'iconos/bestia-cielo' };
+  const NOMBRE_BESTIA = { land: 'Tierra', sea: 'Mar', sky: 'Cielo' };
+  // "40 ft · Trepa 40 ft" → metros de mesa (5 ft = 1,5 m); App.fmtDist respeta la unidad elegida
+  const _ftAm = t => App.fmtDist(String(t || '').replace(/(\d+)\s*ft/g, (_, n) => `${String(n / 5 * 1.5).replace('.', ',')} m`));
+  function _tarjetaBestia(c, bestia) {
+    const comp = c.companion || {};
+    const tipos = Object.keys(NOMBRE_BESTIA).map(id => `<button class="mesa-tipo ${bestia && comp.beast === id ? 'on' : ''}" onclick="App.setCompanionBeast('${id}')">
+      <i class="mesa-ico" style="--m:url(../assets/${ICONO_BESTIA[id]}.svg)"></i>${NOMBRE_BESTIA[id]}</button>`).join('');
+    if (!bestia) return `<div class="mesa-card mesa-comp"><p class="mesa-vacio">${comp.beast ? 'Desconjurado.' : 'Elige a tu compañero.'}</p><div class="mesa-tipos">${tipos}</div></div>`;
+    const pct = bestia.max ? bestia.pg / bestia.max : 0;
+    const abierto = st.grupos.has('bestia-rasgos');
+    const caido = bestia.pg <= 0;
+    return `<div class="mesa-card mesa-comp">
+      <div class="mesa-comp-top"><span class="mesa-med"><i class="mesa-ico" style="--m:url(../assets/${ICONO_BESTIA[comp.beast] || 'iconos/companero'}.svg)"></i></span>
+        <div class="mesa-comp-nom">
+          <input class="mesa-inline mesa-inline-nom" value="${esc(comp.name || '')}" placeholder="Nombre" onchange="App.setCompanionField('name', this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+          <input class="mesa-inline" value="${esc(comp.kind || '')}" placeholder="Animal (oso, lobo…)" onchange="App.setCompanionField('kind', this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+        </div></div>
+      <div class="mesa-tipos">${tipos}</div>
+      <div class="mesa-comp-pg"><span class="mesa-lbl">PG</span><b>${bestia.pg} / ${bestia.max}</b><span class="mc-esp"></span>
+        <button class="mesa-chip" onclick="App.adjustCompanionHP(-1)">−1</button><button class="mesa-chip" onclick="App.adjustCompanionHP(1)">+1</button></div>
+      <div class="mesa-barra ${pct <= 0.25 ? 'mc-crit' : pct <= 0.5 ? 'mc-mid' : 'mc-ok'}">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.round(pct * 10) ? '' : 'v'}"></i>`).join('')}</div>
+      ${caido ? `<button class="mesa-btn p mesa-ancho" onclick="App.openCompanionRevive()">Revivir a ${esc(comp.name || 'tu compañero')}</button>` : ''}
+      <div class="mesa-mini"><div><b>${bestia.ca}</b><span class="mesa-lbl">CA</span></div><div><b>${sg(bestia.golpe)}</b><span class="mesa-lbl">Ataque</span></div>
+        <div><b>${esc(bestia.daño)}</b><span class="mesa-lbl">Daño</span></div></div>
+      <button class="mesa-plegar" onclick="Mesa.grupo('bestia-rasgos')">${abierto ? '▾' : '▸'} Velocidad, sentidos y rasgos</button>
+      ${abierto ? `<div class="mesa-rasgos">
+        <p><b>Velocidad</b> ${esc(_ftAm(bestia.b.speed))}</p><p><b>Sentidos</b> ${esc(bestia.b.senses || '')}</p>
+        <p><b>${esc(bestia.ataque.name)}</b> ${esc(bestia.ataque.desc || '')}</p>
+        ${(bestia.b.traits || []).map(t => `<p><b>${esc(t.name)}</b> ${esc(t.desc)}</p>`).join('')}
+        ${bestia.nivel >= 7 ? `<button class="mesa-chip ${comp.forceDamage ? 'on' : ''}" onclick="App.toggleCompanionForceDamage()">Daño de fuerza (Exceptional Training)</button>` : ''}
+      </div>` : ''}
+    </div>`;
+  }
+
   // Beast Master (PHB 2024): CA 13 + SAB, golpe = SAB + BC, daño + SAB
   function _bestia(c) {
     const comp = c.companion;
@@ -438,7 +474,7 @@ const Mesa = (() => {
     const nivel = c.classes && c.classes.length ? ((c.classes.find(x => x.name === 'Explorador') || {}).level || 0) : c.nivel;
     const max = b.calcMaxHP(nivel);
     const a = b.attacks[0];
-    return { b, ca: 13 + sab, max, pg: comp.hp != null ? comp.hp : max, golpe: sab + pb, ataque: a,
+    return { b, nivel, ca: 13 + sab, max, pg: comp.hp != null ? comp.hp : max, golpe: sab + pb, ataque: a,
       daño: `${a.damageDie}+${a.damageBonus + sab}${nivel >= 11 ? ' ×2' : ''}` };
   }
 
@@ -453,18 +489,10 @@ const Mesa = (() => {
         <button class="mesa-btn" onclick="App.setConc(null)">Terminar</button>` : '<span class="mesa-vacio">Ninguna</span>'}</div></section>` : '';
 
     const bestia = _bestia(c);
-    const bloqueBestia = bestia ? `<section><div class="mesa-sec">Compañero</div><div class="mesa-card mesa-comp">
-      <div class="mesa-comp-top"><span class="mesa-med"><i class="mesa-ico" style="--m:url(../assets/iconos/companero.svg)"></i></span>
-        <div><b>${esc(c.companion.name || 'Compañero')}</b><small>${esc(bestia.b.name)}</small></div></div>
-      <div class="mesa-comp-pg"><span class="mesa-lbl">PG</span><b>${bestia.pg} / ${bestia.max}</b><span class="mc-esp"></span>
-        <button class="mesa-chip" onclick="App.adjustCompanionHP(-1)">−1</button><button class="mesa-chip" onclick="App.adjustCompanionHP(1)">+1</button></div>
-      <div class="mesa-barra mc-ok">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.round(bestia.pg / bestia.max * 10) ? '' : 'v'}"></i>`).join('')}</div>
-      <div class="mesa-mini"><div><b>${bestia.ca}</b><span class="mesa-lbl">CA</span></div><div><b>${sg(bestia.golpe)}</b><span class="mesa-lbl">Ataque</span></div><div><b>${esc(bestia.daño)}</b><span class="mesa-lbl">Daño</span></div></div>
-      ${tab === 'combate' ? `<button class="mesa-btn mesa-ancho" onclick="Mesa.grum()">${st.grum ? 'Ocultar ficha completa' : 'Ficha completa: Land/Sea/Sky, rasgos, revivir'}</button>` : ''}
-    </div></section>` : '';
+    const bloqueBestia = c.companion ? `<section><div class="mesa-sec">Compañero</div>${_tarjetaBestia(c, bestia)}</section>` : '';
 
     // Primero lo que define al personaje: el compañero en un Beast Master, la concentración en un lanzador
-    if (bestia) bloques.push(bloqueBestia, bloqueConc); else bloques.push(bloqueConc);
+    if (bloqueBestia) bloques.push(bloqueBestia, bloqueConc); else bloques.push(bloqueConc);
 
     const puntos = (n, total, fn) => `<span class="mesa-pts">${Array.from({ length: total }, (_, i) =>
       `<i class="${i < n ? '' : 'u'}" onclick="${fn(i)}"></i>`).join('')}</span>`;
@@ -483,9 +511,11 @@ const Mesa = (() => {
       c.slotPriority.map(p => `<div>${esc(p.label)}<small>${esc(p.note || '')}</small></div>`).join('')}</div></section>`);
 
     const conds = c.conditions || [];
-    bloques.push(`<section><div class="mesa-sec">Condiciones</div><div class="mesa-card mesa-conds"><div class="mesa-rapidas">${
-      CONDICIONES.filter(([id]) => tab === 'combate' || conds.includes(id)).map(([id, n]) =>
-        `<button class="mesa-chip ${conds.includes(id) ? 'on' : ''}" onclick="App.toggleCondition('${id}')">${n}</button>`).join('') || '<span class="mesa-vacio">Ninguna</span>'}</div></div></section>`);
+    const todas = st.grupos.has('conds');
+    const chips = CONDICIONES.filter(([id]) => todas || conds.includes(id)).map(([id, n]) =>
+      `<button class="mesa-chip ${conds.includes(id) ? 'on' : ''}" onclick="App.toggleCondition('${id}')">${n}</button>`).join('');
+    bloques.push(`<section><div class="mesa-sec">Condiciones</div><div class="mesa-card mesa-conds"><div class="mesa-rapidas">${chips || '<span class="mesa-vacio">Ninguna</span>'}</div>
+      <button class="mesa-plegar" onclick="Mesa.grupo('conds')">${todas ? '▾ Ocultar las demás' : '▸ Agregar condición'}</button></div></section>`);
     return bloques.join('');
   }
 
@@ -618,7 +648,6 @@ const Mesa = (() => {
     if (App.enCombate() && CAMPO[act]) App.usarRecursoTurno(act, true);
     App.showToast(`${r ? r.name : 'Rasgo'} sin gastar uso`);
   }
-  function grum() { st.grum = !st.grum; _pintar(); }
   function grupo(g) { if (st.grupos.has(g)) st.grupos.delete(g); else st.grupos.add(g); _pintar(); }
   function filtrar(grupo, val) { st[grupo] = st[grupo] === val && grupo === 'tipo' ? null : val; _pintar(); }
   function buscar(v) {
@@ -640,6 +669,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, vida, hoja, abrir, grupo, grum, combate, gratis, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, vida, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí

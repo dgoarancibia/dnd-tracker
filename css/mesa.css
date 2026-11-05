@@ -40,6 +40,34 @@
 .mesa-config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; align-items: start; }
 .mesa-config-maestrias .mastery-section { margin-top: 0 !important; }
 .mesa-ancho { width: 100%; margin-top: 10px; }
+
+/* Compañero */
+.mesa-comp-nom { min-width: 0; flex: 1; }
+.mesa-comp-nom small { color: var(--m-tx2); font-size: 12px; }
+.mesa-inline { width: 100%; min-width: 0; border: none; border-bottom: 1px dashed transparent; background: transparent; color: var(--m-tx2); font: 500 12.5px 'Jost', sans-serif; padding: 1px 0; }
+.mesa-inline:hover, .mesa-inline:focus { border-bottom-color: var(--m-borde-2); outline: none; }
+.mesa-inline-nom { font: 700 17px 'Cinzel', serif; color: var(--text); }
+.mesa-tipos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 10px; }
+.mesa-tipo { display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 34px; padding: 4px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--m-borde-2); background: transparent; color: var(--m-tx2); font: 600 12.5px 'Jost', sans-serif; }
+.mesa-tipo .mesa-ico { width: 16px; height: 16px; }
+.mesa-tipo.on { background: var(--m-fill); color: var(--m-fill-tx); border-color: var(--m-fill); }
+.mesa-comp-pg .mesa-chip { min-height: 28px; padding: 2px 10px; }
+.mesa-comp-pg b { white-space: nowrap; }
+.mesa-rasgos { margin-top: 6px; font-size: 12.5px; color: var(--m-tx2); line-height: 1.45; }
+.mesa-rasgos p { margin: 0 0 6px; }
+.mesa-rasgos b { color: var(--text); font-weight: 600; }
+
+/* Cabecera: nota rápida y cuaderno (antes flotaban sobre la columna derecha) */
+.mc-herr { display: flex; gap: 6px; }
+.mc-ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--m-borde-2); background: var(--bg3); color: var(--m-acento-2); }
+.mc-ic .mesa-ico { width: 20px; height: 20px; }
+:root[data-vista="mesa"] .fab, :root[data-vista="mesa"] .fab-note { display: none !important; }
+/* Guardado y versión: chicos, junto al ⋯ (la versión sigue en Ajustes → Forzar actualización) */
+:root[data-vista="mesa"] #appVersionBadge { display: none; }
+:root[data-vista="mesa"] .header-menu-wrap { gap: 6px; }
+:root[data-vista="mesa"] .sync-status { font-size: 10px !important; letter-spacing: .02em; padding: 2px 6px !important; min-height: 0; border-width: 1px; }
 .mesa-ficha-bestia { margin-top: 4px; }
 .mesa-ficha-bestia .companion-section { margin-top: 0 !important; }
 :root[data-vista="mesa"] .mesa-ver-original > .mesa-volver { display: block; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 300;
@@ -220,10 +248,11 @@
 .mesa-motivo.aviso::before { content: '◆ '; color: var(--m-acento-2); }
 .mesa-plegar { align-self: flex-start; background: none; border: none; color: var(--m-tx2); font: 600 12.5px 'Jost', sans-serif; padding: 6px 2px 2px; cursor: pointer; }
 .mesa-modo { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; color: var(--m-tx2); font-size: 13px; }
+.mesa-nada { padding: 24px 4px; }
 .mesa-guia > div { padding: 6px 4px; border-bottom: 1px solid var(--m-borde); color: var(--text); font-size: 13px; }
 .mesa-guia > div:last-child { border-bottom: none; }
 .mesa-guia small { display: block; color: var(--m-tx2); font-size: 11.5px; }
-.mesa-fuera { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.mesa-fuera { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-items: start; }
 
 /* Orden de pestañas en Mesa: lo de la partida primero */
 :root[data-vista="mesa"] .tab-btn[data-tab="combate"] { order: 1; }
