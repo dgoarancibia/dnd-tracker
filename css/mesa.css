@@ -166,10 +166,14 @@
 .mesa-tg.a { background: var(--bg5); border-color: transparent; color: var(--text); }
 
 /* Columna de apoyo */
-.mesa-conc { padding: 12px; display: grid; gap: 3px; justify-items: start; }
-.mesa-conc b { font: 700 16px 'Cinzel', serif; color: var(--m-acento-2); }
-.mesa-conc small { color: var(--m-tx2); }
-.mesa-conc .mesa-btn { margin-top: 6px; }
+/* Concentración compacta: nombre y Terminar en una fila, el detalle debajo */
+.mesa-conc { padding: 8px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; }
+.mesa-conc .mesa-lbl { display: none; }
+.mesa-conc b { font: 600 14px 'Jost', sans-serif; color: var(--m-acento-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mesa-conc b::before { content: '◆ '; }
+.mesa-conc small { grid-column: 1; grid-row: 2; color: var(--m-tx2); font-size: 12px; }
+.mesa-conc .mesa-btn { grid-column: 2; grid-row: 1 / span 2; min-height: 30px; padding: 3px 10px; font-size: 12px; }
+.mesa-conc .mesa-vacio { padding: 0; font-size: 12.5px; }
 .mesa-comp { padding: 12px; }
 .mesa-comp-top { display: flex; align-items: center; gap: 12px; }
 .mesa-comp-top b { display: block; font: 700 17px 'Cinzel', serif; color: var(--text); }
