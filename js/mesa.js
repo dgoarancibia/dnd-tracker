@@ -325,11 +325,31 @@ const Mesa = (() => {
       }
     }
 
-    // Rasgos con usos (Channel Divinity, Hunter's Mark gratis…)
+    // Rasgos con usos (Channel Divinity, Hunter's Mark gratis…). Los que se usan
+    // "al hacer la acción de Ataque" (Unleash Incarnation) van en Acción.
+    const conAtaque = r => /acci[oó]n de ataque|attack action/i.test(`${r.desc || ''} ${r.fullDesc || ''}`);
     (c.resources || []).forEach(r => {
       const tipo = Characters.getActivation(r);
-      if (!col[tipo] || !r.max) return;
-      col[tipo].push(_filaRecurso(c, r));
+      if (!r.max) return;
+      if (col[tipo]) col[tipo].push(_filaRecurso(c, r));
+      else if (conAtaque(r)) col.action.push(_filaRecurso(c, r, 'CON ATAQUE'));
+      // Action Surge: no cuesta acción, te da una más
+      else if (/sin acci[oó]n/i.test(r.action || '')) col.action.push(_filaRecurso(c, r, 'SIN ACCIÓN'));
+    });
+
+    // Rasgos activos sin usos (Manifest Echo…): antes no aparecían en Mesa
+    const norm = t => String(t || '').toLowerCase().replace(/\(.*?\)/g, '').trim();
+    const conRecurso = new Set((c.resources || []).map(r => norm(r.name)));
+    // Las opciones de Channel Divinity (Balm of Peace, Divine Spark…) van dentro de su fila: gastan un uso de él
+    (c.features || []).filter(f => f.type === 'active' && !conRecurso.has(norm(f.name)) && !/^channel divinity/i.test(f.source || '')).forEach(f => {
+      const tipo = Characters.getActivation(f);
+      if (!col[tipo]) return;
+      if (/manifest echo/i.test(f.name || '')) { col[tipo].push(_filaEco(c, f)); return; }
+      const no = _turnoUsado(c, tipo);
+      col[tipo].push({ no, html: _fila({ id: 'rasgo-' + f.id, icono: 'iconos/habilidades', nombre: f.name, num: '', no,
+        sub: [f.range, f.desc].filter(Boolean).join(' · '),
+        det: `<p>${esc(f.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.usarRasgo('${tipo}','${f.id}')">Usar · ${ETQ[tipo]}</button>
+          <button class="mesa-btn" onclick="event.stopPropagation();App.openFeatureDetail && App.openFeatureDetail('${f.id}')">Ficha completa</button></div>` }) });
     });
 
     const columna = (tipo, titulo, campo) => `
@@ -353,12 +373,16 @@ const Mesa = (() => {
       </div>`;
   }
 
-  function _filaRecurso(c, r) {
+  function _filaRecurso(c, r, etiqueta) {
     const no = _motivoRecurso(c, r);
     return { no, html: _fila({
       id: 'rec-' + r.id, icono: 'iconos/recursos', nombre: r.name, num: '', no,
+      tags: etiqueta ? `<span class="mesa-tags"><span class="mesa-tg d">${etiqueta}</span></span>` : '',
       sub: `${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}`,
-      det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button>
+      det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc">${(opciones => opciones.length
+          ? opciones.map(f => `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1);App.showToast('${esc(f.name).replace(/'/g, '’')}')" title="${esc(f.desc || '')}">${esc(f.name)}</button>`).join('')
+          : `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button>`)(
+          /channel divinity/i.test(r.name || '') ? (c.features || []).filter(f => /^channel divinity/i.test(f.source || '')) : [])}
         ${(g => g ? `<button class="mesa-btn" onclick="event.stopPropagation();Mesa.gratis('${g.id}','${r.id}')">✦ Gratis con ${esc(g.name)} (${g.current}/${g.max})</button>` : '')(_gratisPara(c, r))}</div>`,
     }) };
   }
@@ -672,6 +696,35 @@ const Mesa = (() => {
     st.abierto = null;
     render();
   }
+  /* Manifest Echo (Echo Knight): invocar o descartar el eco cuesta la
+     Acción adicional; con el eco activo, intercambiar posición también. */
+  function _filaEco(c, f) {
+    const activo = !!c.echoActive;
+    const ca = 14 + Characters.calcProfBonus(c.nivel);
+    const no = activo ? '' : _turnoUsado(c, 'bonusAction');
+    return { no, html: _fila({ id: 'eco', icono: 'iconos/habilidades', nombre: activo ? 'Eco activo' : 'Invocar eco', num: '', no,
+      sub: activo ? `CA ${ca} · 1 PG · se mueve 9 m gratis · ataca desde su lugar` : `Manifest Echo · a 4,5 m · CA ${ca}, 1 PG`,
+      tags: activo ? '<span class="mesa-tags"><span class="mesa-tg d">ACTIVO</span></span>' : '',
+      det: `<p>${esc(f.desc || '')}</p><div class="mesa-acc">
+        ${activo ? `<button class="mesa-btn p" onclick="event.stopPropagation();Mesa.usarRasgo('bonusAction','intercambio-eco')">Intercambiar posición · Acción adicional</button>
+          <button class="mesa-btn" onclick="event.stopPropagation();Mesa.eco(false)">Descartar eco</button>`
+          : `<button class="mesa-btn p" onclick="event.stopPropagation();Mesa.eco(true)">Invocar eco · Acción adicional</button>`}</div>` }) };
+  }
+  function eco(invocar) {
+    const c = App.getActiveChar();
+    if (!c || !!c.echoActive === invocar) return;
+    if (App.enCombate()) App.usarRecursoTurno('bonusAction', true);
+    App.toggleEcho();
+  }
+  // Rasgo sin usos: solo marca lo que gasta del turno
+  function usarRasgo(tipo, id) {
+    // Por id: un nombre con apóstrofo rompería el onclick
+    const f = (App.getActiveChar().features || []).find(x => x.id === id);
+    const nombre = id === 'intercambio-eco' ? 'Intercambio con el eco' : f ? f.name : 'Rasgo';
+    if (App.enCombate() && !App.usarRecursoTurno(tipo)) { App.showToast(`Ya usaste ${ETQ[tipo]} este turno`); return; }
+    App.showToast(`${nombre}${App.enCombate() ? ` · ${ETQ[tipo]} marcada` : ''}`);
+  }
+
   // Usa el uso gratis (no gasta el recurso principal) y marca la acción que pide
   function gratis(idGratis, idRecurso) {
     const c = App.getActiveChar();
@@ -702,6 +755,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, vida, vidaBestia, animal, tipoBestia, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí

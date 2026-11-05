@@ -28,7 +28,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const l = Characters.buildLursey();
     // Como lo anotó Diego: recurso propio con el nombre mal escrito
     l.resources.push({ id: 'custom-1', name: 'Amulet Of devoltion', current: 1, max: 1, recharge: 'long', note: '' });
-    Storage.saveChar(t); Storage.saveChar(l);
+    // Aztram: Guerrero 5 Echo Knight, con los rasgos de la subclase ya elegida
+    const a = Characters.createNew('Aztram', 'Guerrero'); a.id = 'az'; a.nivel = 5; a.subclase = 'Echo Knight';
+    a.classes = [{ name: 'Guerrero', level: 5, subclass: 'Echo Knight' }]; a.stats = { for: 16, des: 12, con: 16, int: 10, sab: 12, car: 8 };
+    a.features = [...(a.features || []), ...Characters.SUBCLASES_CONFIG['Echo Knight'].features(5)];
+    a.equipment = { ...(a.equipment || {}), mainHand: arma('longsword', 'Longsword', 'melee', '1d8') };
+    Storage.saveChar(t); Storage.saveChar(l); Storage.saveChar(a);
   });
   const ficha = async (id, w = 1440, h = 900) => {
     await p.setViewport({ width: w, height: h });
@@ -151,6 +156,18 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(() => { Mesa.abrir('ao'); }); await sleep(150);
   await p.evaluate(() => document.querySelector('.mesa-op.abierto .mesa-btn.p').click()); await sleep(200);
   chk('el ataque de oportunidad gasta la Reacción', await p.evaluate(() => App.getActiveChar().turn.reaction === true));
+
+  // Aztram (Echo Knight): invocar el eco y Unleash Incarnation a la vista
+  await ficha('az');
+  await p.evaluate(() => Mesa.combate(true)); await sleep(300);
+  const colsDe = () => p.evaluate(() => Object.fromEntries([...document.querySelectorAll('#mesa-combate .mesa-col')].map(c => [c.querySelector('.mesa-col-hd').childNodes[0].textContent.trim(), [...c.querySelectorAll('.mesa-op-tx b')].map(b => b.textContent)])));
+  const az = await colsDe();
+  await p.evaluate(() => { Mesa.abrir('eco'); }); await sleep(200);
+  await p.evaluate(() => document.querySelector('.mesa-op.abierto .mesa-btn.p').click()); await sleep(300);
+  const azTras = await p.evaluate(() => ({ eco: App.getActiveChar().echoActive, adicional: App.getActiveChar().turn.bonus }));
+  const az2 = await colsDe();
+  chk('Aztram: Invocar eco en Adicional (lo activa y gasta la Acción adicional), Unleash Incarnation y Action Surge en Acción',
+    az.Adicional.includes('Invocar eco') && az['Acción'].includes('Unleash Incarnation') && az['Acción'].includes('Action Surge') && azTras.eco && azTras.adicional && az2.Adicional.includes('Eco activo'), { az, azTras });
 
   // 6. Contraste en Clásico y en Ónix
   for (const tema of ['dark', 'onix']) {
