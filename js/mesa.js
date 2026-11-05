@@ -332,9 +332,9 @@ const Mesa = (() => {
       const tipo = Characters.getActivation(r);
       if (!r.max) return;
       if (col[tipo]) col[tipo].push(_filaRecurso(c, r));
-      else if (conAtaque(r)) col.action.push(_filaRecurso(c, r, 'CON ATAQUE'));
+      else if (conAtaque(r)) col.action.push(_filaRecurso(c, r, 'Al hacer la acción de Ataque'));
       // Action Surge: no cuesta acción, te da una más
-      else if (/sin acci[oó]n/i.test(r.action || '')) col.action.push(_filaRecurso(c, r, 'SIN ACCIÓN'));
+      else if (/sin acci[oó]n/i.test(r.action || '')) col.action.push(_filaRecurso(c, r, 'Sin acción'));
     });
 
     // Rasgos activos sin usos (Manifest Echo…): antes no aparecían en Mesa
@@ -377,8 +377,7 @@ const Mesa = (() => {
     const no = _motivoRecurso(c, r);
     return { no, html: _fila({
       id: 'rec-' + r.id, icono: 'iconos/recursos', nombre: r.name, num: '', no,
-      tags: etiqueta ? `<span class="mesa-tags"><span class="mesa-tg d">${etiqueta}</span></span>` : '',
-      sub: `${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}`,
+      sub: `${etiqueta ? etiqueta + ' · ' : ''}${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}`,
       det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc">${(opciones => opciones.length
           ? opciones.map(f => `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1);App.showToast('${esc(f.name).replace(/'/g, '’')}')" title="${esc(f.desc || '')}">${esc(f.name)}</button>`).join('')
           : `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button>`)(
