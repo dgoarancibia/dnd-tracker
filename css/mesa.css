@@ -27,6 +27,17 @@
   scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent;
 }
 :root[data-vista="mesa"] .mesa-panel { display: block; }
+/* Habilidades: la configuración arriba y la pestaña de siempre debajo, en un solo scroll */
+:root[data-vista="mesa"] #tab-habilidades.active { display: block !important; overflow-y: auto; overflow-x: hidden; padding: 14px 16px; }
+:root[data-vista="mesa"] #tab-habilidades #col-hab-izq { display: none !important; }
+:root[data-vista="mesa"] #tab-habilidades #col-hab-der { overflow: visible; height: auto; padding: 0; }
+:root[data-vista="mesa"] #tab-habilidades > .mesa-volver { display: none !important; }
+.mesa-config { margin-bottom: 18px; }
+.mesa-config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+.mesa-config-maestrias .mastery-section { margin-top: 0 !important; }
+.mesa-ancho { width: 100%; margin-top: 10px; }
+.mesa-ficha-bestia { margin-top: 4px; }
+.mesa-ficha-bestia .companion-section { margin-top: 0 !important; }
 :root[data-vista="mesa"] .mesa-ver-original > .mesa-volver { display: block; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 300;
   padding: 10px 16px; border-radius: 999px; border: none; background: var(--m-acento); color: var(--bg); font: 700 13px 'Jost', sans-serif;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .45); cursor: pointer; }

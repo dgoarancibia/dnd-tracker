@@ -23,7 +23,7 @@ const Mesa = (() => {
   const CAMPO = { action: 'action', bonusAction: 'bonus', reaction: 'reaction' };
 
   // Estado de la vista (no se guarda en el personaje)
-  const st = { abierto: null, grupos: new Set(), filtro: 'preparados', tipo: null, buscar: '', original: {}, hoja: false };
+  const st = { abierto: null, grupos: new Set(), grum: false, filtro: 'preparados', tipo: null, buscar: '', original: {}, hoja: false };
 
   const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const sg = n => (n >= 0 ? '+' : '') + n;
@@ -56,7 +56,7 @@ const Mesa = (() => {
     if (cab && !$('mesaCab')) cab.insertAdjacentHTML('afterbegin', '<div class="mesa-cab" id="mesaCab"></div>');
     const split = document.querySelector('.app-content-split');
     if (split && !$('mesaTiradas')) split.insertAdjacentHTML('afterbegin', '<aside class="mesa-tiradas" id="mesaTiradas"></aside>');
-    for (const tab of ['combate', 'conjuros']) {
+    for (const tab of ['combate', 'conjuros', 'habilidades']) {
       const p = $('tab-' + tab);
       if (p && !$('mesa-' + tab)) p.insertAdjacentHTML('afterbegin', `<div class="mesa-panel" id="mesa-${tab}"></div>
         <button class="mesa-volver" onclick="Mesa.original('${tab}')">◂ Volver a la vista Mesa</button>`);
@@ -98,6 +98,7 @@ const Mesa = (() => {
     }
     $('mesa-combate').innerHTML = _combate(c);
     $('mesa-conjuros').innerHTML = _conjuros(c);
+    $('mesa-habilidades').innerHTML = _configuracion(c);
     const tabActiva = document.querySelector('.tab-btn.active');
     const tab = tabActiva ? tabActiva.dataset.tab : '';
     document.documentElement.dataset.mesaTab = tab;
@@ -277,7 +278,8 @@ const Mesa = (() => {
             ${columna('action', 'Acción', 'action')}
             <div class="mesa-pila">${columna('bonusAction', 'Adicional', 'bonus')}${columna('reaction', 'Reacción', 'reaction')}</div>
           </div>
-          <button class="mesa-link" onclick="Mesa.original('combate')">Abrir la vista completa de Combate (iniciativa, maestrías, compañero) ▸</button>
+          ${bestia && st.grum ? `<section class="mesa-ficha-bestia"><div class="mesa-sec">${esc(c.companion.name || 'Compañero')} · ficha completa
+            <button class="mesa-chip" onclick="Mesa.grum()">Cerrar</button></div>${App.mesaHTML.companion()}</section>` : ''}
         </div>
         <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
       </div>`;
@@ -341,6 +343,7 @@ const Mesa = (() => {
         <button class="mesa-chip" onclick="App.adjustCompanionHP(-1)">−1</button><button class="mesa-chip" onclick="App.adjustCompanionHP(1)">+1</button></div>
       <div class="mesa-barra mc-ok">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.round(bestia.pg / bestia.max * 10) ? '' : 'v'}"></i>`).join('')}</div>
       <div class="mesa-mini"><div><b>${bestia.ca}</b><span class="mesa-lbl">CA</span></div><div><b>${sg(bestia.golpe)}</b><span class="mesa-lbl">Ataque</span></div><div><b>${esc(bestia.daño)}</b><span class="mesa-lbl">Daño</span></div></div>
+      ${tab === 'combate' ? `<button class="mesa-btn mesa-ancho" onclick="Mesa.grum()">${st.grum ? 'Ocultar ficha completa' : 'Ficha completa: Land/Sea/Sky, rasgos, revivir'}</button>` : ''}
     </div></section>` : '';
 
     // Primero lo que define al personaje: el compañero en un Beast Master, la concentración en un lanzador
@@ -448,8 +451,28 @@ const Mesa = (() => {
       <span class="mesa-tags">${tags}</span>${det}</div>`;
   }
 
+  /* ══ Habilidades: arriba, la configuración del personaje (maestrías y
+     recursos propios); debajo sigue la pestaña de siempre ══ */
+  function _configuracion(c) {
+    const maestrias = App.mesaHTML.maestrias();
+    const propios = (c.resources || []).filter(r => String(r.id).startsWith('custom-'));
+    return `<div class="mesa-config">
+      <div class="mesa-sec">Configuración del personaje</div>
+      <div class="mesa-config-grid">
+        ${maestrias ? `<div class="mesa-config-maestrias">${maestrias}</div>` : ''}
+        <div class="mesa-card mesa-propios">
+          <div class="mesa-col-hd">Recursos propios<button class="mesa-chip on" onclick="App.openCustomResource()">+ Agregar</button></div>
+          ${propios.map(r => `<div class="mesa-rec"><div>${esc(r.name)}<small>${r.max} usos · ${esc({ short: 'descanso corto', long: 'descanso largo' }[r.recharge] || r.recharge || '')}${r.note ? ' · ' + esc(r.note) : ''}</small></div>
+            <button class="mesa-chip" onclick="App.deleteResource('${r.id}')" title="Eliminar">✕</button></div>`).join('')
+            || '<p class="mesa-vacio" style="padding:10px 12px">Agrega usos que la app no trae (un objeto con cargas, un favor del DM…). Aparecen en Recursos, a la derecha de Combate y Conjuros.</p>'}
+        </div>
+      </div>
+    </div>`;
+  }
+
   /* ── Interacciones de la vista ── */
   function abrir(id) { st.abierto = st.abierto === id ? null : id; _pintar(); }
+  function grum() { st.grum = !st.grum; _pintar(); }
   function grupo(g) { if (st.grupos.has(g)) st.grupos.delete(g); else st.grupos.add(g); _pintar(); }
   function filtrar(grupo, val) { st[grupo] = st[grupo] === val && grupo === 'tipo' ? null : val; _pintar(); }
   function buscar(v) {
@@ -471,6 +494,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, vida, hoja, abrir, grupo, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, vida, hoja, abrir, grupo, grum, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí
