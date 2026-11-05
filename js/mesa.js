@@ -252,6 +252,25 @@ const Mesa = (() => {
         + (ab ? `<div class="mesa-sub">${lista.map(sp => _filaConjuro(c, sp)).join('')}</div>` : ''));
     });
 
+    // War Caster (PHB 2024, Reactive Spell): cuando una criatura sale de tu
+    // alcance, en vez del ataque de oportunidad puedes gastar la Reacción en
+    // un conjuro de 1 Acción que tenga como objetivo solo a esa criatura.
+    if ((c.features || []).some(f => /war caster/i.test(f.name || ''))) {
+      const area = /criaturas|esfera|cono|cubo|l[ií]nea|emanaci|radio|cilindro|aliad|autocentrado|personal/i;
+      const aptos = (c.spells || []).filter(sp => preparado(c, sp) && sp.combat !== false && Characters.getActivation(sp) === 'action'
+        // Daño o salvación contra la criatura; los de aliados (ventaja, curación) no sirven
+        && (sp.damage || (/salv|save|ataque|attack/i.test(sp.desc || '') && !/ventaja en|curaci|cura /i.test(sp.desc || '')))
+        && !area.test(`${sp.range || ''} ${sp.desc || ''}`));
+      if (aptos.length) {
+        const g = 'conj-wc', ab = st.grupos.has(g);
+        col.reaction.push(`<div class="mesa-op ${ab ? 'abierto' : ''}" onclick="Mesa.grupo('${g}')">
+          <span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/iconos/conjuros.svg)"></i></span>
+          <div class="mesa-op-tx"><b>Conjuro de oportunidad</b><small>War Caster · ${esc(aptos.slice(0, 3).map(sp => limpio(sp.name)).join(' · '))}${aptos.length > 3 ? ' …' : ''}</small></div>
+          <span class="mesa-tg a">${aptos.length}</span><span class="mesa-mas">›</span></div>`
+          + (ab ? `<div class="mesa-sub"><p class="mesa-vacio">Cuando una criatura sale de tu alcance. De 1 Acción y solo contra esa criatura; gasta tu Reacción.</p>${aptos.map(sp => _filaConjuro(c, sp, false, 'reaction')).join('')}</div>` : ''));
+      }
+    }
+
     // Rasgos con usos (Channel Divinity, Hunter's Mark gratis…)
     (c.resources || []).forEach(r => {
       const tipo = Characters.getActivation(r);
@@ -417,22 +436,23 @@ const Mesa = (() => {
       <div class="mesa-hz">${lista.filter(sp => sp.level === lv).map(sp => _filaConjuro(c, sp, true)).join('')}</div></div>`).join('');
   }
 
-  function _filaConjuro(c, sp, conPrep) {
-    const act = Characters.getActivation(sp);
+  function _filaConjuro(c, sp, conPrep, via) {
+    const act = via || Characters.getActivation(sp);
+    const v = via ? `,'${via}'` : '';
     const corta = { action: 'ACC.', bonusAction: 'ADIC.', reaction: 'REAC.' }[act] || '';
     const tags = [sp.concentration ? '<span class="mesa-tg">CONC</span>' : '', sp.domain ? `<span class="mesa-tg d">◆ ${/Cl[ée]rigo/.test(c.clase || '') ? 'DOMINIO' : 'SIEMPRE'}</span>` : '',
       sp.mi ? '<span class="mesa-tg d">GRATIS</span>' : '', sp.ritual ? '<span class="mesa-tg">RITUAL</span>' : '', corta ? `<span class="mesa-tg a">${corta}</span>` : ''].join('');
-    const id = 'sp-' + sp.id, ab = st.abierto === id;
+    const id = (via ? 'sp-wc-' : 'sp-') + sp.id, ab = st.abierto === id;
     const prep = preparado(c, sp);
     const efecto = sp.damage || (sp.desc || '').split(' · ').slice(2, 4).join(' · ');
     let det = '';
     if (ab) {
       const op = App.castOptions(sp.id) || { free: false, slots: [] };
       const btns = [];
-      if (sp.level === 0) btns.push(`<button class="mesa-btn p" onclick="App.castSpell('${sp.id}',0)">✨ Lanzar</button>`);
+      if (sp.level === 0) btns.push(`<button class="mesa-btn p" onclick="App.castSpell('${sp.id}',0${v})">✨ Lanzar</button>`);
       else {
-        if (op.free) btns.push(`<button class="mesa-btn p" onclick="App.castSpell('${sp.id}',0)">✦ Gratis, sin espacio</button>`);
-        op.slots.forEach(lv => btns.push(`<button class="mesa-btn ${op.free ? '' : 'p'}" onclick="App.castSpell('${sp.id}',${lv})">Lanzar con espacio de nivel ${lv}</button>`));
+        if (op.free) btns.push(`<button class="mesa-btn p" onclick="App.castSpell('${sp.id}',0${v})">✦ Gratis, sin espacio</button>`);
+        op.slots.forEach(lv => btns.push(`<button class="mesa-btn ${op.free ? '' : 'p'}" onclick="App.castSpell('${sp.id}',${lv}${v})">Lanzar con espacio de nivel ${lv}</button>`));
         if (!btns.length) btns.push('<span class="mesa-vacio">Sin espacios disponibles</span>');
       }
       if (esEscritorio()) btns.push(`<button class="mesa-btn" onclick="App.copiarRoll20('conjuro','${sp.id}')">Enviar a Roll20</button>`);

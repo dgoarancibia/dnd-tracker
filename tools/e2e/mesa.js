@@ -91,6 +91,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   chk('Daño desde la cabecera resta vida y se ve al tiro', pg.hp === pg.max - 7 && pg.cab.startsWith(String(pg.max - 7)), pg);
   await p.evaluate(() => { const c = App.getActiveChar(); c.hp.current = c.hp.max; App.reloadChar(c); });
 
+  // War Caster: conjuro de 1 Acción como reacción en lugar del ataque de oportunidad
+  await p.evaluate(() => { const c = App.getActiveChar(); c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); App.switchTab('combate'); }); await sleep(300);
+  await p.evaluate(() => Mesa.grupo('conj-wc')); await sleep(200);
+  const wc = await p.evaluate(() => [...document.querySelectorAll('.mesa-sub .mesa-cj b')].filter(b => b.closest('.mesa-col').querySelector('.mesa-col-hd').textContent.includes('Reacción')).map(b => b.textContent));
+  await p.evaluate(() => Mesa.abrir('sp-wc-toll-dead')); await sleep(200);
+  await p.evaluate(() => document.querySelector('.mesa-cj.abierto .mesa-acc .mesa-btn.p').click()); await sleep(400);
+  const tWc = await p.evaluate(() => App.getActiveChar().turn);
+  chk('War Caster: Toll the Dead en Reacción gasta la Reacción, no la Acción; sin conjuros de área ni de aliados',
+    wc.includes('Toll the Dead') && !wc.includes('Bless') && !wc.includes('Spirit Guardians') && !wc.includes('Cure Wounds') && !wc.includes('Beacon of Hope') && tWc.reaction === true && tWc.action === false, { wc, turno: tWc });
+
   // 5. Torvald: compañero y ataque de oportunidad (Reacción)
   await ficha('tv');
   const tv = await p.evaluate(() => ({ grum: document.querySelector('.mesa-comp b')?.textContent, ordenar: !!document.querySelector('[onclick="Mesa.abrir(\'bestia\')"]'),

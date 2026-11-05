@@ -6687,7 +6687,10 @@ const App = (() => {
   // Evita que el aviso de conflicto se repita al reintentar tras confirmar.
   let _conflictoConfirmado = false;
 
-  function castSpell(spellId, slotLevel) {
+  /* `via`: recurso del turno que gasta, si no es el de su tiempo de
+     lanzamiento. Hoy solo 'reaction' (War Caster: conjuro de 1 Acción en
+     lugar del ataque de oportunidad). */
+  function castSpell(spellId, slotLevel, via) {
     if (!_char) return;
     const sp = (_char.spells || []).find(s => s.id === spellId);
     if (!sp) return;
@@ -6710,7 +6713,7 @@ const App = (() => {
         '◆ Ya estás concentrado',
         `Lanzar ${sp.name} va a romper tu concentración en ${prevNombre}.`,
         `Lanzar y romper ${prevNombre}`, 'Cancelar',
-        () => { _conflictoConfirmado = true; castSpell(spellId, slotLevel); _conflictoConfirmado = false; }
+        () => { _conflictoConfirmado = true; castSpell(spellId, slotLevel, via); _conflictoConfirmado = false; }
       );
       return;
     }
@@ -6719,7 +6722,7 @@ const App = (() => {
        el conjuro ya se usó este turno, se avisa antes de gastar nada. No
        bloquea: el DM puede permitirlo, o el jugador puede estar
        corrigiendo un registro anterior. */
-    const _actConf = Characters.getActivation(sp);
+    const _actConf = via || Characters.getActivation(sp);
     const _t = _turnoDe(_char);
     const _yaUsado = { action: _t.action, bonusAction: _t.bonus, reaction: _t.reaction }[_actConf];
     if (_yaUsado && !_conflictoConfirmado) {
@@ -6730,7 +6733,7 @@ const App = (() => {
         '⚠ Economía de acciones',
         `Ya usaste tu ${etiqueta} este turno.\n\n¿Lanzar ${sp.name} igual?`,
         'Lanzar igual', 'Cancelar',
-        () => { _conflictoConfirmado = true; castSpell(spellId, slotLevel); _conflictoConfirmado = false; }
+        () => { _conflictoConfirmado = true; castSpell(spellId, slotLevel, via); _conflictoConfirmado = false; }
       );
       return;
     }
@@ -6744,7 +6747,7 @@ const App = (() => {
         return;
       }
     }
-    _pendingCast = { spellId: sp.id, slotLevel };
+    _pendingCast = { spellId: sp.id, slotLevel, via };
     confirmPendingCast();
   }
 
@@ -6758,7 +6761,7 @@ const App = (() => {
   // Confirma el lanzamiento: recién acá se descuenta el slot.
   function confirmPendingCast() {
     if (!_pendingCast) { _closeCastSurfaces(); return; }
-    const { spellId, slotLevel } = _pendingCast;
+    const { spellId, slotLevel, via } = _pendingCast;
     _pendingCast = null;
     _closeCastSurfaces();
 
@@ -6773,7 +6776,7 @@ const App = (() => {
       }
       slot.current -= 1;
     }
-    _finalizeCast(sp, slotLevel);
+    _finalizeCast(sp, slotLevel, via);
     if (slotLevel > 0) _refreshSlotDots(slotLevel);
   }
 
@@ -6782,7 +6785,7 @@ const App = (() => {
     _closeCastSurfaces();
   }
 
-  function _finalizeCast(sp, slotLevel) {
+  function _finalizeCast(sp, slotLevel, via) {
     _saveChar(true);
 
     // Auto-concentration
@@ -6809,7 +6812,7 @@ const App = (() => {
     _logCombat(`✨ ${logLine}`, 'spell', { name: sp.name, slot: slotLevel || 0 });
 
     // Consumir el recurso de turno que corresponda al tiempo de lanzamiento.
-    const _act = Characters.getActivation(sp);
+    const _act = via || Characters.getActivation(sp);
     if (_act === 'action' || _act === 'bonusAction' || _act === 'reaction') {
       usarRecursoTurno(_act, true);
     }
