@@ -6,7 +6,7 @@
    ═══════════════════════════════════════════════════════════ */
 .mesa-cab, .mesa-tiradas, .mesa-panel, .mesa-turno-nav, .mesa-fab, .mesa-velo, .mesa-hoja, .mesa-volver, .mesa-volver-nav { display: none; }
 :root[data-vista="mesa"][data-mesa-original] .mesa-volver-nav { display: inline-flex; align-items: center; margin: 6px 0 6px 10px; padding: 5px 14px; flex: none;
-  border-radius: 999px; border: none; background: var(--gold); color: var(--bg); font: 700 12.5px 'Jost', sans-serif; cursor: pointer; white-space: nowrap; }
+  border-radius: 999px; border: none; background: var(--m-fill); color: var(--m-fill-tx); font: 700 12.5px 'Jost', sans-serif; cursor: pointer; white-space: nowrap; }
 
 :root[data-vista="mesa"] {
   --m-acento: var(--gold);
@@ -14,7 +14,11 @@
   --m-tx2: var(--text-mid);
   --m-borde: var(--border);
   --m-borde-2: var(--border-strong);
+  /* Relleno de lo activo (botón principal, chip elegido); Ónix lo hace granate */
+  --m-fill: var(--gold);
+  --m-fill-tx: var(--bg);
 }
+:root[data-vista="mesa"][data-theme="onix"] { --m-fill: var(--granate-vivo); --m-fill-tx: #F7EDE4; }
 
 /* ── Lo de siempre que esta vista reemplaza ── */
 :root[data-vista="mesa"] .app-header > :not(.mesa-cab):not(.header-menu-wrap) { display: none !important; }
@@ -39,7 +43,7 @@
 .mesa-ficha-bestia { margin-top: 4px; }
 .mesa-ficha-bestia .companion-section { margin-top: 0 !important; }
 :root[data-vista="mesa"] .mesa-ver-original > .mesa-volver { display: block; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 300;
-  padding: 10px 16px; border-radius: 999px; border: none; background: var(--m-acento); color: var(--bg); font: 700 13px 'Jost', sans-serif;
+  padding: 10px 16px; border-radius: 999px; border: none; background: var(--m-fill); color: var(--m-fill-tx); font: 700 13px 'Jost', sans-serif;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .45); cursor: pointer; }
 
 /* ── Piezas comunes ── */
@@ -49,11 +53,11 @@
 .mesa-card { background: var(--bg3); border: 1px solid var(--m-borde); border-radius: 12px; }
 .mesa-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; border-radius: 8px; padding: 6px 12px;
   font: 600 13px 'Jost', sans-serif; border: 1px solid var(--m-borde-2); background: var(--bg4); color: var(--text); cursor: pointer; white-space: nowrap; }
-.mesa-btn.p { background: var(--m-acento); color: var(--bg); border-color: transparent; }
+.mesa-btn.p { background: var(--m-fill); color: var(--m-fill-tx); border-color: transparent; }
 .mesa-btn:disabled { opacity: .45; cursor: default; }
 .mesa-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 3px 11px; border-radius: 999px; white-space: nowrap; cursor: pointer;
   border: 1px solid var(--m-borde-2); background: transparent; color: var(--m-tx2); font: 500 12.5px 'Jost', sans-serif; }
-.mesa-chip.on { background: var(--m-acento); color: var(--bg); border-color: var(--m-acento); font-weight: 600; }
+.mesa-chip.on { background: var(--m-fill); color: var(--m-fill-tx); border-color: var(--m-fill); font-weight: 600; }
 .mesa-chip.usada { text-decoration: line-through; opacity: .7; }
 .mesa-vsep { display: inline-block; width: 1px; height: 20px; background: var(--m-borde-2); margin: 0 4px; flex: none; }
 .mesa-sec { display: flex; align-items: center; gap: 8px; margin: 0 2px 8px; font: 700 12px 'Cinzel', serif; letter-spacing: .1em;
@@ -199,6 +203,29 @@
 .mesa-pr { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--m-tx2); flex: none; cursor: pointer; }
 .mesa-pr.on { background: var(--m-acento); border-color: var(--m-acento); }
 
+/* Lo que no se puede usar ahora: atenuado sin bajar el contraste del texto, con el motivo */
+.mesa-op.no, .mesa-cj.no { background: transparent; border: 1px dashed var(--m-borde-2); }
+.mesa-op.no .mesa-op-tx b, .mesa-cj.no .mesa-op-tx b { color: var(--m-tx2); font-weight: 500; }
+.mesa-op.no .mesa-t, .mesa-op.no .mesa-num { color: var(--m-tx2); }
+.mesa-motivo { display: block; font: italic 500 12px 'Jost', sans-serif; color: var(--text); margin-top: 1px; }
+.mesa-motivo::before { content: '⦸ '; color: var(--m-tx2); font-style: normal; }
+.mesa-motivo.aviso::before { content: '◆ '; color: var(--m-acento-2); }
+.mesa-plegar { align-self: flex-start; background: none; border: none; color: var(--m-tx2); font: 600 12.5px 'Jost', sans-serif; padding: 6px 2px 2px; cursor: pointer; }
+.mesa-modo { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; color: var(--m-tx2); font-size: 13px; }
+.mesa-guia > div { padding: 6px 4px; border-bottom: 1px solid var(--m-borde); color: var(--text); font-size: 13px; }
+.mesa-guia > div:last-child { border-bottom: none; }
+.mesa-guia small { display: block; color: var(--m-tx2); font-size: 11.5px; }
+.mesa-fuera { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+
+/* Orden de pestañas en Mesa: lo de la partida primero */
+:root[data-vista="mesa"] .tab-btn[data-tab="combate"] { order: 1; }
+:root[data-vista="mesa"] .tab-btn[data-tab="conjuros"] { order: 2; }
+:root[data-vista="mesa"] .tab-btn[data-tab="equipo"] { order: 3; }
+:root[data-vista="mesa"] .tab-btn[data-tab="habilidades"] { order: 4; }
+:root[data-vista="mesa"] .tab-btn[data-tab="bastion"] { order: 5; }
+:root[data-vista="mesa"] .tab-btn[data-tab="biblioteca"] { order: 6; }
+:root[data-vista="mesa"] .mesa-volver-nav, :root[data-vista="mesa"] .mesa-turno-nav { order: 9; }
+
 /* Turno en la barra de pestañas (solo cuando la cabecera no da) */
 .mesa-turno-nav { margin-left: auto; align-items: center; gap: 5px; padding: 4px 0 4px 10px; flex: none; }
 .mesa-turno-nav .mesa-chip { min-height: 26px; padding: 2px 9px; font-size: 11.5px; }
@@ -232,7 +259,7 @@
 @media (max-width: 1000px) {
   :root[data-vista="mesa"] .mesa-tiradas { display: none; }
   :root[data-vista="mesa"] .mesa-fab { display: flex; position: fixed; left: 14px; bottom: 18px; z-index: 300; align-items: center; gap: 8px;
-    padding: 11px 16px; border-radius: 999px; border: none; background: var(--m-acento); color: var(--bg); font: 700 14px 'Jost', sans-serif;
+    padding: 11px 16px; border-radius: 999px; border: none; background: var(--m-fill); color: var(--m-fill-tx); font: 700 14px 'Jost', sans-serif;
     box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
   :root[data-vista="mesa"] .mesa-fab .mesa-ico { width: 20px; height: 20px; }
   :root[data-vista="mesa"] body.mesa-hoja-abierta .mesa-velo { display: block; position: fixed; inset: 0; z-index: 400; background: rgba(0, 0, 0, .55); }

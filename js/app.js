@@ -12481,6 +12481,9 @@ ${notesText}`;
     toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter, setSpellSearch,
     castSpell, castSpellAt,
     // Reglas de espacios de un conjuro (la vista Mesa arma sus botones con esto)
+    // Estado del combate y ataques por turno, para la vista Mesa
+    enCombate: () => _combatActive,
+    ataquesDelTurno: () => _char ? _ataquesDelTurno(_char) : 1,
     // Bloques que la vista Mesa reutiliza tal cual (ficha de la bestia, maestrías)
     mesaHTML: { companion: () => _char ? _renderCompanionHTML(_char) : '', maestrias: () => _char ? _renderMasteriesHTML(_char) : '' },
         castOptions(id) { const sp = _char && (_char.spells || []).find(s => s.id === id); return sp ? _castOptions(sp) : null; },

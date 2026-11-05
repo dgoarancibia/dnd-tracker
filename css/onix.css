@@ -8,8 +8,11 @@
 :root[data-theme="onix"] {
   color-scheme: dark;
   --bg: #120F10;  --bg1: #120F10; --bg2: #181415; --bg3: #211B1C; --bg4: #2B2324; --bg5: #352C2D;
-  --gold: #EC7C83;        /* acento como texto: granate claro (≥ 4.5:1 también bajo el resplandor) */
-  --gold-light: #F5A0A5;
+  /* Acento como texto: oro viejo. El granate claro de antes (#EC7C83) se veía
+     rosado; el granate de verdad no se lee como texto sobre negro, así que
+     queda para lo relleno (botones, chips, pestaña activa) y el texto va en oro. */
+  --gold: #D9AE62;
+  --gold-light: #E8C88A;
   --gold-dim: #B9A08A;
   --gold-faint: rgba(224,101,109,0.10);
   --green: #3F7A55; --green-light: #8FD3A6;
@@ -221,7 +224,7 @@
 /* ── Slots y competencias: oro ── */
 :root[data-theme="onix"] .slot-dot { border-color: var(--oro); background: radial-gradient(circle, var(--oro) 0 42%, transparent 46%); }
 :root[data-theme="onix"] .slot-dot.used { background: transparent; border-color: #5A4A40; }
-:root[data-theme="onix"] .skill-prof-btn.active { background: var(--gold); border-color: var(--gold); }
+:root[data-theme="onix"] .skill-prof-btn.active { background: var(--granate-vivo); border-color: var(--granate-vivo); }
 
 /* ── Campos ── */
 :root[data-theme="onix"] input:not([type=checkbox]):not([type=radio]):not([type=range]),

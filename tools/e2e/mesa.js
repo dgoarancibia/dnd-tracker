@@ -48,8 +48,22 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.reload({ waitUntil: 'networkidle2' }); await sleep(1400);
   chk('la preferencia se recuerda al recargar', await visible('#mesaCab'));
 
-  // 3. Lanzar un conjuro desde la vista Mesa
-  await p.evaluate(() => { App.switchTab('conjuros'); });
+  // Fuera de combate: Combate muestra explorar/preparar; lanzar no marca el turno
+  await p.evaluate(() => Mesa.grupo('no-rituales')); await sleep(200);
+  const fuera = await p.evaluate(() => ({ modo: !!document.querySelector('.mesa-modo'), titulos: [...document.querySelectorAll('#mesa-combate .mesa-col-hd')].map(h => h.textContent.trim()),
+    ayuda: [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Ayudar/.test(x.textContent))?.textContent || '',
+    rituales: [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Rituales/.test(x.textContent))?.textContent || '',
+    turnoCab: !!document.querySelector('#mesaCab [onclick="App.toggleRecursoTurno(\'action\')"]'), iniciar: !!document.querySelector('#mesaCab [onclick="Mesa.combate(true)"]') }));
+  chk('fuera de combate: Ayudar en una prueba (Guidance), Rituales (Detect Magic) y guía; la cabecera ofrece Iniciar combate',
+    fuera.modo && /Guidance/.test(fuera.ayuda) && /Detect Magic/.test(fuera.rituales) && fuera.titulos.some(t => /guía/.test(t)) && !fuera.turnoCab && fuera.iniciar, fuera);
+  await p.evaluate(() => { Mesa.abrir('sp-fc-guidance'); }); await sleep(200);
+  await p.evaluate(() => document.querySelector('.mesa-cj.abierto .mesa-acc .mesa-btn.p').click()); await sleep(300);
+  chk('Guidance fuera de combate no marca la Acción', await p.evaluate(() => !App.getActiveChar().turn.action && App.getActiveChar().concentration === 'guidance'));
+  const orden = await p.evaluate(() => [...document.querySelectorAll('.tab-btn')].filter(b => b.offsetParent).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map(b => b.dataset.tab));
+  chk('pestañas en Mesa: Combate, Conjuros, Ítems, Habilidades y lo demás', orden.slice(0, 4).join() === 'combate,conjuros,equipo,habilidades', orden);
+
+  // 3. Lanzar un conjuro desde la vista Mesa, en combate
+  await p.evaluate(() => { Mesa.combate(true); App.switchTab('conjuros'); });
   await sleep(300);
   const antes = await p.evaluate(() => { const c = App.getActiveChar(); c.turn = { action: false, bonus: false, reaction: false }; c.concentration = null; App.reloadChar(c); return c.spellSlots[1].current; });
   await sleep(300);
@@ -91,6 +105,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   chk('Daño desde la cabecera resta vida y se ve al tiro', pg.hp === pg.max - 7 && pg.cab.startsWith(String(pg.max - 7)), pg);
   await p.evaluate(() => { const c = App.getActiveChar(); c.hp.current = c.hp.max; App.reloadChar(c); });
 
+  // En combate: lo que no se puede usar baja a "No disponible ahora" con su motivo
+  await p.evaluate(() => { const c = App.getActiveChar(); c.spellSlots[3].current = 0; c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); App.switchTab('combate'); }); await sleep(300);
+  const noDisp = await p.evaluate(() => { const col = document.querySelector('.mesa-col'); const plegar = col.querySelector('.mesa-plegar'); plegar && plegar.click(); return !!plegar; });
+  await sleep(200);
+  const sg = await p.evaluate(() => { const r = [...document.querySelectorAll('.mesa-col .mesa-cj.no')].find(x => /Spirit Guardians/.test(x.textContent)); return r ? r.querySelector('.mesa-motivo').textContent : null; });
+  chk('sin espacios de nivel 3: Spirit Guardians aparece en "No disponible ahora" con el motivo', noDisp && /Sin espacios de nivel 3/.test(sg || ''), sg);
+  await p.evaluate(() => { const c = App.getActiveChar(); c.spellSlots[3].current = c.spellSlots[3].max; App.reloadChar(c); });
+
   // War Caster: conjuro de 1 Acción como reacción en lugar del ataque de oportunidad
   await p.evaluate(() => { const c = App.getActiveChar(); c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); App.switchTab('combate'); }); await sleep(300);
   await p.evaluate(() => Mesa.grupo('conj-wc')); await sleep(200);
@@ -103,6 +125,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   // 5. Torvald: compañero y ataque de oportunidad (Reacción)
   await ficha('tv');
+  await p.evaluate(() => Mesa.combate(true)); await sleep(300);
   const tv = await p.evaluate(() => ({ grum: document.querySelector('.mesa-comp b')?.textContent, ordenar: !!document.querySelector('[onclick="Mesa.abrir(\'bestia\')"]'),
     ao: !!document.querySelector('[onclick="Mesa.abrir(\'ao\')"]') }));
   chk('Torvald: Grum a la derecha, Ordenar en Adicional y ataque de oportunidad en Reacción', tv.grum === 'Grum' && tv.ordenar && tv.ao, tv);

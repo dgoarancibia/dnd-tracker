@@ -150,12 +150,16 @@ const Mesa = (() => {
   // Acción / Adicional / Reacción + fin de turno y descansos
   function _turno(c, enLinea) {
     const t = c.turn || {};
+    if (!App.enCombate()) {
+      const fuera = `<button class="mesa-chip on" onclick="Mesa.combate(true)">⚔ Iniciar combate</button>`;
+      const desc = `<button class="mesa-chip" onclick="App.openShortRest()">↺ Corto</button><button class="mesa-chip" onclick="App.longRest()">☾ Largo</button>`;
+      return enLinea ? fuera + '<span class="mesa-vsep"></span>' + desc : `<div class="mc-fila">${fuera}</div><div class="mc-fila">${desc}</div>`;
+    }
     const pastilla = (campo, txt) => `<button class="mesa-chip ${t[campo] ? 'usada' : 'on'}" onclick="App.toggleRecursoTurno('${campo}')"
       title="${t[campo] ? 'Usada — toca para devolverla' : 'Disponible — toca para marcarla'}">${t[campo] ? '' : '✓ '}${txt}</button>`;
     const fila1 = pastilla('action', 'Acción') + pastilla('bonus', 'Adicional') + pastilla('reaction', 'Reacción');
     const fila2 = `<button class="mesa-chip" onclick="App.nuevoTurno()">Fin de turno ▸</button>
-      <button class="mesa-chip" onclick="App.openShortRest()">↺ Corto</button>
-      <button class="mesa-chip" onclick="App.longRest()">☾ Largo</button>`;
+      <button class="mesa-chip" onclick="Mesa.combate(false)">✕ Terminar combate</button>`;
     return enLinea ? fila1 + '<span class="mesa-vsep"></span>' + fila2
       : `<div class="mc-fila">${fila1}</div><div class="mc-fila">${fila2}</div>`;
   }
@@ -204,53 +208,85 @@ const Mesa = (() => {
   /* ══ Combate: lo que puedes hacer este turno, por tipo de acción ══ */
   const preparado = (c, sp) => sp.level === 0 || sp.domain || sp.mi || (c.preparedToday || []).includes(sp.id);
 
+  /* ── ¿Se puede usar ahora? Devuelve el motivo si no (o '' si sí).
+     Solo informa: lanzar o usar igual sigue pidiendo confirmación en App. ── */
+  const ETQ = { action: 'tu Acción', bonusAction: 'tu Acción adicional', reaction: 'tu Reacción' };
+  const DESCANSO = r => /short/.test(r.recharge || '') ? 'descanso corto' : /long/.test(r.recharge || '') ? 'descanso largo' : 'descanso';
+  function _turnoUsado(c, tipo) {
+    if (!App.enCombate()) return '';
+    const t = c.turn || {};
+    return CAMPO[tipo] && t[CAMPO[tipo]] ? `Ya usaste ${ETQ[tipo]}` : '';
+  }
+  function _motivoConjuro(c, sp, via) {
+    if (sp.level > 0) {
+      const op = App.castOptions(sp.id) || { free: false, slots: [] };
+      if (!op.free && !op.slots.length) return `Sin espacios de nivel ${sp.level}${sp.upcast ? ' o más' : ''}`;
+    }
+    return _turnoUsado(c, via || Characters.getActivation(sp));
+  }
+  function _motivoRecurso(c, r) {
+    if (r.current <= 0) return `Sin usos · vuelve con ${DESCANSO(r)}`;
+    return _turnoUsado(c, Characters.getActivation(r));
+  }
+
+  // Lista de una columna: lo que se puede usar arriba; lo demás junto al final
+  function _columnaItems(items, grupo) {
+    const si = items.filter(x => !x.no), no = items.filter(x => x.no);
+    const ab = st.grupos.has(grupo);
+    return si.map(x => x.html).join('')
+      + (no.length ? `<button class="mesa-plegar" onclick="Mesa.grupo('${grupo}')">${ab ? '▾' : '▸'} No disponible ahora (${no.length})</button>`
+        + (ab ? no.map(x => x.html).join('') : '') : '');
+  }
+
   function _combate(c) {
+    if (!App.enCombate()) return _fuera(c);
     const t = c.turn || {};
     const col = { action: [], bonusAction: [], reaction: [] };
     const eq = c.equipment || {};
+    const maxAtq = App.ataquesDelTurno(), usados = t.attacksUsed || 0;
 
     // Ataques con las armas equipadas
     [['mainHand', 'action'], ['offHand', 'bonusAction']].forEach(([slot, tipo]) => {
       const w = eq[slot];
       const a = w && w.kind === 'weapon' ? Characters.calcArma(c, slot) : null;
       if (!a) return;
-      col[tipo].push(_fila({
-        id: 'arma-' + slot, icono: _iconoArma(w), nombre: w.name, num: sg(a.ataque),
-        sub: `${a.daño}${a.extra ? ' + ' + a.extra : ''}${a.notas.length ? ' · ' + a.notas.join(' · ') : ''}`,
+      const no = slot === 'offHand' ? (t.bonus ? 'Ya usaste tu Acción adicional' : '')
+        : usados >= maxAtq ? (maxAtq > 1 ? `Ya hiciste tus ${maxAtq} ataques` : 'Ya atacaste este turno')
+        : t.action && !usados ? 'Ya usaste tu Acción en otra cosa' : '';
+      col[tipo].push({ no, html: _fila({
+        id: 'arma-' + slot, icono: _iconoArma(w), nombre: w.name, num: sg(a.ataque), no,
+        sub: `${a.daño}${a.extra ? ' + ' + a.extra : ''}${maxAtq > 1 && slot === 'mainHand' ? ` · ataques ${usados}/${maxAtq}` : ''}${a.notas.length ? ' · ' + a.notas.join(' · ') : ''}`,
         det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
-      }));
+      }) });
       // Cualquier arma cuerpo a cuerpo de la mano principal sirve para el ataque de oportunidad
-      if (slot === 'mainHand' && !a.aDistancia) col.reaction.push(_fila({
-        id: 'ao', icono: _iconoArma(w), nombre: 'Ataque de oportunidad', num: sg(a.ataque), sub: `${w.name} · ${a.daño}`,
-        det: `<p>Cuando una criatura hostil que puedes ver sale de tu alcance.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.oportunidad()">⚔ Atacar</button></div>`,
-      }));
+      if (slot === 'mainHand' && !a.aDistancia) {
+        const no2 = t.reaction ? 'Ya usaste tu Reacción' : '';
+        col.reaction.push({ no: no2, html: _fila({
+          id: 'ao', icono: _iconoArma(w), nombre: 'Ataque de oportunidad', num: sg(a.ataque), sub: `${w.name} · ${a.daño}`, no: no2,
+          det: `<p>Cuando una criatura hostil que puedes ver sale de tu alcance.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.oportunidad()">⚔ Atacar</button></div>`,
+        }) });
+      }
     });
 
     // Compañero (Beast Master): ordenarle cuesta la Acción adicional
     const bestia = _bestia(c);
-    if (bestia) col.bonusAction.push(_fila({
-      id: 'bestia', icono: 'iconos/companero', nombre: `Ordenar a ${c.companion.name || 'tu compañero'}`,
-      num: sg(bestia.golpe), sub: `${bestia.ataque.name} · ${bestia.daño}`,
-      det: `<p>${esc(bestia.ataque.desc)}</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.comandarBestia('bonus')">Ordenar con Acción adicional</button>
-        <button class="mesa-btn" onclick="event.stopPropagation();App.comandarBestia('attack')">Sacrificando un ataque</button></div>`,
-    }));
+    if (bestia) {
+      const no = t.bonus ? 'Ya usaste tu Acción adicional (puedes sacrificar un ataque)' : '';
+      col.bonusAction.push({ no, html: _fila({
+        id: 'bestia', icono: 'iconos/companero', nombre: `Ordenar a ${c.companion.name || 'tu compañero'}`, no,
+        num: sg(bestia.golpe), sub: `${bestia.ataque.name} · ${bestia.daño}`,
+        det: `<p>${esc(bestia.ataque.desc)}</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.comandarBestia('bonus')">Ordenar con Acción adicional</button>
+          <button class="mesa-btn" onclick="event.stopPropagation();App.comandarBestia('attack')">Sacrificando un ataque</button></div>`,
+      }) });
+    }
 
-    // Conjuros preparados que se usan en combate: con más de dos, quedan
-    // juntos en una fila que se despliega, para que no tapen los ataques
-    const porTipo = { action: [], bonusAction: [], reaction: [] };
-    (c.spells || []).filter(sp => preparado(c, sp) && sp.combat !== false).forEach(sp => {
-      const tipo = Characters.getActivation(sp);
-      if (porTipo[tipo]) porTipo[tipo].push(sp);
-    });
-    Object.entries(porTipo).forEach(([tipo, lista]) => {
-      if (lista.length <= 2) { lista.forEach(sp => col[tipo].push(_filaConjuro(c, sp))); return; }
-      const g = 'conj-' + tipo, ab = st.grupos.has(g);
-      col[tipo].push(`<div class="mesa-op ${ab ? 'abierto' : ''}" onclick="Mesa.grupo('${g}')">
-        <span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/iconos/conjuros.svg)"></i></span>
-        <div class="mesa-op-tx"><b>Lanzar un conjuro</b><small>${esc(lista.slice(0, 3).map(sp => limpio(sp.name)).join(' · '))}${lista.length > 3 ? ' …' : ''}</small></div>
-        <span class="mesa-tg a">${lista.length}</span><span class="mesa-mas">›</span></div>`
-        + (ab ? `<div class="mesa-sub">${lista.map(sp => _filaConjuro(c, sp)).join('')}</div>` : ''));
-    });
+    // Conjuros preparados que se usan en combate, todos a la vista
+    (c.spells || []).filter(sp => preparado(c, sp) && sp.combat !== false)
+      .sort((x, y) => x.level - y.level)
+      .forEach(sp => {
+        const tipo = Characters.getActivation(sp);
+        if (col[tipo]) col[tipo].push({ no: _motivoConjuro(c, sp), html: _filaConjuro(c, sp) });
+      });
 
     // War Caster (PHB 2024, Reactive Spell): cuando una criatura sale de tu
     // alcance, en vez del ataque de oportunidad puedes gastar la Reacción en
@@ -263,11 +299,13 @@ const Mesa = (() => {
         && !area.test(`${sp.range || ''} ${sp.desc || ''}`));
       if (aptos.length) {
         const g = 'conj-wc', ab = st.grupos.has(g);
-        col.reaction.push(`<div class="mesa-op ${ab ? 'abierto' : ''}" onclick="Mesa.grupo('${g}')">
+        const no = t.reaction ? 'Ya usaste tu Reacción' : '';
+        col.reaction.push({ no, html: `<div class="mesa-op ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.grupo('${g}')">
           <span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/iconos/conjuros.svg)"></i></span>
-          <div class="mesa-op-tx"><b>Conjuro de oportunidad</b><small>War Caster · ${esc(aptos.slice(0, 3).map(sp => limpio(sp.name)).join(' · '))}${aptos.length > 3 ? ' …' : ''}</small></div>
+          <div class="mesa-op-tx"><b>Conjuro de oportunidad</b><small>War Caster · ${esc(aptos.slice(0, 3).map(sp => limpio(sp.name)).join(' · '))}${aptos.length > 3 ? ' …' : ''}</small>
+            ${no ? `<em class="mesa-motivo">${no}</em>` : ''}</div>
           <span class="mesa-tg a">${aptos.length}</span><span class="mesa-mas">›</span></div>`
-          + (ab ? `<div class="mesa-sub"><p class="mesa-vacio">Cuando una criatura sale de tu alcance. De 1 Acción y solo contra esa criatura; gasta tu Reacción.</p>${aptos.map(sp => _filaConjuro(c, sp, false, 'reaction')).join('')}</div>` : ''));
+          + (ab ? `<div class="mesa-sub"><p class="mesa-vacio">Cuando una criatura sale de tu alcance. De 1 Acción y solo contra esa criatura; gasta tu Reacción.</p>${aptos.map(sp => _filaConjuro(c, sp, { via: 'reaction' })).join('')}</div>` : '') });
       }
     }
 
@@ -275,16 +313,13 @@ const Mesa = (() => {
     (c.resources || []).forEach(r => {
       const tipo = Characters.getActivation(r);
       if (!col[tipo] || !r.max) return;
-      col[tipo].push(_fila({
-        id: 'rec-' + r.id, icono: 'iconos/recursos', nombre: r.name, num: '', sub: `${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}`,
-        det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button></div>`,
-      }));
+      col[tipo].push(_filaRecurso(c, r));
     });
 
     const columna = (tipo, titulo, campo) => `
-      <section class="mesa-card mesa-col ${t[campo] ? 'gastada' : ''}">
+      <section class="mesa-card mesa-col">
         <div class="mesa-col-hd">${titulo}<button class="mesa-chip ${t[campo] ? '' : 'on'}" onclick="App.toggleRecursoTurno('${campo}')">${t[campo] ? 'usada' : 'disponible'}</button></div>
-        <div class="mesa-col-bd">${col[tipo].join('') || '<p class="mesa-vacio">Nada que usar aquí.</p>'}
+        <div class="mesa-col-bd">${_columnaItems(col[tipo], 'no-' + tipo) || '<p class="mesa-vacio">Nada que usar aquí.</p>'}
           ${tipo === 'action' ? `<div class="mesa-rapidas">${['Correr', 'Destrabarse', 'Esquivar', 'Ayudar', 'Esconderse', 'Influir', 'Buscar'].map(n =>
             `<button class="mesa-chip" onclick="App.usarRecursoTurno('action')||App.showToast('Ya usaste tu Acción')">${n}</button>`).join('')}</div>` : ''}
         </div>
@@ -297,18 +332,77 @@ const Mesa = (() => {
             ${columna('action', 'Acción', 'action')}
             <div class="mesa-pila">${columna('bonusAction', 'Adicional', 'bonus')}${columna('reaction', 'Reacción', 'reaction')}</div>
           </div>
-          ${bestia && st.grum ? `<section class="mesa-ficha-bestia"><div class="mesa-sec">${esc(c.companion.name || 'Compañero')} · ficha completa
-            <button class="mesa-chip" onclick="Mesa.grum()">Cerrar</button></div>${App.mesaHTML.companion()}</section>` : ''}
+          ${_fichaBestia(c, bestia)}
         </div>
         <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
       </div>`;
   }
 
-  function _fila({ id, icono, nombre, num, sub, det, tags = '' }) {
+  function _fichaBestia(c, bestia) {
+    return bestia && st.grum ? `<section class="mesa-ficha-bestia"><div class="mesa-sec">${esc(c.companion.name || 'Compañero')} · ficha completa
+      <button class="mesa-chip" onclick="Mesa.grum()">Cerrar</button></div>${App.mesaHTML.companion()}</section>` : '';
+  }
+
+  function _filaRecurso(c, r) {
+    const no = _motivoRecurso(c, r);
+    return { no, html: _fila({
+      id: 'rec-' + r.id, icono: 'iconos/recursos', nombre: r.name, num: '', no,
+      sub: `${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}`,
+      det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button></div>`,
+    }) };
+  }
+
+  /* ══ Fuera de combate: explorar, hablar, preparar y descansar ══ */
+  function _fuera(c) {
+    const prep = (c.spells || []).filter(sp => preparado(c, sp));
+    const usados = new Set();
+    const toma = (lista) => lista.filter(sp => !usados.has(sp.id) && usados.add(sp.id));
+    const fila = sp => ({ no: _motivoConjuro(c, sp, 'other'), html: _filaConjuro(c, sp, { via: 'other' }) });
+
+    // Ayudar en una prueba: lo que suma a pruebas, ataques o salvaciones de otros
+    const ayuda = toma(prep.filter(sp => !sp.damage && /prueba|check|habilidad/i.test(sp.desc || ''))).map(fila)
+      .concat((c.resources || []).filter(r => r.max && /prueba|check/i.test(`${r.desc || ''} ${r.note || ''}`)).map(r => _filaRecurso(c, r)));
+    // Rituales: sin espacio si está preparado (+10 min)
+    const rituales = toma((c.spells || []).filter(sp => sp.ritual && sp.level > 0)).map(sp => ({
+      no: preparado(c, sp) ? '' : 'No preparado: prepáralo para lanzarlo como ritual', html: _filaConjuro(c, sp, { via: 'other', ritual: true }) }));
+    // Preparación y utilidad: lo que se lanza antes de pelear o lleva más de un turno
+    const utiles = toma(prep.filter(sp => sp.combat === false || Characters.getActivation(sp) === 'other' || /\b\d+ ?h\b|hora/i.test(sp.duration || ''))).map(fila);
+    const rasgos = (c.resources || []).filter(r => r.max && !ayuda.some(x => x.html.includes(`rec-${r.id}'`))).map(r => _filaRecurso(c, r));
+    const guia = (c.ifttt || []).filter(x => /pre-?combate|antes/i.test(x.section || ''));
+    const limpiar = h => esc(String(h || '').replace(/<[^>]+>/g, ''));
+
+    const bloque = (titulo, items, grupo, vacio) => `<section class="mesa-card mesa-col">
+      <div class="mesa-col-hd">${titulo}</div>
+      <div class="mesa-col-bd">${_columnaItems(items, grupo) || `<p class="mesa-vacio">${vacio}</p>`}</div></section>`;
+
+    const bestia = _bestia(c);
+    return `
+      <div class="mesa-grid">
+        <div class="mesa-centro">
+          <div class="mesa-modo">Fuera de combate · lo que puedes hacer al explorar, hablar o prepararte. <button class="mesa-chip on" onclick="Mesa.combate(true)">⚔ Iniciar combate</button></div>
+          <div class="mesa-acciones mesa-fuera">
+            <div class="mesa-pila">
+              ${bloque('Ayudar en una prueba', ayuda, 'no-ayuda', 'Nada que sume a pruebas.')}
+              ${bloque('Rasgos', rasgos, 'no-rasgos', 'Sin rasgos con usos.')}
+            </div>
+            <div class="mesa-pila">
+              ${bloque('Rituales', rituales, 'no-rituales', 'Sin rituales.')}
+              ${bloque('Preparación y utilidad', utiles, 'no-utiles', 'Sin conjuros de preparación.')}
+              ${guia.length ? `<section class="mesa-card mesa-col"><div class="mesa-col-hd">Tu guía antes de pelear</div><div class="mesa-col-bd mesa-guia">${
+                guia.map(x => `<div><small>${limpiar(x.trigger)}</small>${limpiar(x.action)}</div>`).join('')}</div></section>` : ''}
+            </div>
+          </div>
+          ${_fichaBestia(c, bestia)}
+        </div>
+        <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
+      </div>`;
+  }
+
+  function _fila({ id, icono, nombre, num, sub, det, tags = '', no = '' }) {
     const ab = st.abierto === id;
-    return `<div class="mesa-op ${ab ? 'abierto' : ''}" onclick="Mesa.abrir('${id}')">
+    return `<div class="mesa-op ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.abrir('${id}')">
       <span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/${icono}.svg)"></i></span>
-      <div class="mesa-op-tx"><b>${esc(limpio(nombre))}</b><small>${num ? `<span class="mesa-num">${num}</span> · ` : ''}${esc(sub)}</small></div>
+      <div class="mesa-op-tx"><b>${esc(limpio(nombre))}</b><small>${num ? `<span class="mesa-num">${num}</span> · ` : ''}${esc(sub)}</small>${no ? `<em class="mesa-motivo">${esc(no)}</em>` : ''}</div>
       ${tags}<span class="mesa-mas">›</span>
       ${ab ? `<div class="mesa-det" onclick="event.stopPropagation()">${det}</div>` : ''}
     </div>`;
@@ -432,42 +526,54 @@ const Mesa = (() => {
     });
     if (!lista.length) return '<p class="mesa-vacio">Ningún conjuro con ese filtro.</p>';
     const niveles = [...new Set(lista.map(sp => sp.level))].sort((a, b) => a - b);
-    return niveles.map(lv => `<div class="mesa-grupo"><div class="mesa-sec">${lv === 0 ? 'Trucos <small>sin espacio</small>' : `Nivel ${lv}`}</div>
-      <div class="mesa-hz">${lista.filter(sp => sp.level === lv).map(sp => _filaConjuro(c, sp, true)).join('')}</div></div>`).join('');
+    const espacios = lv => { const sl = c.spellSlots && c.spellSlots[lv]; return sl && sl.max ? ` <small>${'●'.repeat(sl.current)}${'○'.repeat(sl.max - sl.current)} · ${sl.current} de ${sl.max}</small>` : ''; };
+    return niveles.map(lv => `<div class="mesa-grupo"><div class="mesa-sec">${lv === 0 ? 'Trucos <small>sin espacio</small>' : `Nivel ${lv}${espacios(lv)}`}</div>
+      <div class="mesa-hz">${lista.filter(sp => sp.level === lv).map(sp => _filaConjuro(c, sp, { conPrep: true, via: App.enCombate() ? undefined : 'other' })).join('')}</div></div>`).join('');
   }
 
-  function _filaConjuro(c, sp, conPrep, via) {
-    const act = via || Characters.getActivation(sp);
+  /* Fila de un conjuro. `via`: qué gasta al lanzarlo si no es lo de su
+     tiempo de lanzamiento ('reaction' con War Caster; 'other' fuera de
+     combate, que no marca el turno). `ritual`: ofrece lanzarlo como ritual. */
+  function _filaConjuro(c, sp, { conPrep = false, via, ritual = false } = {}) {
+    const act = Characters.getActivation(sp);
     const v = via ? `,'${via}'` : '';
-    const corta = { action: 'ACC.', bonusAction: 'ADIC.', reaction: 'REAC.' }[act] || '';
-    const tags = [sp.concentration ? '<span class="mesa-tg">CONC</span>' : '', sp.domain ? `<span class="mesa-tg d">◆ ${/Cl[ée]rigo/.test(c.clase || '') ? 'DOMINIO' : 'SIEMPRE'}</span>` : '',
+    const corta = { action: 'ACC.', bonusAction: 'ADIC.', reaction: 'REAC.' }[via === 'reaction' ? 'reaction' : act] || '';
+    const nivel = sp.level === 0 ? 'TRUCO' : `NV ${sp.level}`;
+    const tags = [`<span class="mesa-tg">${nivel}</span>`, sp.concentration ? '<span class="mesa-tg">CONC</span>' : '',
+      sp.domain ? `<span class="mesa-tg d">◆ ${/Cl[ée]rigo/.test(c.clase || '') ? 'DOMINIO' : 'SIEMPRE'}</span>` : '',
       sp.mi ? '<span class="mesa-tg d">GRATIS</span>' : '', sp.ritual ? '<span class="mesa-tg">RITUAL</span>' : '', corta ? `<span class="mesa-tg a">${corta}</span>` : ''].join('');
-    const id = (via ? 'sp-wc-' : 'sp-') + sp.id, ab = st.abierto === id;
+    const id = (via === 'reaction' ? 'sp-wc-' : via === 'other' ? 'sp-fc-' : 'sp-') + sp.id, ab = st.abierto === id;
     const prep = preparado(c, sp);
+    const no = ritual ? (prep ? '' : 'No preparado') : _motivoConjuro(c, sp, via);
+    // Aviso de concentración: no impide, pero conviene saberlo antes
+    const conc = sp.concentration && c.concentration && c.concentration !== sp.id
+      ? (c.spells || []).find(x => x.id === c.concentration) : null;
     const efecto = sp.damage || (sp.desc || '').split(' · ').slice(2, 4).join(' · ');
     let det = '';
     if (ab) {
       const op = App.castOptions(sp.id) || { free: false, slots: [] };
       const btns = [];
+      if (ritual && prep) btns.push(`<button class="mesa-btn p" onclick="App.castSpell('${sp.id}',0,'other')">Como ritual · +10 min, sin espacio</button>`);
       if (sp.level === 0) btns.push(`<button class="mesa-btn p" onclick="App.castSpell('${sp.id}',0${v})">✨ Lanzar</button>`);
       else {
         if (op.free) btns.push(`<button class="mesa-btn p" onclick="App.castSpell('${sp.id}',0${v})">✦ Gratis, sin espacio</button>`);
-        op.slots.forEach(lv => btns.push(`<button class="mesa-btn ${op.free ? '' : 'p'}" onclick="App.castSpell('${sp.id}',${lv}${v})">Lanzar con espacio de nivel ${lv}</button>`));
-        if (!btns.length) btns.push('<span class="mesa-vacio">Sin espacios disponibles</span>');
+        op.slots.forEach(lv => btns.push(`<button class="mesa-btn ${op.free || ritual ? '' : 'p'}" onclick="App.castSpell('${sp.id}',${lv}${v})">Lanzar con espacio de nivel ${lv}</button>`));
+        if (!op.free && !op.slots.length) btns.push(`<span class="mesa-vacio">Sin espacios de nivel ${sp.level}${sp.upcast ? ' o más' : ''}</span>`);
       }
       if (esEscritorio()) btns.push(`<button class="mesa-btn" onclick="App.copiarRoll20('conjuro','${sp.id}')">Enviar a Roll20</button>`);
       btns.push(`<button class="mesa-btn" onclick="App.castSpell('${sp.id}')">Ficha completa</button>`);
-      const gasta = { action: 'tu Acción', bonusAction: 'tu Acción adicional', reaction: 'tu Reacción' }[act];
+      const gasta = via === 'other' ? '' : ETQ[via || act];
       det = `<div class="mesa-det" onclick="event.stopPropagation()">
         <div class="mesa-meta">${[sp.castTime, sp.range && App.fmtDist(sp.range), sp.duration].filter(Boolean).map(esc).join(' · ')}</div>
         <p>${esc(sp.desc || '')}</p>
         ${gasta || sp.concentration ? `<p class="mesa-aviso">Al lanzarlo ${[gasta ? 'se marca ' + gasta : '', sp.concentration ? 'pasa a ser tu concentración' : ''].filter(Boolean).join(' y ')}.</p>` : ''}
         <div class="mesa-acc">${btns.join('')}</div></div>`;
     }
-    return `<div class="mesa-cj ${ab ? 'abierto' : ''}" onclick="Mesa.abrir('${id}')">
+    return `<div class="mesa-cj ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.abrir('${id}')">
       ${conPrep ? `<span class="mesa-pr ${prep ? 'on' : ''}" ${sp.level === 0 || sp.domain ? 'title="Siempre preparado"' : `onclick="event.stopPropagation();App.toggleSpellPrepared('${sp.id}')" title="${prep ? 'Despreparar' : 'Preparar'}"`}></span>`
         : '<span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/iconos/conjuros.svg)"></i></span>'}
-      <div class="mesa-op-tx"><b>${esc(limpio(sp.name))}</b><small>${esc([sp.castTime, sp.range && App.fmtDist(sp.range), efecto].filter(Boolean).join(' · '))}</small></div>
+      <div class="mesa-op-tx"><b>${esc(limpio(sp.name))}</b><small>${esc([sp.castTime, sp.range && App.fmtDist(sp.range), efecto].filter(Boolean).join(' · '))}</small>
+        ${no ? `<em class="mesa-motivo">${esc(no)}</em>` : conc ? `<em class="mesa-motivo aviso">Rompe tu concentración en ${esc(limpio(conc.name))}</em>` : ''}</div>
       <span class="mesa-tags">${tags}</span>${det}</div>`;
   }
 
@@ -492,6 +598,13 @@ const Mesa = (() => {
 
   /* ── Interacciones de la vista ── */
   function abrir(id) { st.abierto = st.abierto === id ? null : id; _pintar(); }
+  // Entrar o salir de combate cambia lo que muestra la pestaña Combate
+  function combate(on) {
+    if (on) { if (!App.enCombate()) { App.nuevoTurno(); App.startCombat(); } }
+    else if (App.enCombate()) App.resetCombat();
+    st.abierto = null;
+    render();
+  }
   function grum() { st.grum = !st.grum; _pintar(); }
   function grupo(g) { if (st.grupos.has(g)) st.grupos.delete(g); else st.grupos.add(g); _pintar(); }
   function filtrar(grupo, val) { st[grupo] = st[grupo] === val && grupo === 'tipo' ? null : val; _pintar(); }
@@ -514,6 +627,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, vida, hoja, abrir, grupo, grum, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, vida, hoja, abrir, grupo, grum, combate, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí
