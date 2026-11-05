@@ -52,10 +52,20 @@
   border: 1px solid var(--m-borde-2); background: transparent; color: var(--m-tx2); font: 600 12.5px 'Jost', sans-serif; }
 .mesa-tipo .mesa-ico { width: 16px; height: 16px; }
 .mesa-tipo.on { background: var(--m-fill); color: var(--m-fill-tx); border-color: var(--m-fill); }
-.mesa-comp-pg .mesa-chip { min-height: 28px; padding: 2px 10px; }
+.mesa-comp-pg { flex-wrap: wrap; row-gap: 6px; }
+.mesa-comp-pg .mesa-btn { min-height: 32px; padding: 3px 9px; font-size: 12px; }
+.mesa-comp-in { width: 46px; min-height: 32px; padding: 2px; border-radius: 8px; border: 1px solid var(--m-borde-2); background: var(--bg); color: var(--text); font: 600 14px 'Jost', sans-serif; text-align: center; }
+/* Inspiración Heroica en la cabecera */
+.mc-insp { background: none; border: none; cursor: pointer; text-align: center; padding: 0; }
+.mc-insp b { display: block; font: 700 20px/1.1 'Cinzel', serif; color: var(--m-tx2); }
+.mc-insp.on b { color: var(--m-acento-2); text-shadow: 0 0 8px color-mix(in srgb, var(--m-acento) 60%, transparent); }
 .mesa-comp-pg b { white-space: nowrap; }
 .mesa-rasgos { margin-top: 6px; font-size: 12.5px; color: var(--m-tx2); line-height: 1.45; }
 .mesa-rasgos p { margin: 0 0 6px; }
+.mesa-rasgo { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; margin-top: 4px; padding: 4px 10px;
+  border-radius: 8px; border: 1px solid var(--m-borde); background: var(--bg4); color: var(--text); font: 600 13px 'Jost', sans-serif; cursor: pointer; text-align: left; }
+.mesa-rasgo.abierto { border-color: var(--m-borde-2); }
+.mesa-rasgo-tx { padding: 6px 4px 2px; }
 .mesa-rasgos b { color: var(--text); font-weight: 600; }
 
 /* Cabecera: nota rápida y cuaderno (antes flotaban sobre la columna derecha) */

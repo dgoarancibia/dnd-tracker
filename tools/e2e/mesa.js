@@ -200,12 +200,24 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   grum.mar = await p.evaluate(() => App.getActiveChar().companion.beast);
   await p.evaluate(() => App.setCompanionBeast('land')); await sleep(300);
   await p.evaluate(() => Mesa.grupo('bestia-rasgos')); await sleep(200);
+  grum.cerrados = await p.evaluate(() => ({ titulos: [...document.querySelectorAll('#mesa-combate .mesa-rasgo')].map(b => b.textContent.trim().replace(/\s*›$/, '')), textos: document.querySelectorAll('#mesa-combate .mesa-rasgo-tx').length }));
+  await p.evaluate(() => Mesa.grupo('rasgo-1')); await sleep(200);
   grum.rasgos = await p.evaluate(() => document.querySelector('#mesa-combate .mesa-rasgos')?.textContent || '');
+  grum.abiertos = await p.evaluate(() => document.querySelectorAll('#mesa-combate .mesa-rasgo-tx').length);
   await p.evaluate(() => { const i = document.querySelector('#mesa-combate .mesa-inline-nom'); i.value = 'Grum el Grande'; i.dispatchEvent(new Event('change')); }); await sleep(300);
   grum.renombrado = await p.evaluate(() => App.getActiveChar().companion.name);
-  chk('compañero en Mesa: Tierra/Mar/Cielo con íconos, sin emoji; cambia de tipo; rasgos plegados; nombre editable',
-    grum.tipos.join() === 'Tierra,Mar,Cielo' && grum.activo === 'Tierra' && !grum.emoji && grum.mar === 'sea' && /Charge/.test(grum.rasgos) && /Velocidad/.test(grum.rasgos) && grum.renombrado === 'Grum el Grande', grum);
+  chk('compañero en Mesa: Tierra/Mar/Cielo con íconos, sin emoji; cambia de tipo; rasgos como títulos que se abren de a uno; nombre editable',
+    grum.tipos.join() === 'Tierra,Mar,Cielo' && grum.activo === 'Tierra' && !grum.emoji && grum.mar === 'sea' && grum.cerrados.titulos.includes("Beast's Strike") && grum.cerrados.textos === 0 && grum.abiertos === 1 && /línea recta/.test(grum.rasgos) && /Velocidad/.test(grum.rasgos) && grum.renombrado === 'Grum el Grande', grum);
   await p.evaluate(() => App.setCompanionField('name', 'Grum')); await sleep(200);
+
+  // Vida de Grum con cantidad libre, e Inspiración en la cabecera
+  await p.evaluate(() => { const c = App.getActiveChar(); c.companion.hp = 20; c.inspiration = false; App.reloadChar(c); }); await sleep(300);
+  await p.type('#mesa-combate .mesa-comp-in', '7'); await p.evaluate(() => document.querySelector('#mesa-combate .mesa-comp-pg .mc-dmg').click()); await sleep(300);
+  const vg = await p.evaluate(() => App.getActiveChar().companion.hp);
+  await p.click('.mc-insp'); await sleep(300);
+  const insp = await p.evaluate(() => ({ dato: App.getActiveChar().inspiration, on: document.querySelector('.mc-insp').classList.contains('on') }));
+  chk('Grum recibe 7 de daño de una vez; la Inspiración se marca desde la cabecera', vg === 13 && insp.dato && insp.on, { vg, insp });
+  await p.evaluate(() => { const c = App.getActiveChar(); c.companion.hp = 20; c.inspiration = false; App.reloadChar(c); });
 
   // Sin flotantes encima de la columna derecha: nota y cuaderno en la cabecera; sin versión
   const cab = await p.evaluate(() => ({ fabs: [...document.querySelectorAll('.fab, .fab-note')].filter(f => getComputedStyle(f).display !== 'none').length,

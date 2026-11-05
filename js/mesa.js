@@ -143,6 +143,8 @@ const Mesa = (() => {
         <div><b>${esc(vel)}</b><span class="mesa-lbl">Vel.</span></div>
         <div><b>${sg(pb)}</b><span class="mesa-lbl">Comp.</span></div>
         ${cd != null ? `<div><b>${cd}</b><span class="mesa-lbl">CD</span></div>` : ''}
+        <button class="mc-insp ${c.inspiration ? 'on' : ''}" onclick="App.toggleInspiration()" title="${c.inspiration ? 'Tienes Inspiración Heroica: toca para usarla' : 'Sin Inspiración Heroica: toca para ganarla'}">
+          <b>${c.inspiration ? '★' : '☆'}</b><span class="mesa-lbl">Insp.</span></button>
       </div>
       <span class="mc-esp"></span>
       <div class="mc-turno">${_turno(c, false)}</div>
@@ -167,6 +169,13 @@ const Mesa = (() => {
       <button class="mesa-chip" onclick="Mesa.combate(false)">✕ Terminar combate</button>`;
     return enLinea ? fila1 + '<span class="mesa-vsep"></span>' + fila2
       : `<div class="mc-fila">${fila1}</div><div class="mc-fila">${fila2}</div>`;
+  }
+
+  // Daño o curación al compañero con la cantidad escrita (vacío = 1)
+  function vidaBestia(el, signo) {
+    const inp = el.closest('.mesa-comp-pg').querySelector('.mesa-comp-in');
+    const v = parseInt(inp && inp.value, 10) || 1;
+    App.adjustCompanionHP(signo * Math.max(1, v));
   }
 
   function vida(signo) {
@@ -450,16 +459,21 @@ const Mesa = (() => {
         </div></div>
       <div class="mesa-tipos">${tipos}</div>
       <div class="mesa-comp-pg"><span class="mesa-lbl">PG</span><b>${bestia.pg} / ${bestia.max}</b><span class="mc-esp"></span>
-        <button class="mesa-chip" onclick="App.adjustCompanionHP(-1)">−1</button><button class="mesa-chip" onclick="App.adjustCompanionHP(1)">+1</button></div>
+        <input class="mesa-comp-in" type="number" inputmode="numeric" min="1" placeholder="0" onkeydown="if(event.key==='Enter')Mesa.vidaBestia(this,-1)">
+        <button class="mesa-btn mc-dmg" onclick="Mesa.vidaBestia(this,-1)">Daño</button><button class="mesa-btn mc-heal" onclick="Mesa.vidaBestia(this,1)">Curar</button></div>
       <div class="mesa-barra ${pct <= 0.25 ? 'mc-crit' : pct <= 0.5 ? 'mc-mid' : 'mc-ok'}">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.round(pct * 10) ? '' : 'v'}"></i>`).join('')}</div>
       ${caido ? `<button class="mesa-btn p mesa-ancho" onclick="App.openCompanionRevive()">Revivir a ${esc(comp.name || 'tu compañero')}</button>` : ''}
       <div class="mesa-mini"><div><b>${bestia.ca}</b><span class="mesa-lbl">CA</span></div><div><b>${sg(bestia.golpe)}</b><span class="mesa-lbl">Ataque</span></div>
         <div><b>${esc(bestia.daño)}</b><span class="mesa-lbl">Daño</span></div></div>
-      <button class="mesa-plegar" onclick="Mesa.grupo('bestia-rasgos')">${abierto ? '▾' : '▸'} Velocidad, sentidos y rasgos</button>
+      <button class="mesa-plegar" onclick="Mesa.grupo('bestia-rasgos')">${abierto ? '▾' : '▸'} Rasgos de ${esc(comp.name || 'tu compañero')}</button>
       ${abierto ? `<div class="mesa-rasgos">
         <p><b>Velocidad</b> ${esc(_ftAm(bestia.b.speed))}</p><p><b>Sentidos</b> ${esc(bestia.b.senses || '')}</p>
-        <p><b>${esc(bestia.ataque.name)}</b> ${esc(bestia.ataque.desc || '')}</p>
-        ${(bestia.b.traits || []).map(t => `<p><b>${esc(t.name)}</b> ${esc(t.desc)}</p>`).join('')}
+        ${[bestia.ataque, ...(bestia.b.traits || [])].map((t, i) => {
+          // Solo el título; el texto se abre al tocarlo, uno a la vez si quieres
+          const k = 'rasgo-' + i, ab = st.grupos.has(k);
+          return `<button class="mesa-rasgo ${ab ? 'abierto' : ''}" onclick="Mesa.grupo('${k}')"><span>${esc(t.name)}</span><span class="mesa-mas">›</span></button>
+            ${ab ? `<p class="mesa-rasgo-tx">${esc(t.desc || '')}</p>` : ''}`;
+        }).join('')}
         ${bestia.nivel >= 7 ? `<button class="mesa-chip ${comp.forceDamage ? 'on' : ''}" onclick="App.toggleCompanionForceDamage()">Daño de fuerza (Exceptional Training)</button>` : ''}
       </div>` : ''}
     </div>`;
@@ -669,6 +683,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, vida, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, vida, vidaBestia, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí
