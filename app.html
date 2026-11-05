@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 510;
+const _SW_EXPECTED = 511;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -1203,6 +1203,20 @@ const _SW_EXPECTED = 510;
   </div>
 </div>
 
+<!-- MODAL PEDIR UN DATO (reemplaza el prompt() del navegador) -->
+<div class="modal-overlay" id="pedirModal" onclick="if(event.target===this)App._pedirCerrar(null)">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title" id="pedirTitulo"></div>
+    <p class="confirm-msg" id="pedirAyuda" style="white-space:pre-line;"></p>
+    <input class="form-input" id="pedirInput" style="width:100%;" autocomplete="off"
+           onkeydown="if(event.key==='Enter')App._pedirCerrar(this.value);if(event.key==='Escape')App._pedirCerrar(null)">
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="App._pedirCerrar(null)">Cancelar</button>
+      <button class="btn btn-gold" onclick="App._pedirCerrar(document.getElementById('pedirInput').value)">✓ Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CARGAR PUNTO GUARDADO (autosave + checkpoints) -->
 <div class="modal-overlay" id="loadPointsModal" onclick="if(event.target===this)App.closeLoadModal()">
   <div class="modal" style="max-width:420px;">
@@ -1334,7 +1348,7 @@ const _SW_EXPECTED = 510;
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=4"></script>
 <script src="js/bastion.js?v=2"></script>
-<script src="js/app.js?v=297"></script>
+<script src="js/app.js?v=298"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>

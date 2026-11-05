@@ -4325,11 +4325,11 @@ const App = (() => {
       </div>`;
   }
 
-  function agregarVinculo() {
+  async function agregarVinculo() {
     if (!_char) return;
     const lista = _bonded(_char);
     if (lista.length >= _maxVinculos(_char)) return;
-    const v = prompt('¿A quién vinculaste? (nombre corto)', '');
+    const v = await _pedir('¿A quién vinculaste?', '', { ayuda: 'Nombre corto' });
     if (v === null) return;
     const nombre = v.trim().slice(0, 30);
     if (!nombre) return;
@@ -4378,9 +4378,9 @@ const App = (() => {
     _renderCombateDer();
   }
 
-  function marcarObjetivo() {
+  async function marcarObjetivo() {
     if (!_char) return;
-    const v = prompt('¿A quién marcaste? (nombre corto, opcional)', _char.markTarget || '');
+    const v = await _pedir('¿A quién marcaste?', _char.markTarget || '', { ayuda: 'Nombre corto, opcional' });
     if (v === null) return;
     const nombre = v.trim().slice(0, 40);
     if (nombre) _char.markTarget = nombre;
@@ -4396,10 +4396,10 @@ const App = (() => {
     _renderCombateDer();
   }
 
-  function registrarGrapple() {
+  async function registrarGrapple() {
     if (!_char || !_char.companion) return;
     const actual = _char.companion.grappling || '';
-    const v = prompt('¿A quién apresó? (nombre corto)', actual);
+    const v = await _pedir('¿A quién apresó?', actual, { ayuda: 'Nombre corto' });
     if (v === null) return;
     const nombre = v.trim().slice(0, 40);
     if (nombre) _char.companion.grappling = nombre;
@@ -5493,8 +5493,8 @@ const App = (() => {
     _updateTempHPDisplay();
   }
 
-  function promptTempHP() {
-    const val = prompt(`HP Temporales actuales: ${_char.hp.temp}\n¿Cuántos HP temporales? (aplica solo el mayor)`, '0');
+  async function promptTempHP() {
+    const val = await _pedir('PG temporales', '', { numero: true, ayuda: `Ahora tienes ${_char.hp.temp || 0}. No se suman: queda el mayor.` });
     if (val === null) return;
     const n = parseInt(val);
     if (!isNaN(n)) setTempHP(n);
@@ -5898,10 +5898,10 @@ const App = (() => {
     _renderInitTracker();
   }
 
-  function editCombatantHP(id) {
+  async function editCombatantHP(id) {
     const c = _combatants.find(x => x.id === id);
     if (!c) return;
-    const val = prompt(`HP de ${c.name}:`, c.hp ?? '');
+    const val = await _pedir(`PG de ${c.name}`, c.hp ?? '', { numero: true });
     if (val === null) return;
     const n = parseInt(val);
     if (!isNaN(n)) {
@@ -10086,12 +10086,12 @@ const App = (() => {
 
   // Renombrar la sesión: se hace DESPUÉS, con calma, no en la mesa.
   // Sin nombre las sesiones son "Sesión 1, 2, 3…" e indistinguibles.
-  function renameSession(sessionId) {
+  async function renameSession(sessionId) {
     const sess = (_char.sessions || []).find(s => s.id === sessionId)
               || _getOpenSession();
     if (!sess) return;
     const n = _sessionNumber(sess.id);
-    const nuevo = prompt(`Nombre para la sesión ${n}:`, sess.label || '');
+    const nuevo = await _pedir(`Nombre de la sesión ${n}`, sess.label || '');
     if (nuevo === null) return;
     sess.label = nuevo.trim().slice(0, 60);
     _saveChar();
@@ -12022,7 +12022,7 @@ ${notesText}`;
       return;
     }
     const def = `HP ${_char.hp.current}/${_char.hp.max} · Nvl ${_char.nivel || '?'}`;
-    const label = prompt('Nombre del checkpoint (ej: "antes del jefe"):', def);
+    const label = await _pedir('Nombre del checkpoint', def, { ayuda: 'Por ejemplo: "antes del jefe"' });
     if (label === null) return; // canceló
     _saveChar();
     _showCloudSaveOverlay('☁ Creando checkpoint…');
@@ -12391,6 +12391,31 @@ ${notesText}`;
     document.getElementById('confirmModal').classList.add('show');
   }
 
+  /* Pide un dato con el estilo de la app (antes era prompt() del navegador).
+     Devuelve una promesa con el texto, o null si se cancela. */
+  let _pedirResolver = null;
+  function _pedir(titulo, valor = '', { ayuda = '', numero = false } = {}) {
+    if (_pedirResolver) _pedirResolver(null);
+    const input = document.getElementById('pedirInput');
+    document.getElementById('pedirTitulo').textContent = titulo;
+    const ayudaEl = document.getElementById('pedirAyuda');
+    ayudaEl.textContent = ayuda;
+    ayudaEl.style.display = ayuda ? '' : 'none';
+    input.type = numero ? 'number' : 'text';
+    input.inputMode = numero ? 'numeric' : 'text';
+    input.value = valor == null ? '' : valor;
+    document.getElementById('pedirModal').classList.add('show');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+    return new Promise(res => { _pedirResolver = res; });
+  }
+
+  function _pedirCerrar(valor) {
+    document.getElementById('pedirModal').classList.remove('show');
+    const res = _pedirResolver;
+    _pedirResolver = null;
+    if (res) res(valor);
+  }
+
   function closeConfirm() {
     document.getElementById('confirmModal').classList.remove('show');
     _confirmCallback = null;
@@ -12602,7 +12627,7 @@ ${notesText}`;
     // IFTTT
     openIfttt, closeIfttt, openIftttForm, closeIftttForm,
     selectIftttTag, saveIftttForm, deleteIftttEntry,
-    closeAllOverlays, closeConfirm,
+    closeAllOverlays, closeConfirm, _pedirCerrar,
 
     // Detalle spell
     openSpellDetail, closeSpellDetail,
