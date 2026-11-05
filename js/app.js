@@ -7810,10 +7810,13 @@ const App = (() => {
     const tipo = w.kind === 'weapon' && Characters.getAmmoType(w);
     if (!tipo) return '';
     const esc = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-    const opciones = (_char.consumables || []).filter(it => it && it.name).map(it => {
-      const v = it.id || it.name;
-      return `<option value="${esc(v)}" ${w.municion === v ? 'selected' : ''}>${esc(it.name)} (${parseInt(it.qty) || 0})</option>`;
-    }).join('');
+    // Primero lo catalogado como Munición; el resto aparte por si el carcaj quedó en otra categoría.
+    const opcion = it => { const v = it.id || it.name;
+      return `<option value="${esc(v)}" ${w.municion === v ? 'selected' : ''}>${esc(it.name)} (${parseInt(it.qty) || 0})</option>`; };
+    const items = (_char.consumables || []).filter(it => it && it.name);
+    const mun = items.filter(it => it.category === 'Ammo'), otros = items.filter(it => it.category !== 'Ammo');
+    const opciones = (mun.length ? `<optgroup label="Munición">${mun.map(opcion).join('')}</optgroup>` : '')
+      + (otros.length ? `<optgroup label="${mun.length ? 'Otros ítems' : 'Ítems (ninguno catalogado como Munición)'}">${otros.map(opcion).join('')}</optgroup>` : '');
     return `<label class="modal-mini-label">🏹 ${tipo.label}: qué ítem gasta al atacar</label>
       <select class="form-input" style="width:100%;" onchange="App.setMunicionArma('${slotKey}', this.value)">
         <option value="">Automático (ítem llamado ${tipo.label})</option>${opciones}</select>`;
