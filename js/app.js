@@ -891,7 +891,8 @@ const App = (() => {
 
   // Notebook state
   let _notebookOpen = false;
-  let _notebookTab  = 'diary'; // 'diary' | 'codex' | 'log' | 'stats' | 'maps' | 'timeline'
+  // Hojas es el diario definitivo y abre primero; 'diary' son las notas rápidas de chat
+  let _notebookTab  = 'pages'; // 'pages' | 'diary' | 'codex' | 'log' | 'stats' | 'maps' | 'timeline'
   let _diaryCatFilter = '';    // '' = todas las categorías
   let _diarySearch    = '';    // texto de búsqueda
   let _newDiaryCat    = '';    // categoría de la próxima entrada
@@ -927,11 +928,8 @@ const App = (() => {
     if (panel) panel.classList.toggle('open', _notebookOpen);
     document.body.classList.toggle('diario-abierto', _notebookOpen); // el 📓 flotante tapaba "Enviar"
     document.getElementById('overlayBackdrop').classList.toggle('show', _notebookOpen || _iftttOpen);
-    if (_notebookOpen) {
-      if (_notebookTab === 'diary') { _renderDiaryEntries(); _renderSessionBar(); }
-      else if (_notebookTab === 'pages') { if (_hojasOk()) Hojas.render(); }
-      else _renderCombatLog();
-    }
+    // switchNotebookTab deja visible el panel correcto (el HTML arranca con el del chat)
+    if (_notebookOpen) switchNotebookTab(_notebookTab);
   }
 
 

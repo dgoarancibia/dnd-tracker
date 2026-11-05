@@ -17,7 +17,10 @@
    de la entidad al pintar, así renombrar no rompe nada. El índice se
    reconstruye al guardar cada nota, y abrir una entidad solo lo lee.
 
-   No toca c.diary: el diario sigue igual hasta que Hojas lo reemplace.
+   Hojas es el diario definitivo (nov-2026). El diario de chat (c.diary)
+   sigue existiendo para las notas rápidas; importarDiario() pasa sus
+   entradas a hojas, una por sesión, y recuerda cuáles ya pasó
+   (c.diarioEnHojas) para no duplicarlas.
    Singleton global: Hojas. Se inicializa desde app.js con Hojas.init(ctx).
    ═══════════════════════════════════════════════════════ */
 
@@ -824,13 +827,17 @@ const Hojas = (() => {
       }
     }
 
+    const pend = q ? 0 : _pendientesDiario().length;
+    const aviso = pend ? `<div class="hj-importar"><span>Tienes ${pend} ${pend === 1 ? 'nota' : 'notas'} en el diario de chat que no ${pend === 1 ? 'está' : 'están'} en Hojas.</span>
+      <button class="hj-importar-btn" onclick="Hojas.importarDiario()">Traerlas a Hojas</button></div>` : '';
+
     if (!notas.length && !entHTML) {
-      body.innerHTML = `<div class="pg-empty">${q ? 'Nada coincide.'
-        : 'Sin notas todavía.<br><br>Escribí con <code>#</code> para títulos, <code>-</code> para listas, <code>@</code> para mencionar y <code>/</code> para comandos.<br>El diario de siempre sigue intacto en su pestaña.'}</div>`;
+      body.innerHTML = aviso + `<div class="pg-empty">${q ? 'Nada coincide.'
+        : 'Sin notas todavía.<br><br>Escribí con <code>#</code> para títulos, <code>-</code> para listas, <code>@</code> para mencionar y <code>/</code> para comandos.'}</div>`;
       return;
     }
 
-    body.innerHTML = entHTML + (notas.length ? (q ? `<div class="hj-sec-hd">Notas</div>` : '') + `<div class="pg-list">` + notas.map(p => {
+    body.innerHTML = aviso + entHTML + (notas.length ? (q ? `<div class="hj-sec-hd">Notas</div>` : '') + `<div class="pg-list">` + notas.map(p => {
       const fecha = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('es', { day: '2-digit', month: '2-digit' }) : '';
       const bloques = (p.doc && p.doc.content) || [];
       let prev = bloques.map(_textoDe).filter(t => t.trim()).slice(1, 2).join(' ');
@@ -976,6 +983,55 @@ const Hojas = (() => {
     render();
     const body = document.getElementById('pgBody');
     if (body && _saltarA == null) body.scrollTop = 0;
+  }
+
+  /* ── Traer el diario de chat a Hojas ────────────────────────────────
+     Una hoja por sesión (o por día, si la entrada no tiene sesión), con
+     cada entrada como un párrafo que empieza con su hora. Las menciones
+     del diario pasan como @menciones a la misma entidad. */
+  function _pendientesDiario() {
+    const c = C();
+    if (!c) return [];
+    const hechos = new Set(c.diarioEnHojas || []);
+    return (c.diary || []).filter(e => e && !hechos.has(e.id) && String(e.text || '').trim());
+  }
+
+  function importarDiario() {
+    const c = C();
+    const pendientes = _pendientesDiario();
+    if (!pendientes.length) { _ctx.toast('No hay notas nuevas en el diario'); return; }
+    const grupos = new Map();
+    pendientes.slice().sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp))).forEach(e => {
+      const d = new Date(e.timestamp);
+      const clave = e.sessionId || 'dia-' + (isNaN(d) ? 'sin-fecha' : d.toISOString().slice(0, 10));
+      if (!grupos.has(clave)) grupos.set(clave, []);
+      grupos.get(clave).push(e);
+    });
+    let hojas = 0;
+    grupos.forEach((entradas, clave) => {
+      const sessionId = clave.startsWith('dia-') ? null : clave;
+      const d0 = new Date(entradas[0].timestamp);
+      const titulo = _sesionLabel(sessionId) || (isNaN(d0) ? 'Notas del diario' : 'Notas del ' + d0.toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: 'numeric' }));
+      const lineas = [`# Diario · ${titulo}`];
+      entradas.forEach(e => {
+        const d = new Date(e.timestamp);
+        const hora = isNaN(d) ? '' : `**${d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}** · `;
+        const [primera, ...resto] = String(e.text).split('\n');
+        lineas.push(hora + primera, ...resto);
+        const ms = (e.mentions || []).filter(m => m && m.name);
+        if (ms.length) lineas.push('Menciona: ' + ms.map(m => `@[${m.name}]`).join(' '));
+        lineas.push('');
+      });
+      const doc = _docDesdeTexto(lineas.join('\n'));
+      const p = { id: nuevoId('pg'), doc, sessionId, createdAt: isNaN(d0) ? ahora() : d0.toISOString(), updatedAt: ahora(), deDiario: true };
+      _pages().push(p);
+      _reindexar(p.id, 'page', doc, sessionId);
+      hojas++;
+    });
+    c.diarioEnHojas = [...(c.diarioEnHojas || []), ...pendientes.map(e => e.id)];
+    _ctx.save(true);
+    _ctx.toast(`${pendientes.length} ${pendientes.length === 1 ? 'nota pasó' : 'notas pasaron'} a ${hojas} ${hojas === 1 ? 'hoja' : 'hojas'}`);
+    render();
   }
 
   function nuevaNota() {
@@ -1190,7 +1246,7 @@ const Hojas = (() => {
 
   return {
     init, render, reset, flush, salir,
-    nuevaNota, abrirNota, abrirEntidad, volver, borrarNota,
+    nuevaNota, abrirNota, abrirEntidad, volver, borrarNota, importarDiario,
     renombrar, cambiarTipo, buscar, deshacer, rehacer,
     abrirBuscar, cerrarBuscar, buscarEnNota, siguienteCoincidencia, _teclaBuscar,
     _elegir, _abrirMencion,

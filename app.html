@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 493;
+const _SW_EXPECTED = 494;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,14 +103,14 @@ const _SW_EXPECTED = 493;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=145">
+<link rel="stylesheet" href="css/style.css?v=146">
 <link rel="stylesheet" href="css/tema.css?v=3">
 <link rel="stylesheet" href="css/pergamino.css?v=3">
 <link rel="stylesheet" href="css/onix.css?v=4">
 <link rel="stylesheet" href="css/mesa.css?v=5">
 <script src="js/tema.js?v=3"></script>
 <script src="js/iconos.js?v=2"></script>
-<script src="js/mesa.js?v=5"></script>
+<script src="js/mesa.js?v=6"></script>
 </head>
 <body>
 
@@ -523,13 +523,13 @@ const _SW_EXPECTED = 493;
   <!-- Header con sub-tabs -->
   <div class="diary-header">
     <div class="nb-tabs">
-      <button class="nb-tab active" id="nbTabDiary"  onclick="App.switchNotebookTab('diary')">📓 Diario</button>
+      <button class="nb-tab active" id="nbTabPages" onclick="App.switchNotebookTab('pages')">📝 Hojas</button>
+      <button class="nb-tab"        id="nbTabDiary"  onclick="App.switchNotebookTab('diary')">💬 Notas rápidas</button>
       <button class="nb-tab"        id="nbTabCodex"  onclick="App.switchNotebookTab('codex')">📇 Gente/Misiones</button>
       <button class="nb-tab"        id="nbTabLog"    onclick="App.switchNotebookTab('log')">⚔ Log<span class="nb-badge" id="nbLogBadge"></span></button>
       <button class="nb-tab"        id="nbTabStats"  onclick="App.switchNotebookTab('stats')">📊 Stats</button>
       <button class="nb-tab"        id="nbTabMaps"   onclick="App.switchNotebookTab('maps')">🗺 Mapas</button>
       <button class="nb-tab"        id="nbTabTimeline" onclick="App.switchNotebookTab('timeline')">📅 Sesiones</button>
-      <button class="nb-tab"        id="nbTabPages" onclick="App.switchNotebookTab('pages')">📝 Hojas<span class="nb-beta">beta</span></button>
     </div>
     <button class="diary-close-btn" onclick="App.toggleNotebook()">✕</button>
   </div>
@@ -1332,9 +1332,9 @@ const _SW_EXPECTED = 493;
 <script src="js/export_resumen.js?v=3"></script>
 <script src="js/roll20_es.js?v=2"></script>
 <script src="js/vendor/tiptap.min.js?v=2"></script>
-<script src="js/hojas.js?v=3"></script>
+<script src="js/hojas.js?v=4"></script>
 <script src="js/bastion.js?v=2"></script>
-<script src="js/app.js?v=291"></script>
+<script src="js/app.js?v=292"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>

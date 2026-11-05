@@ -445,7 +445,7 @@ const Mesa = (() => {
     const lanzador = (c.spells || []).length > 0;
     const bloqueConc = lanzador ? `<section><div class="mesa-sec">Concentración</div><div class="mesa-card mesa-conc">
       ${conc || c.concentration ? `<span class="mesa-lbl">Activa</span><b>${esc(limpio(conc ? conc.name : c.concentration))}</b>
-        ${conc ? `<small>${esc([conc.range, conc.duration].filter(Boolean).join(' · '))}</small>` : ''}
+        ${conc && conc.duration ? `<small>${esc(conc.duration.replace(/^Concentraci[oó]n\s*\(?|\)$/gi, ''))}</small>` : ''}
         <button class="mesa-btn" onclick="App.setConc(null)">Terminar</button>` : '<span class="mesa-vacio">Ninguna</span>'}</div></section>` : '';
 
     const bestia = _bestia(c);

@@ -65,6 +65,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `onix.js`: tema Ónix: contraste en todas las pestañas y estados, íconos en lugar de emoji y vuelta atrás al cambiar de tema, características estilo D&D Beyond, CA en escudo, menú con 4 temas, 600/375 sin scroll horizontal, offline (termina en `TODO OK`).
   - `contraste.js` trata un símbolo suelto (★ ● + −) como ícono de control (3:1) y, con `peorFondo`, usa ese color en lugar del fondo del body. Antes tenía un bug: con un hex devolvía siempre 0 problemas.
   - `mesa.js`: vista Mesa: por defecto no aparece; el menú la activa y se recuerda; lanzar Bless gasta espacio, marca la Acción y la concentración; otro de concentración pregunta antes sin gastar; truco sin espacio; Channel Divinity y Daño; Torvald con Grum y ataque de oportunidad (Reacción); contraste en Clásico y Ónix; 1180 y 390 sin scroll lateral; botón Tiradas en celular; desactivarla devuelve la ficha de siempre (termina en `TODO OK`).
+  - `hojas_diario.js`: el cuaderno abre en Hojas; el diario de chat pasa a hojas por sesión con hora y menciones enlazadas, sin duplicar; Notas rápidas sigue (termina en `TODO OK`).
   - `turno.js`: en combate, Atacar descuenta ataques; la mano secundaria usa la Acción adicional salvo con Nick; usar un recurso marca su activación (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
@@ -129,7 +130,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
     - Entidades compartidas con el Codex (`c.entities`, tipos `npc`/`quest`/`lugar`).
     - Comandos `/` en español con alias en inglés (`/lugar`=`/map`, `/mision`=`/quest`, `/objeto`=`/item`, `/faccion`=`/faction`, `/pendiente`=`/todo`, `/importante`=`/star`).
     - El índice de menciones se reconstruye al guardar.
-  - El diario actual no se toca hasta que Diego confirme que Hojas lo reemplaza. Verificar teclado y selección en iPad.
+  - **Hojas es el diario definitivo** (Diego, nov-2026): el cuaderno abre en Hojas, sin "beta". El chat quedó como pestaña "Notas rápidas" (el 📝 flotante sigue escribiendo ahí). `Hojas.importarDiario()` pasa las entradas del chat a hojas, una por sesión (o por día), con la hora en negrita y las menciones como @menciones; recuerda las pasadas en `c.diarioEnHojas` para no duplicar. Verificar teclado y selección en iPad.
   - Fases:
     1. Editor, `@`, página de entidad, renombrar.
     2. `/` de entidades, sesión, búsqueda, pegar markdown.

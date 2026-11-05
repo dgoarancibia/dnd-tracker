@@ -9446,6 +9446,10 @@ mark.diary-highlight {
 .pg-card-prev { font-size: 11px; color: var(--text-mid); margin-top: 4px; line-height: 1.4; }
 .pg-card-meta { font-size: 9.5px; color: #8fb98a; margin-top: 4px; }
 .pg-empty { font-size: 12px; color: var(--text-dim); text-align: center; padding: 40px 12px; line-height: 1.6; }
+/* Aviso para traer el diario de chat a Hojas */
+.hj-importar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 12px; padding: 10px 12px; border: 1px dashed var(--border-strong); border-radius: 10px; font-size: 13px; color: var(--text); }
+.hj-importar span { flex: 1; min-width: 160px; }
+.hj-importar-btn { min-height: 36px; padding: 6px 14px; border-radius: 8px; border: none; background: var(--gold); color: var(--bg); font: 600 13px 'Jost', sans-serif; cursor: pointer; }
 .pg-empty code, .hj-vacio code { background: var(--bg3); padding: 1px 5px; border-radius: 4px; color: #7ea9c9; }
 .pg-del {
   display: block; margin: 28px 0 0 auto; padding: 5px 12px; min-height: 30px;
