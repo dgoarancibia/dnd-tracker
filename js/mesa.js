@@ -344,13 +344,22 @@ const Mesa = (() => {
     (c.features || []).filter(f => f.type === 'active' && !conRecurso.has(norm(f.name)) && !/^channel divinity/i.test(f.source || '')).forEach(f => {
       const tipo = Characters.getActivation(f);
       if (!col[tipo]) return;
-      if (/manifest echo/i.test(f.name || '')) { col[tipo].push(_filaEco(c, f)); return; }
+      if (/manifest echo/i.test(f.name || '')) { if (!col[tipo].some(x => x.eco)) col[tipo].push(_filaEco(c, f)); return; }
       const no = _turnoUsado(c, tipo);
       col[tipo].push({ no, html: _fila({ id: 'rasgo-' + f.id, icono: 'iconos/habilidades', nombre: f.name, num: '', no,
         sub: [f.range, f.desc].filter(Boolean).join(' · '),
         det: `<p>${esc(f.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.usarRasgo('${tipo}','${f.id}')">Usar · ${ETQ[tipo]}</button>
           <button class="mesa-btn" onclick="event.stopPropagation();App.openFeatureDetail && App.openFeatureDetail('${f.id}')">Ficha completa</button></div>` }) });
     });
+
+    // Echo Knight: el eco va aunque el personaje no tenga guardado el rasgo (como la vista de siempre,
+    // que se fija en la subclase); el texto sale del catálogo
+    const esEco = c.subclase === 'Echo Knight' || (c.classes || []).some(x => x && x.subclass === 'Echo Knight');
+    if (esEco && !col.bonusAction.some(x => x.eco)) {
+      const sub = Characters.SUBCLASES_CONFIG && Characters.SUBCLASES_CONFIG['Echo Knight'];
+      const f = sub && sub.features ? sub.features(c.nivel || 3).find(x => x.id === 'ek-manifest-echo') : null;
+      col.bonusAction.push(_filaEco(c, f || { desc: '' }));
+    }
 
     const columna = (tipo, titulo, campo) => `
       <section class="mesa-card mesa-col">
@@ -701,7 +710,7 @@ const Mesa = (() => {
     const activo = !!c.echoActive;
     const ca = 14 + Characters.calcProfBonus(c.nivel);
     const no = activo ? '' : _turnoUsado(c, 'bonusAction');
-    return { no, html: _fila({ id: 'eco', icono: 'iconos/habilidades', nombre: activo ? 'Eco activo' : 'Invocar eco', num: '', no,
+    return { eco: true, no, html: _fila({ id: 'eco', icono: 'iconos/habilidades', nombre: activo ? 'Eco activo' : 'Invocar eco', num: '', no,
       sub: activo ? `CA ${ca} · 1 PG · se mueve 9 m gratis · ataca desde su lugar` : `Manifest Echo · a 4,5 m · CA ${ca}, 1 PG`,
       tags: activo ? '<span class="mesa-tags"><span class="mesa-tg d">ACTIVO</span></span>' : '',
       det: `<p>${esc(f.desc || '')}</p><div class="mesa-acc">

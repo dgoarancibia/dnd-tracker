@@ -166,6 +166,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(() => document.querySelector('.mesa-op.abierto .mesa-btn.p').click()); await sleep(300);
   const azTras = await p.evaluate(() => ({ eco: App.getActiveChar().echoActive, adicional: App.getActiveChar().turn.bonus }));
   const az2 = await colsDe();
+  // Como el Aztram real: subclase elegida pero sin el rasgo Manifest Echo guardado
+  await p.evaluate(() => { const c = App.getActiveChar(); c.features = c.features.filter(f => !/manifest echo/i.test(f.name)); c.echoActive = false; c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); }); await sleep(300);
+  const sinRasgo = await colsDe();
+  chk('Aztram sin el rasgo guardado: igual aparece Invocar eco (se fija en la subclase)', sinRasgo.Adicional.filter(n => /\beco\b/i.test(n)).length === 1 && sinRasgo.Adicional.includes('Invocar eco'), sinRasgo);
   chk('Aztram: Invocar eco en Adicional (lo activa y gasta la Acción adicional), Unleash Incarnation y Action Surge en Acción',
     az.Adicional.includes('Invocar eco') && az['Acción'].includes('Unleash Incarnation') && az['Acción'].includes('Action Surge') && azTras.eco && azTras.adicional && az2.Adicional.includes('Eco activo'), { az, azTras });
 
