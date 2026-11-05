@@ -54,7 +54,9 @@
 .mesa-tipo.on { background: var(--m-fill); color: var(--m-fill-tx); border-color: var(--m-fill); }
 .mesa-comp-pg { flex-wrap: wrap; row-gap: 6px; }
 .mesa-comp-pg .mesa-btn { min-height: 32px; padding: 3px 9px; font-size: 12px; }
-.mesa-comp-in { width: 46px; min-height: 32px; padding: 2px; border-radius: 8px; border: 1px solid var(--m-borde-2); background: var(--bg); color: var(--text); font: 600 14px 'Jost', sans-serif; text-align: center; }
+.mesa-comp-ctl { display: flex; gap: 6px; flex-basis: 100%; }
+.mesa-comp-ctl .mesa-btn { flex: 1; }
+.mesa-comp-in { width: 54px; min-height: 32px; padding: 2px; border-radius: 8px; border: 1px solid var(--m-borde-2); background: var(--bg); color: var(--text); font: 600 14px 'Jost', sans-serif; text-align: center; }
 /* Inspiración Heroica en la cabecera */
 .mc-insp { background: none; border: none; cursor: pointer; text-align: center; padding: 0; }
 .mc-insp b { display: block; font: 700 20px/1.1 'Cinzel', serif; color: var(--m-tx2); }

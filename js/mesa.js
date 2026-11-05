@@ -459,8 +459,8 @@ const Mesa = (() => {
         </div></div>
       <div class="mesa-tipos">${tipos}</div>
       <div class="mesa-comp-pg"><span class="mesa-lbl">PG</span><b>${bestia.pg} / ${bestia.max}</b><span class="mc-esp"></span>
-        <input class="mesa-comp-in" type="number" inputmode="numeric" min="1" placeholder="0" onkeydown="if(event.key==='Enter')Mesa.vidaBestia(this,-1)">
-        <button class="mesa-btn mc-dmg" onclick="Mesa.vidaBestia(this,-1)">Daño</button><button class="mesa-btn mc-heal" onclick="Mesa.vidaBestia(this,1)">Curar</button></div>
+        <div class="mesa-comp-ctl"><input class="mesa-comp-in" type="number" inputmode="numeric" min="1" placeholder="0" onkeydown="if(event.key==='Enter')Mesa.vidaBestia(this,-1)">
+        <button class="mesa-btn mc-dmg" onclick="Mesa.vidaBestia(this,-1)">Daño</button><button class="mesa-btn mc-heal" onclick="Mesa.vidaBestia(this,1)">Curar</button></div></div>
       <div class="mesa-barra ${pct <= 0.25 ? 'mc-crit' : pct <= 0.5 ? 'mc-mid' : 'mc-ok'}">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.round(pct * 10) ? '' : 'v'}"></i>`).join('')}</div>
       ${caido ? `<button class="mesa-btn p mesa-ancho" onclick="App.openCompanionRevive()">Revivir a ${esc(comp.name || 'tu compañero')}</button>` : ''}
       <div class="mesa-mini"><div><b>${bestia.ca}</b><span class="mesa-lbl">CA</span></div><div><b>${sg(bestia.golpe)}</b><span class="mesa-lbl">Ataque</span></div>
