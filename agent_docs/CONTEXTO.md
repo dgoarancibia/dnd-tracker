@@ -143,3 +143,4 @@ En el iPad, con la conexión lenta, Torvald y Aztram se fueron a la papelera com
     1. Editor, `@`, página de entidad, renombrar.
     2. `/` de entidades, sesión, búsqueda, pegar markdown.
     3. Relaciones, referencias no vinculadas, IA con confirmación.
+- **Loading no se aplica** (nov-2026): con Extra Attack la app da los 2 ataques aunque el arma tenga Loading (2024: un disparo por acción salvo Crossbow Expert; verificado en D&D Beyond free rules 2024 y dnd2024.wikidot). Decisión de Diego: queda libre y lo restringe él en la mesa; Torvald va a tomar Crossbow Expert.
