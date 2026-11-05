@@ -25,7 +25,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     t.companion = { beast: 'land', name: 'Grum' };
     const arma = (id, name, type, die) => ({ id, name, kind: 'weapon', die, type, bonuses: { ac: 0, attack: 0, damage: 0, save: 0 }, buffs: [] });
     t.equipment = { ...(t.equipment || {}), mainHand: arma('shortsword', 'Shortsword', 'melee', '1d6') };
-    Storage.saveChar(t); Storage.saveChar(Characters.buildLursey());
+    const l = Characters.buildLursey();
+    // Como lo anotó Diego: recurso propio con el nombre mal escrito
+    l.resources.push({ id: 'custom-1', name: 'Amulet Of devoltion', current: 1, max: 1, recharge: 'long', note: '' });
+    Storage.saveChar(t); Storage.saveChar(l);
   });
   const ficha = async (id, w = 1440, h = 900) => {
     await p.setViewport({ width: w, height: h });
@@ -112,6 +115,23 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const sg = await p.evaluate(() => { const r = [...document.querySelectorAll('.mesa-col .mesa-cj.no')].find(x => /Spirit Guardians/.test(x.textContent)); return r ? r.querySelector('.mesa-motivo').textContent : null; });
   chk('sin espacios de nivel 3: Spirit Guardians aparece en "No disponible ahora" con el motivo', noDisp && /Sin espacios de nivel 3/.test(sg || ''), sg);
   await p.evaluate(() => { const c = App.getActiveChar(); c.spellSlots[3].current = c.spellSlots[3].max; App.reloadChar(c); });
+
+  // Amulet of the Devout: el recurso propio queda ordenado y Channel Divinity ofrece el uso gratis
+  const am = await p.evaluate(() => App.getActiveChar().resources.find(r => r.usaPara === 'channel-divinity'));
+  await p.evaluate(() => { const c = App.getActiveChar(); c.resources.find(r => r.id === 'channel-divinity').current = 0; c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); App.switchTab('combate'); }); await sleep(300);
+  await p.evaluate(() => { Mesa.abrir('nada'); Mesa.abrir('rec-channel-divinity'); }); await sleep(200);
+  const cdRow = await p.evaluate(() => { const r = document.querySelector('.mesa-op.abierto'); return r ? { no: r.classList.contains('no'), gratis: [...r.querySelectorAll('.mesa-btn')].map(b => b.textContent.trim()).find(t => /Gratis/.test(t)) } : null; });
+  await p.evaluate(() => [...document.querySelectorAll('.mesa-op.abierto .mesa-btn')].find(b => /Gratis/.test(b.textContent)).click()); await sleep(300);
+  const trasAm = await p.evaluate(() => { const c = App.getActiveChar(); return { amuleto: c.resources.find(r => r.id === 'amulet-devout').current, cd: c.resources.find(r => r.id === 'channel-divinity').current, accion: c.turn.action }; });
+  chk('Amulet of the Devout: ordenado (1 uso, descanso largo) y Channel Divinity sin usos sigue disponible con "Gratis"; gastarlo no toca los usos y marca la Acción',
+    am && am.id === 'amulet-devout' && am.name === 'Amulet of the Devout' && am.recharge === 'long' && cdRow && !cdRow.no && /Gratis con Amulet of the Devout \(1\/1\)/.test(cdRow.gratis || '')
+    && trasAm.amuleto === 0 && trasAm.cd === 0 && trasAm.accion === true, { am: am && am.name, cdRow, trasAm });
+  await p.evaluate(() => { const c = App.getActiveChar(); c.resources.find(r => r.id === 'channel-divinity').current = 3; c.resources.find(r => r.id === 'amulet-devout').current = 1; App.reloadChar(c); });
+
+  // Vida máxima editable desde la cabecera
+  await p.evaluate(() => { const i = document.querySelector('.mc-max'); i.value = '58'; i.dispatchEvent(new Event('change')); }); await sleep(300);
+  chk('la vida máxima se edita en la cabecera', await p.evaluate(() => App.getActiveChar().hp.max === 58 && document.querySelector('.mc-max').value === '58'));
+  await p.evaluate(() => { const c = App.getActiveChar(); c.hp.max = 50; c.hp.current = 50; App.reloadChar(c); });
 
   // War Caster: conjuro de 1 Acción como reacción en lugar del ataque de oportunidad
   await p.evaluate(() => { const c = App.getActiveChar(); c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); App.switchTab('combate'); }); await sleep(300);

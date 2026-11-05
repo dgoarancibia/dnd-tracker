@@ -90,6 +90,10 @@
 .mc-pg-top { display: flex; align-items: center; gap: 8px; }
 .mc-num { font: 700 26px/1 'Cinzel', serif; color: var(--text); }
 .mc-num small { font-size: 15px; color: var(--m-tx2); }
+.mc-max { width: 46px; padding: 0 2px; margin-left: -6px; border: none; border-bottom: 1px dashed var(--m-borde-2); background: transparent;
+  color: var(--m-tx2); font: 700 15px 'Cinzel', serif; -moz-appearance: textfield; }
+.mc-max::-webkit-outer-spin-button, .mc-max::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mc-max:focus { outline: none; border-bottom-color: var(--m-acento); color: var(--text); }
 .mc-num.mc-mid { color: var(--hp-mid, #e08050); }
 .mc-num.mc-crit { color: var(--hp-crit, #e05050); }
 .mc-pg-ctl { display: flex; gap: 6px; align-items: center; }

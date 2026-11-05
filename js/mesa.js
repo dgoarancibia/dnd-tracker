@@ -126,7 +126,8 @@ const Mesa = (() => {
       <div class="mc-quien"><b>${esc(c.name)}</b><small>${esc(clases)}${c.subclase ? ' · ' + esc(c.subclase) : ''}</small></div>
       <span class="mc-sep"></span>
       <div class="mc-pg">
-        <div class="mc-pg-top"><span class="mesa-lbl">PG</span><span class="mc-num mc-${nivelVida}">${current}<small> / ${max}</small></span>
+        <div class="mc-pg-top"><span class="mesa-lbl">PG</span><span class="mc-num mc-${nivelVida}">${current}<small> / </small></span><input class="mc-max" type="number" min="1" max="999" value="${max}"
+          title="PG máximos — toca para editar" onclick="this.select()" onchange="App.setHPMax(parseInt(this.value))" onkeydown="if(event.key==='Enter')this.blur()">
           <button class="mesa-chip" onclick="App.promptTempHP()" title="PG temporales">TMP ${temp || 0}</button></div>
         <div class="mesa-barra mc-${nivelVida}">${Array.from({ length: segs }, (_, i) => `<i class="${i < llenos ? '' : 'v'}"></i>`).join('')}</div>
       </div>
@@ -224,8 +225,10 @@ const Mesa = (() => {
     }
     return _turnoUsado(c, via || Characters.getActivation(sp));
   }
+  // Recurso que da un uso gratis de otro (Amulet of the Devout → Channel Divinity)
+  const _gratisPara = (c, r) => (c.resources || []).find(x => x.usaPara === r.id && x.current > 0);
   function _motivoRecurso(c, r) {
-    if (r.current <= 0) return `Sin usos · vuelve con ${DESCANSO(r)}`;
+    if (r.current <= 0 && !_gratisPara(c, r)) return `Sin usos · vuelve con ${DESCANSO(r)}`;
     return _turnoUsado(c, Characters.getActivation(r));
   }
 
@@ -348,7 +351,8 @@ const Mesa = (() => {
     return { no, html: _fila({
       id: 'rec-' + r.id, icono: 'iconos/recursos', nombre: r.name, num: '', no,
       sub: `${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}`,
-      det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button></div>`,
+      det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button>
+        ${(g => g ? `<button class="mesa-btn" onclick="event.stopPropagation();Mesa.gratis('${g.id}','${r.id}')">✦ Gratis con ${esc(g.name)} (${g.current}/${g.max})</button>` : '')(_gratisPara(c, r))}</div>`,
     }) };
   }
 
@@ -605,6 +609,15 @@ const Mesa = (() => {
     st.abierto = null;
     render();
   }
+  // Usa el uso gratis (no gasta el recurso principal) y marca la acción que pide
+  function gratis(idGratis, idRecurso) {
+    const c = App.getActiveChar();
+    const r = c && (c.resources || []).find(x => x.id === idRecurso);
+    App.adjustResource(idGratis, -1);
+    const act = r ? Characters.getActivation(r) : null;
+    if (App.enCombate() && CAMPO[act]) App.usarRecursoTurno(act, true);
+    App.showToast(`${r ? r.name : 'Rasgo'} sin gastar uso`);
+  }
   function grum() { st.grum = !st.grum; _pintar(); }
   function grupo(g) { if (st.grupos.has(g)) st.grupos.delete(g); else st.grupos.add(g); _pintar(); }
   function filtrar(grupo, val) { st[grupo] = st[grupo] === val && grupo === 'tipo' ? null : val; _pintar(); }
@@ -627,6 +640,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, vida, hoja, abrir, grupo, grum, combate, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, vida, hoja, abrir, grupo, grum, combate, gratis, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí

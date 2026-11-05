@@ -91,7 +91,7 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
 
 ## Decisiones de mesa de Lursey (no "corregir" a RAW)
 
-- **CD de conjuros 16 y ataque de conjuros +8**: el +1 a ambos es del **Amulet of the Devout +1** (Tasha's, Clérigo/Paladín; verificado en 5etools y dnd5e.wikidot). Antes figuraba como "Arcane Grimoire": era una etiqueta equivocada, Lursey no tiene grimorio (Diego, 2026-11-05). El amuleto además da 1 Channel Divinity gratis por día (vuelve al amanecer).
+- **CD de conjuros 16 y ataque de conjuros +8**: el +1 a ambos es del **Amulet of the Devout +1** (Tasha's, Clérigo/Paladín; verificado en 5etools y dnd5e.wikidot). Antes figuraba como "Arcane Grimoire": era una etiqueta equivocada, Lursey no tiene grimorio (Diego, 2026-11-05). El amuleto además da 1 Channel Divinity gratis por día (vuelve al amanecer). En la app: `_normalizarAmuletoDevoto` (app.js, al abrir la ficha) convierte el recurso propio que lo anotaba en `amulet-devout` (1 uso, descanso largo, `usaPara: 'channel-divinity'`); en Mesa, Channel Divinity ofrece "✦ Gratis con Amulet of the Devout" y sigue disponible aunque no le queden usos.
 - **Blessed Strikes (nv7)**: eligió Potent Spellcasting (`choices['blessed-strikes']='bs-potent-spellcasting'`). La app suma SAB al daño de trucos y escala trucos ×2/×3/×4 en niveles 5/11/17.
 - **Servirse del poder divino** y **Versatilidad de trucos** (Tasha's, no existen en 2024) quedan como **regla de mesa**, marcadas en el texto.
 - **Divine Order: Protector** (`choices['divine-order']='protector'`): competente con armas marciales y armadura pesada (Maza de Guerra +1, Cota de malla).

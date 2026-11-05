@@ -546,6 +546,8 @@ const App = (() => {
     // Preserva: spellSlots usados, preparedToday, cantidades de consumables
     // Aplica a TODOS los personajes (no solo Lursey)
 
+    _normalizarAmuletoDevoto(_char);
+
     if (_char.id === 'lursey-brumaclara') {
       // Lursey tiene sync completo: spells, features, consumables, resources, slotPriority, combatTips
       const freshLursey = Characters.buildLursey();
@@ -776,6 +778,22 @@ const App = (() => {
   /* ══════════════════════════════════════════════════════
      GUARDAR
   ══════════════════════════════════════════════════════ */
+
+  /* Amulet of the Devout (Tasha's): además del +1 a CD y ataque de conjuros,
+     1 Channel Divinity sin gastar uso por día. Si el jugador lo anotó como
+     recurso propio ("Amulet Of devoltion"), se ordena: un uso que vuelve con
+     el descanso largo y que Channel Divinity ofrece como "gratis". */
+  function _normalizarAmuletoDevoto(c) {
+    const r = (c.resources || []).find(x => x.id === 'amulet-devout' || /amul\w*.*devo/i.test(x.name || ''));
+    if (!r) return;
+    Object.assign(r, {
+      id: 'amulet-devout', name: 'Amulet of the Devout', max: 1, recharge: 'long', action: '',
+      current: Math.min(1, Math.max(0, r.current == null ? 1 : r.current)),
+      note: 'Channel Divinity sin gastar uso · vuelve al amanecer',
+      desc: 'Una vez por día puedes usar Channel Divinity sin gastar uno de sus usos. También da +1 a la CD y al ataque de conjuros.',
+      usaPara: 'channel-divinity',
+    });
+  }
 
   function _pushUndo() {
     if (!_char) return;
