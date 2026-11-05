@@ -132,6 +132,7 @@ const App = (() => {
     // 0. Torvald se creó con la mochila cerrada: se abre en sus objetos.
     //    Solo él; los demás ya tienen su equipo cargado a mano.
     if (/^torvald/i.test(c.name || '') && Characters.abrirPaquetes(c.consumables)) changed = true;
+    if (Characters.normalizarMunicion(c.consumables)) changed = true;
 
     // 1a. Salvaciones guardadas como 'fue': la clave de Fuerza es 'for', así
     //     que la salvación de FUE nunca contaba como competente.
@@ -6524,9 +6525,9 @@ const App = (() => {
   // Card de "Atacar" con arma equipada — abre el popup de referencia con la
   // fórmula de ataque/daño calculada del arma real (equipment.mainHand/offHand).
   /* ── Munición (HU-40) ──────────────────────────────────────────────────
-     Se guarda en c.ammo[key] = { current, max, spent }. `spent` cuenta lo
-     gastado desde el último descanso para poder recuperar la mitad (PHB
-     2024: tras el combate recuperas la mitad de la munición disparada). */
+     Cuántas quedan es la cantidad del ítem en la mochila (Ítems), que es
+     donde se agregan o quitan. En c.ammo[key].spent se cuenta lo disparado
+     desde el último combate para recuperar la mitad (PHB 2024). */
   function _ensureAmmo(c) {
     if (!c.ammo) c.ammo = {};
     return c.ammo;
@@ -6536,68 +6537,43 @@ const App = (() => {
     const item = c.equipment && c.equipment[slot];
     const tipo = Characters.getAmmoType && Characters.getAmmoType(item);
     if (!tipo) return null;
-    const a = _ensureAmmo(c)[tipo.key] || { current: 0, max: 0, spent: 0 };
-    return { tipo, ...a };
+    const enMochila = Characters.getAmmoItem(c, tipo);
+    const spent = ((c.ammo || {})[tipo.key] || {}).spent || 0;
+    return { tipo, item: enMochila && enMochila.item, current: enMochila ? (parseInt(enMochila.item.qty) || 0) : null, spent };
   }
 
-  function setAmmo(key, field, val) {
-    if (!_char) return;
-    const a = _ensureAmmo(_char);
-    const cur = a[key] || { current: 0, max: 0, spent: 0 };
-    const n = Math.max(0, parseInt(val) || 0);
-    cur[field] = n;
-    if (field === 'max' && cur.current > n) cur.current = n;
-    if (field === 'current' && cur.max < n) cur.max = n;
-    a[key] = cur;
-    _saveChar();
-    _renderCombateTab();
+  function _gastarMunicion(c, m) {
+    m.item.qty = Math.max(0, (parseInt(m.item.qty) || 0) - 1);
+    const a = _ensureAmmo(c);
+    a[m.tipo.key] = { spent: ((a[m.tipo.key] || {}).spent || 0) + 1 };
   }
 
-  function adjustAmmo(key, delta) {
-    if (!_char) return;
-    const a = _ensureAmmo(_char);
-    const cur = a[key] || { current: 0, max: 0, spent: 0 };
-    const antes = cur.current;
-    cur.current = Math.max(0, Math.min(cur.max || 999, cur.current + delta));
-    // Solo cuenta como gastada la que realmente salió del carcaj.
-    if (delta < 0) cur.spent = (cur.spent || 0) + (antes - cur.current);
-    a[key] = cur;
-    _saveChar();
-    _renderCombateTab();
+  // Devuelve a la mochila la mitad de lo disparado (redondeo abajo).
+  function _devolverMunicion(c, key) {
+    const a = (c.ammo || {})[key];
+    const enMochila = Characters.getAmmoItem(c, { key });
+    if (!a || !a.spent) return 0;
+    const n = Math.floor(a.spent / 2);
+    if (enMochila) enMochila.item.qty = (parseInt(enMochila.item.qty) || 0) + n;
+    a.spent = 0;
+    return n;
   }
 
-  // Tras el combate se recupera la mitad de lo disparado (redondeo abajo).
   function recuperarMunicion(key) {
     if (!_char) return;
-    const a = _ensureAmmo(_char);
-    const cur = a[key];
-    if (!cur || !cur.spent) return;
-    const recuperadas = Math.floor(cur.spent / 2);
-    cur.current = Math.min(cur.max || 999, cur.current + recuperadas);
-    cur.spent = 0;
-    a[key] = cur;
+    const n = _devolverMunicion(_char, key);
     _saveChar();
     _renderCombateTab();
-    showToast(recuperadas > 0 ? `Recuperadas ${recuperadas}` : 'Nada que recuperar');
+    showToast(n > 0 ? `Recuperadas ${n}` : 'Nada que recuperar');
   }
 
   function _bloqueMunicion(c, slot) {
     const m = _ammoDeSlot(c, slot);
     if (!m) return '';
     const k = m.tipo.key;
-    const vacio = m.max > 0 && m.current === 0;
     return `
-      <div class="ammo-row ${vacio ? 'ammo-empty' : ''}">
-        <span class="ammo-label">🏹 ${m.tipo.label}</span>
-        <button class="ammo-btn" onclick="event.stopPropagation();App.adjustAmmo('${k}',-1)" ${m.current <= 0 ? 'disabled' : ''}>−</button>
-        <input type="number" class="ammo-input" value="${m.current}" min="0"
-               onclick="event.stopPropagation()"
-               onchange="App.setAmmo('${k}','current',this.value)">
-        <span class="ammo-sep">/</span>
-        <input type="number" class="ammo-input ammo-max" value="${m.max}" min="0" title="Total que llevas"
-               onclick="event.stopPropagation()"
-               onchange="App.setAmmo('${k}','max',this.value)">
-        <button class="ammo-btn" onclick="event.stopPropagation();App.adjustAmmo('${k}',1)" ${m.max && m.current >= m.max ? 'disabled' : ''}>+</button>
+      <div class="ammo-row ${m.current === 0 ? 'ammo-empty' : ''}">
+        <span class="ammo-label">🏹 ${m.tipo.label}: ${m.current == null ? 'no hay en Ítems' : m.current}</span>
         ${m.spent > 0 ? `<button class="ammo-recover" title="Recuperas la mitad de lo disparado"
           onclick="event.stopPropagation();App.recuperarMunicion('${k}')">↺ ${Math.floor(m.spent / 2)}</button>` : ''}
       </div>`;
@@ -6644,8 +6620,8 @@ const App = (() => {
     // Munición: se descuenta una pieza por disparo; si no queda, se avisa
     // pero no se bloquea (puede tener flechas sueltas sin registrar).
     const _mun = _ammoDeSlot(_char, slot);
-    if (_mun && _mun.max > 0) {
-      if (_mun.current > 0) adjustAmmo(_mun.tipo.key, -1);
+    if (_mun && _mun.item) {
+      if (_mun.current > 0) { _gastarMunicion(_char, _mun); _saveChar(); _renderCombateTab(); }
       else showToast(`Sin ${_mun.tipo.label.toLowerCase()}`);
     }
 
@@ -9605,12 +9581,7 @@ const App = (() => {
 
     // Munición: al recoger el campo de batalla se recupera la mitad de lo
     // disparado que quedó pendiente desde el último combate.
-    Object.values(c.ammo || {}).forEach(a => {
-      if (a && a.spent) {
-        a.current = Math.min(a.max || 999, (a.current || 0) + Math.floor(a.spent / 2));
-        a.spent = 0;
-      }
-    });
+    Object.keys(c.ammo || {}).forEach(key => _devolverMunicion(c, key));
 
     closeLongRest();
     _saveChar(true);
@@ -12548,7 +12519,7 @@ ${notesText}`;
     adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
-    setAmmo, adjustAmmo, recuperarMunicion,
+    recuperarMunicion,
     agregarVinculo, quitarVinculo, toggleD4Vinculo, romperVinculos,
     abrirEntidadEnHojas,
     toggleRecursoBestia, comandarBestia,

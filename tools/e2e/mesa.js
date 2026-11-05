@@ -157,20 +157,22 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(() => document.querySelector('.mesa-op.abierto .mesa-btn.p').click()); await sleep(200);
   chk('el ataque de oportunidad gasta la Reacción', await p.evaluate(() => App.getActiveChar().turn.reaction === true));
 
-  // Ballesta con daño extra: el daño se ve sumado y la munición se carga y descuenta desde Mesa
+  // Ballesta con daño extra: el daño se ve sumado y los virotes salen de Ítems: "Heavy Crossbow (20)"
   await p.evaluate(() => { const c = App.getActiveChar(); c.equipment.mainHand = { id: 'heavy-crossbow', name: 'Heavy Crossbow', kind: 'weapon', die: '1d10', extraDie: '2', type: 'ranged', bonuses: { ac: 0, attack: 0, damage: 0, save: 0 }, buffs: [] };
-    c.ammo = {}; c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); }); await sleep(300);
+    c.ammo = {}; c.consumables = [...(c.consumables || []), { name: 'Virotes', qty: 20, category: 'Ammunition' }];
+    c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); }); await sleep(300);
   await p.evaluate(() => { Mesa.abrir('nada'); Mesa.abrir('arma-mainHand'); }); await sleep(200);
-  const ballesta = await p.evaluate(() => ({ dmg: document.querySelector('.mesa-op.abierto .mesa-dmg')?.textContent, sub: document.querySelector('.mesa-op.abierto small')?.textContent }));
-  await p.evaluate(() => { const i = document.querySelectorAll('.mesa-op.abierto .mesa-mun input')[1]; i.value = '20'; i.dispatchEvent(new Event('change')); }); await sleep(300);
+  const ballesta = await p.evaluate(() => ({ dmg: document.querySelector('.mesa-op.abierto .mesa-dmg')?.textContent, nombre: document.querySelector('.mesa-op.abierto b')?.textContent,
+    editar: !document.querySelector('.mesa-op.abierto .mesa-mun input') && /en Ítems/.test(document.querySelector('.mesa-op.abierto .mesa-mun')?.textContent || '') }));
   await p.evaluate(() => { Mesa.abrir('nada'); Mesa.abrir('arma-mainHand'); }); await sleep(200);
   await p.evaluate(() => [...document.querySelectorAll('.mesa-op.abierto .mesa-btn.p')].find(x => /Atacar/.test(x.textContent)).click()); await sleep(400);
-  ballesta.municion = await p.evaluate(() => App.getActiveChar().ammo.bolt);
+  ballesta.municion = await p.evaluate(() => App.getActiveChar().consumables.find(x => x.name === 'Virotes').qty);
+  ballesta.tras = await p.evaluate(() => [...document.querySelectorAll('#mesa-combate .mesa-op b')].map(b => b.textContent).find(t => /Heavy Crossbow/.test(t)));
   ballesta.modal = await p.evaluate(() => document.getElementById('refBody').innerText.replace(/\s+/g, ' '));
   await p.evaluate(() => App.closeActionRefModal()); await sleep(200);
   // Este Torvald tiene DES 10: 1d10 + 0 + 2 de daño extra = 1d10+2, sumado y sin " + 2" suelto
-  chk('ballesta: daño sumado (1d10+2) y grande; cargar 20 virotes y atacar deja 19', ballesta.dmg === '1d10+2' && /Virotes sin cargar/.test(ballesta.sub || '')
-    && ballesta.municion && ballesta.municion.current === 19 && ballesta.municion.max === 20 && /1d10\+2 DAÑO/.test(ballesta.modal), ballesta);
+  chk('ballesta: daño sumado (1d10+2); "Heavy Crossbow (20)" sale de Ítems, se edita allá y atacar deja 19', ballesta.dmg === '1d10+2' && /Heavy Crossbow \(20\)/.test(ballesta.nombre || '')
+    && ballesta.editar && ballesta.municion === 19 && /\(19\)/.test(ballesta.tras || '') && /1d10\+2 DAÑO/.test(ballesta.modal), ballesta);
 
   // Tras atacar, el arma sigue a la vista (atenuada, con el motivo) y "devolver" la deja disponible otra vez
   await p.evaluate(() => Mesa.abrir('nada')); await sleep(150);

@@ -275,12 +275,12 @@ const Mesa = (() => {
         : t.action && !usados ? 'Ya usaste tu Acción en otra cosa' : '';
       const daño = App.sumarDaño(a.daño + (a.extra ? ' + ' + a.extra : ''));
       const mun = _municion(c, w);
-      const sinMun = mun && mun.max > 0 && mun.current <= 0;
+      const sinMun = mun && mun.qty === 0;
       const noArma = no || (sinMun ? `Sin ${mun.label.toLowerCase()}` : '');
       col[tipo].push({ no: noArma, html: _fila({
-        id: 'arma-' + slot, icono: _iconoArma(w), nombre: w.name, num: sg(a.ataque), dmg: daño, no: noArma,
-        sub: [mun ? `${mun.label} ${mun.max ? `${mun.current}/${mun.max}` : 'sin cargar'}` : '', maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '', ...a.notas].filter(Boolean).join(' · '),
-        det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar${mun && mun.max ? ` · gasta 1 ${mun.label.toLowerCase().replace(/s$/, '')}` : ''}</button></div>`,
+        id: 'arma-' + slot, icono: _iconoArma(w), nombre: mun && mun.qty != null ? `${w.name} (${mun.qty})` : w.name, num: sg(a.ataque), dmg: daño, no: noArma,
+        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '', ...a.notas].filter(Boolean).join(' · '),
+        det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar${mun && mun.qty != null ? ` · gasta 1 ${mun.uno}` : ''}</button></div>`,
       }) });
       // Ataque de oportunidad: con la primera arma cuerpo a cuerpo equipada (principal o secundaria)
       if (!a.aDistancia && !col.reaction.some(x => x.ao)) {
@@ -472,23 +472,19 @@ const Mesa = (() => {
     return 'iconos/ataques';
   }
 
-  /* Munición del arma (flechas, virotes…): la app solo descuenta si sabe
-     cuántas llevas, así que se carga aquí mismo. */
+  /* Munición del arma (flechas, virotes…): la cantidad es la del ítem en
+     la mochila; se agrega o quita en Ítems. Aquí solo se recupera tras pelear. */
   function _municion(c, w) {
     const tipo = Characters.getAmmoType && Characters.getAmmoType(w);
     if (!tipo) return null;
-    const a = (c.ammo || {})[tipo.key] || { current: 0, max: 0, spent: 0 };
-    return { key: tipo.key, label: tipo.label, current: a.current || 0, max: a.max || 0, spent: a.spent || 0 };
+    const enMochila = Characters.getAmmoItem(c, tipo);
+    return { key: tipo.key, label: tipo.label, uno: tipo.label.toLowerCase().split(' ')[0].replace(/s$/, ''),
+      qty: enMochila ? (parseInt(enMochila.item.qty) || 0) : null, spent: ((c.ammo || {})[tipo.key] || {}).spent || 0 };
   }
   function _controlMunicion(m) {
-    return `<div class="mesa-mun" onclick="event.stopPropagation()"><span class="mesa-lbl">${esc(m.label)}</span>
-      <button class="mesa-chip" onclick="App.adjustAmmo('${m.key}',-1)" ${m.current <= 0 ? 'disabled' : ''}>−</button>
-      <input type="number" min="0" value="${m.current}" onchange="App.setAmmo('${m.key}','current',this.value)" title="Cuántas te quedan">
-      <span>/</span>
-      <input type="number" min="0" value="${m.max}" onchange="Mesa.municionTotal('${m.key}',this.value)" title="Cuántas llevas en total">
-      <button class="mesa-chip" onclick="App.adjustAmmo('${m.key}',1)">+</button>
+    return `<div class="mesa-mun" onclick="event.stopPropagation()">
       ${m.spent > 0 ? `<button class="mesa-chip" onclick="App.recuperarMunicion('${m.key}')" title="Tras el combate recuperas la mitad de lo disparado">↺ Recuperar ${Math.floor(m.spent / 2)}</button>` : ''}
-      ${m.max ? '' : '<small>Carga cuántas llevas para que se descuenten al atacar.</small>'}</div>`;
+      <button class="mesa-chip" onclick="App.switchTab('equipo')">${m.qty == null ? `Agregar ${m.label.toLowerCase()} en Ítems` : `Cambiar ${m.label.toLowerCase()} en Ítems`}</button></div>`;
   }
 
   /* Marcar o devolver una acción del turno. Devolver la Acción también
@@ -498,14 +494,6 @@ const Mesa = (() => {
     const t = (c && c.turn) || {};
     if (campo === 'action' && t.action && t.attacksUsed) App.usarAtaque(-t.attacksUsed);
     App.toggleRecursoTurno(campo);
-  }
-
-  // Al cargar el total por primera vez, las que quedan son todas
-  function municionTotal(key, val) {
-    const c = App.getActiveChar();
-    const antes = ((c && c.ammo) || {})[key] || {};
-    App.setAmmo(key, 'max', val);
-    if (!antes.max && !antes.current) App.setAmmo(key, 'current', val);
   }
 
   // El ataque de oportunidad gasta la Reacción, no un ataque de la acción
@@ -808,6 +796,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, municionTotal, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí

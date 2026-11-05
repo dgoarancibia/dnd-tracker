@@ -6383,6 +6383,32 @@ const Characters = (() => {
     return porNombre ? AMMO_TYPES[porNombre[1]] : null;
   }
 
+  /* La cantidad de munición vive en la mochila (Ítems): es el ítem cuyo
+     nombre la nombra ("Virotes", "Crossbow Bolts"…), no el carcaj ni el
+     estuche. Si hay varios, manda el que todavía tiene. */
+  const _AMMO_ITEM = { arrow: /flecha|arrow/i, bolt: /virote|bolt/i, bullet: /bala|bullet/i, needle: /aguja|needle|cerbatana/i };
+  const _AMMO_CONTENEDOR = /carcaj|quiver|estuche|case|caja/i;
+  function getAmmoItem(c, tipo) {
+    const re = tipo && _AMMO_ITEM[tipo.key];
+    if (!re) return null;
+    const cands = ((c && c.consumables) || []).map((item, idx) => ({ item, idx }))
+      .filter(x => x.item && re.test(x.item.name || '') && !_AMMO_CONTENEDOR.test(x.item.name || ''));
+    return cands.find(x => (parseInt(x.item.qty) || 0) > 0) || cands[0] || null;
+  }
+  // "Virotes (20)" con cantidad 1 → "Virotes" con cantidad 20, para poder descontar.
+  function normalizarMunicion(lista) {
+    let cambio = false;
+    (lista || []).forEach(it => {
+      const m = it && Object.values(_AMMO_ITEM).some(re => re.test(it.name || '')) && !_AMMO_CONTENEDOR.test(it.name || '')
+        && (parseInt(it.qty) || 1) <= 1 && String(it.name).match(/\s*\((\d+)\)\s*$/);
+      if (!m) return;
+      it.qty = parseInt(m[1], 10);
+      it.name = it.name.slice(0, m.index).trim();
+      cambio = true;
+    });
+    return cambio;
+  }
+
   /* Paquetes de equipo (PHB 2024). Al elegirlos se abren: en el inventario
      queda cada objeto por separado, no "Mochila de explorador" cerrada.
      Contenido verificado en 5etools (XPHB) y dnd2024.wikidot. */
@@ -6727,7 +6753,7 @@ const Characters = (() => {
     getWeaponMasteryCount,
     getWeaponMasteryOptions,
     ajustarHPPorCON, partirNombre,
-    AMMO_TYPES, getAmmoType,
+    AMMO_TYPES, getAmmoType, getAmmoItem, normalizarMunicion,
     PAQUETES_EQUIPO, contenidoPaquete, abrirPaquetes,
     categoriaArma, competenteConArma,
     applySubraza,
