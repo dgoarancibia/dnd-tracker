@@ -3585,6 +3585,7 @@ const App = (() => {
         <div class="equip-slot-role">${slotDef.label}</div>
         <div class="equip-slot-name">${item.name}</div>
         ${line ? `<div class="equip-slot-line">${line}</div>` : ''}
+        ${(m => m ? `<div class="equip-slot-line">🏹 ${m.item ? `${m.item.name} (${m.current})` : `Sin ${m.tipo.label.toLowerCase()}: toca para elegir el ítem`}</div>` : '')(item.kind === 'weapon' && _ammoDeSlot(_char, slotDef.key))}
         ${attuneBadge}
         ${_buffChipsHTML(item.buffs, id => `event.stopPropagation();App.removeSlotBuff('${slotDef.key}','${id}')`)}
       </div>
@@ -6537,7 +6538,7 @@ const App = (() => {
     const item = c.equipment && c.equipment[slot];
     const tipo = Characters.getAmmoType && Characters.getAmmoType(item);
     if (!tipo) return null;
-    const enMochila = Characters.getAmmoItem(c, tipo);
+    const enMochila = Characters.getAmmoItem(c, tipo, item);
     const spent = ((c.ammo || {})[tipo.key] || {}).spent || 0;
     return { tipo, item: enMochila && enMochila.item, current: enMochila ? (parseInt(enMochila.item.qty) || 0) : null, spent };
   }
@@ -6548,10 +6549,27 @@ const App = (() => {
     a[m.tipo.key] = { spent: ((a[m.tipo.key] || {}).spent || 0) + 1 };
   }
 
+  // El ítem de munición de ese tipo: el asignado a un arma equipada, o por nombre.
+  function _ammoItemPorKey(c, key) {
+    const arma = ['mainHand', 'offHand'].map(sl => c.equipment && c.equipment[sl])
+      .find(w => w && w.municion && (Characters.getAmmoType(w) || {}).key === key);
+    return Characters.getAmmoItem(c, { key }, arma);
+  }
+
+  // Ítems → arma → Munición: qué ítem de la mochila gasta al disparar.
+  function setMunicionArma(slotKey, valor) {
+    const w = _char && _char.equipment && _char.equipment[slotKey];
+    if (!w) return;
+    if (valor) w.municion = valor; else delete w.municion;
+    _saveChar();
+    _renderEquipoTab();
+    if (_activeTab === 'combate') _renderCombateTab();
+  }
+
   // Devuelve a la mochila la mitad de lo disparado (redondeo abajo).
   function _devolverMunicion(c, key) {
     const a = (c.ammo || {})[key];
-    const enMochila = Characters.getAmmoItem(c, { key });
+    const enMochila = _ammoItemPorKey(c, key);
     if (!a || !a.spent) return 0;
     const n = Math.floor(a.spent / 2);
     if (enMochila) enMochila.item.qty = (parseInt(enMochila.item.qty) || 0) + n;
@@ -7776,6 +7794,7 @@ const App = (() => {
       <div class="modal" style="max-width:320px;width:100%;">
         <div class="modal-header">${item.name}</div>
         <div class="modal-body" style="display:flex;flex-direction:column;gap:8px;">
+          ${_selectorMunicion(item, slotKey)}
           <button class="btn-secondary" style="width:100%;" onclick="App._slotOptEdit('${slotKey}')">✎ Editar</button>
           <button class="btn-secondary" style="width:100%;" onclick="App._slotOptUnequip('${slotKey}')">↩ Desequipar (a mochila)</button>
           <button class="btn-secondary" style="width:100%;color:var(--danger,#d05050);" onclick="App._slotOptDelete('${slotKey}')">✕ Eliminar</button>
@@ -7785,6 +7804,19 @@ const App = (() => {
         </div>
       </div>`;
     overlay.style.display = 'flex';
+  }
+
+  function _selectorMunicion(w, slotKey) {
+    const tipo = w.kind === 'weapon' && Characters.getAmmoType(w);
+    if (!tipo) return '';
+    const esc = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const opciones = (_char.consumables || []).filter(it => it && it.name).map(it => {
+      const v = it.id || it.name;
+      return `<option value="${esc(v)}" ${w.municion === v ? 'selected' : ''}>${esc(it.name)} (${parseInt(it.qty) || 0})</option>`;
+    }).join('');
+    return `<label class="modal-mini-label">🏹 ${tipo.label}: qué ítem gasta al atacar</label>
+      <select class="form-input" style="width:100%;" onchange="App.setMunicionArma('${slotKey}', this.value)">
+        <option value="">Automático (ítem llamado ${tipo.label})</option>${opciones}</select>`;
   }
 
   function _closeSlotOptions() {
@@ -12519,7 +12551,7 @@ ${notesText}`;
     adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
-    recuperarMunicion,
+    recuperarMunicion, setMunicionArma,
     agregarVinculo, quitarVinculo, toggleD4Vinculo, romperVinculos,
     abrirEntidadEnHojas,
     toggleRecursoBestia, comandarBestia,

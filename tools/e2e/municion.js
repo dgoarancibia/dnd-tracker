@@ -23,7 +23,17 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const a = await p.evaluate(() => { const c = Storage.getChar('mun'); return { item: c.consumables[1], carcaj: c.consumables[0].qty, spent: c.ammo.arrow.spent }; });
   await p.evaluate(() => App.recuperarMunicion('arrow')); await sleep(300);
   a.recuperadas = await p.evaluate(() => Storage.getChar('mun').consumables[1].qty);
-  const ok = a.item.name === 'Flechas' && a.item.qty === 18 && a.carcaj === 1 && a.spent === 2 && a.recuperadas === 19;
+  // Ítem con cualquier nombre ("Carcaj"): se asigna al arma en Ítems → arma → Munición
+  await p.evaluate(() => { const c = App.getActiveChar(); c.consumables = [{ name: 'Carcaj', qty: 10 }]; c.ammo = {}; App.reloadChar(c); App.switchTab('equipo'); }); await sleep(400);
+  const sinAsignar = await p.evaluate(() => [...document.querySelectorAll('.equip-slot-line')].map(x => x.textContent).find(t => /🏹/.test(t)));
+  await p.evaluate(() => App.openSlotOptions('mainHand')); await sleep(200);
+  await p.evaluate(() => { const sel = document.querySelector('#slotOptionsOverlay select'); sel.value = 'Carcaj'; sel.dispatchEvent(new Event('change')); App._closeSlotOptions(); }); await sleep(300);
+  await p.evaluate(() => App.attackWithWeapon('mainHand')); await sleep(300);
+  await p.evaluate(() => App.closeActionRefModal && App.closeActionRefModal()); await p.evaluate(() => App.switchTab('equipo')); await sleep(300);
+  a.carcajAsignado = await p.evaluate(() => ({ qty: Storage.getChar('mun').consumables[0].qty, linea: [...document.querySelectorAll('.equip-slot-line')].map(x => x.textContent).find(t => /🏹/.test(t)) }));
+  a.sinAsignar = sinAsignar;
+  const ok = a.item.name === 'Flechas' && a.item.qty === 18 && a.carcaj === 1 && a.spent === 2 && a.recuperadas === 19
+    && /Sin flechas/.test(sinAsignar || '') && a.carcajAsignado.qty === 9 && /Carcaj \(9\)/.test(a.carcajAsignado.linea || '');
   console.log(JSON.stringify(a), ok ? '\nTODO OK' : '\nHAY FALLAS');
   await browser.close();
   process.exit(ok ? 0 : 1);

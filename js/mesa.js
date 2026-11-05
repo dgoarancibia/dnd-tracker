@@ -478,7 +478,7 @@ const Mesa = (() => {
   function _municion(c, w) {
     const tipo = Characters.getAmmoType && Characters.getAmmoType(w);
     if (!tipo) return null;
-    const enMochila = Characters.getAmmoItem(c, tipo);
+    const enMochila = Characters.getAmmoItem(c, tipo, w);
     return { key: tipo.key, label: tipo.label, qty: enMochila ? (parseInt(enMochila.item.qty) || 0) : null, spent: ((c.ammo || {})[tipo.key] || {}).spent || 0 };
   }
   function _controlMunicion(m) {

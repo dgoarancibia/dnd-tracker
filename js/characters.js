@@ -6388,7 +6388,14 @@ const Characters = (() => {
      estuche. Si hay varios, manda el que todavía tiene. */
   const _AMMO_ITEM = { arrow: /flecha|arrow/i, bolt: /virote|bolt/i, bullet: /bala|bullet/i, needle: /aguja|needle|cerbatana/i };
   const _AMMO_CONTENEDOR = /carcaj|quiver|estuche|case|caja/i;
-  function getAmmoItem(c, tipo) {
+  // Si el arma tiene asignado un ítem de munición (Ítems → arma → Munición),
+  // manda ese, se llame como se llame ("Carcaj").
+  function getAmmoItem(c, tipo, arma) {
+    const lista = (c && c.consumables) || [];
+    if (arma && arma.municion) {
+      const idx = lista.findIndex(it => it && ((it.id && it.id === arma.municion) || it.name === arma.municion));
+      if (idx >= 0) return { item: lista[idx], idx };
+    }
     const re = tipo && _AMMO_ITEM[tipo.key];
     if (!re) return null;
     const cands = ((c && c.consumables) || []).map((item, idx) => ({ item, idx }))
