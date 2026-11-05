@@ -210,6 +210,17 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     grum.tipos.join() === 'Tierra,Mar,Cielo' && grum.activo === 'Tierra' && !grum.emoji && grum.mar === 'sea' && grum.cerrados.titulos.includes("Beast's Strike") && grum.cerrados.textos === 0 && grum.abiertos === 1 && /línea recta/.test(grum.rasgos) && /Velocidad/.test(grum.rasgos) && grum.renombrado === 'Grum el Grande', grum);
   await p.evaluate(() => App.setCompanionField('name', 'Grum')); await sleep(200);
 
+  // El animal cambia según el tipo; el nombre es el mismo
+  const animal = async v => { await p.evaluate(v => { const i = document.querySelector('#mesa-combate .mesa-comp-nom .mesa-inline:not(.mesa-inline-nom)'); i.value = v; i.dispatchEvent(new Event('change')); }, v); await sleep(250); };
+  const leer = () => p.evaluate(() => ({ animal: document.querySelector('#mesa-combate .mesa-comp-nom .mesa-inline:not(.mesa-inline-nom)').value, nombre: document.querySelector('#mesa-combate .mesa-inline-nom').value }));
+  await animal('Oso');
+  await p.evaluate(() => Mesa.tipoBestia('sea')); await sleep(300);
+  const enMar = await leer();
+  await animal('Tiburón');
+  await p.evaluate(() => Mesa.tipoBestia('land')); await sleep(300);
+  const deVuelta = await leer();
+  chk('el animal se guarda por tipo (Oso en tierra, Tiburón en el mar) y el nombre se mantiene', enMar.animal === '' && enMar.nombre === 'Grum' && deVuelta.animal === 'Oso', { enMar, deVuelta });
+
   // Vida de Grum con cantidad libre, e Inspiración en la cabecera
   await p.evaluate(() => { const c = App.getActiveChar(); c.companion.hp = 20; c.inspiration = false; App.reloadChar(c); }); await sleep(300);
   await p.type('#mesa-combate .mesa-comp-in', '7'); await p.evaluate(() => document.querySelector('#mesa-combate .mesa-comp-pg .mc-dmg').click()); await sleep(300);

@@ -445,7 +445,7 @@ const Mesa = (() => {
   const _ftAm = t => App.fmtDist(String(t || '').replace(/(\d+)\s*ft/g, (_, n) => `${String(n / 5 * 1.5).replace('.', ',')} m`));
   function _tarjetaBestia(c, bestia) {
     const comp = c.companion || {};
-    const tipos = Object.keys(NOMBRE_BESTIA).map(id => `<button class="mesa-tipo ${bestia && comp.beast === id ? 'on' : ''}" onclick="App.setCompanionBeast('${id}')">
+    const tipos = Object.keys(NOMBRE_BESTIA).map(id => `<button class="mesa-tipo ${bestia && comp.beast === id ? 'on' : ''}" onclick="Mesa.tipoBestia('${id}')">
       <i class="mesa-ico" style="--m:url(../assets/${ICONO_BESTIA[id]}.svg)"></i>${NOMBRE_BESTIA[id]}</button>`).join('');
     if (!bestia) return `<div class="mesa-card mesa-comp"><p class="mesa-vacio">${comp.beast ? 'Desconjurado.' : 'Elige a tu compañero.'}</p><div class="mesa-tipos">${tipos}</div></div>`;
     const pct = bestia.max ? bestia.pg / bestia.max : 0;
@@ -455,7 +455,8 @@ const Mesa = (() => {
       <div class="mesa-comp-top"><span class="mesa-med"><i class="mesa-ico" style="--m:url(../assets/${ICONO_BESTIA[comp.beast] || 'iconos/companero'}.svg)"></i></span>
         <div class="mesa-comp-nom">
           <input class="mesa-inline mesa-inline-nom" value="${esc(comp.name || '')}" placeholder="Nombre" onchange="App.setCompanionField('name', this.value)" onkeydown="if(event.key==='Enter')this.blur()">
-          <input class="mesa-inline" value="${esc(comp.kind || '')}" placeholder="Animal (oso, lobo…)" onchange="App.setCompanionField('kind', this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+          <input class="mesa-inline" value="${esc(_animal(comp))}" placeholder="${{ land: 'Animal (oso, lobo…)', sea: 'Animal (tiburón, pulpo…)', sky: 'Animal (águila, búho…)' }[comp.beast] || 'Animal'}"
+            onchange="Mesa.animal(this.value)" onkeydown="if(event.key==='Enter')this.blur()">
         </div></div>
       <div class="mesa-tipos">${tipos}</div>
       <div class="mesa-comp-pg"><span class="mesa-lbl">PG</span><b>${bestia.pg} / ${bestia.max}</b><span class="mc-esp"></span>
@@ -477,6 +478,24 @@ const Mesa = (() => {
         ${bestia.nivel >= 7 ? `<button class="mesa-chip ${comp.forceDamage ? 'on' : ''}" onclick="App.toggleCompanionForceDamage()">Daño de fuerza (Exceptional Training)</button>` : ''}
       </div>` : ''}
     </div>`;
+  }
+
+  /* El nombre es uno solo, pero el animal depende del tipo: un oso en
+     tierra, un tiburón en el mar, un águila en el cielo. Se guarda por tipo
+     (companion.kind_land / kind_sea / kind_sky); el de tierra hereda el
+     "kind" que ya existía. */
+  const _animal = comp => comp[`kind_${comp.beast}`] ?? (comp.beast === 'land' ? comp.kind || '' : '');
+  // Cambiar de tipo trae el animal guardado para ese tipo
+  function tipoBestia(id) {
+    App.setCompanionBeast(id);
+    const c = App.getActiveChar();
+    if (c && c.companion && c.companion.beast === id) App.setCompanionField('kind', _animal(c.companion));
+  }
+  function animal(valor) {
+    const c = App.getActiveChar();
+    if (!c || !c.companion || !c.companion.beast) return;
+    App.setCompanionField(`kind_${c.companion.beast}`, valor);
+    App.setCompanionField('kind', valor);   // la vista de siempre muestra el del tipo actual
   }
 
   // Beast Master (PHB 2024): CA 13 + SAB, golpe = SAB + BC, daño + SAB
@@ -683,6 +702,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, vida, vidaBestia, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, vida, vidaBestia, animal, tipoBestia, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí
