@@ -214,6 +214,13 @@
 .mesa-op-tx small { display: block; color: var(--m-tx2); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .abierto .mesa-op-tx small { white-space: normal; }
 .mesa-num { font: 700 15px 'Cinzel', serif; color: var(--m-acento-2); }
+/* Ataque y daño de un arma: a la vista y más grandes */
+.mesa-golpe { display: flex; align-items: baseline; gap: 10px; margin: 1px 0; }
+.mesa-golpe .mesa-num { font-size: 18px; }
+.mesa-dmg { font: 700 18px 'Jost', sans-serif; color: var(--text); letter-spacing: .01em; }
+.mesa-mun { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; color: var(--text); }
+.mesa-mun input { width: 52px; min-height: 32px; border-radius: 8px; border: 1px solid var(--m-borde-2); background: var(--bg); color: var(--text); font: 600 14px 'Jost', sans-serif; text-align: center; }
+.mesa-mun small { flex-basis: 100%; color: var(--m-tx2); }
 .mesa-mas { font: 400 22px/1 'Jost', sans-serif; color: var(--m-tx2); padding: 0 2px; transition: transform .15s; }
 .abierto .mesa-mas { transform: rotate(90deg); }
 .mesa-det { flex-basis: 100%; border-top: 1px solid var(--m-borde); margin-top: 4px; padding: 8px 2px 2px; color: var(--m-tx2); font-size: 13px; cursor: default; }

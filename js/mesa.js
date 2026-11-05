@@ -162,7 +162,7 @@ const Mesa = (() => {
       const desc = `<button class="mesa-chip" onclick="App.openShortRest()">↺ Corto</button><button class="mesa-chip" onclick="App.longRest()">☾ Largo</button>`;
       return enLinea ? fuera + '<span class="mesa-vsep"></span>' + desc : `<div class="mc-fila">${fuera}</div><div class="mc-fila">${desc}</div>`;
     }
-    const pastilla = (campo, txt) => `<button class="mesa-chip ${t[campo] ? 'usada' : 'on'}" onclick="App.toggleRecursoTurno('${campo}')"
+    const pastilla = (campo, txt) => `<button class="mesa-chip ${t[campo] ? 'usada' : 'on'}" onclick="Mesa.turno('${campo}')"
       title="${t[campo] ? 'Usada — toca para devolverla' : 'Disponible — toca para marcarla'}">${t[campo] ? '' : '✓ '}${txt}</button>`;
     const fila1 = pastilla('action', 'Acción') + pastilla('bonus', 'Adicional') + pastilla('reaction', 'Reacción');
     const fila2 = `<button class="mesa-chip" onclick="App.nuevoTurno()">Fin de turno ▸</button>
@@ -245,9 +245,13 @@ const Mesa = (() => {
     return _turnoUsado(c, Characters.getActivation(r));
   }
 
-  // Lista de una columna: lo que se puede usar arriba; lo demás junto al final
+  /* Lista de una columna: lo que se puede usar arriba; lo que no se puede
+     por falta de espacios o usos, plegado al final. Lo que solo está bloqueado
+     porque ya usaste esa acción en el turno sigue a la vista (atenuado): si te
+     equivocaste, devuelves la acción y vuelve a estar disponible. */
+  const _porTurno = x => /^Ya /.test(x.no || '');
   function _columnaItems(items, grupo) {
-    const si = items.filter(x => !x.no), no = items.filter(x => x.no);
+    const si = items.filter(x => !x.no || _porTurno(x)), no = items.filter(x => x.no && !_porTurno(x));
     const ab = st.grupos.has(grupo);
     return si.map(x => x.html).join('')
       + (no.length ? `<button class="mesa-plegar" onclick="Mesa.grupo('${grupo}')">${ab ? '▾' : '▸'} No disponible ahora (${no.length})</button>`
@@ -269,10 +273,14 @@ const Mesa = (() => {
       const no = slot === 'offHand' ? (t.bonus ? 'Ya usaste tu Acción adicional' : '')
         : usados >= maxAtq ? (maxAtq > 1 ? `Ya hiciste tus ${maxAtq} ataques` : 'Ya atacaste este turno')
         : t.action && !usados ? 'Ya usaste tu Acción en otra cosa' : '';
-      col[tipo].push({ no, html: _fila({
-        id: 'arma-' + slot, icono: _iconoArma(w), nombre: w.name, num: sg(a.ataque), no,
-        sub: `${a.daño}${a.extra ? ' + ' + a.extra : ''}${maxAtq > 1 && slot === 'mainHand' ? ` · ataques ${usados}/${maxAtq}` : ''}${a.notas.length ? ' · ' + a.notas.join(' · ') : ''}`,
-        det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
+      const daño = App.sumarDaño(a.daño + (a.extra ? ' + ' + a.extra : ''));
+      const mun = _municion(c, w);
+      const sinMun = mun && mun.max > 0 && mun.current <= 0;
+      const noArma = no || (sinMun ? `Sin ${mun.label.toLowerCase()}` : '');
+      col[tipo].push({ no: noArma, html: _fila({
+        id: 'arma-' + slot, icono: _iconoArma(w), nombre: w.name, num: sg(a.ataque), dmg: daño, no: noArma,
+        sub: [mun ? `${mun.label} ${mun.max ? `${mun.current}/${mun.max}` : 'sin cargar'}` : '', maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '', ...a.notas].filter(Boolean).join(' · '),
+        det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar${mun && mun.max ? ` · gasta 1 ${mun.label.toLowerCase().replace(/s$/, '')}` : ''}</button></div>`,
       }) });
       // Ataque de oportunidad: con la primera arma cuerpo a cuerpo equipada (principal o secundaria)
       if (!a.aDistancia && !col.reaction.some(x => x.ao)) {
@@ -363,7 +371,8 @@ const Mesa = (() => {
 
     const columna = (tipo, titulo, campo) => `
       <section class="mesa-card mesa-col">
-        <div class="mesa-col-hd">${titulo}<button class="mesa-chip ${t[campo] ? '' : 'on'}" onclick="App.toggleRecursoTurno('${campo}')">${t[campo] ? 'usada' : 'disponible'}</button></div>
+        <div class="mesa-col-hd">${titulo}<button class="mesa-chip ${t[campo] ? 'devolver' : 'on'}" onclick="Mesa.turno('${campo}')"
+          title="${t[campo] ? 'Te equivocaste o te arrepentiste: devuelve la acción' : 'Marcarla como usada'}">${t[campo] ? 'usada · ↺ devolver' : 'disponible'}</button></div>
         <div class="mesa-col-bd">${_columnaItems(col[tipo], 'no-' + tipo) || '<p class="mesa-vacio">Nada que usar aquí.</p>'}
           ${tipo === 'action' ? `<div class="mesa-rapidas">${['Correr', 'Destrabarse', 'Esquivar', 'Ayudar', 'Esconderse', 'Influir', 'Buscar'].map(n =>
             `<button class="mesa-chip" onclick="App.usarRecursoTurno('action')||App.showToast('Ya usaste tu Acción')">${n}</button>`).join('')}</div>` : ''}
@@ -442,11 +451,11 @@ const Mesa = (() => {
       </div>`;
   }
 
-  function _fila({ id, icono, nombre, num, sub, det, tags = '', no = '' }) {
+  function _fila({ id, icono, nombre, num, sub, det, tags = '', no = '', dmg = '' }) {
     const ab = st.abierto === id;
     return `<div class="mesa-op ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.abrir('${id}')">
       <span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/${icono}.svg)"></i></span>
-      <div class="mesa-op-tx"><b>${esc(limpio(nombre))}</b><small>${num ? `<span class="mesa-num">${num}</span> · ` : ''}${esc(sub)}</small>${no ? `<em class="mesa-motivo">${esc(no)}</em>` : ''}</div>
+      <div class="mesa-op-tx"><b>${esc(limpio(nombre))}</b>${dmg ? `<span class="mesa-golpe"><span class="mesa-num">${num}</span><span class="mesa-dmg">${esc(dmg)}</span></span>` : ''}<small>${num && !dmg ? `<span class="mesa-num">${num}</span> · ` : ''}${esc(sub)}</small>${no ? `<em class="mesa-motivo">${esc(no)}</em>` : ''}</div>
       ${tags}<span class="mesa-mas">›</span>
       ${ab ? `<div class="mesa-det" onclick="event.stopPropagation()">${det}</div>` : ''}
     </div>`;
@@ -461,6 +470,42 @@ const Mesa = (() => {
     if (/spear|lanza|javelin|jabalina|staff|bast[oó]n/i.test(n)) return 'pergamino/arma-lanza';
     if (/sword|espada|scimitar|cimitarra|rapier|estoque/i.test(n)) return 'pergamino/arma-espada';
     return 'iconos/ataques';
+  }
+
+  /* Munición del arma (flechas, virotes…): la app solo descuenta si sabe
+     cuántas llevas, así que se carga aquí mismo. */
+  function _municion(c, w) {
+    const tipo = Characters.getAmmoType && Characters.getAmmoType(w);
+    if (!tipo) return null;
+    const a = (c.ammo || {})[tipo.key] || { current: 0, max: 0, spent: 0 };
+    return { key: tipo.key, label: tipo.label, current: a.current || 0, max: a.max || 0, spent: a.spent || 0 };
+  }
+  function _controlMunicion(m) {
+    return `<div class="mesa-mun" onclick="event.stopPropagation()"><span class="mesa-lbl">${esc(m.label)}</span>
+      <button class="mesa-chip" onclick="App.adjustAmmo('${m.key}',-1)" ${m.current <= 0 ? 'disabled' : ''}>−</button>
+      <input type="number" min="0" value="${m.current}" onchange="App.setAmmo('${m.key}','current',this.value)" title="Cuántas te quedan">
+      <span>/</span>
+      <input type="number" min="0" value="${m.max}" onchange="Mesa.municionTotal('${m.key}',this.value)" title="Cuántas llevas en total">
+      <button class="mesa-chip" onclick="App.adjustAmmo('${m.key}',1)">+</button>
+      ${m.spent > 0 ? `<button class="mesa-chip" onclick="App.recuperarMunicion('${m.key}')" title="Tras el combate recuperas la mitad de lo disparado">↺ Recuperar ${Math.floor(m.spent / 2)}</button>` : ''}
+      ${m.max ? '' : '<small>Carga cuántas llevas para que se descuenten al atacar.</small>'}</div>`;
+  }
+
+  /* Marcar o devolver una acción del turno. Devolver la Acción también
+     devuelve los ataques hechos con ella (si no, el arma seguía bloqueada). */
+  function turno(campo) {
+    const c = App.getActiveChar();
+    const t = (c && c.turn) || {};
+    if (campo === 'action' && t.action && t.attacksUsed) App.usarAtaque(-t.attacksUsed);
+    App.toggleRecursoTurno(campo);
+  }
+
+  // Al cargar el total por primera vez, las que quedan son todas
+  function municionTotal(key, val) {
+    const c = App.getActiveChar();
+    const antes = ((c && c.ammo) || {})[key] || {};
+    App.setAmmo(key, 'max', val);
+    if (!antes.max && !antes.current) App.setAmmo(key, 'current', val);
   }
 
   // El ataque de oportunidad gasta la Reacción, no un ataque de la acción
@@ -763,6 +808,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, municionTotal, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí

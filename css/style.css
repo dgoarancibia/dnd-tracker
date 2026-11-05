@@ -4270,7 +4270,7 @@ input[type=number] { -moz-appearance: textfield; }
 .ref-body { padding: 14px 16px; display:flex; flex-direction:column; gap:12px; }
 .ref-formula-row { display:flex; gap:10px; }
 .ref-formula-chip { flex:1; text-align:center; background: var(--bg3); border:1px solid var(--border-strong); border-radius:10px; padding:10px 8px; }
-.ref-formula-chip .f { font-family:'Cinzel',serif; font-size:18px; color:var(--gold-light); }
+.ref-formula-chip .f { font-family:'Cinzel',serif; font-size:22px; color:var(--gold-light); }
 .ref-formula-chip .l { font-size:9.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-top:3px; }
 /* Bonus pasivo automático (Blessed Strikes, Radiant Strikes...) — se distingue
    del daño base con borde verde y fondo tenue. */

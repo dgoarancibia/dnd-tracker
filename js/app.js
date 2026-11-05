@@ -6603,6 +6603,25 @@ const App = (() => {
       </div>`;
   }
 
+  /* Suma lo que se puede sumar de una fórmula de daño: "1d10+4 + 2" → "1d10+6",
+     "1d8+3 + 1d8" → "2d8+3". Lo que lleva tipo de daño ("1d6 fuego") queda aparte. */
+  function sumarDaño(formula) {
+    const partes = String(formula || '').replace(/\s+/g, ' ').match(/[+-]?[^+-]+/g) || [];
+    const dados = {}, otros = [];
+    let fijo = 0;
+    partes.forEach(p => {
+      const t = p.replace(/\s+/g, '');
+      let m;
+      if ((m = t.match(/^([+-]?)(\d+)$/))) fijo += (m[1] === '-' ? -1 : 1) * parseInt(m[2], 10);
+      else if ((m = t.match(/^\+?(\d+)d(\d+)$/i))) dados[m[2]] = (dados[m[2]] || 0) + parseInt(m[1], 10);
+      else if (p.trim()) otros.push(p.trim().replace(/^\+\s*/, ''));
+    });
+    const caras = Object.keys(dados).sort((a, b) => b - a);
+    if (!caras.length) return String(formula || '');
+    const base = caras.map(k => `${dados[k]}d${k}`).join('+') + (fijo > 0 ? `+${fijo}` : fijo < 0 ? `${fijo}` : '');
+    return [base, ...otros].join(' + ');
+  }
+
   function attackWithWeapon(slot, forzar) {
     if (!_char) return;
     const w = _char.equipment && _char.equipment[slot];
@@ -6634,7 +6653,7 @@ const App = (() => {
     // secundaria usaba los números de la principal y el daño no sumaba mod).
     const arma = Characters.calcArma(_char, slot);
     const atkBonus = arma ? arma.ataque : null;
-    const dmgFormula = arma ? arma.daño + (arma.extra ? ` + ${arma.extra}` : '') : (w.die || '?');
+    const dmgFormula = arma ? sumarDaño(arma.daño + (arma.extra ? ` + ${arma.extra}` : '')) : (w.die || '?');
     const notasArma = arma && arma.notas.length ? arma.notas.join(' · ') : '';
 
     // Cada bono con su etiqueta: Roll20 la muestra al pasar el mouse por el
@@ -12497,6 +12516,7 @@ ${notesText}`;
     toggleSpellPrepared, removeKnownSpell, addKnownSpell, clearAllKnownSpells, toggleCantripRacial, setSpellFilter, setSpellSearch,
     castSpell, castSpellAt,
     // Reglas de espacios de un conjuro (la vista Mesa arma sus botones con esto)
+    sumarDaño,
     // Estado del combate y ataques por turno, para la vista Mesa
     enCombate: () => _combatActive,
     ataquesDelTurno: () => _char ? _ataquesDelTurno(_char) : 1,
