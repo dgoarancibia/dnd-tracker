@@ -163,7 +163,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); }); await sleep(300);
   await p.evaluate(() => { Mesa.abrir('nada'); Mesa.abrir('arma-mainHand'); }); await sleep(200);
   const ballesta = await p.evaluate(() => ({ dmg: document.querySelector('.mesa-op.abierto .mesa-dmg')?.textContent, nombre: document.querySelector('.mesa-op.abierto b')?.textContent,
-    editar: !document.querySelector('.mesa-op.abierto .mesa-mun input') && /en Ítems/.test(document.querySelector('.mesa-op.abierto .mesa-mun')?.textContent || '') }));
+    editar: !document.querySelector('.mesa-op.abierto .mesa-mun') }));
   await p.evaluate(() => { Mesa.abrir('nada'); Mesa.abrir('arma-mainHand'); }); await sleep(200);
   await p.evaluate(() => [...document.querySelectorAll('.mesa-op.abierto .mesa-btn.p')].find(x => /Atacar/.test(x.textContent)).click()); await sleep(400);
   ballesta.municion = await p.evaluate(() => App.getActiveChar().consumables.find(x => x.name === 'Virotes').qty);
@@ -171,7 +171,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ballesta.modal = await p.evaluate(() => document.getElementById('refBody').innerText.replace(/\s+/g, ' '));
   await p.evaluate(() => App.closeActionRefModal()); await sleep(200);
   // Este Torvald tiene DES 10: 1d10 + 0 + 2 de daño extra = 1d10+2, sumado y sin " + 2" suelto
-  chk('ballesta: daño sumado (1d10+2); "Heavy Crossbow (20)" sale de Ítems, se edita allá y atacar deja 19', ballesta.dmg === '1d10+2' && /Heavy Crossbow \(20\)/.test(ballesta.nombre || '')
+  chk('ballesta: daño sumado (1d10+2); "Heavy Crossbow (20)" sale de Ítems, sin controles para sumar o restar, y atacar deja 19', ballesta.dmg === '1d10+2' && /Heavy Crossbow \(20\)/.test(ballesta.nombre || '')
     && ballesta.editar && ballesta.municion === 19 && /\(19\)/.test(ballesta.tras || '') && /1d10\+2 DAÑO/.test(ballesta.modal), ballesta);
 
   // Tras atacar, el arma sigue a la vista (atenuada, con el motivo) y "devolver" la deja disponible otra vez

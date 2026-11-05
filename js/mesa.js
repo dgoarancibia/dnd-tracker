@@ -473,7 +473,8 @@ const Mesa = (() => {
   }
 
   /* Munición del arma (flechas, virotes…): la cantidad es la del ítem en
-     la mochila; se agrega o quita en Ítems. Aquí solo se recupera tras pelear. */
+     la mochila y se ve en el nombre del arma. Se agrega o quita en Ítems;
+     aquí solo se recupera la mitad tras pelear. */
   function _municion(c, w) {
     const tipo = Characters.getAmmoType && Characters.getAmmoType(w);
     if (!tipo) return null;
@@ -482,9 +483,7 @@ const Mesa = (() => {
       qty: enMochila ? (parseInt(enMochila.item.qty) || 0) : null, spent: ((c.ammo || {})[tipo.key] || {}).spent || 0 };
   }
   function _controlMunicion(m) {
-    return `<div class="mesa-mun" onclick="event.stopPropagation()">
-      ${m.spent > 0 ? `<button class="mesa-chip" onclick="App.recuperarMunicion('${m.key}')" title="Tras el combate recuperas la mitad de lo disparado">↺ Recuperar ${Math.floor(m.spent / 2)}</button>` : ''}
-      <button class="mesa-chip" onclick="App.switchTab('equipo')">${m.qty == null ? `Agregar ${m.label.toLowerCase()} en Ítems` : `Cambiar ${m.label.toLowerCase()} en Ítems`}</button></div>`;
+    return m.spent > 0 ? `<div class="mesa-mun" onclick="event.stopPropagation()"><button class="mesa-chip" onclick="App.recuperarMunicion('${m.key}')" title="Tras el combate recuperas la mitad de lo disparado">↺ Recuperar ${Math.floor(m.spent / 2)} ${esc(m.label.toLowerCase())}</button></div>` : '';
   }
 
   /* Marcar o devolver una acción del turno. Devolver la Acción también
