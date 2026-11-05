@@ -234,7 +234,7 @@ const Mesa = (() => {
   function _motivoConjuro(c, sp, via) {
     if (sp.level > 0) {
       const op = App.castOptions(sp.id) || { free: false, slots: [] };
-      if (!op.free && !op.slots.length) return `Sin espacios de nivel ${sp.level}${sp.upcast ? ' o más' : ''}`;
+      if (!op.free && !op.slots.length) return `Sin espacios de nivel ${sp.level} o más`;
     }
     return _turnoUsado(c, via || Characters.getActivation(sp));
   }
@@ -664,12 +664,44 @@ const Mesa = (() => {
   /* Fila de un conjuro. `via`: qué gasta al lanzarlo si no es lo de su
      tiempo de lanzamiento ('reaction' con War Caster; 'other' fuera de
      combate, que no marca el turno). `ritual`: ofrece lanzarlo como ritual. */
+  /* Daño o curación de un conjuro para verlo de un vistazo: "3d8", "2d8+4"
+     (el mod de lanzamiento ya sumado) y, si escala, "+1d8/nv". Los trucos
+     suben de dados con el nivel del personaje (5, 11, 17). */
+  function _efectoConjuro(c, sp) {
+    const textos = [sp.damage, sp.desc].filter(Boolean).join(' · ');
+    const m = textos.match(/(\d+d\d+)(?:\s*\+\s*(SAB|INT|CAR|mod\b|\d+)(?:\s*mod\b)?)?/i);
+    if (!m) return null;
+    let [, dados, extra] = m;
+    if (sp.level === 0) {
+      const nv = c.nivel || 1;
+      const tramos = [...(sp.desc || '').matchAll(/(\d+d\d+)\s*nv\s*(\d+)/gi)].filter(t => nv >= +t[2]);
+      if (tramos.length) dados = tramos[tramos.length - 1][1];
+      else if (!/\(d\d+\s*nv/i.test(sp.desc || '')) {
+        const n = nv >= 17 ? 4 : nv >= 11 ? 3 : nv >= 5 ? 2 : 1;
+        dados = dados.replace(/^(\d+)/, x => +x * n);
+      }
+    }
+    let fijo = '';
+    if (extra) {
+      const stat = /^\d+$/.test(extra) ? null : (/SAB/i.test(extra) ? 'sab' : /INT/i.test(extra) ? 'int' : /CAR/i.test(extra) ? 'car' : c.spellcastingStat);
+      const val = stat ? Characters.calcMod((c.stats || {})[stat] || 10) : +extra;
+      fijo = val ? (val > 0 ? `+${val}` : `${val}`) : '';
+    }
+    const sube = [sp.upcast, (sp.desc || '').match(/Escala\s*\+\s*[^.·]*/i)?.[0]].filter(Boolean).join(' ');
+    const esc_ = sube.match(/\+\s*(\d+d\d+)/);
+    const escala = sp.level === 0 ? '' : esc_ ? `+${esc_[1]}/nv` : /criatura|objetivo/i.test(sube) ? '+1 objetivo/nv' : '';
+    const cura = !sp.damage && /\b(HP|PG)\b|cura|recupera/i.test(sp.desc || '');
+    // Un bono a tiradas (Bless: +1d4) se muestra con su signo, no como daño
+    const bono = !sp.damage && !cura && new RegExp('\\+\\s*' + m[1]).test(textos);
+    return { base: (bono ? '+' : '') + dados + fijo, escala, cura };
+  }
+
   function _filaConjuro(c, sp, { conPrep = false, via, ritual = false } = {}) {
     const act = Characters.getActivation(sp);
     const v = via ? `,'${via}'` : '';
     const corta = { action: 'ACC.', bonusAction: 'ADIC.', reaction: 'REAC.' }[via === 'reaction' ? 'reaction' : act] || '';
     const nivel = sp.level === 0 ? 'TRUCO' : `NV ${sp.level}`;
-    const tags = [`<span class="mesa-tg">${nivel}</span>`, sp.concentration ? '<span class="mesa-tg">CONC</span>' : '',
+    const tags = [sp.level === 0 ? `<span class="mesa-tg">${nivel}</span>` : '', sp.concentration ? '<span class="mesa-tg">CONC</span>' : '',
       sp.domain ? `<span class="mesa-tg d">◆ ${/Cl[ée]rigo/.test(c.clase || '') ? 'DOMINIO' : 'SIEMPRE'}</span>` : '',
       sp.mi ? '<span class="mesa-tg d">GRATIS</span>' : '', sp.ritual ? '<span class="mesa-tg">RITUAL</span>' : '', corta ? `<span class="mesa-tg a">${corta}</span>` : ''].join('');
     const id = (via === 'reaction' ? 'sp-wc-' : via === 'other' ? 'sp-fc-' : 'sp-') + sp.id, ab = st.abierto === id;
@@ -678,7 +710,12 @@ const Mesa = (() => {
     // Aviso de concentración: no impide, pero conviene saberlo antes
     const conc = sp.concentration && c.concentration && c.concentration !== sp.id
       ? (c.spells || []).find(x => x.id === c.concentration) : null;
-    const efecto = sp.damage || (sp.desc || '').split(' · ').slice(2, 4).join(' · ');
+    const ef = _efectoConjuro(c, sp);
+    // Qué espacio gasta: el de su nivel o, si se acabaron, el siguiente que quede (↑)
+    const opEsp = sp.level > 0 ? (App.castOptions(sp.id) || { free: false, slots: [] }) : null;
+    const espacio = !opEsp ? '' : opEsp.free ? 'Gratis'
+      : opEsp.slots.length ? `Nv ${opEsp.slots[0]}${opEsp.slots[0] > sp.level ? '↑' : ''}` : `Nv ${sp.level}`;
+    const efecto = ef ? '' : (sp.desc || '').split(' · ').slice(2, 4).join(' · ');
     let det = '';
     if (ab) {
       const op = App.castOptions(sp.id) || { free: false, slots: [] };
@@ -688,7 +725,7 @@ const Mesa = (() => {
       else {
         if (op.free) btns.push(`<button class="mesa-btn p" onclick="App.castSpell('${sp.id}',0${v})">✦ Gratis, sin espacio</button>`);
         op.slots.forEach(lv => btns.push(`<button class="mesa-btn ${op.free || ritual ? '' : 'p'}" onclick="App.castSpell('${sp.id}',${lv}${v})">Lanzar con espacio de nivel ${lv}</button>`));
-        if (!op.free && !op.slots.length) btns.push(`<span class="mesa-vacio">Sin espacios de nivel ${sp.level}${sp.upcast ? ' o más' : ''}</span>`);
+        if (!op.free && !op.slots.length) btns.push(`<span class="mesa-vacio">Sin espacios de nivel ${sp.level} o más</span>`);
       }
       if (esEscritorio()) btns.push(`<button class="mesa-btn" onclick="App.copiarRoll20('conjuro','${sp.id}')">Enviar a Roll20</button>`);
       btns.push(`<button class="mesa-btn" onclick="App.castSpell('${sp.id}')">Ficha completa</button>`);
@@ -702,7 +739,7 @@ const Mesa = (() => {
     return `<div class="mesa-cj ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.abrir('${id}')">
       ${conPrep ? `<span class="mesa-pr ${prep ? 'on' : ''}" ${sp.level === 0 || sp.domain ? 'title="Siempre preparado"' : `onclick="event.stopPropagation();App.toggleSpellPrepared('${sp.id}')" title="${prep ? 'Despreparar' : 'Preparar'}"`}></span>`
         : '<span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/iconos/conjuros.svg)"></i></span>'}
-      <div class="mesa-op-tx"><b>${esc(limpio(sp.name))}</b><small>${esc([sp.castTime, sp.range && App.fmtDist(sp.range), efecto].filter(Boolean).join(' · '))}</small>
+      <div class="mesa-op-tx"><b>${esc(limpio(sp.name))}</b>${ef || espacio ? `<span class="mesa-golpe">${espacio ? `<span class="mesa-esp ${/↑/.test(espacio) ? 'sube' : ''}" title="Espacio que gasta">${espacio}</span>` : ''}${ef ? `<span class="mesa-dmg ${ef.cura ? 'cura' : ''}">${ef.cura ? '♥ ' : ''}${esc(ef.base)}</span>${ef.escala ? `<span class="mesa-escala">${esc(ef.escala)}</span>` : ''}` : ''}</span>` : ''}<small>${esc([sp.castTime, sp.range && App.fmtDist(sp.range), efecto].filter(Boolean).join(' · '))}</small>
         ${no ? `<em class="mesa-motivo">${esc(no)}</em>` : conc ? `<em class="mesa-motivo aviso">Rompe tu concentración en ${esc(limpio(conc.name))}</em>` : ''}</div>
       <span class="mesa-tags">${tags}</span>${det}</div>`;
   }

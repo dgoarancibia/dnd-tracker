@@ -14,6 +14,10 @@ const App = (() => {
   // Recalcula features de clase según nivel desde CLASE_FEATURES (fuente de verdad).
   // Reemplaza COMPLETAMENTE las features de clase y conserva solo las de subclase.
   // Guarda en storage para que Firestore reciba la versión limpia en el próximo sync.
+  // Campos de reglas que manda el catálogo (lo usan _syncCharData y _syncSpellCatalog). No se tocan `prepared` ni marcas
+  // propias del personaje (domain, mi, alwaysLabel…).
+  const _CAMPOS_CONJURO = ['castTime', 'range', 'duration', 'concentration', 'ritual', 'combat', 'desc', 'fullDesc', 'damage', 'upcast'];
+
   function _refreshCharFeatures(c) {
     if (!c || c.id === 'lursey-brumaclara') return;
     const claseFeat = Characters.CLASE_FEATURES && Characters.CLASE_FEATURES[c.clase];
@@ -328,8 +332,10 @@ const App = (() => {
     // 2. Recortar cantrips al máximo de la tabla (si aplica)
     const maxCantrips = Characters.getCantripsKnown(c);
     if (maxCantrips !== null) {
-      const freeC = c.spells.filter(s => s.level === 0 && s.cantrip_subclass);
-      const paidC = c.spells.filter(s => s.level === 0 && !s.cantrip_subclass);
+      // Los de subclase y los raciales no cuentan para el límite.
+      const libre = s => s.cantrip_subclass || s.cantrip_racial;
+      const freeC = c.spells.filter(s => s.level === 0 && libre(s));
+      const paidC = c.spells.filter(s => s.level === 0 && !libre(s));
       if (paidC.length > maxCantrips) {
         // Recortar a los primeros maxCantrips pagados
         const trimmed = paidC.slice(0, maxCantrips);
@@ -505,9 +511,6 @@ const App = (() => {
      Solo prepare casters (Clérigo, Druida, Mago, Paladín, Explorador): los
      known casters (Hechicero, Bardo, Brujo) eligen a mano y auto-agregar
      les rompería el límite de conocidos. */
-  // Campos de reglas que manda el catálogo. No se tocan `prepared` ni marcas
-  // propias del personaje (domain, mi, alwaysLabel…).
-  const _CAMPOS_CONJURO = ['castTime', 'range', 'duration', 'concentration', 'ritual', 'combat', 'desc', 'fullDesc', 'damage', 'upcast'];
 
   function _syncSpellCatalog(c) {
     const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase]) || [];
@@ -6706,9 +6709,9 @@ const App = (() => {
       const slot = _char.spellSlots[i];
       if (slot && slot.current > 0) slots.push(i);
     }
-    // Sin upcast no tiene sentido ofrecer slots superiores: solo el nivel base.
-    const ofrecibles = sp.upcast ? slots : slots.filter(lv => lv === sp.level);
-    return { free: !!sp.mi, slots: ofrecibles, sinSlot: !!sp.mi };
+    // Cualquier conjuro se puede lanzar con un espacio más alto (aunque no
+    // mejore): sin espacios de su nivel sigue disponible si quedan superiores.
+    return { free: !!sp.mi, slots, sinSlot: !!sp.mi };
   }
 
   // Punto de entrada desde las tarjetas de conjuro: el modal de detalle es

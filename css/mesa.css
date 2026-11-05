@@ -218,6 +218,11 @@
 .mesa-golpe { display: flex; align-items: baseline; gap: 10px; margin: 1px 0; }
 .mesa-golpe .mesa-num { font-size: 18px; }
 .mesa-dmg { font: 700 18px 'Jost', sans-serif; color: var(--text); letter-spacing: .01em; }
+.mesa-dmg.cura { color: var(--green-light); }
+.mesa-esp { align-self: center; font: 700 11px 'Jost', sans-serif; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 6px;
+  border: 1px solid var(--gold-dim); color: var(--gold); white-space: nowrap; }
+.mesa-esp.sube { border-style: dashed; }
+.mesa-escala { font: 600 12px 'Jost', sans-serif; color: var(--text-muted); letter-spacing: .02em; }
 .mesa-mun { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; color: var(--text); }
 .mesa-mun input { width: 52px; min-height: 32px; border-radius: 8px; border: 1px solid var(--m-borde-2); background: var(--bg); color: var(--text); font: 600 14px 'Jost', sans-serif; text-align: center; }
 .mesa-mun small { flex-basis: 100%; color: var(--m-tx2); }
