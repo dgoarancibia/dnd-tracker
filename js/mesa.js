@@ -137,7 +137,7 @@ const Mesa = (() => {
         <button class="mesa-btn mc-heal" onclick="Mesa.vida(1)">Curar</button>
       </div>
       <span class="mc-sep"></span>
-      <div class="mc-ca"><span class="mesa-escudo">${ca}</span><span class="mesa-lbl">CA</span></div>
+      <div class="mc-ca" title="Clase de Armadura"><span class="mesa-escudo">${ca}</span></div>
       <div class="mc-vit">
         <div><b>${sg(init)}</b><span class="mesa-lbl">Inic.</span></div>
         <div><b>${esc(vel)}</b><span class="mesa-lbl">Vel.</span></div>
