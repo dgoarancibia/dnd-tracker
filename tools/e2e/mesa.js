@@ -180,7 +180,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     return { visible: !!fila, atenuada: fila && fila.classList.contains('no'), boton: col.querySelector('.mesa-col-hd .mesa-chip').textContent.trim() }; });
   await p.evaluate(() => document.querySelector('#mesa-combate .mesa-col .mesa-col-hd .mesa-chip').click()); await sleep(300);
   trasAtk.devuelta = await p.evaluate(() => { const fila = [...document.querySelectorAll('#mesa-combate .mesa-col .mesa-op')].find(o => /Heavy Crossbow/.test(o.textContent)); return !!fila && !fila.classList.contains('no') && !App.getActiveChar().turn.action; });
-  chk('tras atacar el arma sigue visible con su motivo, y "usada · ↺ devolver" la deja disponible otra vez', trasAtk.visible && trasAtk.atenuada && /devolver/.test(trasAtk.boton) && trasAtk.devuelta, trasAtk);
+  await p.evaluate(() => Mesa.abrir('arma-mainHand')); await sleep(200);
+  trasAtk.atacar = await p.evaluate(() => [...document.querySelectorAll('#mesa-combate .mesa-op.abierto .mesa-btn.p')].map(b => b.textContent.trim()).find(t => /Atacar/.test(t)));
+  // Lo mismo con el chip "Acción" de arriba: atacar, tocarlo y todo vuelve a estar disponible
+  await p.evaluate(() => App.attackWithWeapon('mainHand')); await sleep(300);
+  await p.evaluate(() => App.closeActionRefModal()); await sleep(200);
+  trasAtk.chip = await p.evaluate(() => { const b = [...document.querySelectorAll('.mesa-chip.usada')].find(x => /Mesa\.turno\('action'\)/.test(x.getAttribute('onclick'))); if (b) b.click(); return !!b; }); await sleep(300);
+  trasAtk.chipDevuelve = await p.evaluate(() => { const t = App.getActiveChar().turn; const fila = [...document.querySelectorAll('#mesa-combate .mesa-col .mesa-op')].find(o => /Heavy Crossbow/.test(o.textContent)); return !t.action && !t.attacksUsed && !!fila && !fila.classList.contains('no'); });
+  chk('tras atacar el arma sigue visible; "usada · ↺ devolver" o el chip Acción de arriba la dejan disponible; el botón dice solo "Atacar"', trasAtk.visible && trasAtk.atenuada && /devolver/.test(trasAtk.boton) && trasAtk.devuelta
+    && trasAtk.atacar === '⚔ Atacar' && trasAtk.chip && trasAtk.chipDevuelve, trasAtk);
 
   // Aztram (Echo Knight): invocar el eco y Unleash Incarnation a la vista
   await ficha('az');

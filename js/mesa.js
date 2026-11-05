@@ -280,7 +280,7 @@ const Mesa = (() => {
       col[tipo].push({ no: noArma, html: _fila({
         id: 'arma-' + slot, icono: _iconoArma(w), nombre: mun && mun.qty != null ? `${w.name} (${mun.qty})` : w.name, num: sg(a.ataque), dmg: daño, no: noArma,
         sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '', ...a.notas].filter(Boolean).join(' · '),
-        det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar${mun && mun.qty != null ? ` · gasta 1 ${mun.uno}` : ''}</button></div>`,
+        det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
       }) });
       // Ataque de oportunidad: con la primera arma cuerpo a cuerpo equipada (principal o secundaria)
       if (!a.aDistancia && !col.reaction.some(x => x.ao)) {
@@ -479,8 +479,7 @@ const Mesa = (() => {
     const tipo = Characters.getAmmoType && Characters.getAmmoType(w);
     if (!tipo) return null;
     const enMochila = Characters.getAmmoItem(c, tipo);
-    return { key: tipo.key, label: tipo.label, uno: tipo.label.toLowerCase().split(' ')[0].replace(/s$/, ''),
-      qty: enMochila ? (parseInt(enMochila.item.qty) || 0) : null, spent: ((c.ammo || {})[tipo.key] || {}).spent || 0 };
+    return { key: tipo.key, label: tipo.label, qty: enMochila ? (parseInt(enMochila.item.qty) || 0) : null, spent: ((c.ammo || {})[tipo.key] || {}).spent || 0 };
   }
   function _controlMunicion(m) {
     return m.spent > 0 ? `<div class="mesa-mun" onclick="event.stopPropagation()"><button class="mesa-chip" onclick="App.recuperarMunicion('${m.key}')" title="Tras el combate recuperas la mitad de lo disparado">↺ Recuperar ${Math.floor(m.spent / 2)} ${esc(m.label.toLowerCase())}</button></div>` : '';
