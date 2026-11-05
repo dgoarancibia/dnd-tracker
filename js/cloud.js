@@ -12,7 +12,7 @@
    ═══════════════════════════════════════════════════════ */
 // Misma URL que importa app.html: con otra ?v= el módulo se evaluaba dos veces.
 // Al subir la versión de firebase.js hay que cambiarla en ambos lados.
-import './firebase.js?v=6';
+import './firebase.js?v=7';
 
 const Cloud = (() => {
   let _uid     = null;    // UID del usuario autenticado
@@ -587,7 +587,9 @@ const Cloud = (() => {
     for (const id of ids) {
       const l = locales[id], c = nube[id], base = getBase(id);
       let estado;
-      if (negra.has(id)) estado = 'borrado aquí';
+      // Sin leer la nube no se puede comparar: no sugerir que algo "falta"
+      if (d.errorNube) estado = l ? 'no se pudo comparar (la nube no respondió); aquí sigue a salvo' : 'solo en la nube';
+      else if (negra.has(id)) estado = 'borrado aquí';
       else if (marcas.has(id)) estado = 'borrado en otro dispositivo';
       else if (!c) estado = base ? 'falta en la nube (se manda a la papelera)' : 'solo aquí (se sube)';
       else if (!l) estado = 'solo en la nube (se baja)';

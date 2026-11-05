@@ -69,6 +69,10 @@ Diego lo usa en iPad (split view), Mac y Windows. Juega online con Roll20 y dos 
   - `turno.js`: en combate, Atacar descuenta ataques; la mano secundaria usa la Acción adicional salvo con Nick; usar un recurso marca su activación (termina en `TODO OK`).
 - Ojo: el autosave pisa ediciones al recargar; para recargar un personaje modificado usa `App.reloadChar(c)`.
 
+## Incidente de sincronización (2026-11-05)
+
+En el iPad, con la conexión lenta, Torvald y Aztram se fueron a la papelera como "borrados en otro dispositivo". Causa: `getDocs` devolvía sin error lo que Firestore tenía en memoria (solo Lursey, recién guardada) y `sincronizarLista` tomó a los demás como faltantes en la nube. Arreglo: `loadAllCharsCloud`, `loadDeletedCloud` y `loadCharCloud` usan `getDocsFromServer`/`getDocFromServer` (fallan si no llegan al servidor y la sincronización no toca nada); `tools/check_sw.js` lo verifica. El diagnóstico ya no dice "falta en la nube" cuando la nube no respondió. Se recuperaron desde la papelera.
+
 ## Reglas que no se negocian (decisiones de Diego)
 
 - **Nunca tirar dados en la app**: su DM no lo permite. Roll20 recibe comandos (`&{template:default}`, `[[1d20+5]]`, `&{tracker}`) y tira allá.

@@ -21,6 +21,8 @@ import {
   setDoc,
   getDoc,
   getDocs,
+  getDocFromServer,
+  getDocsFromServer,
   deleteDoc,
   collection,
   serverTimestamp
@@ -118,8 +120,14 @@ async function saveCharCloud(uid, char) {
   await setDoc(ref, data);
 }
 
+/* Las lecturas que deciden qué subir, bajar o mandar a la papelera van
+   SIEMPRE al servidor. Con getDoc/getDocs, si la conexión estaba lenta,
+   Firestore respondía sin error con lo que tenía en memoria (solo lo recién
+   guardado): en el iPad la lista volvió con Lursey sola y Torvald y Aztram
+   se fueron a la papelera como "borrados en otro dispositivo" (nov-2026).
+   getDocsFromServer falla si no llega al servidor, y quien llama no toca nada. */
 async function loadCharCloud(uid, charId) {
-  const snap = await getDoc(_charRef(uid, charId));
+  const snap = await getDocFromServer(_charRef(uid, charId));
   if (!snap.exists()) return null;
   const data = snap.data();
   // serverTimestamp no es serializable; convertir a string
@@ -130,7 +138,7 @@ async function loadCharCloud(uid, charId) {
 }
 
 async function loadAllCharsCloud(uid) {
-  const snap = await getDocs(_charsCol(uid));
+  const snap = await getDocsFromServer(_charsCol(uid));
   const result = {};
   snap.forEach(d => {
     const data = d.data();
@@ -160,7 +168,7 @@ async function unmarkDeletedCloud(uid, charId) {
   await deleteDoc(_deletedRef(uid, charId));
 }
 async function loadDeletedCloud(uid) {
-  const snap = await getDocs(collection(_db, 'users', uid, 'deleted'));
+  const snap = await getDocsFromServer(collection(_db, 'users', uid, 'deleted'));
   const ids = new Set();
   snap.forEach(d => ids.add(d.id));
   return ids;

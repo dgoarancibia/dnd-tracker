@@ -35,3 +35,15 @@ if (vApp !== vCloud) {
   process.exit(1);
 }
 console.log(`✅ firebase.js con la misma versión en app.html y cloud.js (?v=${vApp}).`);
+
+/* Las lecturas que deciden la lista (qué bajar, subir o mandar a la papelera)
+   deben ir al servidor: getDocs podía devolver solo lo que Firestore tenía en
+   memoria y mandar personajes a la papelera (iPad, nov-2026). */
+const fbJs = fs.readFileSync(path.join(raiz, 'js/firebase.js'), 'utf8');
+const leeServidor = nombre => new RegExp(`async function ${nombre}\\([^)]*\\) \\{\\s*const snap = await get(Docs?)FromServer\\(`).test(fbJs);
+const sinServidor = ['loadAllCharsCloud', 'loadDeletedCloud', 'loadCharCloud'].filter(n => !leeServidor(n));
+if (sinServidor.length) {
+  console.error(`✗ Deben leer del servidor (getDocsFromServer/getDocFromServer): ${sinServidor.join(', ')}`);
+  process.exit(1);
+}
+console.log('✅ La lista de la nube se lee del servidor, no de la memoria de Firestore.');
