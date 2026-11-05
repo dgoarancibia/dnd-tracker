@@ -1252,8 +1252,8 @@ const Characters = (() => {
         skills: {},      // bonus por skill { perspicacia: 1, ... }
         init: 0,         // Alert feat, ítems
         hpMax: 0,        // Tough feat, ítems permanentes (≠ temp HP)
-        ataque: 1,       // arma mágica +1 (Maza de Guerra +1)
-        cd: 1,           // Arcane Grimoire +1 (ítem mágico)
+        ataque: 1,       // Amulet of the Devout +1: ataque de conjuros (la Maza +1 suma aparte, en el arma)
+        cd: 1,           // Amulet of the Devout +1: CD de conjuros (Tasha's)
       },
 
       diary: [],
