@@ -65,6 +65,29 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   chk("Land's Aid: en Acción con 2d6 grande; usarlo gasta 1 Wild Shape y la Acción (no la Adicional)", fila && fila.dmg === '2d6' && /gasta 1 Wild Shape/.test(fila.sub) && tras.ws === 1 && tras.accion && !tras.adicional, { fila, tras });
   await p.screenshot({ path: __dirname + '/out/druida_tierra_1180.png' });
 
+  // Wild Shape: elegir formas (máx 4 en nv3, VD ≤ 1/4, sin vuelo) y transformarse en Lobo
+  await p.evaluate(() => { App.nuevoTurno(); const c = App.getActiveChar(); c.resources.find(r => r.id === 'wild-shape').current = 2; c.hp.temp = 0; App.reloadChar(c); }); await sleep(300);
+  const formas = await p.evaluate(() => { ['wolf', 'rat', 'spider', 'riding-horse', 'panther'].forEach(id => App.wildShapeConocida(id));
+    const disp = Characters.formasWildShapeDisponibles(3).map(b => b.id);
+    return { conocidas: App.getActiveChar().wildShape.conocidas, conVuelo: disp.some(id => ['owl', 'hawk', 'bat', 'raven'].includes(id)), conOso: disp.includes('black-bear') }; });
+  chk('formas: máximo 4 en nv3; sin bestias voladoras ni de VD 1/2', formas.conocidas.length === 4 && !formas.conocidas.includes('panther') && !formas.conVuelo && !formas.conOso, formas);
+  await p.evaluate(() => { App.switchTab('combate'); Mesa.render(); }); await sleep(300);
+  const boton = await p.evaluate(() => [...document.querySelectorAll('.mesa-forma-lista .mesa-btn')].map(b => b.textContent.replace(/\s+/g, ' ').trim()));
+  await p.evaluate(() => [...document.querySelectorAll('.mesa-forma-lista .mesa-btn')].find(b => /Lobo/.test(b.textContent)).click()); await sleep(400);
+  const lobo = await p.evaluate(() => { const c = App.getActiveChar();
+    const atk = [...document.querySelectorAll('#mesa-combate .mesa-op')].find(o => /Mordisco \(Lobo\)/.test(o.textContent));
+    // Los conjuros quedan plegados en "No disponible ahora"; se abre el grupo para leer el motivo
+    [...document.querySelectorAll('#mesa-combate .mesa-plegar')].filter(b => /No disponible/.test(b.textContent) && /▸/.test(b.textContent)).forEach(b => b.click());
+    const conj = [...document.querySelectorAll('#mesa-combate .mesa-cj')].find(o => /Hold Person/.test(o.textContent));
+    return { activa: c.wildShape.activa, usos: c.resources.find(r => r.id === 'wild-shape').current, temp: c.hp.temp, ca: Characters.calcCA(c), adicional: c.turn.bonus,
+      atk: atk && { num: atk.querySelector('.mesa-num')?.textContent, dmg: atk.querySelector('.mesa-dmg')?.textContent },
+      conjuro: conj && conj.querySelector('.mesa-motivo')?.textContent, tarjeta: !!document.querySelector('.mesa-forma .mesa-mini') }; });
+  chk('Lobo: gasta 1 uso y la Acción adicional, +3 PG temporales, CA 12 de la bestia, Mordisco +4 1d6+2, conjuros bloqueados', lobo.activa === 'wolf' && lobo.usos === 1 && lobo.temp === 3
+    && lobo.ca === 12 && lobo.adicional && lobo.atk && lobo.atk.num === '+4' && lobo.atk.dmg === '1d6+2' && /no puedes lanzar/.test(lobo.conjuro || '') && lobo.tarjeta, { boton, lobo });
+  await p.screenshot({ path: __dirname + '/out/druida_lobo_1180.png' });
+  await p.evaluate(() => App.wildShapeTerminar()); await sleep(300);
+  chk('Terminar forma: vuelve la CA del personaje', await p.evaluate(() => !App.getActiveChar().wildShape.activa && Characters.calcCA(App.getActiveChar()) === 13));
+
   console.log(res.every(Boolean) ? 'TODO OK' : 'HAY FALLAS');
   await browser.close();
 })();

@@ -381,3 +381,4 @@
 .mesa-forma-atk { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 4px 0; border-top: 1px solid var(--border); }
 .mesa-formas-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
 .mesa-formas-cfg .mesa-col-hd small { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.mesa-forma .mesa-mini { grid-template-columns: repeat(4, minmax(0, 1fr)); }

@@ -2079,7 +2079,232 @@ const Characters = (() => {
   /* Wild Shape (Druida 2024): fichas de bestia (SRD 5.2) y límites por nivel.
      En 2024 conservas tus PG, INT, SAB y CAR: de la bestia solo se usa CA,
      velocidades, FUE/DES/CON, sentidos, habilidades, rasgos y ataques. */
-  const BESTIAS_WILD_SHAPE = [];
+  // 36 bestias de VD ≤ 1 verificadas en dos fuentes: SRD 5.2.1 (PDF oficial, págs.
+  // 344–364) y Open5e srd-2024; 28 además contra el Monster Manual 2025. Águila y
+  // Búho gigantes son Celestiales en 2024 y el Buitre gigante Monstruosidad: no
+  // sirven para Wild Shape. Multiataque, salvaciones y reacciones van en `rasgos`.
+  const BESTIAS_WILD_SHAPE = [
+    // ---------- VD 0 ----------
+    { id:'rat', nombre:'Rata', name:'Rat', vd:'0', tamano:'Diminuto', ca:10, vel:'6 m', nadar:'', trepar:'6 m', volar:'', excavar:'', for:2, des:11, con:9,
+      sentidos:'Visión en la oscuridad 9 m', habilidades:'Percepción +2',
+      rasgos:[ 'Ágil — no provocas ataques de oportunidad al salir del alcance de un enemigo' ],
+      ataques:[ { nombre:'Mordisco', golpe:2, daño:'1', tipo:'perforante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'cat', nombre:'Gato', name:'Cat', vd:'0', tamano:'Diminuto', ca:12, vel:'12 m', nadar:'', trepar:'12 m', volar:'', excavar:'', for:3, des:15, con:10,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +3, Sigilo +4',
+      rasgos:[ 'Saltador — tu distancia de salto se calcula con tu Destreza en vez de tu Fuerza' ],
+      ataques:[ { nombre:'Arañazo', golpe:4, daño:'1', tipo:'cortante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'spider', nombre:'Araña', name:'Spider', vd:'0', tamano:'Diminuto', ca:12, vel:'6 m', nadar:'', trepar:'6 m', volar:'', excavar:'', for:2, des:14, con:8,
+      sentidos:'Visión en la oscuridad 9 m', habilidades:'Sigilo +4',
+      rasgos:[
+        'Trepar cual arácnido — trepas por superficies difíciles, incluso techos, sin pruebas de característica',
+        'Caminante de telarañas — ignoras las restricciones de movimiento de las telarañas y sabes dónde está cualquier criatura que toque la misma telaraña'
+      ],
+      ataques:[ { nombre:'Mordisco', golpe:4, daño:'1', tipo:'perforante', alcance:'1,5 m', efecto:'Más 2 (1d4) de daño de veneno.' } ] },
+
+    { id:'octopus', nombre:'Pulpo', name:'Octopus', vd:'0', tamano:'Pequeño', ca:12, vel:'1,5 m', nadar:'9 m', trepar:'', volar:'', excavar:'', for:4, des:15, con:11,
+      sentidos:'Visión en la oscuridad 9 m', habilidades:'Percepción +2, Sigilo +6',
+      rasgos:[
+        'Compresión — pasas por espacios de 2,5 cm de ancho sin gastar movimiento extra',
+        'Respiración acuática — solo puedes respirar bajo el agua',
+        'Nube de tinta (reacción, 1/día) — cuando una criatura termina su turno a 1,5 m de ti bajo el agua: llenas de tinta un cubo de 1,5 m centrado en ti (muy oscurecido 1 minuto) y te mueves hasta tu velocidad de nado'
+      ],
+      ataques:[ { nombre:'Tentáculos', golpe:4, daño:'1', tipo:'contundente', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'owl', nombre:'Búho', name:'Owl', vd:'0', tamano:'Diminuto', ca:11, vel:'1,5 m', nadar:'', trepar:'', volar:'18 m', excavar:'', for:3, des:13, con:8,
+      sentidos:'Visión en la oscuridad 36 m', habilidades:'Percepción +5, Sigilo +5',
+      rasgos:[ 'Vuelo rasante — no provocas ataques de oportunidad al salir volando del alcance de un enemigo' ],
+      ataques:[ { nombre:'Garras', golpe:3, daño:'1', tipo:'cortante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'hawk', nombre:'Halcón', name:'Hawk', vd:'0', tamano:'Diminuto', ca:13, vel:'3 m', nadar:'', trepar:'', volar:'18 m', excavar:'', for:5, des:16, con:8,
+      sentidos:'', habilidades:'Percepción +6',
+      rasgos:[],
+      ataques:[ { nombre:'Garras', golpe:5, daño:'1', tipo:'cortante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'bat', nombre:'Murciélago', name:'Bat', vd:'0', tamano:'Diminuto', ca:12, vel:'1,5 m', nadar:'', trepar:'', volar:'9 m', excavar:'', for:2, des:15, con:8,
+      sentidos:'Vista ciega 18 m', habilidades:'',
+      rasgos:[],
+      ataques:[ { nombre:'Mordisco', golpe:4, daño:'1', tipo:'perforante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'raven', nombre:'Cuervo', name:'Raven', vd:'0', tamano:'Diminuto', ca:12, vel:'3 m', nadar:'', trepar:'', volar:'15 m', excavar:'', for:2, des:14, con:10,
+      sentidos:'', habilidades:'Percepción +3',
+      rasgos:[ 'Mimetismo — imitas sonidos simples que hayas oído; quien los oye los reconoce como imitación con Sabiduría (Perspicacia) CD 10' ],
+      ataques:[ { nombre:'Pico', golpe:4, daño:'1', tipo:'perforante', alcance:'1,5 m', efecto:'' } ] },
+
+    // ---------- VD 1/8 ----------
+    { id:'mastiff', nombre:'Mastín', name:'Mastiff', vd:'1/8', tamano:'Mediano', ca:12, vel:'12 m', nadar:'', trepar:'', volar:'', excavar:'', for:13, des:14, con:12,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +5',
+      rasgos:[],
+      ataques:[ { nombre:'Mordisco', golpe:3, daño:'1d6+1', tipo:'perforante', alcance:'1,5 m', efecto:'Si es Mediano o menor, queda Derribado.' } ] },
+
+    { id:'pony', nombre:'Poni', name:'Pony', vd:'1/8', tamano:'Mediano', ca:10, vel:'12 m', nadar:'', trepar:'', volar:'', excavar:'', for:15, des:10, con:13,
+      sentidos:'', habilidades:'',
+      rasgos:[],
+      ataques:[ { nombre:'Cascos', golpe:4, daño:'1d4+2', tipo:'contundente', alcance:'1,5 m', efecto:'' } ] },
+
+    // ---------- VD 1/4 ----------
+    { id:'riding-horse', nombre:'Caballo de monta', name:'Riding Horse', vd:'1/4', tamano:'Grande', ca:11, vel:'18 m', nadar:'', trepar:'', volar:'', excavar:'', for:16, des:13, con:12,
+      sentidos:'', habilidades:'',
+      rasgos:[],
+      ataques:[ { nombre:'Cascos', golpe:5, daño:'1d8+3', tipo:'contundente', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'draft-horse', nombre:'Caballo de tiro', name:'Draft Horse', vd:'1/4', tamano:'Grande', ca:10, vel:'12 m', nadar:'', trepar:'', volar:'', excavar:'', for:18, des:10, con:15,
+      sentidos:'', habilidades:'',
+      rasgos:[],
+      ataques:[ { nombre:'Cascos', golpe:6, daño:'1d4+4', tipo:'contundente', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'wolf', nombre:'Lobo', name:'Wolf', vd:'1/4', tamano:'Mediano', ca:12, vel:'12 m', nadar:'', trepar:'', volar:'', excavar:'', for:14, des:15, con:12,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +5, Sigilo +4',
+      rasgos:[ 'Tácticas de manada — ventaja en ataques si un aliado no incapacitado está a 1,5 m del objetivo' ],
+      ataques:[ { nombre:'Mordisco', golpe:4, daño:'1d6+2', tipo:'perforante', alcance:'1,5 m', efecto:'Si es Mediano o menor, queda Derribado.' } ] },
+
+    { id:'boar', nombre:'Jabalí', name:'Boar', vd:'1/4', tamano:'Mediano', ca:11, vel:'12 m', nadar:'', trepar:'', volar:'', excavar:'', for:13, des:11, con:14,
+      sentidos:'', habilidades:'',
+      rasgos:[ 'Furia sangrienta — mientras estás Maltrecho tienes ventaja en las tiradas de ataque' ],
+      ataques:[ { nombre:'Corneada', golpe:3, daño:'1d6+1', tipo:'perforante', alcance:'1,5 m', efecto:'Si te moviste 6+ m en línea recta hacia un objetivo Mediano o menor justo antes de impactar: +3 (1d6) perforante y queda Derribado.' } ] },
+
+    { id:'giant-badger', nombre:'Tejón gigante', name:'Giant Badger', vd:'1/4', tamano:'Mediano', ca:13, vel:'9 m', nadar:'', trepar:'', volar:'', excavar:'3 m', for:13, des:10, con:17,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +3',
+      rasgos:[ 'Resistencia al daño de veneno' ],
+      ataques:[ { nombre:'Mordisco', golpe:3, daño:'2d4+1', tipo:'perforante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'panther', nombre:'Pantera', name:'Panther', vd:'1/4', tamano:'Mediano', ca:13, vel:'15 m', nadar:'', trepar:'12 m', volar:'', excavar:'', for:14, des:16, con:10,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +4, Sigilo +7',
+      rasgos:[ 'Huida ágil (acción adicional) — realizas la acción de Destrabarse o Esconderse' ],
+      ataques:[ { nombre:'Desgarrar', golpe:5, daño:'1d6+3', tipo:'cortante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'giant-wolf-spider', nombre:'Araña lobo gigante', name:'Giant Wolf Spider', vd:'1/4', tamano:'Mediano', ca:13, vel:'12 m', nadar:'', trepar:'12 m', volar:'', excavar:'', for:12, des:16, con:13,
+      sentidos:'Vista ciega 3 m, visión en la oscuridad 18 m', habilidades:'Percepción +3, Sigilo +7',
+      rasgos:[ 'Trepar cual arácnido — trepas por superficies difíciles, incluso techos, sin pruebas de característica' ],
+      ataques:[ { nombre:'Mordisco', golpe:5, daño:'1d4+3', tipo:'perforante', alcance:'1,5 m', efecto:'Más 5 (2d4) de daño de veneno.' } ] },
+
+    { id:'giant-frog', nombre:'Rana gigante', name:'Giant Frog', vd:'1/4', tamano:'Mediano', ca:11, vel:'9 m', nadar:'9 m', trepar:'', volar:'', excavar:'', for:12, des:13, con:11,
+      sentidos:'Visión en la oscuridad 9 m', habilidades:'Percepción +2, Sigilo +4',
+      rasgos:[
+        'Anfibio — respiras aire y agua',
+        'Salto sin carrerilla — salto largo hasta 6 m y salto alto hasta 3 m, con o sin carrerilla',
+        'Tragar (acción) — te tragas a un objetivo Pequeño o menor que tengas agarrado: queda Cegado y Apresado, con cobertura total; no puedes usar Mordisco mientras lo tienes. Al final de tu siguiente turno recibe 5 (2d4) de ácido y, si no muere, lo regurgitas Derribado'
+      ],
+      ataques:[ { nombre:'Mordisco', golpe:3, daño:'1d6+2', tipo:'perforante', alcance:'1,5 m', efecto:'Si es Mediano o menor, queda Agarrado (escapar CD 11).' } ] },
+
+    { id:'giant-lizard', nombre:'Lagarto gigante', name:'Giant Lizard', vd:'1/4', tamano:'Grande', ca:12, vel:'12 m', nadar:'', trepar:'12 m', volar:'', excavar:'', for:15, des:12, con:13,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'',
+      rasgos:[ 'Trepar cual arácnido — trepas por superficies difíciles, incluso techos, sin pruebas de característica' ],
+      ataques:[ { nombre:'Mordisco', golpe:4, daño:'1d8+2', tipo:'perforante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'constrictor-snake', nombre:'Serpiente constrictora', name:'Constrictor Snake', vd:'1/4', tamano:'Grande', ca:13, vel:'9 m', nadar:'9 m', trepar:'', volar:'', excavar:'', for:15, des:14, con:12,
+      sentidos:'Vista ciega 3 m', habilidades:'Percepción +2, Sigilo +4',
+      rasgos:[ 'Constreñir (acción) — TS de Fuerza CD 12 de una criatura Mediana o menor que veas a 1,5 m. Si falla: 7 (3d4) contundente y queda Agarrada (escapar CD 12)' ],
+      ataques:[ { nombre:'Mordisco', golpe:4, daño:'1d8+2', tipo:'perforante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'giant-venomous-snake', nombre:'Serpiente venenosa gigante', name:'Giant Venomous Snake', vd:'1/4', tamano:'Mediano', ca:14, vel:'12 m', nadar:'12 m', trepar:'', volar:'', excavar:'', for:10, des:18, con:13,
+      sentidos:'Vista ciega 3 m', habilidades:'Percepción +2',
+      rasgos:[],
+      ataques:[ { nombre:'Mordisco', golpe:6, daño:'1d4+4', tipo:'perforante', alcance:'3 m', efecto:'Más 4 (1d8) de daño de veneno.' } ] },
+
+    // ---------- VD 1/2 ----------
+    { id:'reef-shark', nombre:'Tiburón de arrecife', name:'Reef Shark', vd:'1/2', tamano:'Mediano', ca:12, vel:'1,5 m', nadar:'9 m', trepar:'', volar:'', excavar:'', for:14, des:15, con:13,
+      sentidos:'Vista ciega 9 m', habilidades:'Percepción +2',
+      rasgos:[
+        'Tácticas de manada — ventaja en ataques si un aliado no incapacitado está a 1,5 m del objetivo',
+        'Respiración acuática — solo puedes respirar bajo el agua'
+      ],
+      ataques:[ { nombre:'Mordisco', golpe:4, daño:'2d4+2', tipo:'perforante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'ape', nombre:'Simio', name:'Ape', vd:'1/2', tamano:'Mediano', ca:12, vel:'9 m', nadar:'', trepar:'9 m', volar:'', excavar:'', for:16, des:14, con:14,
+      sentidos:'', habilidades:'Atletismo +5, Percepción +3',
+      rasgos:[ 'Multiataque — haces dos ataques de Puño' ],
+      ataques:[
+        { nombre:'Puño', golpe:5, daño:'1d4+3', tipo:'contundente', alcance:'1,5 m', efecto:'' },
+        { nombre:'Roca', golpe:5, daño:'2d6+3', tipo:'contundente', alcance:'7,5/15 m', efecto:'Ataque a distancia. Recarga 6.' }
+      ] },
+
+    { id:'black-bear', nombre:'Oso negro', name:'Black Bear', vd:'1/2', tamano:'Mediano', ca:11, vel:'9 m', nadar:'9 m', trepar:'9 m', volar:'', excavar:'', for:15, des:12, con:14,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +5',
+      rasgos:[ 'Multiataque — haces dos ataques de Desgarrar' ],
+      ataques:[ { nombre:'Desgarrar', golpe:4, daño:'1d6+2', tipo:'cortante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'crocodile', nombre:'Cocodrilo', name:'Crocodile', vd:'1/2', tamano:'Grande', ca:12, vel:'6 m', nadar:'9 m', trepar:'', volar:'', excavar:'', for:15, des:10, con:13,
+      sentidos:'', habilidades:'Sigilo +2',
+      rasgos:[ 'Aguantar la respiración — puedes contener la respiración 1 hora' ],
+      ataques:[ { nombre:'Mordisco', golpe:4, daño:'1d8+2', tipo:'perforante', alcance:'1,5 m', efecto:'Si es Mediano o menor, queda Agarrado (escapar CD 12) y Apresado mientras siga agarrado.' } ] },
+
+    { id:'giant-goat', nombre:'Cabra gigante', name:'Giant Goat', vd:'1/2', tamano:'Grande', ca:11, vel:'12 m', nadar:'', trepar:'9 m', volar:'', excavar:'', for:17, des:13, con:12,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +3',
+      rasgos:[],
+      ataques:[ { nombre:'Embestida', golpe:5, daño:'1d6+3', tipo:'contundente', alcance:'1,5 m', efecto:'Si te moviste 6+ m en línea recta hacia un objetivo Grande o menor justo antes de impactar: +5 (2d4) contundente y queda Derribado.' } ] },
+
+    { id:'warhorse', nombre:'Caballo de guerra', name:'Warhorse', vd:'1/2', tamano:'Grande', ca:11, vel:'18 m', nadar:'', trepar:'', volar:'', excavar:'', for:18, des:12, con:13,
+      sentidos:'', habilidades:'',
+      rasgos:[],
+      ataques:[ { nombre:'Cascos', golpe:6, daño:'2d4+4', tipo:'contundente', alcance:'1,5 m', efecto:'Si te moviste 6+ m en línea recta hacia un objetivo Grande o menor justo antes de impactar: +5 (2d4) contundente y queda Derribado.' } ] },
+
+    { id:'giant-wasp', nombre:'Avispa gigante', name:'Giant Wasp', vd:'1/2', tamano:'Mediano', ca:13, vel:'3 m', nadar:'', trepar:'', volar:'15 m', excavar:'', for:10, des:14, con:10,
+      sentidos:'', habilidades:'',
+      rasgos:[ 'Vuelo rasante — no provocas ataques de oportunidad al salir volando del alcance de un enemigo' ],
+      ataques:[ { nombre:'Aguijón', golpe:4, daño:'1d6+2', tipo:'perforante', alcance:'1,5 m', efecto:'Más 5 (2d4) de daño de veneno.' } ] },
+
+    // ---------- VD 1 ----------
+    { id:'brown-bear', nombre:'Oso pardo', name:'Brown Bear', vd:'1', tamano:'Grande', ca:11, vel:'12 m', nadar:'', trepar:'9 m', volar:'', excavar:'', for:17, des:12, con:15,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +3',
+      rasgos:[ 'Multiataque — haces un ataque de Mordisco y uno de Garra' ],
+      ataques:[
+        { nombre:'Mordisco', golpe:5, daño:'1d8+3', tipo:'perforante', alcance:'1,5 m', efecto:'' },
+        { nombre:'Garra', golpe:5, daño:'1d4+3', tipo:'cortante', alcance:'1,5 m', efecto:'Si es Grande o menor, queda Derribado.' }
+      ] },
+
+    { id:'dire-wolf', nombre:'Lobo terrible', name:'Dire Wolf', vd:'1', tamano:'Grande', ca:14, vel:'15 m', nadar:'', trepar:'', volar:'', excavar:'', for:17, des:15, con:15,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +5, Sigilo +4',
+      rasgos:[ 'Tácticas de manada — ventaja en ataques si un aliado no incapacitado está a 1,5 m del objetivo' ],
+      ataques:[ { nombre:'Mordisco', golpe:5, daño:'1d10+3', tipo:'perforante', alcance:'1,5 m', efecto:'Si es Grande o menor, queda Derribado.' } ] },
+
+    { id:'giant-spider', nombre:'Araña gigante', name:'Giant Spider', vd:'1', tamano:'Grande', ca:14, vel:'9 m', nadar:'', trepar:'9 m', volar:'', excavar:'', for:14, des:16, con:12,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +4, Sigilo +7',
+      rasgos:[
+        'Trepar cual arácnido — trepas por superficies difíciles, incluso techos, sin pruebas de característica',
+        'Caminante de telarañas — ignoras las restricciones de movimiento de las telarañas y sabes dónde está cualquier criatura que toque la misma telaraña',
+        'Telaraña (acción, recarga 5–6) — TS de Destreza CD 13 de una criatura que veas a 18 m o menos. Si falla, queda Apresada hasta que se destruya la telaraña (CA 10; 5 PG; vulnerable al fuego; inmune a veneno y psíquico)'
+      ],
+      ataques:[ { nombre:'Mordisco', golpe:5, daño:'1d8+3', tipo:'perforante', alcance:'1,5 m', efecto:'Más 7 (2d6) de daño de veneno.' } ] },
+
+    { id:'giant-hyena', nombre:'Hiena gigante', name:'Giant Hyena', vd:'1', tamano:'Grande', ca:12, vel:'15 m', nadar:'', trepar:'', volar:'', excavar:'', for:16, des:14, con:14,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +3',
+      rasgos:[ 'Desenfreno (acción adicional, 1/día) — justo después de dañar a una criatura que ya estaba Maltrecha, te mueves hasta la mitad de tu velocidad y haces un ataque de Mordisco' ],
+      ataques:[ { nombre:'Mordisco', golpe:5, daño:'2d6+3', tipo:'perforante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'lion', nombre:'León', name:'Lion', vd:'1', tamano:'Grande', ca:12, vel:'15 m', nadar:'', trepar:'', volar:'', excavar:'', for:17, des:15, con:11,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +3, Sigilo +4',
+      rasgos:[
+        'Tácticas de manada — ventaja en ataques si un aliado no incapacitado está a 1,5 m del objetivo',
+        'Salto con carrerilla — con 3 m de carrerilla, tu salto largo llega a 7,5 m',
+        'Multiataque — haces dos ataques de Desgarrar; puedes sustituir uno por Rugido',
+        'Rugido — TS de Sabiduría CD 11 de una criatura a 4,5 m o menos. Si falla, queda Asustada hasta el inicio de tu siguiente turno'
+      ],
+      ataques:[ { nombre:'Desgarrar', golpe:5, daño:'1d8+3', tipo:'cortante', alcance:'1,5 m', efecto:'' } ] },
+
+    { id:'tiger', nombre:'Tigre', name:'Tiger', vd:'1', tamano:'Grande', ca:13, vel:'12 m', nadar:'', trepar:'', volar:'', excavar:'', for:17, des:16, con:14,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +3, Sigilo +7',
+      rasgos:[ 'Huida ágil (acción adicional) — realizas la acción de Destrabarse o Esconderse' ],
+      ataques:[ { nombre:'Desgarrar', golpe:5, daño:'2d6+3', tipo:'cortante', alcance:'1,5 m', efecto:'Si es Grande o menor, queda Derribado.' } ] },
+
+    { id:'giant-toad', nombre:'Sapo gigante', name:'Giant Toad', vd:'1', tamano:'Grande', ca:11, vel:'9 m', nadar:'9 m', trepar:'', volar:'', excavar:'', for:15, des:13, con:13,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'',
+      rasgos:[
+        'Anfibio — respiras aire y agua',
+        'Salto sin carrerilla — salto largo hasta 6 m y salto alto hasta 3 m, con o sin carrerilla',
+        'Tragar (acción) — te tragas a un objetivo Mediano o menor que tengas agarrado: queda Cegado y Apresado, con cobertura total, y recibe 10 (3d6) de ácido al final de cada uno de tus turnos. Solo uno a la vez; no puedes usar Mordisco mientras lo tienes'
+      ],
+      ataques:[ { nombre:'Mordisco', golpe:4, daño:'1d6+2', tipo:'perforante', alcance:'1,5 m', efecto:'Más 5 (2d4) de daño de veneno. Si es Mediano o menor, queda Agarrado (escapar CD 12).' } ] },
+
+    { id:'giant-octopus', nombre:'Pulpo gigante', name:'Giant Octopus', vd:'1', tamano:'Grande', ca:11, vel:'3 m', nadar:'18 m', trepar:'', volar:'', excavar:'', for:17, des:13, con:13,
+      sentidos:'Visión en la oscuridad 18 m', habilidades:'Percepción +4, Sigilo +5',
+      rasgos:[
+        'Respiración acuática — solo respiras bajo el agua; fuera de ella aguantas la respiración 1 hora',
+        'Nube de tinta (reacción, 1/día) — al recibir daño bajo el agua: llenas de tinta un cubo de 3 m centrado en ti (muy oscurecido 1 minuto) y te mueves hasta tu velocidad de nado'
+      ],
+      ataques:[ { nombre:'Tentáculos', golpe:5, daño:'2d6+3', tipo:'contundente', alcance:'3 m', efecto:'Si es Mediano o menor, queda Agarrado (escapar CD 13) y Apresado mientras siga agarrado.' } ] },
+  ];
   const _vdNum = vd => { const [a, b] = String(vd).split('/'); return b ? +a / +b : +a; };
   function formasConocidasWildShape(nivel) { return nivel >= 8 ? 8 : nivel >= 4 ? 6 : nivel >= 2 ? 4 : 0; }
   function limiteWildShape(nivel) { return { vd: nivel >= 8 ? 1 : nivel >= 4 ? 0.5 : 0.25, vuelo: nivel >= 8 }; }
