@@ -61,8 +61,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const fila = await p.evaluate(() => { const f = [...document.querySelectorAll('#mesa-combate .mesa-op')].find(o => /Land's Aid/.test(o.textContent)); return f ? { dmg: f.querySelector('.mesa-dmg')?.textContent, sub: f.querySelector('small')?.textContent } : null; });
   await p.evaluate(() => { Mesa.abrir('rasgo-land-aid'); }); await sleep(200);
   await p.evaluate(() => [...document.querySelectorAll('.mesa-op.abierto .mesa-btn.p')].find(b => /gasta 1/.test(b.textContent)).click()); await sleep(300);
-  const tras = await p.evaluate(() => ({ ws: App.getActiveChar().resources.find(r => r.id === 'wild-shape').current, accion: App.getActiveChar().turn.action }));
-  chk("Land's Aid: en Acción con 2d6 grande; usarlo gasta 1 Wild Shape y la Acción", fila && fila.dmg === '2d6' && /gasta 1 Wild Shape/.test(fila.sub) && tras.ws === 1 && tras.accion, { fila, tras });
+  const tras = await p.evaluate(() => ({ ws: App.getActiveChar().resources.find(r => r.id === 'wild-shape').current, accion: App.getActiveChar().turn.action, adicional: App.getActiveChar().turn.bonus }));
+  chk("Land's Aid: en Acción con 2d6 grande; usarlo gasta 1 Wild Shape y la Acción (no la Adicional)", fila && fila.dmg === '2d6' && /gasta 1 Wild Shape/.test(fila.sub) && tras.ws === 1 && tras.accion && !tras.adicional, { fila, tras });
   await p.screenshot({ path: __dirname + '/out/druida_tierra_1180.png' });
 
   console.log(res.every(Boolean) ? 'TODO OK' : 'HAY FALLAS');

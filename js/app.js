@@ -6594,6 +6594,68 @@ const App = (() => {
     showToast(t ? `Terreno: ${t.nombre}` : 'Sin terreno');
   }
 
+  /* ── Wild Shape (Druida 2024) ─────────────────────────────────────────
+     c.wildShape = { conocidas: [id de bestia…], activa: id|null }. En 2024
+     conservas tus PG: la forma solo da CA, velocidad, FUE/DES/CON y ataques,
+     y al transformarte ganas PG temporales = nivel de Druida. */
+  function _nivelDruida(c) {
+    if (Array.isArray(c.classes) && c.classes.length) return (c.classes.find(x => x && x.name === 'Druida') || {}).level || 0;
+    return c.clase === 'Druida' ? (c.nivel || 1) : 0;
+  }
+  function _wildShape(c) {
+    if (!c.wildShape) c.wildShape = { conocidas: [], activa: null };
+    return c.wildShape;
+  }
+
+  function wildShapeConocida(id) {
+    if (!_char) return;
+    const ws = _wildShape(_char);
+    const max = Characters.formasConocidasWildShape(_nivelDruida(_char));
+    if (ws.conocidas.includes(id)) ws.conocidas = ws.conocidas.filter(x => x !== id);
+    else if (ws.conocidas.length >= max) { showToast(`Ya conoces ${max} formas: quita una primero`); return; }
+    else ws.conocidas.push(id);
+    _saveChar();
+  }
+
+  function wildShapeTransformar(id) {
+    if (!_char) return;
+    const r = (_char.resources || []).find(x => x.id === 'wild-shape');
+    const b = Characters.BESTIAS_WILD_SHAPE.find(x => x.id === id);
+    if (!r || !b) return;
+    if (r.current <= 0) { showToast('Sin usos de Wild Shape · vuelven con un descanso'); return; }
+    adjustResource('wild-shape', -1);
+    _wildShape(_char).activa = id;
+    const temp = _nivelDruida(_char);
+    if ((_char.hp.temp || 0) < temp) _char.hp.temp = temp;
+    _saveChar();
+    _renderHeader();
+    _updateTempHPDisplay();
+    showToast(`🐾 ${b.nombre} · +${temp} PG temporales`);
+  }
+
+  function wildShapeTerminar() {
+    if (!_char) return;
+    const ws = _wildShape(_char);
+    if (!ws.activa) return;
+    ws.activa = null;
+    // Terminarla a voluntad es una acción adicional
+    if (_combatActive) { const t = _turnoDe(_char); t.bonus = true; _renderTurnTracker(); }
+    _saveChar();
+    _renderHeader();
+    showToast('Vuelves a tu forma');
+  }
+
+  // Wild Companion: Find Familiar pagado con el espacio más bajo que quede
+  function gastarEspacioMasBajo() {
+    if (!_char) return null;
+    for (let lv = 1; lv <= 9; lv++) {
+      const sl = _char.spellSlots && _char.spellSlots[lv];
+      if (sl && sl.current > 0) { sl.current -= 1; _saveChar(); showToast(`Espacio de nivel ${lv} gastado`); return lv; }
+    }
+    showToast('No te quedan espacios');
+    return null;
+  }
+
   // Ítems → arma → Munición: qué ítem de la mochila gasta al disparar.
   function setMunicionArma(slotKey, valor) {
     const w = _char && _char.equipment && _char.equipment[slotKey];
@@ -6945,13 +7007,15 @@ const App = (() => {
      RECURSOS
   ══════════════════════════════════════════════════════ */
 
-  function adjustResource(id, delta) {
+  // sinTurno: el uso lo paga otro rasgo (Land's Aid gasta Wild Shape pero es una
+  // Acción), así que no se marca la activación propia del recurso.
+  function adjustResource(id, delta, sinTurno) {
     if (!_char) return;
     const r = _char.resources.find(r => r.id === id);
     if (!r) return;
     const antes = r.current;
     r.current = Math.max(0, Math.min(r.max, r.current + delta));
-    if (r.current < antes) _gastarActivacionRecurso(r);
+    if (r.current < antes && !sinTurno) _gastarActivacionRecurso(r);
     _saveChar(true);
     _refreshResourceDots(id);
   }
@@ -12617,7 +12681,7 @@ ${notesText}`;
     adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
-    recuperarMunicion, setMunicionArma, setLandType,
+    recuperarMunicion, setMunicionArma, setLandType, wildShapeConocida, wildShapeTransformar, wildShapeTerminar, gastarEspacioMasBajo,
     agregarVinculo, quitarVinculo, toggleD4Vinculo, romperVinculos,
     abrirEntidadEnHojas,
     toggleRecursoBestia, comandarBestia,

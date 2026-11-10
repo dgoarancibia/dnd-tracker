@@ -232,6 +232,7 @@ const Mesa = (() => {
     return CAMPO[tipo] && t[CAMPO[tipo]] ? `Ya usaste ${ETQ[tipo]}` : '';
   }
   function _motivoConjuro(c, sp, via) {
+    if (Characters.formaWildShapeActiva(c) && _nivelDruida(c) < 18) return 'En Wild Shape no puedes lanzar conjuros';
     if (sp.level > 0) {
       const op = App.castOptions(sp.id) || { free: false, slots: [] };
       if (!op.free && !op.slots.length) return `Sin espacios de nivel ${sp.level} o más`;
@@ -290,6 +291,15 @@ const Mesa = (() => {
           det: `<p>Cuando una criatura hostil que puedes ver sale de tu alcance.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.oportunidad()">⚔ Atacar</button></div>`,
         }) });
       }
+    });
+
+    // Wild Shape: los ataques de la forma activa (usan la acción de Ataque)
+    const forma = Characters.formaWildShapeActiva(c);
+    if (forma) (forma.ataques || []).forEach((a, i) => {
+      const no = usados >= maxAtq ? (maxAtq > 1 ? `Ya hiciste tus ${maxAtq} ataques` : 'Ya atacaste este turno') : t.action && !usados ? 'Ya usaste tu Acción en otra cosa' : '';
+      col.action.push({ no, html: _fila({ id: 'forma-atk-' + i, icono: 'iconos/companero', nombre: `${a.nombre} (${forma.nombre})`, num: sg(a.golpe), dmg: a.daño, no,
+        sub: [a.tipo, a.alcance, maxAtq > 1 ? `ataques ${usados}/${maxAtq}` : ''].filter(Boolean).join(' · '),
+        det: `${a.efecto ? `<p>${esc(a.efecto)}</p>` : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.usarAtaque(1);App.showToast('${esc(a.nombre).replace(/'/g, '’')}: ${sg(a.golpe)} · ${esc(a.daño)}')">⚔ Atacar</button></div>` }) });
     });
 
     // Compañero (Beast Master): ordenarle cuesta la Acción adicional
@@ -396,11 +406,13 @@ const Mesa = (() => {
 
   // Rasgo que se paga con un uso de otro recurso: muestra el daño grande y cuántos usos quedan
   function _filaPagada(c, f, r, tipo) {
-    const no = r.current <= 0 ? `Sin usos de ${r.name} · vuelve con ${DESCANSO(r)}` : _turnoUsado(c, tipo);
+    const hayEspacio = f.oEspacio && Object.values(c.spellSlots || {}).some(x => x && x.current > 0);
+    const no = r.current <= 0 && !hayEspacio ? `Sin usos de ${r.name} · vuelve con ${DESCANSO(r)}` : _turnoUsado(c, tipo);
     const dmg = f.damage ? String(f.damage).split(' ')[0] : '';
     return { no, html: _fila({ id: 'rasgo-' + f.id, icono: 'iconos/habilidades', nombre: f.name, num: '', no, dmg,
       sub: [`gasta 1 ${r.name} (${r.current}/${r.max})`, f.curacion ? `cura ${f.curacion}` : '', f.range].filter(Boolean).join(' · '),
       det: `<p>${esc(f.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();Mesa.usarPagado('${tipo}','${f.id}','${r.id}')">Usar · ${ETQ[tipo]} · gasta 1 ${esc(r.name)}</button>
+        ${f.oEspacio ? `<button class="mesa-btn" onclick="event.stopPropagation();Mesa.usarPagado('${tipo}','${f.id}','espacio')">Usar · gasta un espacio de conjuro</button>` : ''}
         <button class="mesa-btn" onclick="event.stopPropagation();App.openFeatureDetail && App.openFeatureDetail('${f.id}')">Ficha completa</button></div>` }) };
   }
 
@@ -530,6 +542,54 @@ const Mesa = (() => {
   const NOMBRE_BESTIA = { land: 'Tierra', sea: 'Mar', sky: 'Cielo' };
   // "40 ft · Trepa 40 ft" → metros de mesa (5 ft = 1,5 m); App.fmtDist respeta la unidad elegida
   const _ftAm = t => App.fmtDist(String(t || '').replace(/(\d+)\s*ft/g, (_, n) => `${String(n / 5 * 1.5).replace('.', ',')} m`));
+  /* ══ Wild Shape (Druida): tus formas conocidas y la forma activa ══ */
+  function _nivelDruida(c) {
+    if (Array.isArray(c.classes) && c.classes.length) return (c.classes.find(x => x && x.name === 'Druida') || {}).level || 0;
+    return c.clase === 'Druida' ? (c.nivel || 1) : 0;
+  }
+  const _vels = b => [b.vel, b.nadar && `nadar ${b.nadar}`, b.trepar && `trepar ${b.trepar}`, b.volar && `volar ${b.volar}`, b.excavar && `excavar ${b.excavar}`].filter(Boolean).join(' · ');
+  function _tarjetaForma(c) {
+    const forma = Characters.formaWildShapeActiva(c);
+    const r = (c.resources || []).find(x => x.id === 'wild-shape');
+    const usos = r ? `${r.current}/${r.max} usos` : '';
+    if (forma) {
+      const ab = st.grupos.has('forma-rasgos');
+      return `<div class="mesa-card mesa-comp mesa-forma">
+        <div class="mesa-comp-top"><span class="mesa-med"><i class="mesa-ico" style="--m:url(../assets/iconos/companero.svg)"></i></span>
+          <div class="mesa-comp-nom"><b>${esc(forma.nombre)}</b><small>VD ${esc(forma.vd)} · ${esc(forma.tamano || '')} · ${usos}</small></div></div>
+        <div class="mesa-mini"><div><b>${forma.ca}</b><span class="mesa-lbl">CA</span></div><div><b>${forma.for}</b><span class="mesa-lbl">FUE</span></div>
+          <div><b>${forma.des}</b><span class="mesa-lbl">DES</span></div><div><b>${forma.con}</b><span class="mesa-lbl">CON</span></div></div>
+        <p class="mesa-forma-vel">${esc(_vels(forma))}</p>
+        ${(forma.ataques || []).map(a => `<div class="mesa-forma-atk"><span>${esc(a.nombre)}</span><span class="mesa-golpe"><span class="mesa-num">${sg(a.golpe)}</span><span class="mesa-dmg">${esc(a.daño)}</span></span></div>`).join('')}
+        <button class="mesa-plegar" onclick="Mesa.grupo('forma-rasgos')">${ab ? '▾' : '▸'} Sentidos, habilidades y rasgos</button>
+        ${ab ? `<div class="mesa-rasgos"><p><b>Sentidos</b> ${esc(forma.sentidos || '—')}</p>${forma.habilidades ? `<p><b>Habilidades</b> ${esc(forma.habilidades)}</p>` : ''}
+          ${(forma.rasgos || []).map(t => `<p>${esc(t)}</p>`).join('')}
+          <p class="mesa-vacio">Conservas tus PG, INT, SAB, CAR, rasgos de clase y dotes. No puedes lanzar conjuros.</p></div>` : ''}
+        <button class="mesa-btn mesa-ancho" onclick="App.wildShapeTerminar()">Terminar forma · Acción adicional</button>
+      </div>`;
+    }
+    const conocidas = ((c.wildShape && c.wildShape.conocidas) || []).map(id => Characters.BESTIAS_WILD_SHAPE.find(b => b.id === id)).filter(Boolean);
+    const sinUsos = !r || r.current <= 0;
+    return `<div class="mesa-card mesa-comp mesa-forma">
+      <div class="mesa-forma-hd"><span class="mesa-lbl">Tus formas</span><small>${usos} · Acción adicional</small></div>
+      ${conocidas.length ? `<div class="mesa-forma-lista">${conocidas.map(b => `<button class="mesa-btn ${sinUsos ? '' : 'p'}" ${sinUsos ? 'disabled' : ''} onclick="App.wildShapeTransformar('${b.id}')">${esc(b.nombre)}<small>CA ${b.ca} · VD ${esc(b.vd)}</small></button>`).join('')}</div>`
+        : '<p class="mesa-vacio">Elige tus formas conocidas en Habilidades.</p>'}
+      <button class="mesa-link" onclick="App.switchTab('habilidades')">Elegir formas (${conocidas.length}/${Characters.formasConocidasWildShape(_nivelDruida(c))}) ▸</button>
+    </div>`;
+  }
+  // Configuración: qué formas conoces (las disponibles según tu nivel)
+  function _formasConfig(c) {
+    const nv = _nivelDruida(c);
+    if (nv < 2) return '';
+    const max = Characters.formasConocidasWildShape(nv), lim = Characters.limiteWildShape(nv);
+    const conocidas = (c.wildShape && c.wildShape.conocidas) || [];
+    const lista = Characters.formasWildShapeDisponibles(nv);
+    return `<div class="mesa-card mesa-propios mesa-formas-cfg">
+      <div class="mesa-col-hd">Formas de Wild Shape · ${conocidas.length}/${max}<small>VD ≤ ${lim.vd === 0.25 ? '1/4' : lim.vd === 0.5 ? '1/2' : '1'}${lim.vuelo ? '' : ' · sin vuelo'} · cambias una tras un descanso largo</small></div>
+      <div class="mesa-formas-grid">${lista.map(b => `<button class="mesa-chip ${conocidas.includes(b.id) ? 'on' : ''}" onclick="App.wildShapeConocida('${b.id}');Mesa.render()" title="${esc(_vels(b))}">${esc(b.nombre)} <small>VD ${esc(b.vd)}</small></button>`).join('')
+        || '<p class="mesa-vacio">No hay fichas de bestias cargadas.</p>'}</div></div>`;
+  }
+
   function _tarjetaBestia(c, bestia) {
     const comp = c.companion || {};
     const tipos = Object.keys(NOMBRE_BESTIA).map(id => `<button class="mesa-tipo ${bestia && comp.beast === id ? 'on' : ''}" onclick="Mesa.tipoBestia('${id}')">
@@ -609,7 +669,8 @@ const Mesa = (() => {
         <button class="mesa-btn" onclick="App.setConc(null)">Terminar</button>` : '<span class="mesa-vacio">Ninguna</span>'}</div></section>` : '';
 
     const bestia = _bestia(c);
-    const bloqueBestia = c.companion ? `<section><div class="mesa-sec">Compañero</div>${_tarjetaBestia(c, bestia)}</section>` : '';
+    const bloqueBestia = c.companion ? `<section><div class="mesa-sec">Compañero</div>${_tarjetaBestia(c, bestia)}</section>`
+      : _nivelDruida(c) >= 2 ? `<section><div class="mesa-sec">Wild Shape</div>${_tarjetaForma(c)}</section>` : '';
 
     // Primero lo que define al personaje: el compañero en un Beast Master, la concentración en un lanzador
     if (bloqueBestia) bloques.push(bloqueBestia, bloqueConc); else bloques.push(bloqueConc);
@@ -778,6 +839,7 @@ const Mesa = (() => {
       <div class="mesa-sec">Configuración del personaje</div>
       <div class="mesa-config-grid">
         ${maestrias ? `<div class="mesa-config-maestrias">${maestrias}</div>` : ''}
+        ${_formasConfig(c)}
         <div class="mesa-card mesa-propios">
           <div class="mesa-col-hd">Recursos propios<button class="mesa-chip on" onclick="App.openCustomResource()">+ Agregar</button></div>
           ${propios.map(r => `<div class="mesa-rec"><div>${esc(r.name)}<small>${r.max} usos · ${esc({ short: 'descanso corto', long: 'descanso largo' }[r.recharge] || r.recharge || '')}${r.note ? ' · ' + esc(r.note) : ''}</small></div>
@@ -821,8 +883,10 @@ const Mesa = (() => {
   // Rasgo pagado con un uso de otro recurso: marca la acción del turno y descuenta el uso
   function usarPagado(tipo, id, recurso) {
     const f = (App.getActiveChar().features || []).find(x => x.id === id);
+    if (recurso === 'espacio' && !Object.values(App.getActiveChar().spellSlots || {}).some(x => x && x.current > 0)) { App.showToast('No te quedan espacios'); return; }
     if (App.enCombate() && !App.usarRecursoTurno(tipo)) { App.showToast(`Ya usaste ${ETQ[tipo]} este turno`); return; }
-    App.adjustResource(recurso, -1);
+    if (recurso === 'espacio') { if (App.gastarEspacioMasBajo() == null) return; }
+    else App.adjustResource(recurso, -1, true);
     App.showToast(`${f ? f.name : 'Rasgo'}${App.enCombate() ? ` · ${ETQ[tipo]} marcada` : ''}`);
   }
 

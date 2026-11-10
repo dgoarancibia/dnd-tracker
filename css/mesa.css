@@ -370,3 +370,14 @@
   .mesa-der { grid-template-columns: 1fr; }
   .mesa-hoja .mt-filas:not(.mt-salv) { grid-template-columns: 1fr; }
 }
+
+/* Wild Shape (Druida) */
+.mesa-forma-hd { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.mesa-forma-hd small, .mesa-forma .mesa-comp-nom small { color: var(--text-muted); font-size: 12px; display: block; }
+.mesa-forma-lista { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; }
+.mesa-forma-lista .mesa-btn { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+.mesa-forma-lista .mesa-btn small { font-size: 11px; opacity: .8; font-weight: 400; }
+.mesa-forma-vel { font-size: 12px; color: var(--text-muted); margin: 6px 0; }
+.mesa-forma-atk { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 4px 0; border-top: 1px solid var(--border); }
+.mesa-formas-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
+.mesa-formas-cfg .mesa-col-hd small { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }

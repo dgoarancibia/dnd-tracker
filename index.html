@@ -1520,7 +1520,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/storage.js?v=59"></script>
-<script src="js/characters.js?v=147"></script>
+<script src="js/characters.js?v=148"></script>
 <script type="module" src="js/firebase.js?v=7"></script>
 <!-- cloud.js también aquí: sincroniza la LISTA de personajes al iniciar sesión -->
 <script type="module" src="js/cloud.js?v=9"></script>
@@ -2347,10 +2347,10 @@ const CLASE_EQUIP = {
     B: ['Cuero tachonado', 'Espada larga', 'Daga (2)', 'Instrumento musical a elección', 'Mochila de diplomático', '19 gp'],
     C: ['130 gp'],
   },
+  // PHB 2024: dos opciones (verificado en dnd2024.wikidot y SRD 5.2).
   'Druida': {
-    A: ['Escudo de madera', 'Hoz', 'Cuero', 'Foco druídico (vara)', 'Mochila de explorador', '9 gp'],
-    B: ['Escudo de madera', 'Bastón de cuarzo', 'Cuero', 'Foco druídico (tótem)', 'Mochila de explorador', '6 gp'],
-    C: ['50 gp'],
+    A: ['Cuero', 'Escudo', 'Hoz', 'Foco druídico (bastón)', 'Mochila de explorador', 'Kit de herbolario', '9 gp'],
+    B: ['50 gp'],
   },
   'Monje': {
     A: ['Daga (5)', 'Herramientas de artesano a elección', 'Mochila de explorador', '11 gp'],
@@ -3154,7 +3154,7 @@ document.addEventListener('keydown', e => {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 513;
+var _SW_EXPECTED_IDX = 514;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {
