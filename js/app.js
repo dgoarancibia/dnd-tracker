@@ -9218,10 +9218,12 @@ const App = (() => {
   let _featASIStat = null;
 
   function _pickFeatASI(featId, stat) {
-    _featASIStat = stat;
-    // Seleccionar también el feat, para no obligar a dos toques.
+    // Seleccionar también el feat, para no obligar a dos toques. Va antes de
+    // fijar la característica: _onASIFeatChange la borra al cambiar de feat, y
+    // tocar "FUE" directo dejaba el feat elegido pero sin el +1.
     const radio = document.querySelector(`[name="asiFeat"][value="${featId}"]`);
     if (radio && !radio.checked) { radio.checked = true; _onASIFeatChange(radio); }
+    _featASIStat = stat;
     document.querySelectorAll(`#asiPick-${featId} .feat-asi-btn`).forEach(b =>
       b.classList.toggle('active', b.dataset.stat === stat));
   }

@@ -289,10 +289,32 @@ const Mesa = (() => {
         const no2 = t.reaction ? 'Ya usaste tu Reacción' : '';
         col.reaction.push({ ao: true, no: no2, html: _fila({
           id: 'ao', icono: _iconoArma(w), nombre: 'Ataque de oportunidad', num: sg(a.ataque), sub: `${w.name} · ${a.daño}`, no: no2,
-          det: `<p>Cuando una criatura hostil que puedes ver sale de tu alcance.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.oportunidad()">⚔ Atacar</button></div>`,
+          det: `<p>Cuando una criatura hostil que puedes ver sale de tu alcance.</p>${_tieneDote(c, 'Sentinel') ? '<p>Sentinel: si impactas, su velocidad queda en 0 este turno.</p>' : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.oportunidad()">⚔ Atacar</button></div>`,
         }) });
       }
     });
+
+    // Polearm Master y Sentinel (PHB 2024) con el arma cuerpo a cuerpo principal
+    const am = eq.mainHand && eq.mainHand.kind === 'weapon' ? Characters.calcArma(c, 'mainHand') : null;
+    if (am && !am.aDistancia) {
+      const arma = eq.mainHand.name, noR = t.reaction ? 'Ya usaste tu Reacción' : '';
+      const halt = _tieneDote(c, 'Sentinel') ? ' Si impactas, su velocidad queda en 0 este turno (Sentinel).' : '';
+      if (_tieneDote(c, 'Polearm Master')) {
+        const noB = t.bonus ? 'Ya usaste tu Acción adicional' : !usados ? 'Primero ataca con la acción de Ataque' : '';
+        const d4 = '1d4' + (am.dañoFijo > 0 ? '+' + am.dañoFijo : am.dañoFijo < 0 ? String(am.dañoFijo) : '');
+        col.bonusAction.push({ no: noB, html: _fila({ id: 'pam-extremo', icono: _iconoArma(eq.mainHand), nombre: 'Golpe con el extremo', num: sg(am.ataque), dmg: d4, no: noB,
+          sub: `${arma} · contundente · Polearm Master`,
+          det: `<p>Justo después de atacar con la acción de Ataque, con el otro extremo del arma.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.usarRasgo('bonusAction','pam-extremo')">⚔ Atacar · Acción adicional</button></div>` }) });
+        col.reaction.push({ no: noR, html: _fila({ id: 'pam-reactivo', icono: _iconoArma(eq.mainHand), nombre: 'Ataque reactivo', num: sg(am.ataque), dmg: App.sumarDaño(am.daño), no: noR,
+          sub: `Entra en tu alcance · Polearm Master`,
+          det: `<p>Cuando una criatura entra en el alcance que tienes con el arma.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.oportunidad()">⚔ Atacar · Reacción</button></div>` }) });
+      }
+      if (_tieneDote(c, 'Sentinel')) {
+        col.reaction.push({ no: noR, html: _fila({ id: 'sentinel', icono: _iconoArma(eq.mainHand), nombre: 'Guardián (Sentinel)', num: sg(am.ataque), dmg: App.sumarDaño(am.daño), no: noR,
+          sub: 'A 1,5 m: se destraba o golpea a otro',
+          det: `<p>Ataque de oportunidad justo después de que una criatura a 1,5 m de ti se destrabe o impacte a un objetivo que no seas tú.${halt}</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.oportunidad()">⚔ Atacar · Reacción</button></div>` }) });
+      }
+    }
 
     // Soulknife: Hojas psíquicas (1d6 con la acción de Ataque; 1d4 con la Adicional)
     if (_subPicaro(c) === 'Soulknife' && _nivelPicaro(c) >= 3) {
@@ -725,6 +747,8 @@ const Mesa = (() => {
       <button class="mesa-plegar" onclick="Mesa.grupo('conds')">${todas ? '▾ Ocultar las demás' : '▸ Agregar condición'}</button></div></section>`);
     return bloques.join('');
   }
+
+  const _tieneDote = (c, nombre) => (c.features || []).some(f => f.name === nombre);
 
   /* ── Pícaro: Ataque furtivo y Cunning Strike ─────────────────────────── */
   function _nivelPicaro(c) {
