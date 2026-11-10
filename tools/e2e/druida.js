@@ -56,6 +56,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   chk('terreno Árido: Blur, Burning Hands y Fire Bolt siempre preparados', arido.length === 3 && arido.every(x => /:true$/.test(x)) && arido.some(x => /^Fire Bolt:0/.test(x)), arido);
   chk('cambiar a Polar quita los de Árido y pone Fog Cloud, Hold Person, Ray of Frost', polar.length === 3 && polar.includes('Hold Person') && !polar.includes('Blur'), polar);
 
+  // Con terreno elegido, Mesa solo lo muestra; se cambia en el descanso largo.
+  const fijo = await p.evaluate(() => { Mesa.render && Mesa.render(); const t = document.querySelector('.mesa-terreno'); return t ? t.querySelectorAll('button').length : -1; });
+  await p.evaluate(() => { App.longRest(); App.lrElegirTerreno('tropical'); App.applyLongRest(); }); await sleep(400);
+  const trop = await p.evaluate(() => ({ t: App.getActiveChar().landType, s: App.getActiveChar().spells.filter(s => s.land).map(s => s.name) }));
+  chk('terreno elegido: Mesa sin botones para cambiarlo; el descanso largo lo cambia a Tropical', fijo <= 0 && trop.t === 'tropical' && trop.s.length === 3 && !trop.s.includes('Hold Person'), { fijo, trop });
+
   // Land's Aid en combate: está en Acción, muestra 2d6 y gasta un Wild Shape
   await p.evaluate(() => Mesa.combate(true)); await sleep(400);
   const fila = await p.evaluate(() => { const f = [...document.querySelectorAll('#mesa-combate .mesa-op')].find(o => /Land's Aid/.test(o.textContent)); return f ? { dmg: f.querySelector('.mesa-dmg')?.textContent, sub: f.querySelector('small')?.textContent } : null; });
@@ -78,7 +84,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const atk = [...document.querySelectorAll('#mesa-combate .mesa-op')].find(o => /Mordisco \(Lobo\)/.test(o.textContent));
     // Los conjuros quedan plegados en "No disponible ahora"; se abre el grupo para leer el motivo
     [...document.querySelectorAll('#mesa-combate .mesa-plegar')].filter(b => /No disponible/.test(b.textContent) && /▸/.test(b.textContent)).forEach(b => b.click());
-    const conj = [...document.querySelectorAll('#mesa-combate .mesa-cj')].find(o => /Hold Person/.test(o.textContent));
+    const conj = [...document.querySelectorAll('#mesa-combate .mesa-cj')].find(o => /Web/.test(o.textContent));
     return { activa: c.wildShape.activa, usos: c.resources.find(r => r.id === 'wild-shape').current, temp: c.hp.temp, ca: Characters.calcCA(c), adicional: c.turn.bonus,
       atk: atk && { num: atk.querySelector('.mesa-num')?.textContent, dmg: atk.querySelector('.mesa-dmg')?.textContent },
       conjuro: conj && conj.querySelector('.mesa-motivo')?.textContent, tarjeta: !!document.querySelector('.mesa-forma .mesa-mini') }; });

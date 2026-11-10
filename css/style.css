@@ -9915,3 +9915,8 @@ body.diario-abierto .fab-note { opacity: 0; pointer-events: none; transform: sca
 .spell-group-title, .feat-badge, .hp-temp-inline-label, .nb-beta, .btn-edit-stats,
 .rc-recharge, .stat-chip-label, .slot-lv, .sf-chip, .equip-slot-role,
 .item-cat-badge, .hm-ts { font-size: 10px; }
+
+.lr-row.lr-terreno > span:last-child { display: flex; flex-direction: column; gap: 6px; }
+.lr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lr-chip { min-height: 30px; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--bg4); background: transparent; color: var(--text2); font: 500 12.5px 'Jost', sans-serif; cursor: pointer; }
+.lr-chip.on { background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 600; }

@@ -421,9 +421,13 @@ const Mesa = (() => {
     const esTierra = c.subclase === 'Circle of the Land' || (c.classes || []).some(x => x && x.subclass === 'Circle of the Land');
     if (!esTierra || (c.nivel || 1) < 3) return '';
     const T = Characters.TERRENOS_TIERRA, actual = T[c.landType];
+    // Ya elegido: solo se informa; se cambia al terminar un descanso largo.
+    if (actual) return `<div class="mesa-card mesa-terreno"><span class="mesa-lbl">Terreno</span>
+      <span class="mesa-chip on">${actual.nombre}</span>
+      <small>Se cambia al terminar un descanso largo${(c.nivel || 1) >= 10 ? ` · resistencia a ${actual.resistencia.toLowerCase()}` : ''}</small></div>`;
     return `<div class="mesa-card mesa-terreno"><span class="mesa-lbl">Terreno</span>
-      ${Object.entries(T).map(([k, t]) => `<button class="mesa-chip ${c.landType === k ? 'on' : ''}" onclick="App.setLandType('${k}')">${t.nombre}</button>`).join('')}
-      <small>${actual ? `Cámbialo tras un descanso largo${(c.nivel || 1) >= 10 ? ` · resistencia a ${actual.resistencia.toLowerCase()}` : ''}` : 'Elige uno: sus conjuros quedan siempre preparados'}</small></div>`;
+      ${Object.entries(T).map(([k, t]) => `<button class="mesa-chip" onclick="App.setLandType('${k}')">${t.nombre}</button>`).join('')}
+      <small>Elige uno: sus conjuros quedan siempre preparados</small></div>`;
   }
 
   function _filaRecurso(c, r, etiqueta) {

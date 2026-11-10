@@ -9602,6 +9602,16 @@ const App = (() => {
     showToast(`Descanso corto · +${heal} HP${compHeal > 0 ? ` · 🐾 +${compHeal}` : ''}${rechargeLabel}`);
   }
 
+  let _lrTerreno;
+  function _esDruidaTierra(c) {
+    const tierra = c.subclase === 'Circle of the Land' || (c.classes || []).some(x => x && x.subclass === 'Circle of the Land');
+    return tierra && (c.nivel || 1) >= 3;
+  }
+  function lrElegirTerreno(k) {
+    _lrTerreno = k;
+    document.querySelectorAll('#lrSummary .lr-chip').forEach(b => b.classList.toggle('on', b.dataset.terreno === k));
+  }
+
   function longRest() {
     // Build preview of what will be recovered
     const c = _char;
@@ -9664,6 +9674,13 @@ const App = (() => {
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">😴</span><span>Agotamiento ${c.exhaustion} → ${newEx}</span></div>`;
     }
 
+    // Circle of the Land: el terreno se elige al terminar cada descanso largo.
+    _lrTerreno = _esDruidaTierra(c) ? (c.landType || null) : undefined;
+    if (_lrTerreno !== undefined)
+      summaryHtml += `<div class="lr-row lr-terreno"><span class="lr-icon">⛰</span><span>Terreno para hoy
+        <span class="lr-chips">${Object.entries(Characters.TERRENOS_TIERRA).map(([k, t]) =>
+          `<button type="button" class="lr-chip ${_lrTerreno === k ? 'on' : ''}" data-terreno="${k}" onclick="App.lrElegirTerreno('${k}')">${t.nombre}</button>`).join('')}</span></span></div>`;
+
     document.getElementById('lrSummary').innerHTML = summaryHtml;
     document.getElementById('longRestModal').classList.add('show');
   }
@@ -9720,6 +9737,13 @@ const App = (() => {
     // disparado que quedó pendiente desde el último combate.
     Object.keys(c.ammo || {}).forEach(key => _devolverMunicion(c, key));
 
+    let terrenoNuevo = null;
+    if (_lrTerreno && _lrTerreno !== c.landType && Characters.TERRENOS_TIERRA[_lrTerreno]) {
+      c.landType = _lrTerreno;
+      _syncCharData(c);
+      terrenoNuevo = Characters.TERRENOS_TIERRA[_lrTerreno].nombre;
+    }
+
     closeLongRest();
     _saveChar(true);
     _renderHeader();
@@ -9729,7 +9753,8 @@ const App = (() => {
     if (compMax != null && compAntes !== compMax) {
       _logCombat(`🐾 Compañero ${compAntes}→${compMax} HP`, 'rest');
     }
-    showToast('✦ Descanso largo — Todo recargado');
+    if (terrenoNuevo) _logCombat(`⛰ Terreno: ${terrenoNuevo}`, 'rest');
+    showToast(`✦ Descanso largo — Todo recargado${terrenoNuevo ? ` · Terreno: ${terrenoNuevo}` : ''}`);
   }
 
   /* ══════════════════════════════════════════════════════
@@ -12701,7 +12726,7 @@ ${notesText}`;
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,
     srPreview: _updateShortRestPreview,
-    longRest, closeLongRest, applyLongRest,
+    longRest, closeLongRest, applyLongRest, lrElegirTerreno,
 
     // Level up
     openLevelUp, closeLevelUp, applyLevelUp,
