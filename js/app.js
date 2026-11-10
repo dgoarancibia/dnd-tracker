@@ -165,6 +165,24 @@ const App = (() => {
       }
     }
 
+    // 1c. Druidic (Druida nv1, PHB 2024): Speak with Animals siempre preparado.
+    const esDruida = (Array.isArray(c.classes) && c.classes.length)
+      ? c.classes.some(x => x && x.name === 'Druida' && (x.level || 0) >= 1)
+      : c.clase === 'Druida';
+    if (esDruida) {
+      if (!Array.isArray(c.spells)) c.spells = [];
+      let swa = c.spells.find(s => s.id === 'speak-with-animals-d' || /^speak with animals/i.test(s.name || ''));
+      if (!swa) {
+        const cat = ((Characters.CLASE_SPELLS && Characters.CLASE_SPELLS['Druida']) || []).find(s => s.id === 'speak-with-animals-d');
+        if (cat) { swa = { ...cat }; c.spells.push(swa); changed = true; }
+      }
+      if (swa && (!swa.domain || swa.alwaysLabel !== 'Druidic')) {
+        swa.domain = true;
+        swa.alwaysLabel = 'Druidic';
+        changed = true;
+      }
+    }
+
     // 2. Reparar subclase vacío — tres fuentes posibles:
     //    a) classes[0].subclass
     //    b) choices['subclase-1'] → buscar nombre real en SUBCLASES_CONFIG
@@ -296,8 +314,12 @@ const App = (() => {
         // Solo hasta el nivel de conjuro que el personaje ya puede lanzar: varias
         // subclases devuelven la lista completa sin mirar el nivel.
         const maxLvl = Characters.getMaxSpellLevel ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1) : 9;
-        const subclSpells = subConf.subclassSpells(nivel).filter(s => !(s.level > maxLvl));
+        const subclSpells = subConf.subclassSpells(nivel, c).filter(s => !(s.level > maxLvl));
         if (!c.spells) c.spells = [];
+        // Circle of the Land: fuera los conjuros de un terreno que ya no es el elegido
+        const antes = c.spells.length;
+        c.spells = c.spells.filter(s => !s.land || s.land === c.landType);
+        if (c.spells.length !== antes) changed = true;
         subclSpells.forEach(s => {
           const existing = c.spells.find(e => e.id === s.id);
           if (existing) {
@@ -6559,6 +6581,19 @@ const App = (() => {
     return Characters.getAmmoItem(c, { key }, arma);
   }
 
+  // Circle of the Land: el terreno se elige tras cada descanso largo y cambia
+  // los conjuros siempre preparados (los del terreno anterior se quitan).
+  function setLandType(tipo) {
+    if (!_char) return;
+    if (Characters.TERRENOS_TIERRA[tipo]) _char.landType = tipo; else delete _char.landType;
+    _syncCharData(_char);
+    _saveChar();
+    _renderHeader();
+    _renderActiveTab();
+    const t = Characters.TERRENOS_TIERRA[tipo];
+    showToast(t ? `Terreno: ${t.nombre}` : 'Sin terreno');
+  }
+
   // Ítems → arma → Munición: qué ítem de la mochila gasta al disparar.
   function setMunicionArma(slotKey, valor) {
     const w = _char && _char.equipment && _char.equipment[slotKey];
@@ -12582,7 +12617,7 @@ ${notesText}`;
     adjustCompanionHP, setCompanionField, useCompanionOrder, toggleCompanionForceDamage,
     openCompanionRevive, closeCompanionRevive, reviveCompanion,
     usarRecursoTurno, toggleRecursoTurno, usarAtaque, nuevoTurno,
-    recuperarMunicion, setMunicionArma,
+    recuperarMunicion, setMunicionArma, setLandType,
     agregarVinculo, quitarVinculo, toggleD4Vinculo, romperVinculos,
     abrirEntidadEnHojas,
     toggleRecursoBestia, comandarBestia,

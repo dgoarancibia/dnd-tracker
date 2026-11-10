@@ -497,6 +497,26 @@ const Characters = (() => {
         { name: 'Linaje de Tormenta',emoji: '⛈️', traits: ['Storm\'s Thunder — reacción al recibir daño: 1d8 de daño de Trueno a una criatura visible a 18 m (Prof Bonus usos/Long Rest)'] },
       ],
     },
+    // FUENTE: Eberron: Forge of the Artificer (2025), versión para reglas 2024
+    // (verificado en dnd2024.wikidot y Screen Rant). Es Constructo, no
+    // Humanoide: Hold Person no lo afecta (Hold Monster sí). Sin aumento de
+    // características (lo da el trasfondo) ni inmunidad a enfermedad (era 2019).
+    'Warforged': {
+      emoji: '🤖', speed: 30, darkvision: 0, acBonus: 1, creatureType: 'Constructo',
+      traits: [
+        'Constructo — tu tipo de criatura es Constructo (no Humanoide)',
+        'Construct Resilience — resistencia a daño de veneno y ventaja en salvaciones para evitar o terminar el estado Envenenado',
+        'Integrated Protection — +1 a la CA (ya sumado). La armadura que llevas puesta no te la pueden quitar contra tu voluntad mientras vivas',
+        'Sentry\'s Rest — no necesitas dormir y la magia no puede dormirte. Completas un descanso largo en 6 h inactivo e inmóvil, consciente',
+        'Specialized Design — competencia en 1 habilidad y 1 herramienta a elección (márcalas en Habilidades)',
+        'Tireless — no ganas niveles de Agotamiento por deshidratación, desnutrición ni asfixia',
+      ],
+      resistances: ['Veneno'], languages: ['Común'], skillProfs: [], weaponProfs: [],
+      subraces: [
+        { name: 'Mediano', emoji: '🤖', traits: ['Tamaño Mediano (1,8–2,4 m)'] },
+        { name: 'Pequeño', emoji: '🔩', traits: ['Tamaño Pequeño (0,9–1,2 m)'] },
+      ],
+    },
     // PHB 2024: Darkvision del Orco es 120 ft (36 m), el doble del estándar.
     'Orco': {
       speed: 30, darkvision: 36,
@@ -673,7 +693,9 @@ const Characters = (() => {
     const shieldBonus = (offHand && offHand.kind === 'shield' && _slotActive(offHand))
       ? _itemStatBonus(offHand, 'ac') + (offHand.shield_bonus != null ? offHand.shield_bonus : 2)
       : 0;
-    const bonus = manualBonus + statBuffsBonus + itemBuffsBonus + shieldBonus;
+    // Integrated Protection del Warforged: +1 siempre, con o sin armadura.
+    const razaBonus = (RAZAS_CONFIG[char.raza] && RAZAS_CONFIG[char.raza].acBonus) || 0;
+    const bonus = manualBonus + statBuffsBonus + itemBuffsBonus + shieldBonus + razaBonus;
 
     // Unarmored Defense: solo aplica cuando el personaje no lleva armadura equipada
     const isUnarmored = !armor || (!armor.name && (armor.base_ca == null || armor.base_ca === 10) && armor.add_dex !== false);
@@ -915,7 +937,9 @@ const Characters = (() => {
     const cfg = CLASES_CONFIG[char.clase];
     if (!cfg || !cfg.cantripsKnown) return null; // null = sin límite fijo
     const nivel = char.nivel || 1;
-    return cfg.cantripsKnown[Math.min(nivel - 1, 19)];
+    // Primal Order Mago (Druida) da un truco extra.
+    const extra = (char.choices || {})['primal-order'] === 'magician' ? 1 : 0;
+    return cfg.cantripsKnown[Math.min(nivel - 1, 19)] + extra;
   }
 
   // true si la clase conoce conjuros (no los prepara)
@@ -1612,45 +1636,60 @@ const Characters = (() => {
           desc:'Siempre tienes preparados Power Word Heal y Power Word Kill. Lanzarlos no gasta spell slots.', fullDesc:'' }] : []),
       ],
     },
+    // PHB 2024 (verificado en dnd2024.wikidot y SRD 5.2). La subclase llega a
+    // nivel 3; Wild Shape a nivel 2 con 2/3/4 usos (nv2/6/17): el descanso
+    // corto devuelve UNO, el largo todos.
     'Druida': {
-      resources: (nivel) => [
-        { id:'wild-shape', name:'Wild Shape',
-          current: 2, max: 2, recharge:'short',
-          note: nivel>=18?'Bestia CR sin límite':nivel>=8?'CR 1':'CR 1/4 (nv2 CR 1/4, nv4 CR 1/2)' }
-      ],
+      resources: (nivel) => {
+        const usos = nivel >= 17 ? 4 : nivel >= 6 ? 3 : nivel >= 2 ? 2 : 0;
+        const cr = nivel >= 8 ? '1' : nivel >= 4 ? '1/2' : '1/4';
+        return [
+          { id:'wild-shape', name:'Wild Shape', current: usos, max: usos, recharge:'short1',
+            action:'Acción bonus', range:'Personal',
+            note:`${nivel >= 8 ? 8 : nivel >= 4 ? 6 : 4} formas · VD ${cr}${nivel >= 8 ? '' : ' · sin vuelo'} · ${Math.floor(nivel / 2)} h`,
+            desc:`Acción adicional: tomas una forma de bestia conocida (VD ≤ ${cr}${nivel >= 8 ? '' : ', sin velocidad de vuelo'}) durante ${Math.floor(nivel / 2)} h. Ganas ${nivel} PG temporales. Descanso corto: recuperas 1 uso; largo: todos.` },
+        ];
+      },
       features: (nivel) => [
-        { id:'druidic', name:'Druidic', source:'Druida · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Conoces Druidic, el idioma secreto de los druidas. Puedes dejar mensajes ocultos que solo otros druidas pueden ver.', fullDesc:'' },
         { id:'spellcasting-druid', name:'Spellcasting (SAB)', source:'Druida · Nivel 1', type:'passive', action:'Varía', range:'Varía', recharge:null,
-          desc:'Lanzas conjuros de Druida usando Sabiduría. Full caster.', fullDesc:'' },
+          desc:'Lanzas conjuros de Druida con Sabiduría. CD = 8 + BC + SAB; ataque = BC + SAB. Cambias tus conjuros preparados tras cada descanso largo.',
+          fullDesc:'Característica: Sabiduría. Foco: un foco druídico.\n\nTrucos: 2 (4 a nv4… ver tabla); al subir de nivel de Druida puedes cambiar uno por otro de Druida.\n\nConjuros preparados: según la tabla del Druida (4 en nv1). Tras un descanso largo puedes cambiar cualquiera de ellos; deben ser de un nivel para el que tengas espacios. Los conjuros que otro rasgo te da siempre preparados no cuentan para ese número.\n\nRecuperas todos los espacios al terminar un descanso largo.' },
+        { id:'druidic', name:'Druidic', source:'Druida · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Conoces el idioma druídico y siempre tienes preparado Speak with Animals (no cuenta para tu límite).',
+          fullDesc:'Conoces el druídico, el idioma secreto de los druidas. Mientras lo conoces, siempre tienes preparado el conjuro Speak with Animals.\n\nPuedes dejar mensajes ocultos en druídico. Tú y otros que lo conozcan los ven automáticamente; los demás lo notan con una prueba de Inteligencia (Investigación) CD 15, pero no pueden descifrarlo sin magia.' },
         { id:'primal-order', name:'Primal Order', source:'Druida · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Eliges un Primal Order: Magician (cantrip extra + INT tools) o Warden (armas marciales + armadura media).', fullDesc:'' },
-        ...(nivel >= 2 ? [{ id:'wild-shape', name:`Wild Shape (CR ${nivel>=18?'ilimitado':nivel>=8?1:nivel>=4?'1/2':'1/4'})`, source:'Druida · Nivel 2', type:'active', action:'Acción bonus', range:'Personal', recharge:'short',
-          desc:`2 usos por Short Rest. Tomas la forma de una bestia CR ≤ ${nivel>=18?'cualquiera':nivel>=8?1:nivel>=4?'0.5':'0.25'}.`, fullDesc:'' }] : []),
-        ...(nivel >= 2 ? [{ id:'druid-subclass', name:'Círculo Druídico (Subclase)', source:'Druida · Nivel 2', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Eliges tu Círculo Druídico.', fullDesc:'' }] : []),
+          desc:'Eliges Mago (1 truco de Druida extra y +SAB a pruebas de INT de Arcanos y Naturaleza, mín. +1) o Guardián (armas marciales y armadura media).',
+          fullDesc:'Te dedicas a uno de estos roles sagrados:\n\n• MAGO (Magician) — Conoces un truco extra de la lista de Druida. Además, cuando haces una prueba de Inteligencia (Arcanos o Naturaleza), sumas tu modificador de Sabiduría (mínimo +1).\n\n• GUARDIÁN (Warden) — Ganas competencia con armas marciales y entrenamiento con armadura media.' },
+        ...(nivel >= 2 ? [{ id:'wild-shape', name:'Wild Shape', source:'Druida · Nivel 2', type:'active', action:'Acción adicional', range:'Personal', recharge:'short1',
+          desc:`${nivel >= 17 ? 4 : nivel >= 6 ? 3 : 2} usos (corto: 1; largo: todos). Forma de bestia conocida VD ≤ ${nivel >= 8 ? '1' : nivel >= 4 ? '1/2' : '1/4'}${nivel >= 8 ? '' : ' sin vuelo'} por ${Math.floor(nivel / 2)} h. ${nivel} PG temporales.`,
+          fullDesc:`Acción adicional: adoptas la forma de una bestia que conoces. Dura ${Math.floor(nivel / 2)} horas (la mitad de tu nivel de Druida) o hasta que vuelvas a usar Wild Shape, quedes Incapacitado, mueras, o la termines con una acción adicional.\n\nFormas conocidas: ${nivel >= 8 ? 8 : nivel >= 4 ? 6 : 4} (4 en nv2, 6 en nv4, 8 en nv8), de VD ≤ ${nivel >= 8 ? '1' : nivel >= 4 ? '1/2' : '1/4'}${nivel >= 8 ? ' (puede volar)' : ' y sin velocidad de vuelo'}. Al terminar un descanso largo puedes cambiar una. Sugeridas para empezar: Rata, Caballo de monta, Araña y Lobo.\n\nAl transformarte ganas PG temporales iguales a tu nivel de Druida (${nivel}).\n\nConservas: personalidad, recuerdos y la capacidad de hablar; tu tipo de criatura, PG, Dados de Golpe, INT, SAB y CAR; rasgos de clase, idiomas y dotes; tus competencias en habilidades y salvaciones con tu BC (si la bestia también es competente, usas el modificador mayor). Lo demás sale de la ficha de la bestia.\n\nNo puedes lanzar conjuros, pero transformarte no rompe tu Concentración ni termina conjuros ya lanzados.\n\nEquipo: decides si cae, se funde con la forma (sin efecto) o lo llevas puesto (si el DM lo ve viable). No cambia de tamaño.` }] : []),
+        ...(nivel >= 2 ? [{ id:'wild-companion', name:'Wild Companion', source:'Druida · Nivel 2', type:'active', action:'Acción', range:'Personal', recharge:null,
+          desc:'Acción de Magia: gastas un espacio de conjuro o un uso de Wild Shape para lanzar Find Familiar sin componentes materiales. El familiar es Feérico y desaparece al terminar un descanso largo.',
+          fullDesc:'Puedes invocar un espíritu de la naturaleza con forma de animal que te ayude. Como acción de Magia, gastas un espacio de conjuro o un uso de Wild Shape para lanzar Find Familiar sin componentes materiales.\n\nAl lanzarlo así, el familiar es Feérico y desaparece cuando terminas un descanso largo.' }] : []),
+        ...(nivel >= 3 ? [{ id:'druid-subclass', name:'Círculo Druídico (Subclase)', source:'Druida · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Eliges tu Círculo Druídico (Tierra, Luna, Mar o Estrellas). Sus rasgos llegan en los niveles 3, 6, 10 y 14.', fullDesc:'' }] : []),
         ...(nivel >= 4 ? [{ id:'druid-asi-4', name:'Ability Score Improvement', source:'Druida · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 4 ? [{ id:'wild-shape-2', name:'Wild Shape mejorado (CR 1/2)', source:'Druida · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Puedes tomar formas con natación o vuelo (dependiendo del círculo).', fullDesc:'' }] : []),
-        ...(nivel >= 5 ? [{ id:'wild-resurgence', name:'Wild Resurgence', source:'Druida · Nivel 5', type:'active', action:'Ninguna', range:'Personal', recharge:'long',
-          desc:'Una vez por Long Rest, puedes recuperar un uso de Wild Shape gastando un slot de nivel 1.', fullDesc:'' }] : []),
+          desc:'Dote Ability Score Improvement (+2 a una característica o +1 a dos, máx. 20) u otra dote para la que califiques.', fullDesc:'' }] : []),
+        ...(nivel >= 5 ? [{ id:'wild-resurgence', name:'Wild Resurgence', source:'Druida · Nivel 5', type:'active', action:'Sin acción', range:'Personal', recharge:null,
+          desc:'Una vez por turno, si no te quedan usos de Wild Shape, gastas un espacio de conjuro para recuperar uno. Y 1 vez por descanso largo: gastas un uso de Wild Shape para ganar un espacio de nivel 1.',
+          fullDesc:'Una vez en cada uno de tus turnos, si no te quedan usos de Wild Shape, puedes gastar un espacio de conjuro (sin acción) para recuperar un uso.\n\nAdemás, puedes gastar un uso de Wild Shape (sin acción) para ganar un espacio de conjuro de nivel 1. No puedes volver a hacerlo hasta terminar un descanso largo.' }] : []),
         ...(nivel >= 7 ? [{ id:'elemental-fury', name:'Elemental Fury', source:'Druida · Nivel 7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Eliges Potent Spellcasting (+SAB al daño de cantrips) o Primal Strike (ataques en Wild Shape son mágicos).', fullDesc:'' }] : []),
+          desc:`Eliges Potent Spellcasting (+SAB al daño de tus trucos de Druida) o Primal Strike (1 vez por turno, al impactar con arma o ataque de bestia: +${nivel >= 15 ? 2 : 1}d8 de frío, fuego, rayo o trueno).`,
+          fullDesc:`• POTENT SPELLCASTING — Sumas tu modificador de Sabiduría al daño que haces con cualquier truco de Druida.${nivel >= 15 ? ' (Mejorado nv15: tus trucos de Druida con alcance de 3 m o más ganan +90 m de alcance.)' : ''}\n\n• PRIMAL STRIKE — Una vez en cada uno de tus turnos, cuando impactas a una criatura con un ataque con arma o con un ataque de una forma de bestia de Wild Shape, puedes hacer ${nivel >= 15 ? 2 : 1}d8 de daño extra de frío, fuego, rayo o trueno (eliges al impactar).` }] : []),
         ...(nivel >= 8 ? [{ id:'druid-asi-8', name:'Ability Score Improvement', source:'Druida · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
+          desc:'Dote Ability Score Improvement u otra dote para la que califiques.', fullDesc:'' }] : []),
         ...(nivel >= 12 ? [{ id:'druid-asi-12', name:'Ability Score Improvement', source:'Druida · Nivel 12', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
+          desc:'Dote Ability Score Improvement u otra dote para la que califiques.', fullDesc:'' }] : []),
+        ...(nivel >= 15 ? [{ id:'improved-elemental-fury', name:'Improved Elemental Fury', source:'Druida · Nivel 15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Potent Spellcasting: tus trucos de Druida con alcance ≥ 3 m ganan +90 m. Primal Strike: el daño extra sube a 2d8.', fullDesc:'' }] : []),
         ...(nivel >= 16 ? [{ id:'druid-asi-16', name:'Ability Score Improvement', source:'Druida · Nivel 16', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
+          desc:'Dote Ability Score Improvement u otra dote para la que califiques.', fullDesc:'' }] : []),
         ...(nivel >= 18 ? [{ id:'beast-spells', name:'Beast Spells', source:'Druida · Nivel 18', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Puedes lanzar conjuros en Wild Shape (sin componentes materiales).', fullDesc:'' }] : []),
-        ...(nivel >= 18 ? [{ id:'timeless-body-druid', name:'Timeless Body', source:'Druida · Nivel 18', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Envejecés 10 veces más lento de lo normal y eres inmune a envejecimiento mágico.', fullDesc:'' }] : []),
+          desc:'Puedes lanzar conjuros en Wild Shape, salvo los que tienen un componente material con costo o que se consume.', fullDesc:'' }] : []),
         ...(nivel >= 19 ? [{ id:'druid-asi-19', name:'Epic Boon', source:'Druida · Nivel 19', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Ganas un Epic Boon feat.', fullDesc:'' }] : []),
+          desc:'Ganas una dote de Don Épico u otra dote para la que califiques (sugerida: Boon of Dimensional Travel).', fullDesc:'' }] : []),
         ...(nivel >= 20 ? [{ id:'archdruid', name:'Archdruid', source:'Druida · Nivel 20', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Wild Shape ilimitado. Puedes ignorar los componentes verbales y somáticos de tus conjuros de Druida.', fullDesc:'' }] : []),
+          desc:'Evergreen Wild Shape: al tirar iniciativa sin usos de Wild Shape, recuperas uno. Nature Magician: 1 vez por descanso largo conviertes usos de Wild Shape en un espacio (cada uso vale 2 niveles). Longevity: envejeces 1 año cada 10.', fullDesc:'' }] : []),
       ],
     },
     'Explorador': {
@@ -2034,6 +2073,30 @@ const Characters = (() => {
 
   // ── SUBCLASES_CONFIG: recureres y features adicionales por subclase ──────────
   // Estructura: { 'NombreSubclase': { clase, resources(nivel), features[] } }
+  // Circle of the Land (PHB 2024): terrenos y conjuros por nivel de Druida.
+  const TERRENOS_TIERRA = {
+    arid:      { nombre:'Árido',    resistencia:'Fuego',  conjuros:[[3,'Blur'],[3,'Burning Hands'],[3,'Fire Bolt'],[5,'Fireball'],[7,'Blight'],[9,'Wall of Stone']] },
+    polar:     { nombre:'Polar',    resistencia:'Frío',   conjuros:[[3,'Fog Cloud'],[3,'Hold Person'],[3,'Ray of Frost'],[5,'Sleet Storm'],[7,'Ice Storm'],[9,'Cone of Cold']] },
+    temperate: { nombre:'Templado', resistencia:'Rayo',   conjuros:[[3,'Misty Step'],[3,'Shocking Grasp'],[3,'Sleep'],[5,'Lightning Bolt'],[7,'Freedom of Movement'],[9,'Tree Stride']] },
+    tropical:  { nombre:'Tropical', resistencia:'Veneno', conjuros:[[3,'Acid Splash'],[3,'Ray of Sickness'],[3,'Web'],[5,'Stinking Cloud'],[7,'Polymorph'],[9,'Insect Plague']] },
+  };
+
+  // Un conjuro del catálogo por su nombre en inglés, de la clase que lo tenga
+  // (primero Druida). Sin las marcas de la ficha (◆ dominio, † Magic Initiate).
+  function buscarConjuroPorNombre(nombre) {
+    const limpio = n => String(n || '').replace(/\s*[†◆●○✦]\s*$/, '').trim().toLowerCase();
+    const buscado = limpio(nombre);
+    const clases = ['Druida', ...Object.keys(CLASE_SPELLS).filter(k => k !== 'Druida')];
+    for (const k of clases) {
+      const sp = (CLASE_SPELLS[k] || []).find(x => limpio(x.name) === buscado);
+      if (sp) {
+        const { domain, mi, alwaysLabel, cantrip_subclass, cantrip_racial, prepared, ...datos } = sp;
+        return datos;
+      }
+    }
+    return null;
+  }
+
   const SUBCLASES_CONFIG = {
 
     // ── GUERRERO ──────────────────────────────────────────────────────────────
@@ -2853,76 +2916,57 @@ const Characters = (() => {
       ],
     },
 
+    // PHB 2024 (verificado en dnd2024.wikidot y SRD 5.2). Rasgos en nv3/6/10/14.
+    // El terreno (c.landType) se elige tras cada descanso largo y decide los
+    // conjuros siempre preparados y la resistencia de Nature's Ward.
     'Circle of the Land': {
       clase: 'Druida',
       resources: (nivel) => [
-        { id:'wild-shape-land', name:'Wild Shape',
-          current: 2, max: 2, recharge:'short',
-          note:`CR máx ${nivel>=8?1:0.5} · Solo bestias terrestres` },
-      ],
-      features: (nivel) => [
-        { id:'land-bonus-cantrip', name:'Bonus Cantrip',
-          source:'Circle of the Land · Nv2', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Aprendes un cantrip de druida adicional de tu elección.',
-          fullDesc:'A nivel 2, aprendes un cantrip de druida adicional de tu elección.' },
-        { id:'land-natural-recovery', name:'Natural Recovery',
-          source:'Circle of the Land · Nv2', type:'active', action:'Short Rest', range:'Personal', recharge:'long',
-          desc:'1/Long Rest: durante un Short Rest, recuperas slots gastados cuyo nivel total no supere la mitad de tu nivel (redondeado arriba, máx nivel 5).',
-          fullDesc:'A nivel 2, puedes recuperar parte de tu energía mágica descansando en la naturaleza. Una vez por día al terminar un Short Rest, eliges espacio de conjuro gastados cuya suma de niveles sea igual o menor a la mitad de tu nivel de druida (redondeado arriba). No puedes recuperar slots de nivel 6 o mayor.' },
-        { id:'land-circle-spells', name:'Circle Spells',
-          source:'Circle of the Land · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Tu círculo te otorga acceso a conjuros adicionales (terreno elegido: Ártico, Costa, Desierto, Bosque, Pradera, Montaña, Pantano o Underdark).',
-          fullDesc:'A nivel 3, la tierra que te conecta te permite acceder a conjuros que de otro modo no formarían parte de tu lista. Los conjuros de círculo están siempre preparados y no cuentan para el número de conjuros que puedes preparar.' },
-        ...(nivel >= 6 ? [{ id:'land-lands-stride', name:"Land's Stride",
-          source:'Circle of the Land · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Te mueves por terreno difícil no mágico sin coste extra. La vegetación mágica tampoco te ralentiza ni te daña.',
-          fullDesc:'A nivel 6, moverse a través de terreno difícil no mágico no te cuesta movimiento extra. También puedes pasar a través de plantas no mágicas sin ser ralentizado y sin recibir daño. Puedes pasar a través de plantas mágicas sin sufrir efectos si superas el save pertinente.' }] : []),
-        ...(nivel >= 10 ? [{ id:'land-natures-ward', name:"Nature's Ward",
-          source:'Circle of the Land · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Inmune a veneno, enfermedad y a ser Encantado o Asustado por Elementales y Fey.',
-          fullDesc:'A nivel 10, no puedes ser envenenado ni enfermarte con enfermedades naturales o mágicas. Además, las criaturas feéricas y los elementales no pueden encantarte ni asustarte.' }] : []),
-        ...(nivel >= 14 ? [{ id:'land-natures-sanctuary', name:"Nature's Sanctuary",
-          source:'Circle of the Land · Nv14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Las bestias y plantas deben superar un save de SAB o no pueden atacarte. Las afectadas se vuelven inmunes a este efecto 24 hs.',
-          fullDesc:'A nivel 14, las criaturas del mundo natural sienten tu vínculo con la naturaleza y dudan en atacarte. Cuando una bestia o planta te ataca, debe superar un save de SAB contra tu DC de conjuros o elegir un objetivo diferente. Si supera el save, es inmune al efecto durante 24 horas.' }] : []),
-      ],
-      // Circle Spells varían por terreno. Cargamos los del Bosque (Forest) como base — ajustar según terreno elegido.
-      subclassSpells: (nivel) => [
-        // Nv3 (Bosque/Forest — siempre preparados)
-        { id:'barkskin', name:'Barkskin', level:2, castTime:'1 acción', range:'Toque',
-          duration:'1 hora', concentration:true, combat:false,
-          desc:'La CA del objetivo no puede bajar de 16 mientras dure el conjuro.', domain:true },
-        { id:'spider-climb', name:'Spider Climb', level:2, castTime:'1 acción', range:'Toque',
-          duration:'1 hora', concentration:true, combat:false,
-          desc:'Una criatura puede escalar superficies difíciles, incluso techos, con velocidad de escalar.', domain:true },
-        // Nv5
-        ...(nivel >= 5 ? [
-          { id:'call-lightning', name:'Call Lightning', level:3, castTime:'1 acción', range:'36 m',
-            duration:'10 minutos', concentration:true, combat:true,
-            desc:'Convocas tormenta. Cada turno (acción): rayo de 3d10 rayos en cilindro de 1.5 m. Doble daño en tormenta real.', domain:true },
-          { id:'plant-growth', name:'Plant Growth', level:3, castTime:'1 acción / 8 hs', range:'45 m',
-            duration:'Instantáneo', concentration:false, combat:true,
-            desc:'Las plantas en un radio de 30 m se espigan: terreno difícil. O revitalizas la tierra para que sea más fértil.', domain:true },
-        ] : []),
-        // Nv7
-        ...(nivel >= 7 ? [
-          { id:'divination', name:'Divination', level:4, castTime:'1 acción', range:'Personal',
-            duration:'Instantáneo', concentration:false, combat:false,
-            desc:'Recibes una respuesta breve y verídica sobre un evento en 7 días. Ritual disponible.', domain:true },
-          { id:'freedom-of-movement', name:'Freedom of Movement', level:4, castTime:'1 acción', range:'Toque',
-            duration:'1 hora', concentration:false, combat:false,
-            desc:'Ignoras terreno difícil mágico/no mágico, no puedes ser paralizado ni restringido por conjuros.', domain:true },
-        ] : []),
-        // Nv9
-        ...(nivel >= 9 ? [
-          { id:'commune-with-nature', name:'Commune with Nature', level:5, castTime:'1 minuto', range:'Personal',
-            duration:'Instantáneo', concentration:false, combat:false,
-            desc:'Ritual: te sintonizas con la tierra en 4.5 km (o 90 m bajo tierra). Obtienes 3 hechos sobre el área.', domain:true },
-          { id:'tree-stride', name:'Tree Stride', level:5, castTime:'1 acción', range:'Personal',
-            duration:'1 minuto', concentration:true, combat:false,
-            desc:'Puedes entrar en un árbol y salir desde otro árbol del mismo tipo a 150 m. 1 vez/turno.', domain:true },
+        ...(nivel >= 6 ? [
+          { id:'land-natural-recovery-spell', name:'Natural Recovery: conjuro gratis', current: 1, max: 1, recharge:'long',
+            action:'Sin acción', range:'Personal',
+            desc:'Lanzas sin gastar espacio uno de tus conjuros de círculo preparados de nivel 1 o más. 1 vez por descanso largo.' },
+          { id:'land-natural-recovery', name:'Natural Recovery: espacios', current: 1, max: 1, recharge:'long',
+            action:'Descanso corto', range:'Personal',
+            desc:`Al terminar un descanso corto recuperas espacios gastados cuya suma de niveles sea ≤ ${Math.ceil(nivel / 2)} (mitad de tu nivel de Druida, hacia arriba), ninguno de nivel 6 o más. 1 vez por descanso largo.` },
         ] : []),
       ],
+      features: (nivel) => {
+        const d = nivel >= 14 ? 4 : nivel >= 10 ? 3 : 2;
+        return [
+          { id:'land-circle-spells', name:'Circle of the Land Spells',
+            source:'Circle of the Land · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+            desc:'Tras cada descanso largo eliges Árido, Polar, Templado o Tropical: tienes siempre preparados sus conjuros hasta tu nivel de Druida.',
+            fullDesc:'Al terminar un descanso largo eliges un tipo de terreno: Árido, Polar, Templado o Tropical. Tienes siempre preparados los conjuros de ese terreno para tu nivel de Druida y menores.\n\n• Árido — nv3: Blur, Burning Hands, Fire Bolt · nv5: Fireball · nv7: Blight · nv9: Wall of Stone\n• Polar — nv3: Fog Cloud, Hold Person, Ray of Frost · nv5: Sleet Storm · nv7: Ice Storm · nv9: Cone of Cold\n• Templado — nv3: Misty Step, Shocking Grasp, Sleep · nv5: Lightning Bolt · nv7: Freedom of Movement · nv9: Tree Stride\n• Tropical — nv3: Acid Splash, Ray of Sickness, Web · nv5: Stinking Cloud · nv7: Polymorph · nv9: Insect Plague' },
+          { id:'land-aid', name:"Land's Aid", usa:'wild-shape', damage:`${d}d6 necrótico`, curacion:`${d}d6`,
+            source:'Circle of the Land · Nv3', type:'active', action:'Acción', range:'18 m',
+            desc:`Gastas 1 Wild Shape: esfera de 3 m de radio a 18 m. Las criaturas que elijas: salvación de CON o ${d}d6 necrótico (mitad si superan). Una criatura que elijas en el área recupera ${d}d6 PG.`,
+            fullDesc:`Como acción de Magia, gastas un uso de Wild Shape y eliges un punto a 18 m o menos. Brotan flores con espinas en una esfera de 3 m de radio centrada en ese punto. Cada criatura que elijas en la esfera hace una salvación de Constitución contra tu CD de conjuros: recibe ${d}d6 de daño necrótico si falla, o la mitad si la supera. Una criatura que elijas en esa área recupera ${d}d6 PG.\n\nEl daño y la curación suben a 3d6 en nivel 10 y a 4d6 en nivel 14.` },
+          ...(nivel >= 6 ? [{ id:'land-natural-recovery', name:'Natural Recovery',
+            source:'Circle of the Land · Nv6', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+            desc:`1 vez por descanso largo: lanzas gratis un conjuro de círculo preparado (nv1+). Y 1 vez por descanso largo, al terminar un descanso corto recuperas espacios por un total de ${Math.ceil(nivel / 2)} niveles (ninguno de nv6+).`,
+            fullDesc:'Puedes lanzar uno de tus conjuros de círculo preparados de nivel 1 o más sin gastar un espacio; no puedes volver a hacerlo hasta terminar un descanso largo.\n\nAdemás, cuando terminas un descanso corto puedes recuperar espacios gastados cuya suma de niveles sea igual o menor a la mitad de tu nivel de Druida (hacia arriba), y ninguno puede ser de nivel 6 o más. Una vez que lo haces, no puedes volver a hacerlo hasta terminar un descanso largo.' }] : []),
+          ...(nivel >= 10 ? [{ id:'land-natures-ward', name:"Nature's Ward",
+            source:'Circle of the Land · Nv10', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+            desc:'Inmune al estado Envenenado. Resistencia según tu terreno actual: Árido fuego, Polar frío, Templado rayo, Tropical veneno.',
+            fullDesc:'Eres inmune al estado Envenenado y tienes resistencia a un tipo de daño según tu terreno elegido en Circle Spells: Árido → fuego, Polar → frío, Templado → rayo, Tropical → veneno.' }] : []),
+          ...(nivel >= 14 ? [{ id:'land-natures-sanctuary', name:"Nature's Sanctuary", usa:'wild-shape',
+            source:'Circle of the Land · Nv14', type:'active', action:'Acción', range:'36 m',
+            desc:'Gastas 1 Wild Shape: cubo de 4,5 m de árboles y enredaderas espectrales a 36 m, 1 min. Tú y tus aliados dentro tienen media cobertura, y tus aliados ganan tu resistencia de Nature\'s Ward. Acción adicional: lo mueves hasta 18 m.',
+            fullDesc:'Como acción de Magia, gastas un uso de Wild Shape y haces aparecer árboles y enredaderas espectrales en un cubo de 4,5 m sobre el suelo a 36 m o menos. Duran 1 minuto o hasta que quedes Incapacitado o mueras. Tú y tus aliados tienen media cobertura mientras estén en esa área, y tus aliados ahí ganan la resistencia actual de tu Nature\'s Ward.\n\nComo acción adicional puedes mover el cubo hasta 18 m a suelo a 36 m o menos de ti.' }] : []),
+        ];
+      },
+      // Conjuros siempre preparados del terreno elegido (c.landType). Los datos
+      // del conjuro salen del catálogo de cualquier clase que lo tenga.
+      subclassSpells: (nivel, c) => {
+        const tierra = c && TERRENOS_TIERRA[c.landType];
+        if (!tierra) return [];
+        return tierra.conjuros.filter(([nv]) => nivel >= nv).map(([, nombre]) => {
+          const base = buscarConjuroPorNombre(nombre) || { name: nombre, level: 1, desc: '' };
+          const slug = nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+          return { ...base, id: 'land-' + slug, name: nombre, domain: true, alwaysLabel: `Tierra · ${tierra.nombre}`, land: c.landType };
+        });
+      },
     },
 
     'Circle of Spores': {
@@ -4915,7 +4959,7 @@ const Characters = (() => {
 
     // Aplicar subclassSpells (hechizos siempre preparados de subclase, ej. Aberrant Mind / Clockwork Soul)
     if (typeof sub.subclassSpells === 'function') {
-      const subclSpells = sub.subclassSpells(nivel);
+      const subclSpells = sub.subclassSpells(nivel, char);
       if (!char.spells) char.spells = [];
       subclSpells.forEach(s => {
         // Si ya existe una versión sin domain:true (del catálogo base), actualizar a domain:true
@@ -5181,7 +5225,7 @@ const Characters = (() => {
     if (char.subclase) {
       const sub = SUBCLASES_CONFIG[char.subclase];
       if (sub && typeof sub.subclassSpells === 'function') {
-        const subclSpells = sub.subclassSpells(newLevel);
+        const subclSpells = sub.subclassSpells(newLevel, char);
         if (!char.spells) char.spells = [];
         subclSpells.forEach(s => {
           const existing = char.spells.find(e => e.id === s.id);
@@ -5655,11 +5699,25 @@ const Characters = (() => {
       { id:'asi-19', level:19, type:'asi', label:'Ability Score Improvement' },
     ],
     'Druida': [
-      { id:'subclase-2', level:2, type:'pick1', label:'Druid Circle (Subclase)',
+      { id:'primal-order', level:1, type:'pick1', label:'Primal Order',
+        prompt:'Elige tu rol sagrado:',
+        options: [
+          { id:'magician', name:'Mago (Magician)', desc:'Un truco de Druida extra, y sumas tu mod. de SAB (mín. +1) a las pruebas de INT de Arcanos y Naturaleza.' },
+          { id:'warden',   name:'Guardián (Warden)', desc:'Competencia con armas marciales y entrenamiento con armadura media.' },
+        ] },
+      // PHB 2024: el círculo se elige en nivel 3 (el id se mantiene para no
+      // perder lo que ya eligieron los personajes existentes).
+      { id:'subclase-2', level:3, type:'pick1', label:'Druid Circle (Subclase)',
         prompt:'Elige tu círculo druídico:',
         options: DRUIDA_SUBCLASES,
         appliesSubclass: true },
       { id:'asi-4',  level:4,  type:'asi', label:'Ability Score Improvement' },
+      { id:'elemental-fury', level:7, type:'pick1', label:'Elemental Fury',
+        prompt:'Elige tu furia elemental:',
+        options: [
+          { id:'ef-potent-spellcasting', name:'Potent Spellcasting', desc:'Sumas tu mod. de SAB al daño de tus trucos de Druida.' },
+          { id:'ef-primal-strike', name:'Primal Strike', desc:'1 vez por turno, al impactar con un arma o un ataque de bestia: +1d8 de frío, fuego, rayo o trueno (2d8 a nv15).' },
+        ] },
       { id:'asi-8',  level:8,  type:'asi', label:'Ability Score Improvement' },
       { id:'asi-12', level:12, type:'asi', label:'Ability Score Improvement' },
       { id:'asi-16', level:16, type:'asi', label:'Ability Score Improvement' },
@@ -6760,7 +6818,7 @@ const Characters = (() => {
     getWeaponMasteryCount,
     getWeaponMasteryOptions,
     ajustarHPPorCON, partirNombre,
-    AMMO_TYPES, getAmmoType, getAmmoItem, normalizarMunicion,
+    AMMO_TYPES, getAmmoType, getAmmoItem, normalizarMunicion, TERRENOS_TIERRA, buscarConjuroPorNombre,
     PAQUETES_EQUIPO, contenidoPaquete, abrirPaquetes,
     categoriaArma, competenteConArma,
     applySubraza,

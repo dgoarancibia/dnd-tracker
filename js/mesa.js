@@ -353,6 +353,9 @@ const Mesa = (() => {
       const tipo = Characters.getActivation(f);
       if (!col[tipo]) return;
       if (/manifest echo/i.test(f.name || '')) { if (!col[tipo].some(x => x.eco)) col[tipo].push(_filaEco(c, f)); return; }
+      // Rasgos que gastan usos de otro recurso (Land's Aid gasta Wild Shape)
+      const paga = f.usa && (c.resources || []).find(r => r.id === f.usa);
+      if (paga) { col[tipo].push(_filaPagada(c, f, paga, tipo)); return; }
       const no = _turnoUsado(c, tipo);
       col[tipo].push({ no, html: _fila({ id: 'rasgo-' + f.id, icono: 'iconos/habilidades', nombre: f.name, num: '', no,
         sub: [f.range, f.desc].filter(Boolean).join(' · '),
@@ -389,6 +392,26 @@ const Mesa = (() => {
         </div>
         <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
       </div>`;
+  }
+
+  // Rasgo que se paga con un uso de otro recurso: muestra el daño grande y cuántos usos quedan
+  function _filaPagada(c, f, r, tipo) {
+    const no = r.current <= 0 ? `Sin usos de ${r.name} · vuelve con ${DESCANSO(r)}` : _turnoUsado(c, tipo);
+    const dmg = f.damage ? String(f.damage).split(' ')[0] : '';
+    return { no, html: _fila({ id: 'rasgo-' + f.id, icono: 'iconos/habilidades', nombre: f.name, num: '', no, dmg,
+      sub: [`gasta 1 ${r.name} (${r.current}/${r.max})`, f.curacion ? `cura ${f.curacion}` : '', f.range].filter(Boolean).join(' · '),
+      det: `<p>${esc(f.desc || '')}</p><div class="mesa-acc"><button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();Mesa.usarPagado('${tipo}','${f.id}','${r.id}')">Usar · ${ETQ[tipo]} · gasta 1 ${esc(r.name)}</button>
+        <button class="mesa-btn" onclick="event.stopPropagation();App.openFeatureDetail && App.openFeatureDetail('${f.id}')">Ficha completa</button></div>` }) };
+  }
+
+  // Circle of the Land: el terreno elegido tras el descanso largo
+  function _terreno(c) {
+    const esTierra = c.subclase === 'Circle of the Land' || (c.classes || []).some(x => x && x.subclass === 'Circle of the Land');
+    if (!esTierra || (c.nivel || 1) < 3) return '';
+    const T = Characters.TERRENOS_TIERRA, actual = T[c.landType];
+    return `<div class="mesa-card mesa-terreno"><span class="mesa-lbl">Terreno</span>
+      ${Object.entries(T).map(([k, t]) => `<button class="mesa-chip ${c.landType === k ? 'on' : ''}" onclick="App.setLandType('${k}')">${t.nombre}</button>`).join('')}
+      <small>${actual ? `Cámbialo tras un descanso largo${(c.nivel || 1) >= 10 ? ` · resistencia a ${actual.resistencia.toLowerCase()}` : ''}` : 'Elige uno: sus conjuros quedan siempre preparados'}</small></div>`;
   }
 
   function _filaRecurso(c, r, etiqueta) {
@@ -437,6 +460,7 @@ const Mesa = (() => {
       <div class="mesa-grid">
         <div class="mesa-centro">
           <div class="mesa-modo">Fuera de combate · lo que puedes hacer al explorar, hablar o prepararte. <button class="mesa-chip on" onclick="Mesa.combate(true)">⚔ Iniciar combate</button></div>
+          ${_terreno(c)}
           ${[ayuda, rasgos, rituales, utiles].some(l => l.some(x => !x.no)) || guia.length ? '' : '<p class="mesa-vacio mesa-nada">Nada especial que usar fuera de combate. Tus tiradas están a la izquierda y tus recursos a la derecha.</p>'}
           <div class="mesa-fuera">
               ${bloque('Ayudar en una prueba', ayuda, 'no-ayuda')}
@@ -631,6 +655,7 @@ const Mesa = (() => {
     return `
       <div class="mesa-grid">
         <div class="mesa-centro">
+          ${_terreno(c)}
           <div class="mesa-card mesa-espacios"><span class="mesa-lbl">Espacios</span>${slots.join('') || '<span class="mesa-vacio">Sin espacios</span>'}
             <span class="mc-esp"></span>${cd != null ? `<span class="mesa-lbl">CD</span><b class="mesa-gr">${cd}</b>` : ''}${atq != null ? `<span class="mesa-lbl">Ataque</span><b class="mesa-gr">${sg(atq)}</b>` : ''}</div>
           <div class="mesa-filtros">
@@ -793,6 +818,14 @@ const Mesa = (() => {
     App.toggleEcho();
   }
   // Rasgo sin usos: solo marca lo que gasta del turno
+  // Rasgo pagado con un uso de otro recurso: marca la acción del turno y descuenta el uso
+  function usarPagado(tipo, id, recurso) {
+    const f = (App.getActiveChar().features || []).find(x => x.id === id);
+    if (App.enCombate() && !App.usarRecursoTurno(tipo)) { App.showToast(`Ya usaste ${ETQ[tipo]} este turno`); return; }
+    App.adjustResource(recurso, -1);
+    App.showToast(`${f ? f.name : 'Rasgo'}${App.enCombate() ? ` · ${ETQ[tipo]} marcada` : ''}`);
+  }
+
   function usarRasgo(tipo, id) {
     // Por id: un nombre con apóstrofo rompería el onclick
     const f = (App.getActiveChar().features || []).find(x => x.id === id);
@@ -831,6 +864,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, usarPagado, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí
