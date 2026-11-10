@@ -23,7 +23,7 @@ const Mesa = (() => {
   const CAMPO = { action: 'action', bonusAction: 'bonus', reaction: 'reaction' };
 
   // Estado de la vista (no se guarda en el personaje)
-  const st = { abierto: null, grupos: new Set(), filtro: 'preparados', tipo: null, buscar: '', original: {}, hoja: false };
+  const st = { abierto: null, golpes: new Set(), grupos: new Set(), filtro: 'preparados', tipo: null, buscar: '', original: {}, hoja: false };
 
   const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const sg = n => (n >= 0 ? '+' : '') + n;
@@ -280,7 +280,8 @@ const Mesa = (() => {
       const noArma = no || (sinMun ? `Sin ${mun.label.toLowerCase()}` : '');
       col[tipo].push({ no: noArma, html: _fila({
         id: 'arma-' + slot, icono: _iconoArma(w), nombre: mun && mun.qty != null ? `${w.name} (${mun.qty})` : w.name, num: sg(a.ataque), dmg: daño, no: noArma,
-        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '', ...a.notas].filter(Boolean).join(' · '),
+        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '',
+          _nivelPicaro(c) && (a.sutil || a.aDistancia) ? (t.furtivo ? 'furtivo ya usado' : `+ furtivo ${Math.ceil(_nivelPicaro(c) / 2)}d6`) : '', ...a.notas].filter(Boolean).join(' · '),
         det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
       }) });
       // Ataque de oportunidad: con la primera arma cuerpo a cuerpo equipada (principal o secundaria)
@@ -292,6 +293,21 @@ const Mesa = (() => {
         }) });
       }
     });
+
+    // Soulknife: Hojas psíquicas (1d6 con la acción de Ataque; 1d4 con la Adicional)
+    if (_subPicaro(c) === 'Soulknife' && _nivelPicaro(c) >= 3) {
+      const mod = Math.max(Characters.calcMod(c.stats.des), Characters.calcMod(c.stats.for));
+      const golpe = mod + Characters.calcProfBonus(c.nivel), dmg = d => `${d}${mod ? (mod > 0 ? '+' : '') + mod : ''}`;
+      const noA = usados >= maxAtq ? (maxAtq > 1 ? `Ya hiciste tus ${maxAtq} ataques` : 'Ya atacaste este turno') : t.action && !usados ? 'Ya usaste tu Acción en otra cosa' : '';
+      const noB = t.bonus ? 'Ya usaste tu Acción adicional' : !usados ? 'Primero ataca con la primera hoja' : '';
+      const tx = 'psíquico · Sutil · Arrojadiza 18/36 m · Vex';
+      col.action.push({ no: noA, html: _fila({ id: 'sk-hoja', icono: 'iconos/habilidades', nombre: 'Hoja psíquica', num: sg(golpe), dmg: dmg('1d6'), no: noA,
+        sub: [tx, maxAtq > 1 ? `ataques ${usados}/${maxAtq}` : '', t.furtivo ? 'furtivo ya usado' : `+ furtivo ${Math.ceil(_nivelPicaro(c) / 2)}d6`].filter(Boolean).join(' · '),
+        det: `<p>Necesitas una mano libre. La hoja desaparece tras impactar o fallar.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.usarAtaque(1);App.showToast('Hoja psíquica: ${sg(golpe)} · ${dmg('1d6')} psíquico')">⚔ Atacar</button></div>` }) });
+      col.bonusAction.push({ no: noB, html: _fila({ id: 'sk-hoja2', icono: 'iconos/habilidades', nombre: 'Segunda hoja psíquica', num: sg(golpe), dmg: dmg('1d4'), no: noB,
+        sub: `${tx} · tras atacar con la primera`,
+        det: `<p>Con la otra mano libre, después de atacar con la primera hoja.</p><div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();Mesa.usarRasgo('bonusAction','sk-psychic-blades')">⚔ Atacar · Acción adicional</button></div>` }) });
+    }
 
     // Wild Shape: los ataques de la forma activa (usan la acción de Ataque)
     const forma = Characters.formaWildShapeActiva(c);
@@ -362,6 +378,7 @@ const Mesa = (() => {
     (c.features || []).filter(f => f.type === 'active' && !conRecurso.has(norm(f.name)) && !/^channel divinity/i.test(f.source || '')).forEach(f => {
       const tipo = Characters.getActivation(f);
       if (!col[tipo]) return;
+      if (f.id === 'cunning-action') return;
       if (/manifest echo/i.test(f.name || '')) { if (!col[tipo].some(x => x.eco)) col[tipo].push(_filaEco(c, f)); return; }
       // Rasgos que gastan usos de otro recurso (Land's Aid gasta Wild Shape)
       const paga = f.usa && (c.resources || []).find(r => r.id === f.usa);
@@ -387,6 +404,9 @@ const Mesa = (() => {
         <div class="mesa-col-hd">${titulo}<button class="mesa-chip ${t[campo] ? 'devolver' : 'on'}" onclick="Mesa.turno('${campo}')"
           title="${t[campo] ? 'Te equivocaste o te arrepentiste: devuelve la acción' : 'Marcarla como usada'}">${t[campo] ? 'usada · ↺ devolver' : 'disponible'}</button></div>
         <div class="mesa-col-bd">${_columnaItems(col[tipo], 'no-' + tipo) || '<p class="mesa-vacio">Nada que usar aquí.</p>'}
+          ${tipo === 'bonusAction' && _nivelPicaro(c) >= 2 ? `<div class="mesa-rapidas" title="Cunning Action">${[
+            'Correr', 'Destrabarse', 'Esconderse', ...(_subPicaro(c) === 'Thief' && _nivelPicaro(c) >= 3 ? ['Juego de manos', 'Usar objeto'] : [])].map(n =>
+            `<button class="mesa-chip" onclick="App.usarRecursoTurno('bonusAction')?App.showToast('${n} · Acción adicional'):App.showToast('Ya usaste tu Acción adicional')">${n}</button>`).join('')}</div>` : ''}
           ${tipo === 'action' ? `<div class="mesa-rapidas">${['Correr', 'Destrabarse', 'Esquivar', 'Ayudar', 'Esconderse', 'Influir', 'Buscar'].map(n =>
             `<button class="mesa-chip" onclick="App.usarRecursoTurno('action')||App.showToast('Ya usaste tu Acción')">${n}</button>`).join('')}</div>` : ''}
         </div>
@@ -676,7 +696,9 @@ const Mesa = (() => {
     const bloqueBestia = c.companion ? `<section><div class="mesa-sec">Compañero</div>${_tarjetaBestia(c, bestia)}</section>`
       : _nivelDruida(c) >= 2 ? `<section><div class="mesa-sec">Wild Shape</div>${_tarjetaForma(c)}</section>` : '';
 
-    // Primero lo que define al personaje: el compañero en un Beast Master, la concentración en un lanzador
+    // Primero lo que define al personaje: el furtivo del Pícaro, el compañero en un Beast Master, la concentración en un lanzador
+    const bloqueFurtivo = tab === 'combate' ? _furtivo(c) : '';
+    if (bloqueFurtivo) bloques.push(bloqueFurtivo);
     if (bloqueBestia) bloques.push(bloqueBestia, bloqueConc); else bloques.push(bloqueConc);
 
     const puntos = (n, total, fn) => `<span class="mesa-pts">${Array.from({ length: total }, (_, i) =>
@@ -702,6 +724,55 @@ const Mesa = (() => {
     bloques.push(`<section><div class="mesa-sec">Condiciones</div><div class="mesa-card mesa-conds"><div class="mesa-rapidas">${chips || '<span class="mesa-vacio">Ninguna</span>'}</div>
       <button class="mesa-plegar" onclick="Mesa.grupo('conds')">${todas ? '▾ Ocultar las demás' : '▸ Agregar condición'}</button></div></section>`);
     return bloques.join('');
+  }
+
+  /* ── Pícaro: Ataque furtivo y Cunning Strike ─────────────────────────── */
+  function _nivelPicaro(c) {
+    const cl = (c.classes || []).find(x => x && x.name === 'Pícaro');
+    return cl ? (cl.level || 0) : c.clase === 'Pícaro' ? (c.nivel || 1) : 0;
+  }
+  function _subPicaro(c) {
+    const cl = (c.classes || []).find(x => x && x.name === 'Pícaro');
+    return (cl && cl.subclass) || (c.clase === 'Pícaro' ? c.subclase || '' : '');
+  }
+  // Dados que quedan tras pagar los efectos elegidos de Cunning Strike
+  function _calcFurtivo(c) {
+    const nv = _nivelPicaro(c), sub = _subPicaro(c), dados = Math.ceil(nv / 2);
+    const ops = (Characters.GOLPES_ASTUTOS || []).filter(g => nv >= g.nivel && (!g.sub || g.sub === sub));
+    const sel = ops.filter(g => st.golpes.has(g.id));
+    return { nv, sub, dados, ops, sel, quedan: dados - sel.reduce((n, g) => n + g.costo, 0), maxEf: nv >= 11 ? 2 : 1,
+      cd: 8 + Characters.calcMod(c.stats.des) + Characters.calcProfBonus(c.nivel) };
+  }
+  function _furtivo(c) {
+    if (!_nivelPicaro(c)) return '';
+    const { nv, sub, dados, ops, sel, quedan, maxEf, cd } = _calcFurtivo(c);
+    const usado = !!(c.turn && c.turn.furtivo);
+    const notas = [];
+    if (sub === 'Assassin' && nv >= 3) notas.push(`1.ª ronda: ventaja contra quien no ha actuado y +${nv} de daño (Assassinate)${nv >= 17 ? ` · Death Strike: TS CON CD ${cd} o daño doble` : ''}`);
+    if (sub === 'Soulknife' && nv >= 17) notas.push(`Con Hoja psíquica: Rend Mind, TS SAB CD ${cd} o Aturdido`);
+    const chips = ops.map(g => {
+      const on = st.golpes.has(g.id), no = !on && (sel.length >= maxEf || g.costo > quedan);
+      return `<button class="mesa-chip ${on ? 'on' : ''}" ${no ? 'disabled' : ''} onclick="Mesa.golpe('${g.id}')">${g.nombre} −${g.costo}d6</button>`;
+    }).join('');
+    const efectos = sel.map(g => `<li><b>${g.nombre}</b>${g.ts ? ` · TS ${g.ts} CD ${cd}` : ''}: ${esc(g.efecto)}${g.id === 'poison' && sub === 'Assassin' && nv >= 13 ? ' Además 2d6 de veneno cada vez que falla (Envenom Weapons).' : ''}</li>`).join('');
+    return `<section><div class="mesa-sec">Ataque furtivo</div><div class="mesa-card mesa-furtivo ${usado ? 'usado' : ''}">
+      <div class="mesa-furtivo-hd"><b class="mesa-dmg">${quedan > 0 ? quedan + 'd6' : '—'}</b>
+        <small>${quedan < dados ? `de ${dados}d6 · ` : ''}1 vez por turno</small>
+        <button class="mesa-chip ${usado ? 'devolver' : 'on'}" onclick="App.marcarFurtivo(${!usado})">${usado ? 'usado · ↺ devolver' : 'disponible'}</button></div>
+      <small class="mesa-furtivo-req">Arma sutil o a distancia, con ventaja; o con un aliado a 1,5 m del objetivo y sin desventaja.</small>
+      ${notas.map(x => `<small class="mesa-furtivo-req">${esc(x)}</small>`).join('')}
+      ${ops.length ? `<span class="mesa-lbl">Cunning Strike${maxEf > 1 ? ' · hasta 2' : ''} · CD ${cd}</span><div class="mesa-rapidas">${chips}</div>${efectos ? `<ul class="mesa-golpes">${efectos}</ul>` : ''}` : ''}
+      ${usado ? '' : `<div class="mesa-acc"><button class="mesa-btn p" onclick="Mesa.furtivo()">Aplicar furtivo${quedan > 0 ? ` · ${quedan}d6` : ''}</button></div>`}
+    </div></section>`;
+  }
+  function golpe(id) { if (st.golpes.has(id)) st.golpes.delete(id); else st.golpes.add(id); _pintar(); }
+  function furtivo() {
+    const c = App.getActiveChar();
+    if (!c) return;
+    const { quedan, sel } = _calcFurtivo(c);
+    st.golpes.clear();
+    App.marcarFurtivo(true);
+    App.showToast(`Furtivo ${quedan > 0 ? quedan + 'd6' : 'sin dados'}${sel.length ? ' · ' + sel.map(g => g.nombre).join(' + ') : ''}`);
   }
 
   /* ══ Conjuros: espacios, filtros y lista; tocar uno abre cómo lanzarlo ══ */
@@ -932,6 +1003,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, usarPagado, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad };
+  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, usarPagado, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad, golpe, furtivo };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí

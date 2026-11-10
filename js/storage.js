@@ -630,7 +630,7 @@ const Storage = (() => {
     // de nivel 5+ en fichas que solo llegan a nivel 4. Corre siempre porque el
     // tope cambia al subir de nivel.
     if (Array.isArray(char.spells) && typeof Characters !== 'undefined' && Characters.getMaxSpellLevel) {
-      const maxLvl = Characters.getMaxSpellLevel(char.clase, char.nivel || 1);
+      const maxLvl = Characters.getMaxSpellLevel(char.clase, char.nivel || 1, char);
       if (maxLvl > 0) {
         const antes = char.spells.length;
         // No tocar los que estén preparados: si el jugador los usa, respetarlos.

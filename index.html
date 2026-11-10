@@ -1519,8 +1519,8 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/storage.js?v=59"></script>
-<script src="js/characters.js?v=149"></script>
+<script src="js/storage.js?v=60"></script>
+<script src="js/characters.js?v=150"></script>
 <script type="module" src="js/firebase.js?v=7"></script>
 <!-- cloud.js también aquí: sincroniza la LISTA de personajes al iniciar sesión -->
 <script type="module" src="js/cloud.js?v=9"></script>
@@ -2332,10 +2332,10 @@ const CLASE_EQUIP = {
     B: ['Daga (2)', 'Orbe arcano', 'Libro de conjuros', 'Mochila de erudito', '22 gp'],
     C: ['125 gp'],
   },
+  // PHB 2024 (verificado en dnd2024.wikidot, SRD 5.2 y D&D Beyond free rules).
   'Pícaro': {
-    A: ['Cuero tachonado', 'Espada corta (2)', 'Arco corto', 'Carcaj (20 flechas)', 'Herramientas de ladrón', 'Mochila de saqueador', '8 gp'],
-    B: ['Cuero tachonado', 'Espada larga', 'Daga (3)', 'Herramientas de ladrón', 'Mochila de saqueador', '8 gp'],
-    C: ['100 gp'],
+    A: ['Cuero', 'Daga (2)', 'Espada corta', 'Arco corto', 'Carcaj (20 flechas)', 'Herramientas de ladrón', 'Mochila de saqueador', '8 gp'],
+    B: ['100 gp'],
   },
   'Bárbaro': {
     A: ['Hacha grande', 'Hachas de mano (4)', 'Mochila de explorador', '15 gp'],
@@ -3154,7 +3154,7 @@ document.addEventListener('keydown', e => {
   } catch(e) {}
 })();
 // ── SW Update — mismo mecanismo que app.html ─────────────────────────────────
-var _SW_EXPECTED_IDX = 516;
+var _SW_EXPECTED_IDX = 517;
 (function() {
   if (!('serviceWorker' in navigator)) return;
   function _forceUpdate(regs) {

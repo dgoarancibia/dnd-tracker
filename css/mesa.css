@@ -382,3 +382,14 @@
 .mesa-formas-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
 .mesa-formas-cfg .mesa-col-hd small { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
 .mesa-forma .mesa-mini { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* Pícaro: Ataque furtivo y Cunning Strike */
+.mesa-furtivo { display: flex; flex-direction: column; gap: 8px; }
+.mesa-furtivo-hd { display: flex; align-items: center; gap: 10px; }
+.mesa-furtivo-hd .mesa-dmg { font-size: 26px; }
+.mesa-furtivo-hd small { flex: 1; color: var(--text-muted); font-size: 12px; }
+.mesa-furtivo-req { color: var(--text-muted); font-size: 12px; line-height: 1.35; }
+.mesa-furtivo.usado .mesa-furtivo-hd .mesa-dmg { opacity: .45; }
+.mesa-chip:disabled { opacity: .4; cursor: default; }
+.mesa-golpes { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.4; color: var(--text); }
+.mesa-golpes li + li { margin-top: 4px; }

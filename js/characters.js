@@ -110,6 +110,34 @@ const Characters = (() => {
     'Explorador': [2,3,4,5,6,6,7,7,9,9,10,10,11,11,12,12,14,14,15,15],
   };
 
+  /* Cunning Strike (Pícaro nv5, PHB 2024) y sus ampliaciones: Supreme Sneak
+     (Thief nv9) y Devious Strikes (nv14). costo = dados de Sneak Attack a los
+     que renuncias; ts = salvación del objetivo (CD 8 + DES + competencia). */
+  const GOLPES_ASTUTOS = [
+    { id:'poison',   nombre:'Envenenar', en:'Poison',   costo:1, nivel:5,  ts:'CON', efecto:'Envenenado 1 minuto; repite la salvación al final de cada turno suyo. Necesitas un kit de envenenador.' },
+    { id:'trip',     nombre:'Derribar',  en:'Trip',     costo:1, nivel:5,  ts:'DES', efecto:'Derribado. Solo si es Grande o menor.' },
+    { id:'withdraw', nombre:'Retirarse', en:'Withdraw', costo:1, nivel:5,  ts:null,  efecto:'Tras el ataque te mueves hasta la mitad de tu velocidad sin provocar ataques de oportunidad.' },
+    { id:'stealth',  nombre:'Ataque sigiloso', en:'Stealth Attack', costo:1, nivel:9, sub:'Thief', ts:null, efecto:'Si estás Invisible por Esconderte, no pierdes la condición si terminas el turno tras cobertura de tres cuartos o total.' },
+    { id:'daze',     nombre:'Desorientar', en:'Daze',   costo:2, nivel:14, ts:'CON', efecto:'En su próximo turno solo puede moverse, o hacer una acción, o una Acción adicional.' },
+    { id:'obscure',  nombre:'Cegar',     en:'Obscure',  costo:3, nivel:14, ts:'DES', efecto:'Cegado hasta el final de su próximo turno.' },
+    { id:'knockout', nombre:'Noquear',   en:'Knock Out', costo:6, nivel:14, ts:'CON', efecto:'Inconsciente 1 minuto o hasta recibir daño; repite la salvación al final de cada turno suyo.' },
+  ];
+
+  /* Arcane Trickster (Pícaro, PHB 2024): tercio de lanzador con la lista de
+     Mago sin restricción de escuela. Preparados por nivel de Pícaro; los
+     trucos no cuentan Mage Hand, que es obligatorio y va aparte. Espacios:
+     en monoclase la tabla redondea hacia arriba (nv7 = lanzador completo nv3). */
+  const AT_PREPARADOS = [0,0,3,4,4,4,5,6,6,7,8,8,9,10,10,11,11,11,12,13];
+  const AT_TRUCOS     = [0,0,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3];
+  function esArcaneTrickster(char) {
+    if (!char || char.clase !== 'Pícaro') return false;
+    return char.subclase === 'Arcane Trickster' || (char.classes || []).some(x => x && x.subclass === 'Arcane Trickster');
+  }
+  function _filaTercio(nivel, monoclase) {
+    const n = nivel < 3 ? 0 : monoclase ? Math.ceil(nivel / 3) : Math.floor(nivel / 3);
+    return FULL_CASTER_SLOTS[n] || Array(9).fill(0);
+  }
+
   // knownCaster: en 2024 TODAS las clases mágicas preparan hechizos, así que
   // esta bandera ya NO decide el cálculo de preparados (eso lo hace
   // PREPARED_SPELLS_2024). Se conserva porque marca las clases cuyos hechizos
@@ -144,7 +172,8 @@ const Characters = (() => {
     'Guerrero':     { hitDie: 10, spellcastingStat: null,  savingThrows: ['for', 'con'], slotTable: null },
     'Bárbaro':      { hitDie: 12, spellcastingStat: null,  savingThrows: ['for', 'con'], slotTable: null },
     'Monje':        { hitDie: 8,  spellcastingStat: 'sab', savingThrows: ['for', 'des'], slotTable: null },
-    'Pícaro':       { hitDie: 8,  spellcastingStat: 'int', savingThrows: ['des', 'int'], slotTable: null },
+    // El Pícaro solo lanza conjuros como Arcane Trickster: la subclase le pone INT.
+    'Pícaro':       { hitDie: 8,  spellcastingStat: null,  savingThrows: ['des', 'int'], slotTable: null },
   };
 
   const STAT_NAMES = {
@@ -747,7 +776,14 @@ const Characters = (() => {
   }
 
   function _baseArma(w) {
-    return WEAPONS_DB.find(x => x.id === w.id || x.name.toLowerCase() === String(w.name || '').toLowerCase()) || null;
+    const n = String(w.name || '').toLowerCase();
+    const base = WEAPONS_DB.find(x => x.id === w.id || x.id === w.baseId || x.name.toLowerCase() === n);
+    if (base) return base;
+    // Nombre en español ("Daga", "Espada corta (2)"): sin esto una daga no era
+    // Sutil y atacaba con FUE. Roll20Es tiene los nombres oficiales en español.
+    const es = n.replace(/\s*\(\d+\)\s*$/, '').trim();
+    if (!es || typeof Roll20Es === 'undefined') return null;
+    return WEAPONS_DB.find(x => String(Roll20Es.nombre(x.name) || '').toLowerCase() === es) || null;
   }
 
   function _propsArma(w) {
@@ -827,6 +863,7 @@ const Characters = (() => {
     const fmtNum = n => (n > 0 ? `+${n}` : n < 0 ? `${n}` : '');
     return {
       ataque, statKey, mod, prof, magico, aDistancia, sinCompetencia,
+      sutil: props.some(p => /^Finesse/i.test(p)),
       desgloseAtaque: desgloseAtaque.filter(x => x.v),
       desgloseDaño: desgloseDaño.filter(x => x.v),
       dado, dañoFijo,
@@ -890,6 +927,7 @@ const Characters = (() => {
     }
 
     // Monoclase: si viene un nivel explícito lo usamos (comparación antes/después).
+    if (esArcaneTrickster(char)) return AT_PREPARADOS[Math.min(Math.max(nivel, 1), 20) - 1];
     return _preparedForClass(char.clase, nivel);
   }
 
@@ -901,7 +939,7 @@ const Characters = (() => {
   // Bardo/Hechicero/Brujo (la columna "Spells Known" ya no existe), por lo que
   // se basa en tener tabla de preparados y no en la bandera preparesCaster.
   function isPreparedCaster(char) {
-    return !!PREPARED_SPELLS_2024[char.clase];
+    return !!PREPARED_SPELLS_2024[char.clase] || esArcaneTrickster(char);
   }
 
   // Bonus de HP máximo por nivel que otorga la especie (ej. Dwarven Toughness
@@ -937,6 +975,7 @@ const Characters = (() => {
 
   // Retorna cantidad de cantrips que puede conocer según clase y nivel
   function getCantripsKnown(char) {
+    if (esArcaneTrickster(char)) return AT_TRUCOS[Math.min(char.nivel || 1, 20) - 1];
     const cfg = CLASES_CONFIG[char.clase];
     if (!cfg || !cfg.cantripsKnown) return null; // null = sin límite fijo
     const nivel = char.nivel || 1;
@@ -2007,39 +2046,58 @@ const Characters = (() => {
         ...(nivel >= 20 ? [{ id:'sacred-oath-capstone', name:'Sacred Oath Capstone', source:'Paladín · Nivel 20', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Habilidad final de tu Sacred Oath (varía por subclase).', fullDesc:'' }] : []),
       ],
     },
+    // Pícaro PHB 2024 (verificado en dnd2024.wikidot, SRD 5.2 y D&D Beyond free rules).
     'Pícaro': {
       resources: (nivel) => [
-        { id:'cunning-action', name:'Cunning Action', current: 0, max: 0,
-          recharge:'never', note:'Bonus action: Dash · Disengage · Hide' },
-        ...(nivel >= 5 ? [{ id:'uncanny-dodge', name:'Uncanny Dodge', current: 0, max: 0,
-          recharge:'never', note:'Reacción: mitad de daño de un ataque visible' }] : []),
+        ...(nivel >= 20 ? [{ id:'stroke-of-luck', name:'Stroke of Luck', current: 1, max: 1, recharge:'short',
+          action:'Sin acción', desc:'Si fallas una prueba d20 (ataque, prueba o salvación), la conviertes en un 20.',
+          note:'Se recupera con descanso corto o largo' }] : []),
       ],
       features: (nivel) => [
-        { id:'sneak-attack', name:`Sneak Attack (${Math.ceil(nivel/2)}d6)`, source:'Pícaro · Nivel 1', type:'passive', action:'1/turno', range:'Personal', recharge:null, desc:`+${Math.ceil(nivel/2)}d6 daño 1 vez/turno si tienes ventaja o un aliado adyacente al objetivo.`, fullDesc:'' },
-        { id:'thieves-cant', name:"Thieves' Cant", source:'Pícaro · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Conoces el lenguaje secreto de los ladrones. Puedes ocultar mensajes en conversaciones normales.', fullDesc:'' },
-        { id:'expertise-rogue', name:'Expertise (×2)', source:'Pícaro · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Eliges 2 habilidades con proficiencia para duplicar tu Prof Bonus.', fullDesc:'' },
+        { id:'sneak-attack', name:`Sneak Attack (${Math.ceil(nivel/2)}d6)`, source:'Pícaro · Nivel 1', type:'passive', action:'1/turno', range:'Personal', recharge:null,
+          desc:`+${Math.ceil(nivel/2)}d6 al daño, una vez por turno, al impactar con un arma sutil o a distancia si tienes ventaja, o si un aliado no incapacitado está a 1,5 m del objetivo y tú no tienes desventaja.`,
+          fullDesc:`Una vez por turno, cuando impactas a una criatura con una tirada de ataque usando un arma con la propiedad Sutil (Finesse) o un arma a distancia, sumas ${Math.ceil(nivel/2)}d6 al daño si tienes ventaja en la tirada. El daño extra es del tipo del arma.\n\nNo necesitas ventaja si otro enemigo del objetivo está a 1,5 m de él, ese aliado no está incapacitado y tú no tienes desventaja en la tirada.\n\nDados: 1d6 en nv1 y uno más en cada nivel impar (10d6 en nv19).` },
+        { id:'thieves-cant', name:"Thieves' Cant", source:'Pícaro · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Conoces la jerga de los ladrones y un idioma más a tu elección.',
+          fullDesc:'Aprendiste en los bajos fondos la jerga de los ladrones (Thieves\' Cant). Además conoces un idioma adicional a tu elección.' },
+        { id:'expertise-rogue', name:'Expertise (×2)', source:'Pícaro · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Pericia en 2 habilidades en las que tengas competencia (doble bono de competencia).', fullDesc:'Ganas Pericia en dos habilidades en las que tengas competencia. Se recomiendan Juego de Manos y Sigilo. En nivel 6 ganas Pericia en otras dos.' },
         { id:'weapon-mastery-rogue', name:'Maestría con Armas',
           source:'Pícaro · Nivel 1', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Puedes usar la propiedad Mastery de 2 armas distintas. Cambias las armas elegidas al terminar un descanso largo.',
-          fullDesc:'Puedes usar la propiedad Mastery de 2 armas con las que tengas competencia.\n\n• Pícaro: 2 armas (fijo)\n\nVer la feature Maestría con Armas del Guerrero para el detalle de cada propiedad (Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex).' },
-        ...(nivel >= 2 ? [{ id:'cunning-action', name:'Cunning Action', source:'Pícaro · Nivel 2', type:'active', action:'Acción bonus', range:'Personal', recharge:null, desc:'Acción bonus para Dash, Disengage o Hide.', fullDesc:'' }] : []),
-        ...(nivel >= 3 ? [{ id:'rogue-subclass', name:'Roguish Archetype (Subclase)', source:'Pícaro · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Eliges tu arquetipo de Pícaro.', fullDesc:'' }] : []),
-        ...(nivel >= 3 ? [{ id:'steady-aim', name:'Steady Aim', source:'Pícaro · Nivel 3', type:'active', action:'Acción bonus', range:'Personal', recharge:null, desc:'Ganas ventaja en tu próximo ataque este turno si no te moviste.', fullDesc:'' }] : []),
-        ...(nivel >= 4 ? [{ id:'rogue-asi-4', name:'Ability Score Improvement', source:'Pícaro · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 5 ? [{ id:'uncanny-dodge', name:'Uncanny Dodge', source:'Pícaro · Nivel 5', type:'active', action:'Reacción', range:'Personal', recharge:null, desc:'Cuando un atacante visible te golpea, usas la reacción para reducir el daño a la mitad.', fullDesc:'' }] : []),
-        ...(nivel >= 6 ? [{ id:'expertise-rogue-2', name:'Expertise (×2 adicional)', source:'Pícaro · Nivel 6', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Eliges 2 habilidades más para duplicar tu Prof Bonus.', fullDesc:'' }] : []),
-        ...(nivel >= 7 ? [{ id:'evasion-rogue', name:'Evasion', source:'Pícaro · Nivel 7', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Saves de DES contra efectos de área: si pasas, no recibes daño; si fallas, solo la mitad.', fullDesc:'' }] : []),
-        ...(nivel >= 7 ? [{ id:'reliable-talent-note', name:'Reliable Talent (próximo nv11)', source:'Pícaro · Nivel 7', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'A nv11: en checks donde tienes proficiencia, tratas resultados de 1-9 como si hubieras sacado 10.', fullDesc:'' }] : []),
-        ...(nivel >= 8 ? [{ id:'rogue-asi-8', name:'Ability Score Improvement', source:'Pícaro · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 10 ? [{ id:'rogue-asi-10', name:'Ability Score Improvement', source:'Pícaro · Nivel 10', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 11 ? [{ id:'reliable-talent', name:'Reliable Talent', source:'Pícaro · Nivel 11', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'En checks de habilidad donde tienes proficiencia, tratas resultados 1-9 como si fuera 10.', fullDesc:'' }] : []),
-        ...(nivel >= 12 ? [{ id:'rogue-asi-12', name:'Ability Score Improvement', source:'Pícaro · Nivel 12', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 14 ? [{ id:'blindsense', name:'Subtle Strikes', source:'Pícaro · Nivel 14', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Cuando atacas a alguien que tenga al menos un aliado tuyo adyacente, tienes ventaja en la tirada.', fullDesc:'' }] : []),
-        ...(nivel >= 15 ? [{ id:'slippery-mind', name:'Slippery Mind', source:'Pícaro · Nivel 15', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas proficiencia en Wisdom saves. Si ya la tienes, ganas proficiencia en Charisma saves.', fullDesc:'' }] : []),
-        ...(nivel >= 16 ? [{ id:'rogue-asi-16', name:'Ability Score Improvement', source:'Pícaro · Nivel 16', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats.', fullDesc:'' }] : []),
-        ...(nivel >= 18 ? [{ id:'elusive', name:'Elusive', source:'Pícaro · Nivel 18', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Los ataques contra ti nunca tienen ventaja mientras no estés incapacitado.', fullDesc:'' }] : []),
-        ...(nivel >= 19 ? [{ id:'rogue-asi-19', name:'Epic Boon', source:'Pícaro · Nivel 19', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas un Epic Boon feat.', fullDesc:'' }] : []),
-        ...(nivel >= 20 ? [{ id:'stroke-of-luck', name:'Stroke of Luck', source:'Pícaro · Nivel 20', type:'active', action:'Ninguna', range:'Personal', recharge:'short', desc:'Convertís un ataque fallido en impacto, o un check fallido en 20. 1 uso/Short Rest.', fullDesc:'' }] : []),
+          desc:'Usas la propiedad Mastery de 2 tipos de arma con los que tengas competencia. Los cambias al terminar un descanso largo.',
+          fullDesc:'Puedes usar la propiedad Mastery de 2 tipos de arma con los que tengas competencia (por ejemplo, Daga y Arco corto). Al terminar un descanso largo puedes cambiar uno o ambos.' },
+        ...(nivel >= 2 ? [{ id:'cunning-action', name:'Cunning Action', source:'Pícaro · Nivel 2', type:'active', action:'Acción adicional', range:'Personal', recharge:null,
+          desc:'Con tu Acción adicional: Correr, Destrabarse o Esconderse.', fullDesc:'En tu turno puedes tomar una de estas acciones como Acción adicional: Correr (Dash), Destrabarse (Disengage) o Esconderse (Hide).' }] : []),
+        ...(nivel >= 3 ? [{ id:'rogue-subclass', name:'Subclase de Pícaro', source:'Pícaro · Nivel 3', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Eliges tu subclase de Pícaro.', fullDesc:'' }] : []),
+        ...(nivel >= 3 ? [{ id:'steady-aim', name:'Steady Aim', source:'Pícaro · Nivel 3', type:'active', action:'Acción adicional', range:'Personal', recharge:null,
+          desc:'Ventaja en tu próximo ataque de este turno. Solo si no te moviste este turno; después tu velocidad es 0 hasta el final del turno.',
+          fullDesc:'Como Acción adicional te das ventaja en tu próxima tirada de ataque de este turno. Solo puedes hacerlo si no te has movido este turno, y después tu velocidad es 0 hasta el final del turno.' }] : []),
+        ...(nivel >= 4 ? [{ id:'rogue-asi-4', name:'Ability Score Improvement', source:'Pícaro · Nivel 4', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats, o una dote.', fullDesc:'' }] : []),
+        ...(nivel >= 5 ? [{ id:'cunning-strike', name:'Cunning Strike', source:'Pícaro · Nivel 5', type:'passive', action:'Al hacer Sneak Attack', range:'Personal', recharge:null,
+          desc:'Al hacer daño de Sneak Attack puedes renunciar a dados para añadir un efecto: Envenenar (1d6), Derribar (1d6) o Retirarse (1d6). CD = 8 + DES + competencia.',
+          fullDesc:'Cuando haces daño de Sneak Attack, puedes renunciar a algunos de sus dados para añadir un efecto. Quitas los dados antes de tirar y el efecto ocurre justo después del daño. CD de la salvación = 8 + tu modificador de Destreza + tu bono de competencia.\n\n• Envenenar (Poison) · 1d6: salvación de CON o queda Envenenado 1 minuto; repite la salvación al final de cada uno de sus turnos. Necesitas llevar un kit de envenenador.\n• Derribar (Trip) · 1d6: si es Grande o menor, salvación de DES o queda Derribado.\n• Retirarse (Withdraw) · 1d6: justo después del ataque te mueves hasta la mitad de tu velocidad sin provocar ataques de oportunidad.' }] : []),
+        ...(nivel >= 5 ? [{ id:'uncanny-dodge', name:'Uncanny Dodge', source:'Pícaro · Nivel 5', type:'active', action:'Reacción', range:'Personal', recharge:null,
+          desc:'Cuando un atacante que puedes ver te impacta, reduces a la mitad el daño de ese ataque (redondeando hacia abajo).', fullDesc:'' }] : []),
+        ...(nivel >= 6 ? [{ id:'expertise-rogue-2', name:'Expertise (×2 adicional)', source:'Pícaro · Nivel 6', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Pericia en 2 habilidades más en las que tengas competencia.', fullDesc:'' }] : []),
+        ...(nivel >= 7 ? [{ id:'evasion-rogue', name:'Evasion', source:'Pícaro · Nivel 7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Salvación de DES para recibir mitad de daño: si la superas no recibes daño, y si fallas recibes la mitad. No funciona si estás incapacitado.', fullDesc:'' }] : []),
+        ...(nivel >= 7 ? [{ id:'reliable-talent', name:'Reliable Talent', source:'Pícaro · Nivel 7', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'En pruebas con una habilidad o herramienta en la que tengas competencia, un 9 o menos en el d20 cuenta como 10.', fullDesc:'' }] : []),
+        ...(nivel >= 8 ? [{ id:'rogue-asi-8', name:'Ability Score Improvement', source:'Pícaro · Nivel 8', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats, o una dote.', fullDesc:'' }] : []),
+        ...(nivel >= 10 ? [{ id:'rogue-asi-10', name:'Ability Score Improvement', source:'Pícaro · Nivel 10', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats, o una dote.', fullDesc:'' }] : []),
+        ...(nivel >= 11 ? [{ id:'improved-cunning-strike', name:'Improved Cunning Strike', source:'Pícaro · Nivel 11', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Puedes usar hasta 2 efectos de Cunning Strike en el mismo Sneak Attack, pagando el coste de cada uno.', fullDesc:'' }] : []),
+        ...(nivel >= 12 ? [{ id:'rogue-asi-12', name:'Ability Score Improvement', source:'Pícaro · Nivel 12', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats, o una dote.', fullDesc:'' }] : []),
+        ...(nivel >= 14 ? [{ id:'devious-strikes', name:'Devious Strikes', source:'Pícaro · Nivel 14', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Nuevos efectos de Cunning Strike: Desorientar (2d6), Noquear (6d6) y Cegar (3d6).',
+          fullDesc:'• Desorientar (Daze) · 2d6: salvación de CON o, en su próximo turno, solo puede moverse, o hacer una acción, o una Acción adicional.\n• Noquear (Knock Out) · 6d6: salvación de CON o queda Inconsciente 1 minuto o hasta que reciba daño; repite la salvación al final de cada uno de sus turnos.\n• Cegar (Obscure) · 3d6: salvación de DES o queda Cegado hasta el final de su próximo turno.' }] : []),
+        ...(nivel >= 15 ? [{ id:'slippery-mind', name:'Slippery Mind', source:'Pícaro · Nivel 15', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Ganas competencia en las salvaciones de Sabiduría y Carisma.', fullDesc:'' }] : []),
+        ...(nivel >= 16 ? [{ id:'rogue-asi-16', name:'Ability Score Improvement', source:'Pícaro · Nivel 16', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'+2 a un stat o +1 a dos stats, o una dote.', fullDesc:'' }] : []),
+        ...(nivel >= 18 ? [{ id:'elusive', name:'Elusive', source:'Pícaro · Nivel 18', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Ninguna tirada de ataque contra ti tiene ventaja, salvo que estés incapacitado.', fullDesc:'' }] : []),
+        ...(nivel >= 20 ? [{ id:'stroke-of-luck-f', name:'Stroke of Luck', source:'Pícaro · Nivel 20', type:'passive', action:'Pasiva', range:'Personal', recharge:'short', desc:'Si fallas una prueba d20, la conviertes en un 20. Se recupera con descanso corto o largo.', fullDesc:'' }] : []),
+        ...(nivel >= 19 ? [{ id:'rogue-asi-19', name:'Epic Boon', source:'Pícaro · Nivel 19', type:'passive', action:'Pasiva', range:'Personal', recharge:null, desc:'Ganas una dote de Epic Boon (se recomienda Boon of the Night Spirit) u otra dote para la que califiques.', fullDesc:'' }] : []),
       ],
     },
     'Brujo': {
@@ -3345,28 +3403,104 @@ const Characters = (() => {
       ],
     },
 
-    // ── PÍCARO ────────────────────────────────────────────────────────────────
+    // ── PÍCARO (PHB 2024) ─────────────────────────────────────────────────────
+    // Arcane Trickster, Assassin, Soulknife y Thief verificados en dnd2024.wikidot
+    // y dungeondocs (Thief también en SRD 5.2 y D&D Beyond free rules).
     'Arcane Trickster': {
+      clase: 'Pícaro',
+      resources: (nivel) => [
+        ...(nivel >= 17 ? [{ id:'at-spell-thief', name:'Spell Thief', current: 1, max: 1, recharge:'long',
+          action:'Reacción', desc:'Tras un conjuro que te apunta o te incluye: salvación de INT contra tu CD; si falla, no te afecta y lo robas 8 horas.' }] : []),
+      ],
+      // Mage Hand es obligatorio y no cuenta para los trucos que eliges.
+      subclassSpells: () => [
+        { id:'mage-hand', name:'Mage Hand', level:0, castTime:'Acción adicional', range:'9 m', duration:'1 minuto', concentration:false, combat:false,
+          desc:'Mano espectral (puede ser invisible) que manipula objetos de hasta 5 kg. La controlas con Acción adicional y puede hacer pruebas de Juego de Manos.',
+          cantrip_subclass:true, alwaysLabel:'Mage Hand Legerdemain' },
+      ],
+      features: (nivel) => [
+        { id:'at-spellcasting', name:'Spellcasting (INT)',
+          source:'Arcane Trickster · Nv3', type:'passive', action:'Pasiva', range:'Varía', recharge:null,
+          desc:'Conjuros de la lista de Mago, de cualquier escuela, con INT. Trucos: Mage Hand y 2 más (3 en nv10). Al subir de nivel cambias 1 truco y 1 conjuro.',
+          fullDesc:'Lanzas conjuros de la lista de Mago usando Inteligencia, con un foco arcano. En 2024 no hay restricción de escuela.\n\n• Trucos: Mage Hand más 2 de la lista de Mago (un tercero en nivel 10). Al subir de nivel puedes cambiar uno (nunca Mage Hand).\n• Conjuros preparados: 3 en nv3, 4 en nv4, 5 en nv7, 6 en nv8, 7 en nv10, 8 en nv11, 9 en nv13, 10 en nv14, 11 en nv16, 12 en nv19 y 13 en nv20. Al subir de nivel puedes cambiar uno por otro de un nivel para el que tengas espacios.\n• Espacios: los recuperas al terminar un descanso largo.' },
+        { id:'at-mage-hand-legerdemain', name:'Mage Hand Legerdemain',
+          source:'Arcane Trickster · Nv3', type:'active', action:'Acción adicional', range:'9 m', recharge:null,
+          desc:'Lanzas Mage Hand como Acción adicional y la mano puede ser invisible. La controlas con Acción adicional y puede hacer pruebas de DES (Juego de Manos).',
+          fullDesc:'Cuando lanzas Mage Hand puedes hacerlo como Acción adicional y volver invisible la mano. Puedes controlarla como Acción adicional y, a través de ella, hacer pruebas de Destreza (Juego de Manos).' },
+        ...(nivel >= 9 ? [{ id:'at-magical-ambush', name:'Magical Ambush',
+          source:'Arcane Trickster · Nv9', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Si tienes la condición Invisible al lanzarle un conjuro a una criatura, tiene desventaja en las salvaciones contra él este turno.', fullDesc:'' }] : []),
+        ...(nivel >= 13 ? [{ id:'at-versatile-trickster', name:'Versatile Trickster',
+          source:'Arcane Trickster · Nv13', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Cuando usas Derribar (Trip) de Cunning Strike, también puedes aplicarlo a otra criatura a 1,5 m de tu Mage Hand.', fullDesc:'' }] : []),
+        ...(nivel >= 17 ? [{ id:'at-spell-thief-f', name:'Spell Thief',
+          source:'Arcane Trickster · Nv17', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'1/descanso largo, Reacción tras un conjuro que te apunta o te incluye en su área: salvación de INT contra tu CD. Si falla, no te afecta y, si es de nivel 1+ que puedas lanzar, lo tienes preparado 8 horas y la criatura no puede lanzarlo.', fullDesc:'' }] : []),
+      ],
+    },
+
+    'Assassin': {
       clase: 'Pícaro',
       resources: () => [],
       features: (nivel) => [
-        { id:'at-spellcasting', name:'Spellcasting (INT)',
-          source:'Arcane Trickster · Nv3', type:'active', action:'Varía', range:'Varía', recharge:null,
-          desc:'Conjuros de Mago usando INT. Slots de tercio-caster.',
-          fullDesc:'Usas Inteligencia como stat de conjuro. Accedes a una lista limitada de conjuros de Mago, principalmente de las escuelas de Encantamiento e Ilusión.' },
-        ...(nivel >= 9 ? [{ id:'at-magical-ambush', name:'Magical Ambush',
-          source:'Arcane Trickster · Nv9', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Si estás oculto al lanzar un conjuro, el objetivo tiene desventaja en el save.',
-          fullDesc:'A nivel 9, si estás oculto de una criatura cuando le lanzas un conjuro, tiene desventaja en la tirada de salvación que haga contra ese conjuro este turno.' }] : []),
-        ...(nivel >= 13 ? [{ id:'at-misdirection', name:'Misdirection',
-          source:'Arcane Trickster · Nv13', type:'active', action:'Acción bonus', range:'9m', recharge:null,
-          desc:'Haz que una criatura mire a otro lado — otorgas ventaja a tus aliados para esconderse.',
-          fullDesc:'Puedes usar una acción adicional para redirigir la atención de una criatura que puedas ver y que esté a 9 metros.' }] : []),
-        ...(nivel >= 17 ? [{ id:'at-spell-thief', name:'Spell Thief',
-          source:'Arcane Trickster · Nv17', type:'active', action:'Reacción', range:'9m', recharge:'long',
-          desc:'1/Long Rest: si una criatura falla un save contra un conjuro tuyo, le robas ese conjuro por 8 h.',
-          fullDesc:'A nivel 17 puedes robar el conocimiento de cómo lanzar un conjuro de otro lanzador. Inmediatamente después de que una criatura lance un conjuro que te tenga a ti como objetivo o te incluya en su área, puedes usar tu reacción para forzar a la criatura a hacer un save de CAR. Si falla, niegas los efectos del conjuro contra ti y robas el conocimiento del conjuro si es de un nivel que puedas lanzar. Puedes lanzarlo una vez en las próximas 8 horas usando tus slots.' }] : []),
+        { id:'as-assassinate', name:'Assassinate',
+          source:'Assassin · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:`Ventaja en Iniciativa. En la 1.ª ronda: ventaja al atacar a quien aún no actuó, y tu Sneak Attack suma +${nivel} (tu nivel de Pícaro) al daño.`,
+          fullDesc:'• Iniciativa: tienes ventaja en las tiradas de Iniciativa.\n• Golpes por sorpresa: en la primera ronda de cada combate tienes ventaja en las tiradas de ataque contra cualquier criatura que todavía no haya tenido turno. Si tu Sneak Attack impacta en esa ronda, el objetivo recibe daño extra del tipo del arma igual a tu nivel de Pícaro.' },
+        { id:'as-tools', name:"Assassin's Tools",
+          source:'Assassin · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Ganas un kit de disfraz y un kit de envenenador, con competencia en ambos.', fullDesc:'' },
+        ...(nivel >= 9 ? [{ id:'as-infiltration', name:'Infiltration Expertise',
+          source:'Assassin · Nv9', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Imitas el habla o la letra de alguien tras estudiarlo 1 hora. Steady Aim ya no deja tu velocidad en 0.',
+          fullDesc:'• Mímica magistral: tras estudiar al menos 1 hora a una persona, imitas su forma de hablar, su letra o ambas.\n• Puntería itinerante (Roving Aim): tu velocidad ya no queda en 0 al usar Steady Aim.' }] : []),
+        ...(nivel >= 13 ? [{ id:'as-envenom', name:'Envenom Weapons',
+          source:'Assassin · Nv13', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Con Envenenar de Cunning Strike, el objetivo además recibe 2d6 de veneno cada vez que falla la salvación. Ignora la resistencia a veneno.', fullDesc:'' }] : []),
+        ...(nivel >= 17 ? [{ id:'as-death-strike', name:'Death Strike',
+          source:'Assassin · Nv17', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Si tu Sneak Attack impacta en la 1.ª ronda, el objetivo hace salvación de CON (CD 8 + DES + competencia); si falla, el daño del ataque se duplica.', fullDesc:'' }] : []),
       ],
+    },
+
+    'Soulknife': {
+      clase: 'Pícaro',
+      resources: (nivel) => {
+        const n = nivel >= 17 ? 12 : nivel >= 13 ? 10 : nivel >= 9 ? 8 : nivel >= 5 ? 6 : 4;
+        const d = nivel >= 17 ? 12 : nivel >= 11 ? 10 : nivel >= 5 ? 8 : 6;
+        return [
+          { id:'psionic-energy', name:`Energía psiónica (d${d})`, current: n, max: n, recharge:'short1',
+            note:`${n} dados d${d} · descanso corto: recuperas 1; largo: todos`,
+            desc:`Dados de Energía Psiónica d${d}. Psi-Bolstered Knack y Homing Strikes solo los gastan si convierten el fallo en éxito.` },
+          ...(nivel >= 13 ? [{ id:'sk-psychic-veil', name:'Psychic Veil', current: 1, max: 1, recharge:'long',
+            action:'Acción', desc:'Acción (Magia): Invisible 1 hora; termina justo después de que hagas daño o fuerces una salvación. Recuperas el uso gastando 1 dado de energía psiónica.' }] : []),
+          ...(nivel >= 17 ? [{ id:'sk-rend-mind', name:'Rend Mind', current: 1, max: 1, recharge:'long',
+            action:'Sin acción', desc:'Al hacer Sneak Attack con una Hoja psíquica: salvación de SAB (CD 8 + DES + competencia) o Aturdido 1 minuto, repitiendo al final de cada turno suyo. Recuperas el uso gastando 3 dados.' }] : []),
+        ];
+      },
+      features: (nivel) => {
+        const d = nivel >= 17 ? 12 : nivel >= 11 ? 10 : nivel >= 5 ? 8 : 6;
+        return [
+          { id:'sk-psionic-power', name:'Psionic Power',
+            source:'Soulknife · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+            desc:`Psi-Bolstered Knack: si fallas una prueba con habilidad o herramienta en la que eres competente, sumas 1d${d} (solo se gasta si pasas a éxito).`,
+            fullDesc:`Tienes dados de Energía Psiónica (d${d}): 4d6 en nv3, 6d8 en nv5, 8d8 en nv9, 8d10 en nv11, 10d10 en nv13 y 12d12 en nv17. Recuperas uno al terminar un descanso corto y todos al terminar uno largo.\n\n• Psi-Bolstered Knack: si fallas una prueba de característica con una habilidad o herramienta en la que eres competente, tiras un dado y lo sumas; solo se gasta si el fallo pasa a éxito.\n• Psychic Whispers: ver su ficha.` },
+          { id:'sk-psychic-whispers', name:'Psychic Whispers',
+            source:'Soulknife · Nv3', type:'active', action:'Acción', range:'Personal', recharge:null,
+            desc:`Acción (Magia): conexión telepática con criaturas que veas, hasta tu bono de competencia; dura tantas horas como saques en 1d${d} (hasta 1,6 km).`,
+            fullDesc:'Eliges criaturas que puedas ver, hasta tu bono de competencia, y tiras un dado de Energía Psiónica. Durante tantas horas como el resultado, cada una puede hablarte telepáticamente y tú a ella, a 1 milla (1,6 km) como máximo. Cualquiera puede cortar la conexión sin acción.\n\nOjo: las fuentes no coinciden en si este uso gasta el dado; márcalo a mano en Recursos si tu mesa lo cobra.' },
+          { id:'sk-psychic-blades', name:'Psychic Blades',
+            source:'Soulknife · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+            desc:'Al Atacar (o en un ataque de oportunidad) con una mano libre, creas una hoja psíquica: 1d6 psíquico + mod, Sutil, Arrojadiza 18/36 m, Vex. Después, como Acción adicional, una segunda hoja de 1d4.',
+            fullDesc:'Cuando tomas la acción de Ataque o haces un ataque de oportunidad, puedes manifestar una Hoja psíquica en una mano libre: arma sencilla cuerpo a cuerpo, 1d6 de daño psíquico + el modificador usado, propiedades Sutil y Arrojadiza (18/36 m), y la maestría Vex (no cuenta para tu límite de Weapon Mastery). La hoja desaparece tras impactar o fallar.\n\nDespués de atacar con ella, puedes hacer otro ataque con una segunda hoja como Acción adicional si tienes la otra mano libre: 1d4 de daño psíquico.' },
+          ...(nivel >= 9 ? [{ id:'sk-homing-strikes', name:'Homing Strikes',
+            source:'Soulknife · Nv9', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+            desc:`Si fallas con una Hoja psíquica, sumas 1d${d} a la tirada de ataque; solo se gasta el dado si pasa a impactar.`, fullDesc:'' }] : []),
+          ...(nivel >= 9 ? [{ id:'sk-psychic-teleportation', name:'Psychic Teleportation', usa:'psionic-energy',
+            source:'Soulknife · Nv9', type:'active', action:'Acción adicional', range:'Varía', recharge:null,
+            desc:`Gastas 1 dado y lo tiras: te teletransportas a un espacio libre que veas a 3 m × el resultado.`, fullDesc:'' }] : []),
+        ];
+      },
     },
 
     'Thief': {
@@ -3374,25 +3508,22 @@ const Characters = (() => {
       resources: () => [],
       features: (nivel) => [
         { id:'thief-fast-hands', name:'Fast Hands',
-          source:'Thief · Nv3', type:'active', action:'Acción bonus', range:'Varía', recharge:null,
-          desc:'Usas Cunning Action para también hacer: Sleight of Hand, usar herramientas de ladrón, o interactuar con un objeto.',
-          fullDesc:'A nivel 3 puedes usar la acción adicional que te otorga Cunning Action para hacer una prueba de Destreza (Juego de Manos), usar tus herramientas de ladrón para desactivar una trampa o abrir una cerradura, o tomar la acción de Uso de Objeto.' },
+          source:'Thief · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
+          desc:'Como Acción adicional: Juego de Manos (abrir una cerradura o desarmar una trampa con herramientas de ladrón, o robar un bolsillo), Usar un objeto, o la acción de Magia para usar un objeto mágico.',
+          fullDesc:'Como Acción adicional puedes hacer una de estas cosas:\n• Prueba de Destreza (Juego de Manos) para forzar una cerradura o desarmar una trampa con herramientas de ladrón, o para vaciar un bolsillo.\n• La acción de Usar (Utilize), o la acción de Magia para usar un objeto mágico que la requiera.' },
         { id:'thief-second-story', name:'Second-Story Work',
           source:'Thief · Nv3', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Escalada sin penalización de velocidad. Salto largo y alto usando DES en lugar de FUE.',
-          fullDesc:'A nivel 3 ganas la habilidad de escalar más rápido que lo normal; trepar ya no cuesta movimiento adicional. Además cuando haces un salto largo, la distancia que recorres aumenta en un número de pies igual a tu modificador de Destreza.' },
+          desc:'Velocidad de trepar igual a tu velocidad. Usas DES en vez de FUE para calcular la distancia de salto.', fullDesc:'' },
         ...(nivel >= 9 ? [{ id:'thief-supreme-sneak', name:'Supreme Sneak',
           source:'Thief · Nv9', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Puedes intentar esconderte como acción bonus si te moviste no más de la mitad de tu velocidad.',
-          fullDesc:'A nivel 9, puedes usar una acción adicional para intentar esconderte. Si te mueves no más de la mitad de tu velocidad en el mismo turno, haces la prueba de Sigilo con ventaja.' }] : []),
+          desc:'Nuevo efecto de Cunning Strike, Ataque sigiloso (1d6): si estás Invisible por Esconderte, el ataque no te quita la condición si terminas el turno tras cobertura de tres cuartos o total.', fullDesc:'' }] : []),
         ...(nivel >= 13 ? [{ id:'thief-use-magic-device', name:'Use Magic Device',
           source:'Thief · Nv13', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'Puedes usar objetos mágicos que normalmente requieren ser de una clase específica, raza u otro requisito.',
-          fullDesc:'A nivel 13 has aprendido suficiente sobre el funcionamiento de la magia que puedes improvisar el uso de elementos para los que no fuiste entrenado. Ignoras todos los requisitos de clase, raza y nivel para el uso de objetos mágicos.' }] : []),
+          desc:'Hasta 4 objetos sintonizados. Al gastar cargas tiras 1d6: con 6 no se gastan. Usas cualquier pergamino con INT (nv2+: prueba de Arcanos CD 10 + nivel o se destruye).',
+          fullDesc:'• Sintonía: puedes sintonizarte con hasta cuatro objetos mágicos a la vez.\n• Cargas: cuando usas una propiedad de un objeto mágico que gasta cargas, tiras 1d6; con un 6 la usas sin gastar cargas.\n• Pergaminos: puedes usar cualquier Spell Scroll con Inteligencia como característica de lanzamiento. Los trucos y conjuros de nivel 1 funcionan siempre; para niveles mayores haces una prueba de Inteligencia (Arcanos) CD 10 + nivel del conjuro y, si fallas, el pergamino se desintegra.' }] : []),
         ...(nivel >= 17 ? [{ id:'thief-thief-reflexes', name:'Thief\'s Reflexes',
           source:'Thief · Nv17', type:'passive', action:'Pasiva', range:'Personal', recharge:null,
-          desc:'En la primera ronda de cada combate, puedes tomar dos turnos (al inicio y al final de la ronda).',
-          fullDesc:'A nivel 17 te vuelves especialmente bueno en emboscadas y actuaciones rápidas. Puedes tomar dos turnos durante la primera ronda de cualquier combate. Tomas tu primer turno con tu iniciativa normal y tu segundo turno con tu iniciativa menos 10.' }] : []),
+          desc:'En la primera ronda de cada combate tienes dos turnos: uno con tu Iniciativa y otro con tu Iniciativa − 10.', fullDesc:'' }] : []),
       ],
     },
 
@@ -4925,6 +5056,9 @@ const Characters = (() => {
       { id:'ek-misty-step',    name:'Misty Step',         level:2, castTime:'Acción bonus', range:'Personal', duration:'Inst.', concentration:false, combat:true, desc:'Teleportación 9 m a lugar visible.' },
     ],
   };
+  // Arcane Trickster: la lista de Mago completa (el tope de nivel lo pone
+  // getMaxSpellLevel; un Pícaro de otra subclase no llega a ningún nivel).
+  CLASE_SPELLS['Pícaro'] = CLASE_SPELLS['Mago'];
 
   // Nivel de slot de Pact Magic según nivel de Brujo (PHB)
   const WARLOCK_SLOT_LEVEL = {
@@ -5027,6 +5161,15 @@ const Characters = (() => {
       if (cfg.slotTable === 'full')    casterLevels += c.level;
       if (cfg.slotTable === 'half')    casterLevels += Math.floor(c.level / 2);
       if (cfg.slotTable === 'warlock') warlockLevel = Math.max(warlockLevel, c.level);
+      // Tercio de lanzador por subclase (Arcane Trickster, Eldritch Knight)
+      if (!cfg.slotTable && /^(Arcane Trickster|Eldritch Knight)$/.test(c.subclass || '')) {
+        if (classes.length === 1) {
+          const fila = _filaTercio(c.level || 1, true), res = {};
+          for (let i = 1; i <= 9; i++) res[i] = { current: fila[i-1] || 0, max: fila[i-1] || 0 };
+          return res;
+        }
+        casterLevels += Math.floor((c.level || 0) / 3);
+      }
     }
 
     const baseRow = FULL_CASTER_SLOTS[casterLevels] || Array(9).fill(0);
@@ -5326,6 +5469,13 @@ const Characters = (() => {
           char.spells.push({ ...s });
         }
       });
+    }
+
+    // Arcane Trickster 2024: lanza con INT y la lista de Mago (CLASE_SPELLS['Pícaro']).
+    if (subclaseName === 'Arcane Trickster') {
+      char.spellcastingStat = 'int';
+      char.spellSlots = calcMulticlassSlots(char.classes && char.classes.length
+        ? char.classes : [{ name: 'Pícaro', level: char.nivel || 1, subclass: 'Arcane Trickster' }]);
     }
 
     // Para subclases conjuradoras (Eldritch Knight, Arcane Trickster):
@@ -5680,17 +5830,18 @@ const Characters = (() => {
   ];
 
   const PICARO_SUBCLASES = [
-    // PHB
-    { id:'sub-arcane-trickster', name:'Arcane Trickster',      desc:'Conjuros de Mago (INT). Ilusiones y trucos mágicos.' },
-    { id:'sub-thief',            name:'Thief',                 desc:'Escalada, Fast Hands, Use Magic Device. Ladrón clásico.' },
-    // Xanathar's
+    // PHB 2024
+    { id:'sub-arcane-trickster', name:'Arcane Trickster',      desc:'Conjuros de Mago de cualquier escuela (INT), Mage Hand invisible como Acción adicional.' },
+    { id:'sub-assassin',         name:'Assassin',              desc:'Ventaja en iniciativa, ventaja y daño extra en la 1.ª ronda, kits de disfraz y envenenador.' },
+    { id:'sub-soulknife',        name:'Soulknife',             desc:'Hojas psíquicas (1d6 + 1d4 psíquico), dados de energía psiónica, telepatía y teletransporte.' },
+    { id:'sub-thief',            name:'Thief',                 desc:'Fast Hands, trepar a tu velocidad, Use Magic Device. Ladrón clásico.' },
+    // Xanathar's (2014: sin versión 2024)
     { id:'sub-inquisitive',      name:'Inquisitive',           desc:'Insightful Fighting (Sneak sin aliados), Steady Eye, Unerring Eye.' },
     { id:'sub-mastermind',       name:'Mastermind',            desc:'Master of Tactics (Help como Bonus Action desde 30 ft), Misdirection.' },
     { id:'sub-scout',            name:'Scout',                 desc:'Skirmisher (mover al ser atacado gratis), Survivalist (Naturaleza+Sigilo).' },
     { id:'sub-swashbuckler',     name:'Swashbuckler',          desc:'Carisma en combate, Sneak Attack sin aliados, Panache, Elegant Maneuver.' },
-    // Tasha's
+    // Tasha's (2014)
     { id:'sub-phantom',          name:'Phantom',               desc:'Tokens de almas muertas, daño necrótico, forma incorpórea nv17.' },
-    { id:'sub-soulknife',        name:'Soulknife',             desc:'Psychic Blades (d6 psíquico sin costo), Psychic Whispers, Soul Blades.' },
   ];
 
   const BARDO_SUBCLASES = [
@@ -6139,8 +6290,8 @@ const Characters = (() => {
     'Pícaro': [
       { id:'expertise-1', level:1, type:'pickSkills', count:2, label:'Expertise inicial (×2)',
         prompt:'Elige 2 skills para tener Expertise:' },
-      { id:'subclase-3',  level:3, type:'pick1',       label:'Roguish Archetype (Subclase)',
-        prompt:'Elige tu arquetipo de Pícaro:',
+      { id:'subclase-3',  level:3, type:'pick1',       label:'Subclase de Pícaro',
+        prompt:'Elige tu subclase de Pícaro:',
         options: PICARO_SUBCLASES,
         appliesSubclass: true },
       { id:'expertise-6', level:6, type:'pickSkills', count:2, label:'Expertise adicional (×2)',
@@ -6166,7 +6317,12 @@ const Characters = (() => {
   };
 
   // Devuelve el nivel máximo de spell slot que tiene el char en targetLevel
-  function _maxSpellLevelAt(clase, nivel) {
+  function _maxSpellLevelAt(clase, nivel, char) {
+    if (clase === 'Pícaro' && esArcaneTrickster(char)) {
+      const fila = _filaTercio(nivel, true);
+      for (let i = 8; i >= 0; i--) if (fila[i] > 0) return i + 1;
+      return 0;
+    }
     const cfg = CLASES_CONFIG[clase];
     if (!cfg || !cfg.slotTable) return 0;
     let slots;
@@ -7145,7 +7301,7 @@ const Characters = (() => {
     getPassiveDamageBonuses,
     getCantripsKnown,
     isKnownCaster,
-    isPreparedCaster,
+    isPreparedCaster, esArcaneTrickster, GOLPES_ASTUTOS,
     getXPForLevel,
     getNextLevelXP,
     getLevelFromXP,

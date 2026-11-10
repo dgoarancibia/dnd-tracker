@@ -183,6 +183,26 @@ const App = (() => {
       }
     }
 
+    // 1d. Arcane Trickster: lanza con INT y tiene espacios de tercio de lanzador.
+    //     Slippery Mind (Pícaro nv15): competencia en salvaciones de SAB y CAR.
+    if (c.clase === 'Pícaro') {
+      if (Characters.esArcaneTrickster(c)) {
+        if (c.spellcastingStat !== 'int') { c.spellcastingStat = 'int'; changed = true; }
+        const tabla = Characters.calcMulticlassSlots(c.classes && c.classes.length ? c.classes
+          : [{ name: 'Pícaro', level: c.nivel || 1, subclass: 'Arcane Trickster' }]);
+        if (!c.spellSlots) c.spellSlots = {};
+        for (let i = 1; i <= 9; i++) {
+          const max = (tabla[i] && tabla[i].max) || 0, s = c.spellSlots[i];
+          if (!s) { c.spellSlots[i] = { current: max, max }; if (max) changed = true; }
+          else if (s.max !== max) { s.current = Math.min(max, (s.current || 0) + Math.max(0, max - s.max)); s.max = max; changed = true; }
+        }
+      }
+      if ((c.nivel || 1) >= 15) {
+        if (!Array.isArray(c.savingThrows)) c.savingThrows = [];
+        ['sab', 'car'].forEach(k => { if (!c.savingThrows.includes(k)) { c.savingThrows.push(k); changed = true; } });
+      }
+    }
+
     // 2. Reparar subclase vacío — tres fuentes posibles:
     //    a) classes[0].subclass
     //    b) choices['subclase-1'] → buscar nombre real en SUBCLASES_CONFIG
@@ -313,7 +333,7 @@ const App = (() => {
         const nivel = _subNivel || 1;
         // Solo hasta el nivel de conjuro que el personaje ya puede lanzar: varias
         // subclases devuelven la lista completa sin mirar el nivel.
-        const maxLvl = Characters.getMaxSpellLevel ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1) : 9;
+        const maxLvl = Characters.getMaxSpellLevel ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1, c) : 9;
         const subclSpells = subConf.subclassSpells(nivel, c).filter(s => !(s.level > maxLvl));
         if (!c.spells) c.spells = [];
         // Circle of the Land: fuera los conjuros de un terreno que ya no es el elegido
@@ -335,6 +355,45 @@ const App = (() => {
     }
 
     return changed;
+  }
+
+  /* Agrega al personaje los conjuros de su clase que aún no tenga.
+     Solo prepare casters (Clérigo, Druida, Mago, Paladín, Explorador): los
+     known casters (Hechicero, Bardo, Brujo) eligen a mano y auto-agregar
+     les rompería el límite de conocidos. */
+
+  function _syncSpellCatalog(c) {
+    const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase]) || [];
+    // Los conjuros ya copiados toman las correcciones del catálogo: antes solo
+    // se agregaban los que faltaban y un texto corregido nunca llegaba.
+    const porId = new Map(catalog.map(s => [s.id, s]));
+    (c.spells || []).forEach(sp => {
+      const fresh = porId.get(sp.id);
+      if (!fresh) return;
+      _CAMPOS_CONJURO.forEach(k => { if (fresh[k] !== undefined) sp[k] = fresh[k]; });
+    });
+    if (!catalog.length || Characters.isKnownCaster(c)) return 0;
+
+    const savedPrepared = c.preparedToday || [];
+    const existingIds   = new Set((c.spells || []).map(s => s.id));
+    // También por nombre: el mismo hechizo aparece con ids distintos según
+    // la fuente (ej. 'toll-dead' en la lista de Lursey vs 'toll-the-dead'
+    // en el catálogo de clase), y comparar solo por id lo duplicaba.
+    const normName = n => (n || '').toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, '');
+    const existingNames = new Set((c.spells || []).map(s => normName(s.name)));
+    // Solo hasta el nivel de slot que el personaje realmente tiene: un
+    // Clérigo nv7 llega a slots de nivel 4, así que agregar conjuros de
+    // nivel 5+ le ensuciaba la lista con cosas que no puede lanzar.
+    const maxLvl = Characters.getMaxSpellLevel
+      ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1, c)
+      : 9;
+    const newSpells = catalog
+      .filter(s => s.level > 0 && s.level <= maxLvl
+                && !existingIds.has(s.id) && !existingNames.has(normName(s.name)))
+      .map(s => ({ ...s }));
+    if (newSpells.length) c.spells = [...(c.spells || []), ...newSpells];
+    c.preparedToday = savedPrepared;
+    return newSpells.length;
   }
 
   // Elimina duplicados de spells (por id) y recorta cantrips al máximo de la tabla.
@@ -529,44 +588,6 @@ const App = (() => {
     // ── Limpiar duplicados y excedentes de spells (corre siempre, todos los personajes) ──
     if (_cleanSpells(_char)) Storage.saveCharRaw(_char);
 
-  /* Agrega al personaje los conjuros de su clase que aún no tenga.
-     Solo prepare casters (Clérigo, Druida, Mago, Paladín, Explorador): los
-     known casters (Hechicero, Bardo, Brujo) eligen a mano y auto-agregar
-     les rompería el límite de conocidos. */
-
-  function _syncSpellCatalog(c) {
-    const catalog = (Characters.CLASE_SPELLS && Characters.CLASE_SPELLS[c.clase]) || [];
-    // Los conjuros ya copiados toman las correcciones del catálogo: antes solo
-    // se agregaban los que faltaban y un texto corregido nunca llegaba.
-    const porId = new Map(catalog.map(s => [s.id, s]));
-    (c.spells || []).forEach(sp => {
-      const fresh = porId.get(sp.id);
-      if (!fresh) return;
-      _CAMPOS_CONJURO.forEach(k => { if (fresh[k] !== undefined) sp[k] = fresh[k]; });
-    });
-    if (!catalog.length || Characters.isKnownCaster(c)) return 0;
-
-    const savedPrepared = c.preparedToday || [];
-    const existingIds   = new Set((c.spells || []).map(s => s.id));
-    // También por nombre: el mismo hechizo aparece con ids distintos según
-    // la fuente (ej. 'toll-dead' en la lista de Lursey vs 'toll-the-dead'
-    // en el catálogo de clase), y comparar solo por id lo duplicaba.
-    const normName = n => (n || '').toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, '');
-    const existingNames = new Set((c.spells || []).map(s => normName(s.name)));
-    // Solo hasta el nivel de slot que el personaje realmente tiene: un
-    // Clérigo nv7 llega a slots de nivel 4, así que agregar conjuros de
-    // nivel 5+ le ensuciaba la lista con cosas que no puede lanzar.
-    const maxLvl = Characters.getMaxSpellLevel
-      ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1)
-      : 9;
-    const newSpells = catalog
-      .filter(s => s.level > 0 && s.level <= maxLvl
-                && !existingIds.has(s.id) && !existingNames.has(normName(s.name)))
-      .map(s => ({ ...s }));
-    if (newSpells.length) c.spells = [...(c.spells || []), ...newSpells];
-    c.preparedToday = savedPrepared;
-    return newSpells.length;
-  }
 
     // ── Sincronizar datos maestros desde characters.js ──────────────────────
     // Preserva: spellSlots usados, preparedToday, cantidades de consumables
@@ -3109,7 +3130,7 @@ const App = (() => {
     // hasta nivel 9, pero ofrecer "Nvl 6" a un Clérigo nv6 (que llega a 3) es
     // un filtro que nunca devuelve nada.
     const maxLvlAccesible = Characters.getMaxSpellLevel
-      ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1)
+      ? Characters.getMaxSpellLevel(c.clase, c.nivel || 1, c)
       : 9;
     const levels = [...new Set(
       sourceSpells.filter(s => s.level > 0 && s.level <= maxLvlAccesible).map(s => s.level)
@@ -4766,6 +4787,15 @@ const App = (() => {
 
   /* Nuevo turno: reinicia SOLO lo del turno. Nunca toca HP, slots, usos
      de Hunter's Mark ni condiciones — eso es de los descansos. */
+  // Sneak Attack: una vez por turno. Se borra con el nuevo turno.
+  function marcarFurtivo(usado) {
+    if (!_char) return;
+    _turnoDe(_char).furtivo = !!usado;
+    _saveChar(true);
+    _renderTurnTracker();
+    _renderCombateDer();
+  }
+
   function nuevoTurno() {
     if (!_char) return;
     _char.turn = { action: false, bonus: false, reaction: false, movement: false, attacksUsed: 0,
@@ -9300,6 +9330,8 @@ const App = (() => {
 
     if (value !== null) {
       Characters.applyChoice(_char, choice.id, value);
+      // Una subclase puede traer magia (Arcane Trickster): su lista entra ya, sin recargar
+      if (choice.appliesSubclass && _char.id !== 'lursey-brumaclara') { _syncCharData(_char); _syncSpellCatalog(_char); }
       if (_char._ultimoAjusteHP) {
         const d = _char._ultimoAjusteHP;
         delete _char._ultimoAjusteHP;
@@ -12726,7 +12758,7 @@ ${notesText}`;
     // Descansos
     openShortRest, closeShortRest, applyShortRest, srAdjustQty,
     srPreview: _updateShortRestPreview,
-    longRest, closeLongRest, applyLongRest, lrElegirTerreno,
+    longRest, closeLongRest, applyLongRest, lrElegirTerreno, marcarFurtivo,
 
     // Level up
     openLevelUp, closeLevelUp, applyLevelUp,
@@ -12795,6 +12827,7 @@ ${notesText}`;
       if (_char && _char.id !== 'lursey-brumaclara') {
         // Aplicar migraciones y sync de subclassSpells también en carga desde Firebase
         const syncChanged = _syncCharData(_char);
+        if (_syncSpellCatalog(_char)) Storage.saveCharRaw(_char);
         _cleanSpells(_char);
         const before = JSON.stringify(_char.features);
         _refreshCharFeatures(_char);
