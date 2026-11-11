@@ -288,10 +288,11 @@ const Mesa = (() => {
       const noArma = no || (sinMun ? `Sin ${mun.label.toLowerCase()}` : '');
       col[tipo].push({ no: noArma, html: _fila({
         id: 'arma-' + slot, icono: _iconoArma(w), nombre: mun && mun.qty != null ? `${w.name} (${mun.qty})` : w.name, num: sg(a.ataque), dmg: daño, no: noArma,
-        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', enCombate && maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}${t.ataquesEco ? ` (${t.ataquesEco} desde el eco)` : ''}` : '',
+        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', enCombate && maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}${t.ataquesEco ? ` (incluye ${t.ataquesEco} extra de Unleash)` : ''}` : '',
           maes ? maes.corto : '',
           _nivelPicaro(c) && (a.sutil || a.aDistancia) ? (t.furtivo ? 'furtivo ya usado' : `+ furtivo ${Math.ceil(_nivelPicaro(c) / 2)}d6`) : '', ...a.notas].filter(Boolean).join(' · '),
-        det: `${maes ? `<p class="mesa-maestria"><b>Maestría ${esc(maes.nombre)}</b> · ${esc(maes.corto.replace(/^\w+ · /, ''))}</p>` : ''}${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
+        det: `${maes ? `<p class="mesa-maestria"><b>Maestría ${esc(maes.nombre)}</b> · ${esc(maes.corto.replace(/^\w+ · /, ''))}</p>` : ''}${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button>${
+          c.echoActive && _esEcoKnight(c) ? `<button class="mesa-btn mesa-eco-btn" onclick="event.stopPropagation();Mesa.atacarDesdeEco('${slot}')">⚔ Atacar desde el eco</button>` : ''}</div>`,
       }) });
       // Ataque de oportunidad: con la primera arma cuerpo a cuerpo equipada (principal o secundaria)
       if (!a.aDistancia && !col.reaction.some(x => x.ao)) {
@@ -493,7 +494,7 @@ const Mesa = (() => {
         r.id === 'raven-queen-blessing' ? ` · teletransporte ${App.fmtDist('9 m')}${(c.nivel || 1) >= 3 ? ' y resistencia a todo el daño hasta tu próximo turno' : ''}` : ''}${
         r.id === 'echo-unleash' ? ' · +1 ataque cuerpo a cuerpo desde el eco' : ''}`,
       det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc">${r.id === 'echo-unleash'
-          ? `<button class="mesa-btn p" ${r.current > 0 && c.echoActive ? '' : 'disabled'} onclick="event.stopPropagation();App.usarUnleash()">${c.echoActive ? `+1 ataque desde el eco (${r.current}/${r.max})` : 'Primero invoca el eco'}</button>`
+          ? `<button class="mesa-btn p" ${r.current > 0 && c.echoActive ? '' : 'disabled'} onclick="event.stopPropagation();App.usarUnleash()">${c.echoActive ? `Unleash: +1 ataque extra desde el eco (${r.current}/${r.max})` : 'Primero invoca el eco'}</button>`
           : r.id === 'raven-queen-blessing'
           ? `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.usarBendicionCuervo()">Teletransportarse${(c.nivel || 1) >= 3 ? ' + resistencia' : ''} (${r.current}/${r.max})</button>`
           : (opciones => opciones.length
@@ -1047,7 +1048,7 @@ const Mesa = (() => {
     const un = (c.resources || []).find(r => r.id === 'echo-unleash');
     const puntosUn = un && un.max > 0 ? `<div class="mesa-rec"><div>Unleash Incarnation<small>+1 ataque desde el eco al usar Atacar</small></div><span class="mesa-pts">${
       Array.from({ length: un.max }, (_, i) => `<i class="${i < un.current ? '' : 'u'}" onclick="App.toggleResourceDot('echo-unleash',${i})"></i>`).join('')}</span></div>` : '';
-    const btnUn = un && un.max > 0 ? `<button class="mesa-btn mesa-eco-btn" ${un.current > 0 ? '' : 'disabled'} onclick="App.usarUnleash()">+1 ataque desde el eco</button>` : '';
+    const btnUn = un && un.max > 0 ? `<button class="mesa-btn mesa-eco-btn" ${un.current > 0 ? '' : 'disabled'} onclick="App.usarUnleash()">Unleash: +1 ataque extra</button>` : '';
     if (!activo) return `<section><div class="mesa-sec">Eco</div><div class="mesa-card mesa-eco">
       <div class="mesa-eco-hd"><i class="mesa-ico mesa-eco-ic" style="--m:url(../assets/iconos/eco.svg)"></i><div><b>Eco sin invocar</b><small>Acción adicional · a 4,5 m · CA ${ca}, 1 PG</small></div></div>
       <button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.eco(true)" title="Manifest Echo · gasta la Acción adicional">Invocar</button>
@@ -1056,11 +1057,16 @@ const Mesa = (() => {
     return `<section><div class="mesa-sec">Eco</div><div class="mesa-card mesa-eco on">
       <div class="mesa-eco-hd"><i class="mesa-ico mesa-eco-ic" style="--m:url(../assets/iconos/eco.svg)"></i><div><b>Eco activo</b><small>Inmune a condiciones · se destruye si termina tu turno a más de 9 m</small></div></div>
       <div class="mesa-eco-stats"><div><b>${ca}</b><span class="mesa-lbl">CA</span></div><div><b>1</b><span class="mesa-lbl">PG</span></div><div><b>${esc(App.fmtDist('9 m'))}</b><span class="mesa-lbl">Mov. gratis</span></div></div>
-      <ul class="mesa-eco-lista"><li>Tus ataques de Atacar pueden salir desde el eco</li><li>Ataque de oportunidad si alguien se aleja de él</li></ul>
+      <ul class="mesa-eco-lista"><li>Cada ataque de tu acción de Atacar (${App.ataquesDelTurno()} este turno) puede salir de ti o del eco: elígelo en el arma</li><li>Unleash Incarnation suma 1 ataque extra desde el eco por acción de Atacar</li><li>Ataque de oportunidad si alguien se aleja de él</li></ul>
       ${puntosUn}
       <div class="mesa-acc">${btnUn}<button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.usarRasgo('bonusAction','intercambio-eco')">⇄ Intercambiar</button>
         <button class="mesa-btn" onclick="Mesa.eco(false)">Descartar</button></div>
     </div></section>`;
+  }
+  // Desde el eco sale cualquiera de tus ataques de la acción de Ataque: gasta uno de ellos, no es extra
+  function atacarDesdeEco(slot) {
+    App.attackWithWeapon(slot);
+    setTimeout(() => App.showToast('Ataque desde la posición del eco · cuenta como uno de tus ataques'), 60);
   }
   function eco(invocar) {
     const c = App.getActiveChar();
@@ -1117,6 +1123,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, usarPagado, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad, golpe, furtivo, muerte };
+  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, usarPagado, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad, golpe, furtivo, muerte, atacarDesdeEco };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí

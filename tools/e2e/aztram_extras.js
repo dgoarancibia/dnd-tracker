@@ -37,7 +37,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(() => [...document.querySelectorAll('.mesa-eco .mesa-btn')].find(b => /\+1 ataque/.test(b.textContent)).click()); await sleep(400);
   const un = await p.evaluate(() => ({ cur: App.getActiveChar().resources.find(r => r.id === 'echo-unleash').current, max: App.ataquesDelTurno(), eco: App.getActiveChar().turn.ataquesEco }));
   chk('Unleash con eco: gasta 1 y el turno pasa a 3 ataques', un.cur === 1 && un.max === 3 && un.eco === 1, un);
-  chk('la fila del arma dice ataques 0/3 (1 desde el eco)', /ataques 0\/3 \(1 desde el eco\)/.test(await arma()), await arma());
+  chk('la fila del arma dice ataques 0/3 (incluye 1 extra de Unleash)', /ataques 0\/3 \(incluye 1 extra de Unleash\)/.test(await arma()), await arma());
+  // Atacar desde el eco gasta uno de los ataques normales
+  await p.evaluate(() => Mesa.abrir('arma-mainHand')); await sleep(200);
+  await p.evaluate(() => [...document.querySelectorAll('.mesa-op.abierto .mesa-btn')].find(b => /desde el eco/.test(b.textContent)).click()); await sleep(400);
+  await cerrar();
+  const usados = await p.evaluate(() => App.getActiveChar().turn.attacksUsed);
+  chk('Atacar desde el eco gasta un ataque normal (1/3)', usados === 1 && /ataques 1\/3/.test(await arma()), { usados, fila: await arma() });
 
   // Raven Queen
   await p.evaluate(() => App.nuevoTurno()); await sleep(200);
