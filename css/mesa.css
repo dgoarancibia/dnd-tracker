@@ -190,7 +190,8 @@
 .mt-f small { color: var(--m-tx2); font-size: 10.5px; }
 .mt-f b { margin-left: auto; font: 700 14px 'Jost', sans-serif; }
 .mt-f .corto { display: none; }
-.mt-pasivas { display: flex; gap: 6px; flex-wrap: wrap; }
+.mt-pasivas { display: flex; gap: 6px; row-gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.mt-pasivas .mesa-chip { padding: 3px 9px; font-size: 12px; }
 .mt-pasivas .mesa-chip { cursor: default; }
 
 /* ══ Paneles: centro + columna de apoyo ══ */
@@ -438,7 +439,7 @@
 .mesa-op[data-id="eco"] b { color: #c9aaff; }
 
 /* Mente Táctica (Guerrero) bajo las tiradas */
-.mt-tm { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--m-borde); border-radius: 10px; background: var(--bg3); }
+.mt-tm { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--m-borde); border-radius: 10px; background: var(--bg3); }
 .mt-tm b { display: block; font-size: 13px; }
 .mt-tm small { display: block; color: var(--m-tx2); font-size: 12px; line-height: 1.35; }
 .mt-tm .mesa-chip { align-self: flex-start; }
