@@ -124,7 +124,7 @@ const Mesa = (() => {
     const vel = App.fmtDist(`${String((c.velocidad || 30) / 5 * 1.5).replace('.', ',')} m`);
     return `
       <div class="mc-avatar" onclick="document.getElementById('avatarFileInput').click()" title="Cambiar foto">${foto}</div>
-      <div class="mc-quien"><b>${esc(c.name)}</b><small>${esc(clases)}${c.subclase ? ' · ' + esc(c.subclase) : ''}</small></div>
+      <div class="mc-quien"><b>${esc(c.name)}${c.echoActive && _esEcoKnight(c) ? ' <span class="mc-eco" title="Eco activo">👻 Eco</span>' : ''}</b><small>${esc(clases)}${c.subclase ? ' · ' + esc(c.subclase) : ''}</small></div>
       <span class="mc-sep"></span>
       <div class="mc-pg">
         <div class="mc-pg-top"><span class="mesa-lbl">PG</span><span class="mc-num mc-${nivelVida}">${current}<small> / </small></span><input class="mc-max" type="number" min="1" max="999" value="${max}"
@@ -536,7 +536,7 @@ const Mesa = (() => {
 
   function _fila({ id, icono, nombre, num, sub, det, tags = '', no = '', dmg = '' }) {
     const ab = st.abierto === id;
-    return `<div class="mesa-op ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.abrir('${id}')">
+    return `<div data-id="${id}" class="mesa-op ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.abrir('${id}')">
       <span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/${icono}.svg)"></i></span>
       <div class="mesa-op-tx"><b>${esc(limpio(nombre))}</b>${dmg ? `<span class="mesa-golpe"><span class="mesa-num">${num}</span><span class="mesa-dmg">${esc(dmg)}</span></span>` : ''}<small>${num && !dmg ? `<span class="mesa-num">${num}</span> · ` : ''}${esc(sub)}</small>${no ? `<em class="mesa-motivo">${esc(no)}</em>` : ''}</div>
       ${tags}<span class="mesa-mas">›</span>
@@ -725,11 +725,13 @@ const Mesa = (() => {
     if (bloqueMuerte) bloques.push(bloqueMuerte);
     const bloqueFurtivo = tab === 'combate' ? _furtivo(c) : '';
     if (bloqueFurtivo) bloques.push(bloqueFurtivo);
+    const bloqueEco = tab === 'combate' ? _tarjetaEco(c) : '';
+    if (bloqueEco) bloques.push(bloqueEco);
     if (bloqueBestia) bloques.push(bloqueBestia, bloqueConc); else bloques.push(bloqueConc);
 
     const puntos = (n, total, fn) => `<span class="mesa-pts">${Array.from({ length: total }, (_, i) =>
       `<i class="${i < n ? '' : 'u'}" onclick="${fn(i)}"></i>`).join('')}</span>`;
-    const recs = (c.resources || []).filter(r => r.max > 0).map(r => `<div class="mesa-rec"><div>${esc(limpio(r.name))}<small>${esc(r.action || '')}</small></div>
+    const recs = (c.resources || []).filter(r => r.max > 0 && !(bloqueEco && r.id === 'echo-unleash')).map(r => `<div class="mesa-rec"><div>${esc(limpio(r.name))}<small>${esc(r.action || '')}</small></div>
       ${puntos(r.current, r.max, i => `App.toggleResourceDot('${r.id}',${i})`)}</div>`);
     if (tab === 'combate') {
       for (let lv = 1; lv <= 9; lv++) {
@@ -1011,6 +1013,31 @@ const Mesa = (() => {
         ${activo ? `<button class="mesa-btn p" onclick="event.stopPropagation();Mesa.usarRasgo('bonusAction','intercambio-eco')">Intercambiar posición · Acción adicional</button>
           <button class="mesa-btn" onclick="event.stopPropagation();Mesa.eco(false)">Descartar eco</button>`
           : `<button class="mesa-btn p" onclick="event.stopPropagation();Mesa.eco(true)">Invocar eco · Acción adicional</button>`}</div>` }) };
+  }
+  const _esEcoKnight = c => c.subclase === 'Echo Knight' || (c.classes || []).some(x => x && x.subclass === 'Echo Knight');
+  // Tarjeta morada del eco en la columna derecha: invocarlo de un toque y, activo, sus datos a la vista
+  function _tarjetaEco(c) {
+    if (!_esEcoKnight(c)) return '';
+    const activo = !!c.echoActive;
+    const ca = 14 + Characters.calcProfBonus(c.nivel);
+    const sinAdicional = App.enCombate() && _turnoUsado(c, 'bonusAction');
+    const un = (c.resources || []).find(r => r.id === 'echo-unleash');
+    const puntosUn = un && un.max > 0 ? `<div class="mesa-rec"><div>Unleash Incarnation<small>+1 ataque desde el eco al usar Atacar</small></div><span class="mesa-pts">${
+      Array.from({ length: un.max }, (_, i) => `<i class="${i < un.current ? '' : 'u'}" onclick="App.toggleResourceDot('echo-unleash',${i})"></i>`).join('')}</span></div>` : '';
+    if (!activo) return `<section><div class="mesa-sec">Eco</div><div class="mesa-card mesa-eco">
+      <div class="mesa-eco-hd"><span class="mesa-eco-ic">👻</span><div><b>Eco sin invocar</b><small>Manifest Echo · a 4,5 m · CA ${ca}, 1 PG</small></div></div>
+      <button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.eco(true)">👻 Invocar eco · Acción adicional</button>
+      ${sinAdicional ? `<small class="mesa-motivo">${esc(sinAdicional)}</small>` : ''}
+    </div></section>`;
+    return `<section><div class="mesa-sec">Eco</div><div class="mesa-card mesa-eco on">
+      <div class="mesa-eco-hd"><span class="mesa-eco-ic">👻</span><div><b>Eco activo</b><small>Inmune a condiciones · se destruye si termina tu turno a más de 9 m</small></div></div>
+      <div class="mesa-eco-stats"><div><b>${ca}</b><span class="mesa-lbl">CA</span></div><div><b>1</b><span class="mesa-lbl">PG</span></div><div><b>${esc(App.fmtDist('9 m'))}</b><span class="mesa-lbl">Mov. gratis</span></div></div>
+      <ul class="mesa-eco-lista"><li>Tus ataques de Atacar pueden salir desde el eco</li><li>Ataque de oportunidad si alguien se aleja de él</li></ul>
+      ${puntosUn}
+      <div class="mesa-acc"><button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.usarRasgo('bonusAction','intercambio-eco')">⇄ Intercambiar · Adicional</button>
+        <button class="mesa-btn" onclick="Mesa.eco(false)">Descartar</button>
+        <button class="mesa-btn" onclick="App.larryRoll()" title="Tabla de Larry">🎲 Larry</button></div>
+    </div></section>`;
   }
   function eco(invocar) {
     const c = App.getActiveChar();
