@@ -2579,7 +2579,7 @@ const Characters = (() => {
           : 1;
         return [
           { id:'echo-unleash', name:'Unleash Incarnation',
-            current: conMod, max: conMod,
+            current: conMod, max: conMod, note: `${conMod} ${conMod === 1 ? 'uso' : 'usos'} (mod. CON) · ataque extra desde el eco`,
             recharge:'long',
             action:'Ninguna (en tu turno)', range:'9 m (Echo)',
             desc:'Al realizar la acción de Ataque, puedes hacer 1 ataque cuerpo a cuerpo adicional desde la posición del eco. Usos = mod. CON (mín. 1) por descanso largo.',
