@@ -266,8 +266,8 @@ const Mesa = (() => {
   }
 
   function _combate(c) {
-    if (!App.enCombate()) return _fuera(c);
-    const t = c.turn || {};
+    const enCombate = App.enCombate();
+    const t = enCombate ? c.turn || {} : {};
     const col = { action: [], bonusAction: [], reaction: [] };
     const eq = c.equipment || {};
     const maxAtq = App.ataquesDelTurno(), usados = t.attacksUsed || 0;
@@ -286,7 +286,7 @@ const Mesa = (() => {
       const noArma = no || (sinMun ? `Sin ${mun.label.toLowerCase()}` : '');
       col[tipo].push({ no: noArma, html: _fila({
         id: 'arma-' + slot, icono: _iconoArma(w), nombre: mun && mun.qty != null ? `${w.name} (${mun.qty})` : w.name, num: sg(a.ataque), dmg: daño, no: noArma,
-        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '',
+        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', enCombate && maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '',
           _nivelPicaro(c) && (a.sutil || a.aDistancia) ? (t.furtivo ? 'furtivo ya usado' : `+ furtivo ${Math.ceil(_nivelPicaro(c) / 2)}d6`) : '', ...a.notas].filter(Boolean).join(' · '),
         det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
       }) });
@@ -429,8 +429,8 @@ const Mesa = (() => {
 
     const columna = (tipo, titulo, campo) => `
       <section class="mesa-card mesa-col">
-        <div class="mesa-col-hd">${titulo}<button class="mesa-chip ${t[campo] ? 'devolver' : 'on'}" onclick="Mesa.turno('${campo}')"
-          title="${t[campo] ? 'Te equivocaste o te arrepentiste: devuelve la acción' : 'Marcarla como usada'}">${t[campo] ? 'usada · ↺ devolver' : 'disponible'}</button></div>
+        <div class="mesa-col-hd">${titulo}${enCombate ? `<button class="mesa-chip ${t[campo] ? 'devolver' : 'on'}" onclick="Mesa.turno('${campo}')"
+          title="${t[campo] ? 'Te equivocaste o te arrepentiste: devuelve la acción' : 'Marcarla como usada'}">${t[campo] ? 'usada · ↺ devolver' : 'disponible'}</button>` : ''}</div>
         <div class="mesa-col-bd">${_columnaItems(col[tipo], 'no-' + tipo) || '<p class="mesa-vacio">Nada que usar aquí.</p>'}
           ${tipo === 'bonusAction' && _nivelPicaro(c) >= 2 ? `<div class="mesa-rapidas" title="Cunning Action">${[
             'Correr', 'Destrabarse', 'Esconderse', ...(_subPicaro(c) === 'Thief' && _nivelPicaro(c) >= 3 ? ['Juego de manos', 'Usar objeto'] : [])].map(n =>
@@ -440,13 +440,16 @@ const Mesa = (() => {
         </div>
       </section>`;
 
+    const fuera = enCombate ? null : _fuera(c, Object.values(col).flat().map(x => x.html).join(''));
     return `
       <div class="mesa-grid">
         <div class="mesa-centro">
+          ${fuera ? fuera.arriba : ''}
           <div class="mesa-acciones">
             ${columna('action', 'Acción', 'action')}
             <div class="mesa-pila">${columna('bonusAction', 'Adicional', 'bonus')}${columna('reaction', 'Reacción', 'reaction')}</div>
           </div>
+          ${fuera ? fuera.abajo : ''}
         </div>
         <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
       </div>`;
@@ -493,7 +496,7 @@ const Mesa = (() => {
   }
 
   /* ══ Fuera de combate: explorar, hablar, preparar y descansar ══ */
-  function _fuera(c) {
+  function _fuera(c, enColumnas = '') {
     const prep = (c.spells || []).filter(sp => preparado(c, sp));
     const usados = new Set();
     const toma = (lista) => lista.filter(sp => !usados.has(sp.id) && usados.add(sp.id));
@@ -511,7 +514,8 @@ const Mesa = (() => {
     // Preparación y utilidad: lo que se lanza antes de pelear o lleva más de un turno
     const utiles = toma(prep.filter(sp => sp.combat === false || Characters.getActivation(sp) === 'other'
       || (!sp.concentration && /\b\d+ ?h\b|hora/i.test(sp.duration || '')))).map(fila);
-    const rasgos = (c.resources || []).filter(r => r.max && !ayuda.some(x => x.html.includes(`rec-${r.id}'`))).map(r => _filaRecurso(c, r));
+    // Los recursos que ya están en Acción / Adicional / Reacción no se repiten
+    const rasgos = (c.resources || []).filter(r => r.max && !enColumnas.includes(`'rec-${r.id}'`) && !ayuda.some(x => x.html.includes(`rec-${r.id}'`))).map(r => _filaRecurso(c, r));
     const guia = (c.ifttt || []).filter(x => /pre-?combate|antes/i.test(x.section || ''));
     const limpiar = h => esc(String(h || '').replace(/<[^>]+>/g, ''));
 
@@ -520,24 +524,18 @@ const Mesa = (() => {
       <div class="mesa-col-hd">${titulo}</div>
       <div class="mesa-col-bd">${_columnaItems(items, grupo)}</div></section>` : '';
 
-    const bestia = _bestia(c);
-    return `
-      <div class="mesa-grid">
-        <div class="mesa-centro">
-          <div class="mesa-modo">Fuera de combate · lo que puedes hacer al explorar, hablar o prepararte. <button class="mesa-chip on" onclick="Mesa.combate(true)">⚔ Iniciar combate</button></div>
-          ${_terreno(c)}
-          ${[ayuda, rasgos, rituales, utiles].some(l => l.some(x => !x.no)) || guia.length ? '' : '<p class="mesa-vacio mesa-nada">Nada especial que usar fuera de combate. Tus tiradas están a la izquierda y tus recursos a la derecha.</p>'}
-          <div class="mesa-fuera">
+    return {
+      arriba: `<div class="mesa-modo">Fuera de combate · todo se puede usar; con <b>Iniciar combate</b> (arriba) se controlan las acciones del turno.</div>
+          ${_terreno(c)}`,
+      abajo: [ayuda, rasgos, rituales, utiles].some(l => l.some(x => !x.no)) || guia.length ? `<div class="mesa-fuera">
               ${bloque('Ayudar en una prueba', ayuda, 'no-ayuda')}
-              ${bloque('Rasgos', rasgos, 'no-rasgos')}
+              ${bloque('Otros rasgos', rasgos, 'no-rasgos')}
               ${bloque('Rituales', rituales, 'no-rituales')}
               ${bloque('Preparación y utilidad', utiles, 'no-utiles')}
               ${guia.length ? `<section class="mesa-card mesa-col"><div class="mesa-col-hd">Tu guía antes de pelear</div><div class="mesa-col-bd mesa-guia">${
                 guia.map(x => `<div><small>${limpiar(x.trigger)}</small>${limpiar(x.action)}</div>`).join('')}</div></section>` : ''}
-          </div>
-        </div>
-        <aside class="mesa-der">${_apoyo(c, 'combate')}</aside>
-      </div>`;
+          </div>` : '',
+    };
   }
 
   function _fila({ id, icono, nombre, num, sub, det, tags = '', no = '', dmg = '' }) {

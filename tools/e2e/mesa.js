@@ -58,11 +58,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   // Fuera de combate: Combate muestra explorar/preparar; lanzar no marca el turno
   const fuera = await p.evaluate(() => ({ modo: !!document.querySelector('.mesa-modo'), titulos: [...document.querySelectorAll('#mesa-combate .mesa-col-hd')].map(h => h.textContent.trim()),
-    ayuda: [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Ayudar/.test(x.textContent))?.textContent || '',
-    rituales: [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Rituales/.test(x.textContent))?.textContent || '',
+    ayuda: [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Ayudar/.test(x.querySelector('.mesa-col-hd').textContent))?.textContent || '',
+    rituales: [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Rituales/.test(x.querySelector('.mesa-col-hd').textContent))?.textContent || '',
+    sinChipTurno: ![...document.querySelectorAll('#mesa-combate .mesa-col-hd')].some(h => /disponible|usada/.test(h.textContent)),
     turnoCab: !!document.querySelector('#mesaCab [onclick="App.toggleRecursoTurno(\'action\')"]'), iniciar: !!document.querySelector('#mesaCab [onclick="Mesa.combate(true)"]') }));
-  chk('fuera de combate: Ayudar en una prueba (Guidance) y guía; sin Rituales porque ninguno está preparado; la cabecera ofrece Iniciar combate',
-    fuera.modo && /Guidance/.test(fuera.ayuda) && !fuera.titulos.includes('Rituales') && fuera.titulos.some(t => /guía/.test(t)) && !fuera.turnoCab && fuera.iniciar, fuera);
+  chk('fuera de combate: columnas Acción/Adicional/Reacción visibles sin control de turno, más Ayudar en una prueba (Guidance) y guía; sin Rituales; la cabecera ofrece Iniciar combate',
+    fuera.titulos.slice(0, 3).join() === 'Acción,Adicional,Reacción' && fuera.sinChipTurno && fuera.modo && /Guidance/.test(fuera.ayuda) && !fuera.titulos.includes('Rituales') && fuera.titulos.some(t => /guía/.test(t)) && !fuera.turnoCab && fuera.iniciar, fuera);
   await p.evaluate(() => { Mesa.abrir('sp-fc-guidance'); }); await sleep(200);
   await p.evaluate(() => document.querySelector('.mesa-cj.abierto .mesa-acc .mesa-btn.p').click()); await sleep(300);
   chk('Guidance fuera de combate no marca la Acción', await p.evaluate(() => !App.getActiveChar().turn.action && App.getActiveChar().concentration === 'guidance'));
