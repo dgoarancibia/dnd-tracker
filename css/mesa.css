@@ -449,3 +449,7 @@
 .mc-resist { border-color: var(--green-light); color: var(--green-light); font-weight: 700; }
 .mesa-maestria { color: var(--text); }
 .mesa-maestria b { color: var(--m-acento-2); }
+/* Usos de Unleash en la tarjeta del eco: en fila, no apilados por el texto */
+.mesa-eco .mesa-rec { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mesa-eco .mesa-rec > div { min-width: 0; }
+.mesa-eco .mesa-pts { flex-wrap: nowrap; flex: none; }
