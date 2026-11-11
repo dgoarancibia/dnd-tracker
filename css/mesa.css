@@ -419,8 +419,9 @@
 .mesa-eco-hd { display: flex; align-items: center; gap: 10px; }
 .mesa-eco-hd b { display: block; font: 700 16px 'Cinzel', serif; color: var(--eco); }
 .mesa-eco-hd small { display: block; color: var(--m-tx2); font-size: 12px; line-height: 1.35; }
-.mesa-eco-ic { font-size: 26px; line-height: 1; filter: drop-shadow(0 0 6px rgba(180,140,255,.6)); }
-.mesa-eco:not(.on) .mesa-eco-ic { opacity: .55; filter: grayscale(.4); }
+.mesa-eco-ic { width: 30px; height: 30px; flex: none; background: var(--eco) !important; filter: drop-shadow(0 0 6px rgba(180,140,255,.7)); }
+.mesa-eco:not(.on) .mesa-eco-ic { opacity: .5; filter: none; }
+.mc-eco .mesa-ico { width: 13px; height: 13px; margin-right: 4px; vertical-align: -2px; background: #efe6ff !important; }
 .mesa-eco-btn { background: rgba(140,100,230,.35); border-color: var(--eco); color: #efe6ff; font-weight: 700; }
 .mesa-eco:not(.on) > .mesa-eco-btn { width: 100%; min-height: 44px; font-size: 14px; }
 .mesa-eco-btn:disabled { opacity: .45; cursor: default; }
@@ -435,3 +436,10 @@
   color: #efe6ff; background: rgba(140,100,230,.5); border: 1px solid #b48cff; box-shadow: 0 0 8px rgba(160,120,240,.5); }
 .mesa-op[data-id="eco"] { border-color: rgba(160,120,240,.55); background: rgba(120,90,200,.1); }
 .mesa-op[data-id="eco"] b { color: #c9aaff; }
+
+/* Mente Táctica (Guerrero) bajo las tiradas */
+.mt-tm { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--m-borde); border-radius: 10px; background: var(--bg3); }
+.mt-tm b { display: block; font-size: 13px; }
+.mt-tm small { display: block; color: var(--m-tx2); font-size: 12px; line-height: 1.35; }
+.mt-tm .mesa-chip { align-self: flex-start; }
+.mt-tm .mesa-chip small { display: inline; color: inherit; opacity: .8; }

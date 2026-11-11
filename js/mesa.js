@@ -124,7 +124,7 @@ const Mesa = (() => {
     const vel = App.fmtDist(`${String((c.velocidad || 30) / 5 * 1.5).replace('.', ',')} m`);
     return `
       <div class="mc-avatar" onclick="document.getElementById('avatarFileInput').click()" title="Cambiar foto">${foto}</div>
-      <div class="mc-quien"><b>${esc(c.name)}${c.echoActive && _esEcoKnight(c) ? ' <span class="mc-eco" title="Eco activo">👻 Eco</span>' : ''}</b><small>${esc(clases)}${c.subclase ? ' · ' + esc(c.subclase) : ''}</small></div>
+      <div class="mc-quien"><b>${esc(c.name)}${c.echoActive && _esEcoKnight(c) ? ' <span class="mc-eco" title="Eco activo"><i class="mesa-ico" style="--m:url(../assets/iconos/eco.svg)"></i>Eco</span>' : ''}</b><small>${esc(clases)}${c.subclase ? ' · ' + esc(c.subclase) : ''}</small></div>
       <span class="mc-sep"></span>
       <div class="mc-pg">
         <div class="mc-pg-top"><span class="mesa-lbl">PG</span><span class="mc-num mc-${nivelVida}">${current}<small> / </small></span><input class="mc-max" type="number" min="1" max="999" value="${max}"
@@ -205,6 +205,11 @@ const Mesa = (() => {
       return fila('skill', k.id, `<u class="${exp ? 'e' : p ? 'p' : ''}"></u>${esc(k.name)} <small>${ABREV[k.stat]}</small><b>${sg(Characters.calcSkill(c, k.id))}</b>`, k.name);
     }).join('');
     const pasiva = id => 10 + Characters.calcSkill(c, id);
+    // Guerrero 2024: Mente Táctica junto a las pruebas, que es donde se usa
+    const sw = (c.features || []).some(f => f.id === 'tactical-mind') && (c.resources || []).find(r => r.id === 'second-wind');
+    const mente = sw ? `<div class="mesa-sec">Si fallas una prueba</div>
+      <div class="mt-tm"><div><b>Mente Táctica</b><small>Tira 1d10 y súmalo. Si con eso pasa, gasta 1 Second Wind; si sigue fallando, no gasta nada.</small></div>
+        <button class="mesa-chip ${sw.current > 0 ? 'on' : ''}" ${sw.current > 0 ? '' : 'disabled'} onclick="App.adjustResource('second-wind',-1,true);App.showToast('Mente Táctica · 1 Second Wind')">Pasó · gastar 1 <small>(${sw.current}/${sw.max})</small></button></div>` : '';
     return `
       <div class="mt-stats">${stats}</div>
       <div class="mesa-sec">Salvaciones</div>
@@ -212,7 +217,7 @@ const Mesa = (() => {
       <div class="mesa-sec">Habilidades <small>● competente · ◉ pericia</small></div>
       <div class="mt-filas">${skills}</div>
       <div class="mesa-sec">Pasivas</div>
-      <div class="mt-pasivas"><span class="mesa-chip">Percepción ${Characters.calcPercPasiva(c)}</span><span class="mesa-chip">Perspicacia ${pasiva('perspicacia')}</span><span class="mesa-chip">Investigación ${pasiva('investigacion')}</span></div>`;
+      <div class="mt-pasivas"><span class="mesa-chip">Percepción ${Characters.calcPercPasiva(c)}</span><span class="mesa-chip">Perspicacia ${pasiva('perspicacia')}</span><span class="mesa-chip">Investigación ${pasiva('investigacion')}</span></div>${mente}`;
   }
 
   function hoja(abrir) {
@@ -477,7 +482,8 @@ const Mesa = (() => {
     const no = _motivoRecurso(c, r);
     return { no, html: _fila({
       id: 'rec-' + r.id, icono: 'iconos/recursos', nombre: r.name, num: '', no,
-      sub: `${etiqueta ? etiqueta + ' · ' : ''}${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}`,
+      sub: `${etiqueta ? etiqueta + ' · ' : ''}${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}${
+        r.id === 'second-wind' && (c.features || []).some(f => f.id === 'tactical-shift') ? ' · y te mueves ½ velocidad sin provocar ataques de oportunidad' : ''}`,
       det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc">${(opciones => opciones.length
           ? opciones.map(f => `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1);App.showToast('${esc(f.name).replace(/'/g, '’')}')" title="${esc(f.desc || '')}">${esc(f.name)}</button>`).join('')
           : `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button>`)(
@@ -1006,7 +1012,7 @@ const Mesa = (() => {
     const activo = !!c.echoActive;
     const ca = 14 + Characters.calcProfBonus(c.nivel);
     const no = activo ? '' : _turnoUsado(c, 'bonusAction');
-    return { eco: true, no, html: _fila({ id: 'eco', icono: 'iconos/habilidades', nombre: activo ? 'Eco activo' : 'Invocar eco', num: '', no,
+    return { eco: true, no, html: _fila({ id: 'eco', icono: 'iconos/eco', nombre: activo ? 'Eco activo' : 'Invocar eco', num: '', no,
       sub: activo ? `CA ${ca} · 1 PG · se mueve 9 m gratis · ataca desde su lugar` : `Manifest Echo · a 4,5 m · CA ${ca}, 1 PG`,
       tags: activo ? '<span class="mesa-tags"><span class="mesa-tg d">ACTIVO</span></span>' : '',
       det: `<p>${esc(f.desc || '')}</p><div class="mesa-acc">
@@ -1025,18 +1031,18 @@ const Mesa = (() => {
     const puntosUn = un && un.max > 0 ? `<div class="mesa-rec"><div>Unleash Incarnation<small>+1 ataque desde el eco al usar Atacar</small></div><span class="mesa-pts">${
       Array.from({ length: un.max }, (_, i) => `<i class="${i < un.current ? '' : 'u'}" onclick="App.toggleResourceDot('echo-unleash',${i})"></i>`).join('')}</span></div>` : '';
     if (!activo) return `<section><div class="mesa-sec">Eco</div><div class="mesa-card mesa-eco">
-      <div class="mesa-eco-hd"><span class="mesa-eco-ic">👻</span><div><b>Eco sin invocar</b><small>Manifest Echo · a 4,5 m · CA ${ca}, 1 PG</small></div></div>
-      <button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.eco(true)">👻 Invocar eco · Acción adicional</button>
+      <div class="mesa-eco-hd"><i class="mesa-ico mesa-eco-ic" style="--m:url(../assets/iconos/eco.svg)"></i><div><b>Eco sin invocar</b><small>Acción adicional · a 4,5 m · CA ${ca}, 1 PG</small></div></div>
+      <button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.eco(true)" title="Manifest Echo · gasta la Acción adicional">Invocar</button>
       ${sinAdicional ? `<small class="mesa-motivo">${esc(sinAdicional)}</small>` : ''}
     </div></section>`;
     return `<section><div class="mesa-sec">Eco</div><div class="mesa-card mesa-eco on">
-      <div class="mesa-eco-hd"><span class="mesa-eco-ic">👻</span><div><b>Eco activo</b><small>Inmune a condiciones · se destruye si termina tu turno a más de 9 m</small></div></div>
+      <div class="mesa-eco-hd"><i class="mesa-ico mesa-eco-ic" style="--m:url(../assets/iconos/eco.svg)"></i><div><b>Eco activo</b><small>Inmune a condiciones · se destruye si termina tu turno a más de 9 m</small></div></div>
       <div class="mesa-eco-stats"><div><b>${ca}</b><span class="mesa-lbl">CA</span></div><div><b>1</b><span class="mesa-lbl">PG</span></div><div><b>${esc(App.fmtDist('9 m'))}</b><span class="mesa-lbl">Mov. gratis</span></div></div>
       <ul class="mesa-eco-lista"><li>Tus ataques de Atacar pueden salir desde el eco</li><li>Ataque de oportunidad si alguien se aleja de él</li></ul>
       ${puntosUn}
-      <div class="mesa-acc"><button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.usarRasgo('bonusAction','intercambio-eco')">⇄ Intercambiar · Adicional</button>
+      <div class="mesa-acc"><button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.usarRasgo('bonusAction','intercambio-eco')">⇄ Intercambiar</button>
         <button class="mesa-btn" onclick="Mesa.eco(false)">Descartar</button>
-        <button class="mesa-btn" onclick="App.larryRoll()" title="Tabla de Larry">🎲 Larry</button></div>
+        <button class="mesa-btn" onclick="App.larryRoll()" title="Tabla de Larry">Larry</button></div>
     </div></section>`;
   }
   function eco(invocar) {

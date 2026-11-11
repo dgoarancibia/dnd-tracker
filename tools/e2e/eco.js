@@ -28,8 +28,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     return { card: !!k, on: !!(k && k.classList.contains('on')), txt: k ? k.textContent.replace(/\s+/g, ' ').trim().slice(0, 90) : '',
       dis: !!(k && k.querySelector('.mesa-eco-btn:disabled')), chip: !!document.querySelector('.mc-quien .mc-eco'), activo: !!c.echoActive, bonus: !!(c.turn && c.turn.bonus) }; });
 
+  const tm = await p.evaluate(() => { const b = document.querySelector('#mesaTiradas .mt-tm .mesa-chip'); const sw = () => App.getActiveChar().resources.find(r => r.id === 'second-wind').current;
+    const antes = sw(); b && b.click(); return { hay: !!b, antes, despues: sw(), bonus: !!(App.getActiveChar().turn || {}).bonus }; });
+  chk('Mente Táctica bajo las tiradas: gasta 1 Second Wind sin marcar la Adicional', tm.hay && tm.despues === tm.antes - 1 && !tm.bonus, tm);
+  await sleep(300);
+  chk('sin emojis en la tarjeta del eco; ícono SVG y botón "Invocar"', await p.evaluate(() => { const k = document.querySelector('.mesa-eco');
+    return !/👻|🎲/.test(k.textContent) && !!k.querySelector('.mesa-ico') && k.querySelector('.mesa-eco-btn').textContent.trim() === 'Invocar'; }));
   let r = await leer();
-  chk('sin invocar: tarjeta con botón Invocar, sin distintivo', r.card && !r.on && /Invocar eco/.test(r.txt) && !r.chip, r);
+  chk('sin invocar: tarjeta con botón Invocar, sin distintivo', r.card && !r.on && /Invocar/.test(r.txt) && !r.chip, r);
   await p.evaluate(() => Mesa.combate(true)); await sleep(300); await cerrar();
   await p.evaluate(() => document.querySelector('.mesa-eco .mesa-eco-btn').click()); await sleep(400);
   r = await leer();

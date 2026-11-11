@@ -11762,7 +11762,7 @@ ${notesText}`;
     _char.echoActive = !_char.echoActive;
     _saveChar();
     _renderCombateTab();
-    showToast(_char.echoActive ? '👻 Echo invocado' : '👻 Echo descartado');
+    showToast(_char.echoActive ? 'Eco invocado' : 'Eco descartado');
   }
 
   /* ══════════════════════════════════════════════════════
