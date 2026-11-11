@@ -4615,6 +4615,10 @@ const App = (() => {
   // Cuántos ataques da la acción de Ataque a este nivel.
   function _ataquesDelTurno(c) {
     if (!c) return 1;
+    // Unleash Incarnation (Echo Knight): cada uso suma un ataque desde el eco este turno
+    return _ataquesBase(c) + ((c.turn && c.turn.ataquesEco) || 0);
+  }
+  function _ataquesBase(c) {
     const feats = (c.features || []).map(f => (f.name || '').toLowerCase());
     // Extra Attack: la mayoría de clases da 2; Guerrero escala a 3 y 4.
     if (!feats.some(n => /extra attack|ataque extra/.test(n))) return 1;
@@ -4648,6 +4652,15 @@ const App = (() => {
     const w = Characters.getWeaponMasteryOptions().find(o => elegidas.includes(o.id) &&
       (item.id === o.id || nombre === o.name.toLowerCase() || nombre.includes(o.name.toLowerCase())));
     return w ? w.mastery : null;
+  }
+
+  function _maestriaArma(c, item) {
+    if (!c || !item) return null;
+    const elegida = _maestriaDe(c, item);
+    if (elegida) return elegida;
+    const sinElegir = !(Array.isArray(c.weaponMasteries) && c.weaponMasteries.length);
+    const tiene = (c.features || []).some(f => /^weapon-mastery/.test(f.id || ''));
+    return sinElegir && tiene && item.mastery && Characters.WEAPON_MASTERIES[item.mastery] ? item.mastery : null;
   }
 
   /* Qué gasta del turno atacar con el arma de `slot` (HU-21):
@@ -4798,6 +4811,9 @@ const App = (() => {
 
   function nuevoTurno() {
     if (!_char) return;
+    // Resistencia de Blessing of the Raven Queen: sigue durante los turnos de los demás y
+    // se va al cerrar tu turno siguiente (no hay evento de "inicio de turno")
+    if (_char.resistTodo && ++_char.resistTodo.fines >= 2) delete _char.resistTodo;
     _char.turn = { action: false, bonus: false, reaction: false, movement: false, attacksUsed: 0,
                    beast: { action: false, bonus: false, reaction: false, hmBonusUsado: false } };
     // Banderas por turno de otras features (Charge, Bestial Fury…).
@@ -5454,6 +5470,11 @@ const App = (() => {
 
   function adjustHP(delta) {
     if (!_char) return;
+    if (delta < 0 && _char.resistTodo) {
+      const antes = -delta;
+      delta = -Math.floor(antes / 2);
+      setTimeout(() => showToast(`Resistencia (${_char.resistTodo ? _char.resistTodo.fuente : 'Raven Queen'}): ${antes} → ${-delta}`), 50);
+    }
 
     // Sync temp HP from input in case user typed but didn't blur
     const tempInput = document.getElementById('tempHPInput');
@@ -5755,6 +5776,7 @@ const App = (() => {
   }
 
   function resetCombat() {
+    if (_char && _char.resistTodo) { delete _char.resistTodo; _saveChar(true); }
     _combatRound = 0;
     _combatTurn  = 0;
     _combatActive = false;
@@ -11757,6 +11779,39 @@ ${notesText}`;
   }
 
   /* ── Feature Detail Modal ── */
+  // Unleash Incarnation: gasta un uso y suma un ataque desde el eco a la acción de Ataque
+  function usarUnleash() {
+    if (!_char) return;
+    const r = (_char.resources || []).find(x => x.id === 'echo-unleash');
+    if (!r || r.current <= 0) { showToast('Sin usos de Unleash Incarnation'); return; }
+    if (!_char.echoActive) { showToast('Primero invoca el eco'); return; }
+    r.current--;
+    if (_combatActive) { const t = _turnoDe(_char); t.ataquesEco = (t.ataquesEco || 0) + 1; }
+    _saveChar(true);
+    _refreshResourceDots(r.id);
+    _renderTurnTracker();
+    showToast(_combatActive ? `+1 ataque desde el eco · ${_ataquesDelTurno(_char)} ataques este turno` : 'Unleash Incarnation · +1 ataque desde el eco');
+  }
+  // Blessing of the Raven Queen (Shadar-Kai): teletransporte 9 m; desde nivel 3, resistencia a todo el daño
+  function usarBendicionCuervo() {
+    if (!_char) return;
+    const r = (_char.resources || []).find(x => x.id === 'raven-queen-blessing');
+    if (!r || r.current <= 0) { showToast('Sin usos de Blessing of the Raven Queen'); return; }
+    r.current--;
+    _gastarActivacionRecurso(r);
+    const conResist = (_char.nivel || 1) >= 3;
+    if (conResist) _char.resistTodo = { fuente: 'Raven Queen', fines: 0 };
+    _saveChar(true);
+    _refreshResourceDots(r.id);
+    setTimeout(() => showToast(`Teletransporte hasta ${fmtDist('9 m')}${conResist ? ' · resistencia a todo el daño hasta tu próximo turno' : ''}`), 50);
+  }
+  function quitarResistTodo() {
+    if (!_char || !_char.resistTodo) return;
+    delete _char.resistTodo;
+    _saveChar(true);
+    showToast('Resistencia terminada');
+  }
+
   function toggleEcho() {
     if (!_char) return;
     _char.echoActive = !_char.echoActive;
@@ -12792,7 +12847,8 @@ ${notesText}`;
 
     // Detalle spell
     openSpellDetail, closeSpellDetail,
-    openAbilityDetail, toggleEcho, larryRoll, closeLarryModal,
+    openAbilityDetail, toggleEcho, larryRoll, closeLarryModal, usarUnleash, usarBendicionCuervo, quitarResistTodo,
+    maestriaArma: item => _maestriaArma(_char, item),
     openFeatureDetail, closeFeatureDetail,
     copiarRoll20,
     toggleHideFeature, toggleShowHidden, showAllHiddenFeatures,

@@ -129,7 +129,8 @@ const Mesa = (() => {
       <div class="mc-pg">
         <div class="mc-pg-top"><span class="mesa-lbl">PG</span><span class="mc-num mc-${nivelVida}">${current}<small> / </small></span><input class="mc-max" type="number" min="1" max="999" value="${max}"
           title="PG máximos — toca para editar" onclick="this.select()" onchange="App.setHPMax(parseInt(this.value))" onkeydown="if(event.key==='Enter')this.blur()">
-          <button class="mesa-chip" onclick="App.promptTempHP()" title="PG temporales">TMP ${temp || 0}</button></div>
+          <button class="mesa-chip" onclick="App.promptTempHP()" title="PG temporales">TMP ${temp || 0}</button>${c.resistTodo
+            ? `<button class="mesa-chip mc-resist" onclick="App.quitarResistTodo()" title="Resistencia a todo el daño (${esc(c.resistTodo.fuente)}) hasta el inicio de tu próximo turno: el botón Daño aplica la mitad. Toca para quitarla.">½ daño ✕</button>` : ''}</div>
         <div class="mesa-barra mc-${nivelVida}">${Array.from({ length: segs }, (_, i) => `<i class="${i < llenos ? '' : 'v'}"></i>`).join('')}</div>
       </div>
       <div class="mc-pg-ctl">
@@ -282,13 +283,15 @@ const Mesa = (() => {
         : t.action && !usados ? 'Ya usaste tu Acción en otra cosa' : '';
       const daño = App.sumarDaño(a.daño + (a.extra ? ' + ' + a.extra : ''));
       const mun = _municion(c, w);
+      const maes = _maestria(c, w);
       const sinMun = mun && mun.qty === 0;
       const noArma = no || (sinMun ? `Sin ${mun.label.toLowerCase()}` : '');
       col[tipo].push({ no: noArma, html: _fila({
         id: 'arma-' + slot, icono: _iconoArma(w), nombre: mun && mun.qty != null ? `${w.name} (${mun.qty})` : w.name, num: sg(a.ataque), dmg: daño, no: noArma,
-        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', enCombate && maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}` : '',
+        sub: [mun && mun.qty == null ? `Sin ${mun.label.toLowerCase()} en Ítems` : '', enCombate && maxAtq > 1 && slot === 'mainHand' ? `ataques ${usados}/${maxAtq}${t.ataquesEco ? ` (${t.ataquesEco} desde el eco)` : ''}` : '',
+          maes ? maes.corto : '',
           _nivelPicaro(c) && (a.sutil || a.aDistancia) ? (t.furtivo ? 'furtivo ya usado' : `+ furtivo ${Math.ceil(_nivelPicaro(c) / 2)}d6`) : '', ...a.notas].filter(Boolean).join(' · '),
-        det: `${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
+        det: `${maes ? `<p class="mesa-maestria"><b>Maestría ${esc(maes.nombre)}</b> · ${esc(maes.corto.replace(/^\w+ · /, ''))}</p>` : ''}${w.notes ? `<p>${esc(w.notes)}</p>` : ''}${mun ? _controlMunicion(mun) : ''}<div class="mesa-acc"><button class="mesa-btn p" onclick="event.stopPropagation();App.attackWithWeapon('${slot}')">⚔ Atacar</button></div>`,
       }) });
       // Ataque de oportunidad: con la primera arma cuerpo a cuerpo equipada (principal o secundaria)
       if (!a.aDistancia && !col.reaction.some(x => x.ao)) {
@@ -486,8 +489,14 @@ const Mesa = (() => {
     return { no, html: _fila({
       id: 'rec-' + r.id, icono: 'iconos/recursos', nombre: r.name, num: '', no,
       sub: `${etiqueta ? etiqueta + ' · ' : ''}${r.current}/${r.max} usos${r.note ? ' · ' + r.note : ''}${
-        r.id === 'second-wind' && (c.features || []).some(f => f.id === 'tactical-shift') ? ' · y te mueves ½ velocidad sin provocar ataques de oportunidad' : ''}`,
-      det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc">${(opciones => opciones.length
+        r.id === 'second-wind' && (c.features || []).some(f => f.id === 'tactical-shift') ? ' · y te mueves ½ velocidad sin provocar ataques de oportunidad' : ''}${
+        r.id === 'raven-queen-blessing' ? ` · teletransporte ${App.fmtDist('9 m')}${(c.nivel || 1) >= 3 ? ' y resistencia a todo el daño hasta tu próximo turno' : ''}` : ''}${
+        r.id === 'echo-unleash' ? ' · +1 ataque cuerpo a cuerpo desde el eco' : ''}`,
+      det: `<p>${esc(r.desc || '')}</p><div class="mesa-acc">${r.id === 'echo-unleash'
+          ? `<button class="mesa-btn p" ${r.current > 0 && c.echoActive ? '' : 'disabled'} onclick="event.stopPropagation();App.usarUnleash()">${c.echoActive ? `+1 ataque desde el eco (${r.current}/${r.max})` : 'Primero invoca el eco'}</button>`
+          : r.id === 'raven-queen-blessing'
+          ? `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.usarBendicionCuervo()">Teletransportarse${(c.nivel || 1) >= 3 ? ' + resistencia' : ''} (${r.current}/${r.max})</button>`
+          : (opciones => opciones.length
           ? opciones.map(f => `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1);App.showToast('${esc(f.name).replace(/'/g, '’')}')" title="${esc(f.desc || '')}">${esc(f.name)}</button>`).join('')
           : `<button class="mesa-btn p" ${r.current > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.adjustResource('${r.id}',-1)">Usar (${r.current}/${r.max})</button>`)(
           /channel divinity/i.test(r.name || '') ? (c.features || []).filter(f => /^channel divinity/i.test(f.source || '')) : [])}
@@ -794,6 +803,16 @@ const Mesa = (() => {
     }
   }
 
+  // Maestría del arma, si el personaje la puede usar: "Sap · si aciertas: desventaja en su próximo ataque"
+  function _maestria(c, w) {
+    const m = App.maestriaArma ? App.maestriaArma(w) : null;
+    const d = m && Characters.WEAPON_MASTERIES && Characters.WEAPON_MASTERIES[m];
+    if (!d) return null;
+    const MOMENTO = { Graze: 'si fallas', Nick: 'con el ataque extra de Light', Cleave: 'si aciertas cuerpo a cuerpo' };
+    const efecto = d.short.charAt(0).toLowerCase() + d.short.slice(1);
+    return { nombre: m, corto: `${m} · ${MOMENTO[m] || 'si aciertas'}: ${efecto}` };
+  }
+
   const _tieneDote = (c, nombre) => (c.features || []).some(f => f.name === nombre);
 
   /* ── Pícaro: Ataque furtivo y Cunning Strike ─────────────────────────── */
@@ -1028,6 +1047,7 @@ const Mesa = (() => {
     const un = (c.resources || []).find(r => r.id === 'echo-unleash');
     const puntosUn = un && un.max > 0 ? `<div class="mesa-rec"><div>Unleash Incarnation<small>+1 ataque desde el eco al usar Atacar</small></div><span class="mesa-pts">${
       Array.from({ length: un.max }, (_, i) => `<i class="${i < un.current ? '' : 'u'}" onclick="App.toggleResourceDot('echo-unleash',${i})"></i>`).join('')}</span></div>` : '';
+    const btnUn = un && un.max > 0 ? `<button class="mesa-btn mesa-eco-btn" ${un.current > 0 ? '' : 'disabled'} onclick="App.usarUnleash()">+1 ataque desde el eco</button>` : '';
     if (!activo) return `<section><div class="mesa-sec">Eco</div><div class="mesa-card mesa-eco">
       <div class="mesa-eco-hd"><i class="mesa-ico mesa-eco-ic" style="--m:url(../assets/iconos/eco.svg)"></i><div><b>Eco sin invocar</b><small>Acción adicional · a 4,5 m · CA ${ca}, 1 PG</small></div></div>
       <button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.eco(true)" title="Manifest Echo · gasta la Acción adicional">Invocar</button>
@@ -1038,7 +1058,7 @@ const Mesa = (() => {
       <div class="mesa-eco-stats"><div><b>${ca}</b><span class="mesa-lbl">CA</span></div><div><b>1</b><span class="mesa-lbl">PG</span></div><div><b>${esc(App.fmtDist('9 m'))}</b><span class="mesa-lbl">Mov. gratis</span></div></div>
       <ul class="mesa-eco-lista"><li>Tus ataques de Atacar pueden salir desde el eco</li><li>Ataque de oportunidad si alguien se aleja de él</li></ul>
       ${puntosUn}
-      <div class="mesa-acc"><button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.usarRasgo('bonusAction','intercambio-eco')">⇄ Intercambiar</button>
+      <div class="mesa-acc">${btnUn}<button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.usarRasgo('bonusAction','intercambio-eco')">⇄ Intercambiar</button>
         <button class="mesa-btn" onclick="Mesa.eco(false)">Descartar</button>
         <button class="mesa-btn" onclick="App.larryRoll()" title="Tabla de Larry">Larry</button></div>
     </div></section>`;

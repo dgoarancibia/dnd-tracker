@@ -444,3 +444,8 @@
 .mt-tm small { display: block; color: var(--m-tx2); font-size: 12px; line-height: 1.35; }
 .mt-tm .mesa-chip { align-self: flex-start; }
 .mt-tm .mesa-chip small { display: inline; color: inherit; opacity: .8; }
+
+/* Resistencia a todo el daño activa (Raven Queen) y maestría en el detalle del arma */
+.mc-resist { border-color: var(--green-light); color: var(--green-light); font-weight: 700; }
+.mesa-maestria { color: var(--text); }
+.mesa-maestria b { color: var(--m-acento-2); }
