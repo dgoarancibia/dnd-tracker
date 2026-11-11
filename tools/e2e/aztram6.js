@@ -24,7 +24,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     Characters.applyChoice(c, 'asi-4', { mode: 'feat', featId: 'feat-polearm-master', asiStat: 'for' });
     c.hp.max = 48; c.hp.current = 48;
     c.bonuses = { ...(c.bonuses || {}), ca: 1 };   // Defense, como en su ficha
-    c.equipment = { mainHand: { kind: 'weapon', name: "Dragon's Wrath Weapon (Polearm)", die: '1d6', mastery: 'Sap', statUsed: 'str', type: 'melee' },
+    c.equipment = { mainHand: { kind: 'weapon', name: "Dragon's Wrath Weapon (Polearm)", die: '1d6+FuE', mastery: 'Sap', statUsed: 'str', type: 'melee' },
       offHand: { kind: 'shield', name: 'Escudo' }, armor: { kind: 'armor', name: 'Media Armadura de Placas', base_ca: 15, add_dex: true } };
     Storage.saveChar(c); Storage.setActiveId('az'); sessionStorage.setItem('dnd_playing', '1');
   });

@@ -859,7 +859,8 @@ const Characters = (() => {
       if (d) notas.push(`A dos manos: ${d}${estilos.has('fs-dueling') ? ' (sin Dueling)' : ''}`);
     }
 
-    const dado = w.die || '1d4';
+    // El modificador lo suma la app: si el dado trae escrito "+FUE", "+STR" o "+mod" se descarta
+    const dado = String(w.die || '').replace(/\s*\+\s*[a-záéíóúñ]+\b/gi, '').trim() || '1d4';
     const fmtNum = n => (n > 0 ? `+${n}` : n < 0 ? `${n}` : '');
     return {
       ataque, statKey, mod, prof, magico, aDistancia, sinCompetencia,
