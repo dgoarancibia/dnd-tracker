@@ -1059,8 +1059,7 @@ const Mesa = (() => {
       <ul class="mesa-eco-lista"><li>Tus ataques de Atacar pueden salir desde el eco</li><li>Ataque de oportunidad si alguien se aleja de él</li></ul>
       ${puntosUn}
       <div class="mesa-acc">${btnUn}<button class="mesa-btn mesa-eco-btn" ${sinAdicional ? 'disabled' : ''} onclick="Mesa.usarRasgo('bonusAction','intercambio-eco')">⇄ Intercambiar</button>
-        <button class="mesa-btn" onclick="Mesa.eco(false)">Descartar</button>
-        <button class="mesa-btn" onclick="App.larryRoll()" title="Tabla de Larry">Larry</button></div>
+        <button class="mesa-btn" onclick="Mesa.eco(false)">Descartar</button></div>
     </div></section>`;
   }
   function eco(invocar) {

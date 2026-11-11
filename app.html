@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 527;
+const _SW_EXPECTED = 528;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,14 +103,14 @@ const _SW_EXPECTED = 527;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=148">
+<link rel="stylesheet" href="css/style.css?v=149">
 <link rel="stylesheet" href="css/tema.css?v=3">
 <link rel="stylesheet" href="css/pergamino.css?v=3">
 <link rel="stylesheet" href="css/onix.css?v=4">
 <link rel="stylesheet" href="css/mesa.css?v=25">
 <script src="js/tema.js?v=3"></script>
 <script src="js/iconos.js?v=2"></script>
-<script src="js/mesa.js?v=36"></script>
+<script src="js/mesa.js?v=37"></script>
 </head>
 <body>
 
@@ -815,38 +815,6 @@ const _SW_EXPECTED = 527;
 </div>
 
 <!-- MODAL DETALLE FEATURE -->
-<!-- MODAL LARRY — d20 → d100 tabla del Echo -->
-<div class="modal-overlay" id="larryModal" onclick="if(event.target===this)App.closeLarryModal()">
-  <div class="modal" style="max-width:420px;text-align:center;">
-    <button class="modal-close-x" onclick="App.closeLarryModal()">✕</button>
-    <div style="font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;color:var(--gold);margin-bottom:16px;">👻 LARRY</div>
-
-    <!-- d20 número grande -->
-    <div style="margin-bottom:4px;">
-      <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;">D20</div>
-      <div id="larryD20Result" style="font-size:64px;font-family:'Cinzel',serif;font-weight:700;line-height:1;"></div>
-    </div>
-
-    <!-- Título y descripción del d20 -->
-    <div style="margin-bottom:14px;">
-      <div id="larryD20Title" style="font-size:13px;font-weight:700;color:var(--gold-dim);margin-bottom:6px;letter-spacing:0.5px;"></div>
-      <div id="larryD20Text" style="font-size:13px;line-height:1.6;color:var(--text);background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;text-align:left;"></div>
-    </div>
-
-    <!-- d100 + resultado (solo si d20=20) -->
-    <div id="larryD100Section" style="display:none;">
-      <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:12px;">
-        <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;">D100</div>
-        <div id="larryD100Result" style="font-size:42px;font-family:'Cinzel',serif;font-weight:700;color:var(--gold);margin-bottom:10px;"></div>
-        <div id="larryCatLabel" style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:2px;padding:3px 12px;border-radius:4px;border:1px solid;margin-bottom:12px;"></div>
-        <div id="larryText" style="font-size:14px;line-height:1.7;color:var(--text);text-align:left;background:rgba(255,255,255,0.04);border-radius:8px;padding:14px 16px;"></div>
-      </div>
-    </div>
-
-    <button class="btn-primary" style="margin-top:18px;width:100%;" onclick="App.larryRoll()">🎲 Tirar de nuevo</button>
-  </div>
-</div>
-
 <div class="modal-overlay" id="featureDetailModal">
   <div class="modal" style="max-width:420px;">
     <button class="modal-close-x" onclick="App.closeFeatureDetail()">✕</button>
@@ -1348,7 +1316,7 @@ const _SW_EXPECTED = 527;
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=4"></script>
 <script src="js/bastion.js?v=2"></script>
-<script src="js/app.js?v=307"></script>
+<script src="js/app.js?v=308"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=5"></script>
 <script>

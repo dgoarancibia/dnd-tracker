@@ -2663,7 +2663,7 @@ const App = (() => {
 
       // Panel del Echo — solo para Echo Knight
       const echoPanel = isEchoKnight ? (() => {
-        const echoCA = Characters.calcCA(c);
+        const echoCA = 14 + Characters.calcProfBonus(c.nivel);   // el eco tiene CA 14 + BC, no la tuya
         const active = !!c.echoActive;
         return `
         <div class="ability-card${active ? ' echo-active-card' : ''}" style="margin-bottom:8px;">
@@ -2688,7 +2688,6 @@ const App = (() => {
               Acción bonus → teleportarse al Echo<br>
               Atacar desde su posición
             </div>
-            <button class="larry-roll-btn" onclick="App.larryRoll()" title="Tirar d20 — si sale 20, consultar tabla Larry">🎲 Larry</button>
           </div>` : ''}
         </div>`;
       })() : '';
@@ -11820,147 +11819,6 @@ ${notesText}`;
     showToast(_char.echoActive ? 'Eco invocado' : 'Eco descartado');
   }
 
-  /* ══════════════════════════════════════════════════════
-     LARRY — Tabla d100 del Echo
-  ══════════════════════════════════════════════════════ */
-  const _LARRY_TABLE = [
-    // 01–25 SUTIL
-    [1,2,   'SUTIL',  'Larry se inclina levemente hacia una puerta cerrada, como si escuchara algo al otro lado.'],
-    [3,4,   'SUTIL',  'Larry "mira" durante dos segundos más de lo necesario a un NPC antes de disiparse.'],
-    [5,6,   'SUTIL',  'Larry apunta brevemente con la cabeza en una dirección sin razón aparente.'],
-    [7,8,   'SUTIL',  'Larry aparece un momento frente a Aztram como si quisiera decirle algo, luego desaparece.'],
-    [9,10,  'SUTIL',  'Larry imita el gesto de saludar a alguien del grupo — el mismo gesto que hacía Lyssara.'],
-    [11,12, 'SUTIL',  'Larry se posiciona entre Aztram y un desconocido antes de que Aztram haya decidido hacerlo.'],
-    [13,14, 'SUTIL',  'Larry permanece visible 3 segundos más después de que Aztram lo disiparía normalmente.'],
-    [15,16, 'SUTIL',  'Larry mueve la mano como si alcanzara un objeto que no existe — exactamente como lo haría Aztram.'],
-    [17,18, 'SUTIL',  'Larry inclina la cabeza ante alguien del grupo — un gesto de respeto que Aztram no ordenó.'],
-    [19,20, 'SUTIL',  'Larry aparece brevemente junto a un aliado herido y extiende la mano sin tocarlo.'],
-    [21,22, 'SUTIL',  'Larry gira hacia el horizonte en una dirección específica y permanece así hasta que Aztram lo nota.'],
-    [23,24, 'SUTIL',  'Larry parpadea — algo que un eco no debería poder hacer.'],
-    [25,25, 'SUTIL',  'Larry se queda completamente quieto durante un combate. No ataca. Solo observa.'],
-    // 26–55 LLAMATIVO
-    [26,27, 'LLAMATIVO', 'Larry se materializa frente a un enemigo que estaba a punto de atacar a un aliado — sin que Aztram lo ordenara.'],
-    [28,29, 'LLAMATIVO', 'Larry traza en el aire con el dedo una ruta de escape que resulta ser la correcta.'],
-    [30,31, 'LLAMATIVO', 'Larry se posiciona exactamente donde Dain Corvus solía pararse. Aztram lo reconoce inmediatamente.'],
-    [32,33, 'LLAMATIVO', 'Larry niega con la cabeza ante una decisión que Aztram está a punto de tomar.'],
-    [34,35, 'LLAMATIVO', 'Larry asiente ante las palabras de un NPC específico — como si las entendiera y estuviera de acuerdo.'],
-    [36,37, 'LLAMATIVO', 'Larry camina hacia un objeto en la sala y lo señala antes de que el grupo lo hubiera notado.'],
-    [38,39, 'LLAMATIVO', 'Larry se pone de rodillas brevemente frente a algo o alguien. Aztram no sabe por qué.'],
-    [40,41, 'LLAMATIVO', 'Larry aparece entre dos miembros del grupo que están discutiendo — literalmente interponiéndose.'],
-    [42,43, 'LLAMATIVO', 'Larry imita el movimiento de escribir algo en el aire. No hay forma de saber qué.'],
-    [44,45, 'LLAMATIVO', 'Larry mira al cielo durante exactamente 10 segundos y luego desaparece.'],
-    [46,47, 'LLAMATIVO', 'Larry se materializa detrás de un NPC de aspecto amigable y hace el gesto de "cuidado".'],
-    [48,49, 'LLAMATIVO', 'Larry ataca a un enemigo que nadie había visto todavía. Resulta ser real.'],
-    [50,51, 'LLAMATIVO', 'Larry se detiene en mitad de un ataque ordenado por Aztram y no lo completa.'],
-    [52,53, 'LLAMATIVO', 'Larry aparece reflejando exactamente la postura de Aztram — como un espejo perfecto — durante 5 segundos.'],
-    [54,55, 'LLAMATIVO', 'Larry hace el gesto de llevarse el dedo a los labios hacia Aztram. Silencio.'],
-    // 56–85 PERTURBADOR
-    [56,57, 'PERTURBADOR', 'Larry adopta brevemente la postura característica de Lyssara Vale. Aztram es el único que lo reconoce.'],
-    [58,59, 'PERTURBADOR', 'Larry se materializa frente a Aztram bloqueándole el paso — como si no quisiera que avanzara hacia algo.'],
-    [60,61, 'PERTURBADOR', 'Larry camina lentamente en círculo alrededor de un NPC específico sin razón aparente.'],
-    [62,63, 'PERTURBADOR', 'Larry se arrodilla y toca el suelo en un punto específico de la sala — como marcando algo.'],
-    [64,65, 'PERTURBADOR', 'Larry aparece junto a Aztram durante el Trance. Aztram lo ve en la meditación. Larry está sentado, esperando.'],
-    [66,67, 'PERTURBADOR', 'Larry reproduce un movimiento de combate que Aztram nunca le enseñó. Es el estilo de la orden.'],
-    [68,69, 'PERTURBADOR', 'Larry mira fijamente a un NPC durante toda una conversación. Ese NPC miente en algún punto.'],
-    [70,71, 'PERTURBADOR', 'Larry traza el símbolo de la orden en el polvo con el pie. Luego lo borra.'],
-    [72,73, 'PERTURBADOR', 'Larry adopta una postura de descanso — sentado, quieto — algo que ningún eco debería poder hacer.'],
-    [74,75, 'PERTURBADOR', 'Larry se vuelve más sólido de lo normal — casi opaco. Dura 6 segundos. Luego vuelve a ser translúcido.'],
-    [76,77, 'PERTURBADOR', 'Larry protege a un aliado específico del grupo durante todo el combate, independientemente de las órdenes de Aztram.'],
-    [78,79, 'PERTURBADOR', 'Larry señala el corazón de Aztram. Luego el suyo propio. Luego desaparece.'],
-    [80,81, 'PERTURBADOR', 'Larry no se deshace cuando Aztram lo ordena. Permanece 10 segundos más, mirando algo que nadie más ve.'],
-    [82,83, 'PERTURBADOR', 'Larry aparece frente a Aztram con las manos extendidas — el gesto universal de rendición o de paz.'],
-    [84,85, 'PERTURBADOR', 'Larry ataca a un aliado del grupo. No hace daño — no puede — pero el intento es real e inexplicable.'],
-    // 86–100 INEXPLICABLE
-    [86,87,  'INEXPLICABLE', 'Larry aparece durante 3 segundos completamente opaco, como una silueta sólida, antes de volver a ser translúcido.'],
-    [88,89,  'INEXPLICABLE', 'Larry adopta la forma de otra persona brevemente — alguien que Aztram conoce. El DM elige quién.'],
-    [90,91,  'INEXPLICABLE', 'Larry habla. Nadie escucha palabras — pero Aztram jura que movió los labios. El DM sabe lo que dijo.'],
-    [92,93,  'INEXPLICABLE', 'Larry desaparece durante un combate y reaparece detrás del enemigo más peligroso de la sala sin ser invocado.'],
-    [94,95,  'INEXPLICABLE', 'Larry existe durante un segundo como algo completamente opaco — una silueta negra, no translúcida. Luego vuelve a la normalidad.'],
-    [96,97,  'INEXPLICABLE', 'Larry llora. Lágrimas translúcidas, visibles solo para Aztram. No hay razón aparente.'],
-    [98,98,  'INEXPLICABLE', 'Larry imita los movimientos exactos de Aztram con medio segundo de retraso — como un espejo con lag.'],
-    [99,99,  'INEXPLICABLE', 'Larry y Aztram intercambian posiciones solos. Sin que Aztram lo ordenara. Aztram aparece donde estaba Larry y viceversa.'],
-    [100,100,'INEXPLICABLE', 'Larry y Aztram se mueven perfectamente sincronizados durante un turno completo sin que Aztram lo ordene — como si fueran uno.'],
-  ];
-
-  const _LARRY_CAT_COLOR = {
-    'SUTIL':        { bg: 'rgba(100,160,100,0.15)', border: '#4a9e4a', text: '#7ecf7e' },
-    'LLAMATIVO':    { bg: 'rgba(80,120,200,0.15)',  border: '#4a7ecc', text: '#7eaaee' },
-    'PERTURBADOR':  { bg: 'rgba(180,80,80,0.15)',   border: '#cc4a4a', text: '#ee7e7e' },
-    'INEXPLICABLE': { bg: 'rgba(160,80,200,0.15)',  border: '#9a4acc', text: '#cc7eee' },
-  };
-
-  // Comportamiento de Larry según el d20 (1–19 + 20 especial)
-  const _LARRY_D20 = [
-    [1,  'Completamente disciplinado', 'Larry permanece completamente inmóvil y disciplinado. Funciona como un eco perfecto. Aztram casi olvida que hay algo diferente en él.'],
-    [2,  'Obediente',                  'Sigue todas las instrucciones de Aztram inmediatamente y sin demora. Movimientos limpios y precisos.'],
-    [3,  'Discreto',                   'Permanece cerca y evita llamar la atención. Solo a veces se queda un segundo extra antes de disiparse.'],
-    [4,  'Silencioso',                 'Solo observa la escena silenciosamente. Larry parece más atento que de costumbre pero sin interferir.'],
-    [5,  'Lento pero obediente',       'Reacciona tarde pero obedece sin problemas. Como si procesara algo que Aztram no puede ver antes de responder.'],
-    [6,  'Distraído',                  'Comienza a distraerse con cosas pequeñas alrededor. Se inclina hacia objetos o sonidos sin razón aparente.'],
-    [7,  'Imitador',                   'Imita discretamente gestos o posturas de otras personas del grupo o NPCs. Como un niño que aprende observando.'],
-    [8,  'Errático leve',              'Se aleja unos pasos de donde Aztram esperaba que estuviera. Nada disruptivo — solo un poco fuera de lugar.'],
-    [9,  'Curioso con objetos',        'Toca o inspecciona objetos sin entender que no debería. Una puerta, una vela, la ropa de alguien.'],
-    [10, 'Mirón',                      'Observa demasiado fijamente a alguien durante una conversación. No entiende que es incómodo.'],
-    [11, 'Entrometido',                'Interrumpe una interacción intentando "ayudar" — aparece entre dos personas que hablan, señala cosas, gesticula.'],
-    [12, 'Selectivamente desobediente','Ignora instrucciones menores si algo le llama la atención. Obedece lo importante pero interpreta los detalles a su manera.'],
-    [13, 'Sin filtro social',          'Invade el espacio personal de alguien como si no entendiera la incomodidad social. No hay malicia — simplemente no lo sabe.'],
-    [14, 'Apariciones inesperadas',    'Aparece detrás de alguien sin avisar, causando sorpresa o incomodidad. Larry no entiende por qué eso molesta.'],
-    [15, 'Expresivo en mal momento',   'Hace mímicas exageradas o reacciones físicas inoportunas — imita el llanto de alguien, celebra cuando no corresponde.'],
-    [16, 'Iniciativa propia',          'Se mueve por cuenta propia antes de que Aztram decida actuar. No espera órdenes — ya decidió dónde quiere estar.'],
-    [17, 'Convicción propia',          'Desobedece una instrucción directa porque cree que sabe algo importante. No es rebeldía — está convencido de que tiene razón.'],
-    [18, 'Alerta ante lo invisible',   'Reacciona agresivamente o defensivamente ante algo que nadie más percibe. Se pone entre Aztram y una amenaza que no existe... o que aún no se ha manifestado.'],
-    [19, 'Explorador',                 'Desaparece brevemente para seguir algo o alguien por iniciativa propia. Cuando vuelve, Aztram no sabe qué vio.'],
-    [20, 'Evento especial',            'Larry hace algo completamente fuera de lo normal. Tirar d100.'],
-  ];
-
-  function larryRoll() {
-    const d20 = Math.ceil(Math.random() * 20);
-    const [, title, d20text] = _LARRY_D20[d20 - 1];
-    if (d20 !== 20) {
-      _showLarryModal({ d20, title, d20text, d100: null, cat: null, text: null });
-      return;
-    }
-    const d100 = Math.ceil(Math.random() * 100);
-    const row = _LARRY_TABLE.find(([lo, hi]) => d100 >= lo && d100 <= hi);
-    const [, , cat, text] = row || [0,0,'INEXPLICABLE','Resultado desconocido'];
-    _showLarryModal({ d20, title, d20text, d100, cat, text });
-  }
-
-  function _showLarryModal({ d20, title, d20text, d100, cat, text }) {
-    const modal = document.getElementById('larryModal');
-    if (!modal) return;
-
-    const triggered = d20 === 20;
-    const catStyle = cat ? _LARRY_CAT_COLOR[cat] : null;
-
-    // d20 número
-    document.getElementById('larryD20Result').textContent = d20;
-    document.getElementById('larryD20Result').style.color = triggered ? '#f0c040' : 'var(--text)';
-
-    // Título y descripción del d20
-    document.getElementById('larryD20Title').textContent = title || '';
-    document.getElementById('larryD20Text').textContent  = d20text || '';
-
-    // Sección d100
-    const d100Section = document.getElementById('larryD100Section');
-    if (triggered && d100 !== null) {
-      d100Section.style.display = '';
-      document.getElementById('larryD100Result').textContent = d100;
-      document.getElementById('larryCatLabel').textContent      = cat;
-      document.getElementById('larryCatLabel').style.color      = catStyle.text;
-      document.getElementById('larryCatLabel').style.borderColor= catStyle.border;
-      document.getElementById('larryCatLabel').style.background = catStyle.bg;
-      document.getElementById('larryText').textContent = text;
-    } else {
-      d100Section.style.display = 'none';
-    }
-    modal.classList.add('show');
-  }
-
-  function closeLarryModal() {
-    document.getElementById('larryModal')?.classList.remove('show');
-  }
-
   // Abre el detalle de un recurso activable (Second Wind, Action Surge, Unleash, etc.)
   function openAbilityDetail(resourceId) {
     const r = (_char.resources || []).find(r => r.id === resourceId);
@@ -12847,7 +12705,7 @@ ${notesText}`;
 
     // Detalle spell
     openSpellDetail, closeSpellDetail,
-    openAbilityDetail, toggleEcho, larryRoll, closeLarryModal, usarUnleash, usarBendicionCuervo, quitarResistTodo,
+    openAbilityDetail, toggleEcho, usarUnleash, usarBendicionCuervo, quitarResistTodo,
     maestriaArma: item => _maestriaArma(_char, item),
     openFeatureDetail, closeFeatureDetail,
     copiarRoll20,
