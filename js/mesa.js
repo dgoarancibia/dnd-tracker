@@ -86,6 +86,7 @@ const Mesa = (() => {
     if (!c) return;
     _montar();
     _etiqueta();
+    if (c.hp && c.hp.current > 0) st.grupos.delete('muerte');
     $('mesaCab').innerHTML = _cabecera(c);
     $('mesaTurnoNav').innerHTML = _turno(c, true);
     const tiradas = _tiradas(c);
@@ -719,6 +720,9 @@ const Mesa = (() => {
       : _nivelDruida(c) >= 2 ? `<section><div class="mesa-sec">Wild Shape</div>${_tarjetaForma(c)}</section>` : '';
 
     // Primero lo que define al personaje: el furtivo del Pícaro, el compañero en un Beast Master, la concentración en un lanzador
+    // Caído a 0 PG: las tiradas de muerte van antes que todo (se pueden plegar)
+    const bloqueMuerte = _muerte(c);
+    if (bloqueMuerte) bloques.push(bloqueMuerte);
     const bloqueFurtivo = tab === 'combate' ? _furtivo(c) : '';
     if (bloqueFurtivo) bloques.push(bloqueFurtivo);
     if (bloqueBestia) bloques.push(bloqueBestia, bloqueConc); else bloques.push(bloqueConc);
@@ -746,6 +750,42 @@ const Mesa = (() => {
     bloques.push(`<section><div class="mesa-sec">Condiciones</div><div class="mesa-card mesa-conds"><div class="mesa-rapidas">${chips || '<span class="mesa-vacio">Ninguna</span>'}</div>
       <button class="mesa-plegar" onclick="Mesa.grupo('conds')">${todas ? '▾ Ocultar las demás' : '▸ Agregar condición'}</button></div></section>`);
     return bloques.join('');
+  }
+
+  /* ── Tiradas de salvación contra la muerte (PHB 2024) ───────────────── */
+  function _muerte(c) {
+    if (!c.hp || c.hp.current > 0) return '';
+    const ds = c.deathSaves || { successes: 0, failures: 0 };
+    const ex = Math.min(3, ds.successes || 0), fa = Math.min(3, ds.failures || 0);
+    const estado = fa >= 3 ? 'Muerto' : ex >= 3 ? 'Estable' : 'Caído';
+    const puntos = (n, tipo) => Array.from({ length: 3 }, (_, i) =>
+      `<i class="${tipo} ${i < n ? 'on' : ''}" onclick="App.toggleDeathSave('${tipo}',${i})"></i>`).join('');
+    const marcador = `<span class="mesa-ds"><span title="Éxitos">✓ ${puntos(ex, 'success')}</span><span title="Fallos">✗ ${puntos(fa, 'failure')}</span></span>`;
+    if (st.grupos.has('muerte')) return `<section><div class="mesa-card mesa-muerte min">
+      <button class="mesa-plegar" onclick="Mesa.grupo('muerte')">▸ ☠ ${estado}</button>${marcador}</div></section>`;
+    const fin = fa >= 3 || ex >= 3;
+    return `<section><div class="mesa-sec">Tiradas de muerte</div><div class="mesa-card mesa-muerte ${fa >= 3 ? 'muerto' : ex >= 3 ? 'estable' : ''}">
+      <div class="mesa-muerte-hd"><b>☠ ${estado}</b>${marcador}<button class="mesa-plegar" onclick="Mesa.grupo('muerte')">▾ Minimizar</button></div>
+      ${fin ? `<small class="mesa-furtivo-req">${fa >= 3 ? 'Tres fallos: el personaje muere.' : 'Tres éxitos: quedas Estable a 0 PG, sin tirar más. Recuperas 1 PG en 1d4 horas.'}</small>`
+        : `<div class="mesa-rapidas">
+        <button class="mesa-chip" onclick="Mesa.muerte('exito')">10–19 · éxito</button>
+        <button class="mesa-chip" onclick="Mesa.muerte('fallo')">2–9 · fallo</button>
+        <button class="mesa-chip" onclick="Mesa.muerte('nat1')">1 natural · 2 fallos</button>
+        <button class="mesa-chip on" onclick="Mesa.muerte('nat20')">20 natural · 1 PG</button></div>
+      <small class="mesa-furtivo-req">Al inicio de tu turno tiras d20, sin modificadores. Si recibes daño a 0 PG es 1 fallo (2 si es crítico); si el daño iguala tus PG máximos, mueres.</small>`}
+      <div class="mesa-acc"><button class="mesa-btn" onclick="App.resetDeathSaves()">Reiniciar</button></div>
+    </div></section>`;
+  }
+  function muerte(tipo) {
+    const c = App.getActiveChar();
+    if (!c) return;
+    if (tipo === 'nat20') { App.adjustHP(1); return; }   // recuperar PG limpia las tiradas
+    const ds = c.deathSaves || { successes: 0, failures: 0 };
+    if (tipo === 'exito') App.toggleDeathSave('success', Math.min(2, ds.successes || 0));
+    else {
+      const n = Math.min(3, (ds.failures || 0) + (tipo === 'nat1' ? 2 : 1));
+      App.toggleDeathSave('failure', n - 1);
+    }
   }
 
   const _tieneDote = (c, nombre) => (c.features || []).some(f => f.name === nombre);
@@ -1027,6 +1067,6 @@ const Mesa = (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && st.hoja) hoja(false); });
   });
 
-  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, usarPagado, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad, golpe, furtivo };
+  return { activo, alternar, render, turno, vida, vidaBestia, animal, tipoBestia, eco, usarRasgo, usarPagado, hoja, abrir, grupo, combate, gratis, filtrar, buscar, original, oportunidad, golpe, furtivo, muerte };
 })();
 window.Mesa = Mesa;   // const no queda en window: app.js lo busca ahí

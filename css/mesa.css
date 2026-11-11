@@ -393,3 +393,21 @@
 .mesa-chip:disabled { opacity: .4; cursor: default; }
 .mesa-golpes { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.4; color: var(--text); }
 .mesa-golpes li + li { margin-top: 4px; }
+
+/* Tiradas de muerte */
+.mesa-muerte { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-color: var(--red-light); }
+.mesa-muerte.min { flex-direction: row; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 10px; }
+.mesa-muerte.min .mesa-plegar { white-space: nowrap; padding: 6px 0; color: var(--red-light); }
+.mesa-muerte.min .mesa-ds { gap: 8px; }
+.mesa-muerte.min .mesa-ds i { width: 15px; height: 15px; }
+.mesa-muerte.estable { border-color: var(--green-light); }
+.mesa-muerte-hd { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mesa-muerte-hd > b { font: 700 16px 'Cinzel', serif; color: var(--red-light); }
+.mesa-muerte.estable .mesa-muerte-hd > b { color: var(--green-light); }
+.mesa-muerte-hd .mesa-plegar { margin-left: auto; padding-top: 2px; }
+.mesa-muerte-hd .mesa-ds { order: 3; width: 100%; }
+.mesa-ds { display: inline-flex; gap: 14px; font-weight: 700; }
+.mesa-ds > span { display: inline-flex; align-items: center; gap: 4px; }
+.mesa-ds i { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1.5px solid var(--m-tx2); }
+.mesa-ds i.success.on { background: var(--green-light); border-color: var(--green-light); }
+.mesa-ds i.failure.on { background: var(--red-light); border-color: var(--red-light); }
