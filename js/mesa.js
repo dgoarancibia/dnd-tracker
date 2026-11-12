@@ -104,9 +104,11 @@ const Mesa = (() => {
       const panel = $('tab-' + tab);
       if (panel) panel.classList.toggle('mesa-ver-original', !!st.original[tab]);
     }
-    $('mesa-combate').innerHTML = _combate(c);
-    $('mesa-conjuros').innerHTML = _conjuros(c);
-    $('mesa-habilidades').innerHTML = _configuracion(c);
+    // Toda distancia escrita en Mesa ("empuja 3 m", "a 1,5 m", "60 ft") sale en la unidad elegida
+    const u = h => (App.fmtDist ? App.fmtDist(h) : h);
+    $('mesa-combate').innerHTML = u(_combate(c));
+    $('mesa-conjuros').innerHTML = u(_conjuros(c));
+    $('mesa-habilidades').innerHTML = u(_configuracion(c));
     const tabActiva = document.querySelector('.tab-btn.active');
     const tab = tabActiva ? tabActiva.dataset.tab : '';
     document.documentElement.dataset.mesaTab = tab;
