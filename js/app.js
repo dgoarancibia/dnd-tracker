@@ -1373,6 +1373,8 @@ const App = (() => {
   function toggleDistUnit() {
     _applyDistUnit(_distUnit === 'm' ? 'ft' : 'm');
     _renderActiveTab();
+    if (window.Mesa) Mesa.render();   // Mesa no se repintaba: seguía mostrando la unidad anterior
+    showToast(_distUnit === 'm' ? 'Distancias en metros' : 'Distancias en pies');
   }
 
   // Convierte todas las distancias dentro de un texto descriptivo
