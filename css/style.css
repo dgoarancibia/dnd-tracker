@@ -9903,3 +9903,10 @@ body.diario-abierto .fab-note { opacity: 0; pointer-events: none; transform: sca
 .lr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .lr-chip { min-height: 30px; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--bg4); background: transparent; color: var(--text2); font: 500 12.5px 'Jost', sans-serif; cursor: pointer; }
 .lr-chip.on { background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 600; }
+
+/* Progresión: XP o hito (milestone) */
+.xp-hd { display: flex; align-items: center; gap: 8px; }
+.xp-modo { display: inline-flex; margin-left: auto; border: 1px solid var(--border-strong, var(--border)); border-radius: 999px; overflow: hidden; flex: none; }
+.xp-modo button { border: none; background: transparent; color: var(--text-mid); font: 600 12px 'Jost', sans-serif; padding: 4px 12px; cursor: pointer; min-height: 28px; }
+.xp-modo button.on { background: var(--gold); color: var(--bg); }
+.xp-hito { margin: 6px 0 10px; color: var(--text-mid); }

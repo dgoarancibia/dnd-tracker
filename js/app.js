@@ -4206,11 +4206,16 @@ const App = (() => {
     <!-- ELECCIONES DE NIVEL -->
     ${_renderChoicesHistoryHTML(c)}
 
-    <!-- XP TRACKER -->
+    <!-- XP TRACKER (o progresión por hito: sube cuando el DM lo dice, sin XP) -->
     <div class="xp-block">
-      <div class="rc-header">
-        <span class="rc-name">Experiencia (XP)</span>
+      <div class="rc-header xp-hd">
+        <span class="rc-name">${c.progresion === 'hito' ? 'Progresión por hito' : 'Experiencia (XP)'}</span>
+        <span class="xp-modo" role="group" aria-label="Cómo sube de nivel">
+          <button class="${c.progresion === 'hito' ? '' : 'on'}" onclick="App.setProgresion('xp')">XP</button>
+          <button class="${c.progresion === 'hito' ? 'on' : ''}" onclick="App.setProgresion('hito')">Hito</button>
+        </span>
       </div>
+      ${c.progresion === 'hito' ? `<div class="xp-info xp-hito">Subes de nivel cuando el DM lo indique; no se lleva XP.</div>` : `
       <div class="xp-row">
         <div class="xp-add-row">
           <span class="xp-total-val">${(c.xp||0).toLocaleString()}</span>
@@ -4234,7 +4239,7 @@ const App = (() => {
       </div>
       <div class="xp-bar">
         <div class="xp-bar-fill" style="width:${xpPct}%"></div>
-      </div>
+      </div>`}
       ${c.nivel < 20 ? `<button class="levelup-btn" onclick="App.openLevelUp()">✦ Subir de Nivel</button>` : ''}
     </div>`;
 
@@ -9478,6 +9483,15 @@ const App = (() => {
     _renderHabilidadesTab();
   }
 
+  // Cómo sube de nivel este personaje: 'xp' (por defecto) o 'hito' (milestone, sin XP)
+  function setProgresion(modo) {
+    if (!_char) return;
+    if (modo === 'hito') _char.progresion = 'hito'; else delete _char.progresion;
+    _saveChar();
+    _renderHabilidadesTab();
+    showToast(modo === 'hito' ? 'Progresión por hito: subes cuando lo diga el DM' : 'Progresión por XP');
+  }
+
   function addXP(inputEl) {
     const gain = parseInt(inputEl.value) || 0;
     if (gain <= 0) return;
@@ -12652,7 +12666,7 @@ ${notesText}`;
     addResistance, removeResistance, addLanguage, removeLanguage,
 
     // Habilidades
-    editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP, addXP,
+    editStat, openEditStats, saveEditStats, closeEditStats, toggleSkillProf, toggleSavingThrow, setVelocidad, setXP, addXP, setProgresion,
 
     // Companion (Beast Master)
     setCompanionBeast, clearCompanionBeast, setCompanionHP,
