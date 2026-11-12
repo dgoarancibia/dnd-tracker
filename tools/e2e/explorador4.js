@@ -20,8 +20,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.goto(URL_BASE + '/app.html', { waitUntil: 'networkidle2' }); await sleep(1500);
   const s3 = await p.evaluate(() => App.getActiveChar().spellSlots[1]);
   chk('al cargar sube a 3 espacios sin devolver el gastado (2/3)', s3.max === 3 && s3.current === 2, s3);
-  const n4 = await p.evaluate(() => { const c = App.getActiveChar(); Characters.applyLevelUp(c, 4, 7);
-    return { slots: c.spellSlots[1], prep: Characters.getPreparedMaxAtLevel(c, 4), pend: Characters.getPendingChoices(c, 4, 3).map(x => x.id) }; });
+  // Subir por el asistente con Grum (bestia de tierra) herido: gana los 5 PG del nivel
+  await p.evaluate(() => { const c = App.getActiveChar(); c.companion = { beast: 'land', summoned: true, name: 'Grum', hp: 18 };
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+    App.openLevelUp(); document.getElementById('luHPGained').value = '6'; App.applyLevelUp(); });
+  await sleep(600);
+  const n4 = await p.evaluate(() => { const c = App.getActiveChar();
+    return { nivel: c.nivel, grum: c.companion.hp, grumMax: Characters.PRIMAL_COMPANION_BEASTS.land.calcMaxHP(4),
+      slots: c.spellSlots[1], prep: Characters.getPreparedMaxAtLevel(c, 4), pend: Characters.getPendingChoices(c, 4, 3).map(x => x.id) }; });
+  chk('Grum: máximo 25 en nv4 y gana +5 (18 → 23)', n4.nivel === 4 && n4.grumMax === 25 && n4.grum === 23, n4);
   chk('nivel 4: siguen 3 espacios, 5 preparados y pide la mejora/dote', n4.slots.max === 3 && n4.prep === 5 && n4.pend.includes('asi-4'), n4);
   console.log(res.every(Boolean) ? 'TODO OK' : 'HAY FALLAS');
   await browser.close();

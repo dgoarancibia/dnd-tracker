@@ -9989,7 +9989,17 @@ const App = (() => {
       hpMax:      _char.hp.max,
     };
 
+    // La bestia del Beast Master: su máximo depende del nivel de Explorador.
+    // Al subir gana la diferencia también en los PG actuales (como el personaje).
+    const _bestiaDe = () => { const cp = _char.companion; return cp && cp.beast && Characters.PRIMAL_COMPANION_BEASTS ? Characters.PRIMAL_COMPANION_BEASTS[cp.beast] : null; };
+    const _bAntes = _bestiaDe() ? _bestiaDe().calcMaxHP(getRangerLevel(_char)) : null;
+
     Characters.applyLevelUp(_char, newLevel, hpGained);
+
+    if (_bAntes != null && _char.companion.hp != null) {
+      const _bDespues = _bestiaDe().calcMaxHP(getRangerLevel(_char));
+      if (_bDespues > _bAntes) _char.companion.hp = Math.min(_bDespues, _char.companion.hp + (_bDespues - _bAntes));
+    }
     _saveChar();
     closeLevelUp();
     _renderHeader();
