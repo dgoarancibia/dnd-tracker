@@ -291,7 +291,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(() => document.querySelectorAll('#mesaCab .mc-ic')[1].click()); await sleep(300);
   cab.cuaderno = await p.evaluate(() => document.getElementById('notebookPanel').classList.contains('open'));
   await p.evaluate(() => App.toggleNotebook()); await sleep(200);
-  chk('antes de jugar, mapas y cuaderno en la cabecera; sin botones flotantes ni versión', cab.fabs === 0 && cab.botones === 3 && cab.version === 'none' && cab.cuaderno, cab);
+  chk('mapas y cuaderno en la cabecera; sin botones flotantes ni versión', cab.fabs === 0 && cab.botones === 2 && cab.version === 'none' && cab.cuaderno, cab);
 
   // Fuera de combate: sin bloques vacíos (Torvald no tiene rituales preparados)
   const bloques = await p.evaluate(() => [...document.querySelectorAll('#mesa-combate .mesa-col-hd')].map(h => h.textContent.trim()));

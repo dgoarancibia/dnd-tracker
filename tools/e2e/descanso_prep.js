@@ -25,8 +25,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     c.deathSaves = { successes: 1, failures: 0 };
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show')); App.saveActive && App.saveActive(); });
   await p.evaluate(() => Mesa.render && Mesa.render());
-  const badge = await p.evaluate(() => { const b = document.querySelector('.mc-listo .mc-badge'); return b ? +b.textContent : 0; });
-  chk('Mesa: botón Antes de jugar con contador de avisos', badge >= 6, badge);
+  const n = await p.evaluate(() => App.prepAvisosCount());
+  chk('contador de avisos', n >= 6, n);
 
   await p.evaluate(() => App.openPrepSesion());
   const av = await p.evaluate(() => [...document.querySelectorAll('#prepSesionOverlay .prep-av')].map(x => x.textContent.replace(/\s+/g, ' ').trim()));
