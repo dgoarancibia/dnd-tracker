@@ -151,7 +151,7 @@ const Mesa = (() => {
       <span class="mc-esp"></span>
       <div class="mc-turno">${_turno(c, false)}</div>
       <div class="mc-herr">
-        <button class="mc-ic" onclick="App.openQuickNote()" title="Nota rápida"><i class="mesa-ico" style="--m:url(../assets/iconos/nota.svg)"></i></button>
+        <button class="mc-ic" onclick="App.abrirMapas()" title="Mapas"><i class="mesa-ico" style="--m:url(../assets/iconos/vacio-mapa.svg)"></i></button>
         <button class="mc-ic" onclick="App.toggleNotebook()" title="Cuaderno: Hojas, notas rápidas, log"><i class="mesa-ico" style="--m:url(../assets/iconos/cuaderno.svg)"></i></button>
       </div>`;
   }

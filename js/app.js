@@ -998,6 +998,12 @@ const App = (() => {
   }
 
 
+  // Botón de mapas de Mesa: abre el cuaderno directo en Mapas
+  function abrirMapas() {
+    _notebookTab = 'maps';
+    if (_notebookOpen) switchNotebookTab('maps'); else toggleNotebook();
+  }
+
   /* HOJAS: el notetaker vive en js/hojas.js (singleton Hojas). Aquí solo
      queda el puente: qué personaje está activo, cómo guardar y sesiones. */
   function _hojasCtx() {
@@ -12699,7 +12705,7 @@ ${notesText}`;
     openLevelUp, closeLevelUp, applyLevelUp,
 
     // Notebook (diario + log + stats)
-    toggleNotebook, switchNotebookTab, toggleCombatPanel,
+    toggleNotebook, switchNotebookTab, toggleCombatPanel, abrirMapas,
     toggleDiary, addDiaryEntry, onDiaryInput, editDiaryEntry, editDiaryEntryById, deleteDiaryEntry, triggerDiaryImage, handleDiaryImage, clearDiaryImage, openDiaryImage, togglePinDiary, filterDiary, exportDiary,
     openQuickNote, closeQuickNote, setQNCat, onQNInput, saveQuickNote,
     filterDiarySearch, selectDiaryCat, setNewDiaryCat,
