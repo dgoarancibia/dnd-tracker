@@ -26,6 +26,7 @@ const Maps = (() => {
   let _color       = '#e05c2a';
   let _size        = 4;
   let _fontSize    = 18;
+  let _k           = 1;          // píxeles de pantalla por unidad del mapa
   let _annotations = [];         // path {pts} · text {x,y,text} · shape {forma,x1,y1,x2,y2} · pin {x,y,titulo,nota}
 
   // ── IndexedDB ──────────────────────────────────────────
@@ -81,6 +82,7 @@ const Maps = (() => {
     if (!_db) await _openDB();
     await _loadMaps();
     renderList();
+    sincronizar();
   }
 
   async function _loadMaps() {
@@ -161,11 +163,13 @@ const Maps = (() => {
     const imgId = 'img-' + Date.now();
 
     await _dbPut(STORE_IMGS, { id: imgId, blob: file });
-    await _dbPut(STORE_MAPS, { id, charId: _charId, name, imgId, annotations: [], createdAt: new Date().toISOString() });
+    const nuevo = { id, charId: _charId, name, imgId, annotations: [], lienzo: LIENZO, createdAt: new Date().toISOString() };
+    await _dbPut(STORE_MAPS, nuevo);
 
     input.value = '';
     await _loadMaps();
     renderList();
+    _subir(nuevo).then(() => _loadMaps());
   }
 
   async function deleteMap(id) {
@@ -174,6 +178,8 @@ const Maps = (() => {
     if (!confirm(`Eliminar "${m.name}"?`)) return;
     await _dbDelete(STORE_MAPS, id);
     await _dbDelete(STORE_IMGS, m.imgId);
+    // Con sesión se borra también en la nube (si no hay conexión, queda pendiente)
+    if (m.enNube || _uid()) { _pendientesBorrar(p => p.concat([{ id, trozos: m.trozos || 0 }])); _borrarPendientes(); }
     await _loadMaps();
     renderList();
   }
@@ -230,6 +236,11 @@ const Maps = (() => {
       _canvas.width  = Math.round(img.naturalWidth  * scale);
       _canvas.height = Math.round(img.naturalHeight * scale);
       _canvas._img   = img;
+      // Las anotaciones están en el espacio del mapa (`lienzo` de ancho), no en
+      // píxeles de esta pantalla: así calzan en el iPad, el computador y con la
+      // imagen comprimida de la nube. Mapas viejos: su lienzo es esta pantalla.
+      if (!_activeMap.lienzo) _activeMap.lienzo = _canvas.width;
+      _k = _canvas.width / _activeMap.lienzo;
       _redraw();
       _attachCanvasEvents();
     };
@@ -240,8 +251,11 @@ const Maps = (() => {
     if (!_ctx || !_canvas._img) return;
     _ctx.clearRect(0, 0, _canvas.width, _canvas.height);
     _ctx.drawImage(_canvas._img, 0, 0, _canvas.width, _canvas.height);
+    _ctx.save();
+    _ctx.setTransform(_k, 0, 0, _k, 0, 0);
     _annotations.forEach(_drawAnotacion);
     if (extra) _drawAnotacion(extra);   // vista previa del trazo o forma en curso
+    _ctx.restore();
   }
 
   function _drawAnotacion(a) {
@@ -418,7 +432,7 @@ const Maps = (() => {
     const rect  = _canvas.getBoundingClientRect();
     const scaleX = _canvas.width  / rect.width;
     const scaleY = _canvas.height / rect.height;
-    return [(e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY];
+    return [(e.clientX - rect.left) * scaleX / _k, (e.clientY - rect.top) * scaleY / _k];
   }
 
   // ── Geometría: qué anotación está bajo el dedo ─────────────────────────
@@ -615,7 +629,7 @@ const Maps = (() => {
   function _inputFlotante(canvasX, canvasY, valor, color, alListo) {
     document.getElementById('mapTextInput')?.remove();
     const rect   = _canvas.getBoundingClientRect();
-    const sx = rect.width / _canvas.width, sy = rect.height / _canvas.height;
+    const sx = rect.width / _canvas.width * _k, sy = rect.height / _canvas.height * _k;
     const inp = document.createElement('input');
     inp.id = 'mapTextInput';
     inp.type = 'text';
@@ -665,7 +679,7 @@ const Maps = (() => {
     document.getElementById('mapPinPanel')?.remove();
     const nuevo = !pin;
     const rect = _canvas.getBoundingClientRect();
-    const sx = rect.width / _canvas.width, sy = rect.height / _canvas.height;
+    const sx = rect.width / _canvas.width * _k, sy = rect.height / _canvas.height * _k;
     const px = nuevo ? x : pin.x, py = nuevo ? y : pin.y;
     const panel = document.createElement('div');
     panel.id = 'mapPinPanel';
@@ -787,17 +801,125 @@ const Maps = (() => {
     const idx = _maps.findIndex(m => m.id === _activeMap.id);
     if (idx >= 0) _maps[idx] = _activeMap;
     _estadoGuardado('Guardado');
-    if (typeof _alGuardar === 'function') _alGuardar(_activeMap);
+    const m = _activeMap;
+    clearTimeout(_timerSubir);
+    _timerSubir = setTimeout(() => _subir(m), 2000);
   }
+  let _timerSubir = null;
 
   function _estadoGuardado(txt) {
     const el = document.getElementById('mapSaveState');
     if (el) el.textContent = txt;
   }
 
-  // Gancho para la sincronización con la nube (lo asigna quien la maneje)
-  let _alGuardar = null;
-  function onSaved(fn) { _alGuardar = fn; }
+  /* ── Nube (Firestore) ────────────────────────────────────────────────────
+     La imagen sube comprimida (máx. 1600 px, JPEG) en trozos; las anotaciones
+     y el nombre van en el documento del mapa. Gana el más nuevo (updatedAt).
+     Las lecturas van al servidor: si no hay conexión no se toca nada. */
+  const LIENZO = 1000, TROZO = 800000;
+  let _sincronizando = false;
+  const _uid = () => { try { const u = window.FirebaseApp && FirebaseApp.getCurrentUser && FirebaseApp.getCurrentUser(); return u ? u.uid : null; } catch (e) { return null; } };
+  const _nubeLista = () => !!(_uid() && navigator.onLine && window.FirebaseApp && FirebaseApp.listMapsCloud);
+
+  async function _comprimir(blob) {
+    const bmp = await createImageBitmap(blob);
+    const f = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(bmp.width * f); cv.height = Math.round(bmp.height * f);
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    const jpg = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.8));
+    return new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(jpg); });
+  }
+  function _base64ABlob(b64) {
+    const bin = atob(b64), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new Blob([u], { type: 'image/jpeg' });
+  }
+  const _metaNube = m => ({ id: m.id, charId: m.charId, name: m.name, createdAt: m.createdAt, updatedAt: m.updatedAt || m.createdAt,
+    lienzo: m.lienzo || null, trozos: m.trozos || 0, annotations: JSON.stringify(m.annotations || []) });
+
+  async function _subir(m) {
+    if (!m || !_nubeLista()) return false;
+    const uid = _uid();
+    try {
+      if (!m.trozos) {
+        const rec = await _dbGet(STORE_IMGS, m.imgId);
+        if (!rec) return false;
+        const b64 = await _comprimir(rec.blob);
+        const trozos = [];
+        for (let i = 0; i < b64.length; i += TROZO) trozos.push(b64.slice(i, i + TROZO));
+        await FirebaseApp.saveMapImgCloud(uid, m.id, trozos);
+        m.trozos = trozos.length;
+      }
+      await FirebaseApp.saveMapMetaCloud(uid, _metaNube(m));
+      m.enNube = true;
+      // Releer antes de escribir: puede haber cambiado mientras subía
+      const actual = await _dbGet(STORE_MAPS, m.id);
+      if (actual) await _dbPut(STORE_MAPS, { ...actual, trozos: m.trozos, enNube: true });
+      if (_activeMap && _activeMap.id === m.id) { _activeMap.trozos = m.trozos; _activeMap.enNube = true; }
+      return true;
+    } catch (e) { console.warn('[mapas] no se pudo subir', m.id, e); return false; }
+  }
+
+  function _pendientesBorrar(fn) {
+    let l = [];
+    try { l = JSON.parse(localStorage.getItem('dnd_maps_borrar') || '[]'); } catch (e) {}
+    if (fn) { l = fn(l); try { localStorage.setItem('dnd_maps_borrar', JSON.stringify(l)); } catch (e) {} }
+    return l;
+  }
+  async function _borrarPendientes() {
+    if (!_nubeLista()) return;
+    for (const b of _pendientesBorrar()) {
+      try { await FirebaseApp.deleteMapCloud(_uid(), b.id, b.trozos); _pendientesBorrar(l => l.filter(x => x.id !== b.id)); }
+      catch (e) { console.warn('[mapas] no se pudo borrar en la nube', b.id, e); }
+    }
+  }
+
+  async function sincronizar() {
+    if (_sincronizando || !_nubeLista() || !_charId) return;
+    _sincronizando = true;
+    try {
+      if (!_db) await _openDB();
+      await _borrarPendientes();
+      const uid = _uid();
+      const borrados = new Set(_pendientesBorrar().map(b => b.id));
+      const nube = (await FirebaseApp.listMapsCloud(uid)).filter(x => x.charId === _charId && !borrados.has(x.id));
+      await _loadMaps();
+      const fecha = m => m.updatedAt || m.createdAt || '';
+      for (const c of nube) {
+        const l = _maps.find(m => m.id === c.id);
+        if (!l) {
+          // Mapa de otro dispositivo: bajar imagen y anotaciones
+          const b64 = await FirebaseApp.loadMapImgCloud(uid, c.id, c.trozos);
+          const imgId = 'img-' + c.id;
+          await _dbPut(STORE_IMGS, { id: imgId, blob: _base64ABlob(b64) });
+          await _dbPut(STORE_MAPS, { id: c.id, charId: c.charId, name: c.name, imgId, createdAt: c.createdAt, updatedAt: c.updatedAt,
+            lienzo: c.lienzo || LIENZO, trozos: c.trozos, enNube: true, annotations: JSON.parse(c.annotations || '[]') });
+        } else if (fecha(c) > fecha(l)) {
+          if (_activeMap && _activeMap.id === l.id) continue;   // no pisar el que está abierto
+          await _dbPut(STORE_MAPS, { ...l, name: c.name, updatedAt: c.updatedAt, lienzo: c.lienzo || l.lienzo, trozos: c.trozos, enNube: true,
+            annotations: JSON.parse(c.annotations || '[]') });
+        } else if (fecha(l) > fecha(c) || !l.enNube) {
+          await _subir({ ...l, trozos: l.trozos || c.trozos });
+        }
+      }
+      for (const l of _maps) {
+        if (nube.some(c => c.id === l.id)) continue;
+        if (l.enNube) {
+          // Estaba en la nube y ya no: se borró en otro dispositivo
+          if (_activeMap && _activeMap.id === l.id) continue;
+          await _dbDelete(STORE_MAPS, l.id);
+          await _dbDelete(STORE_IMGS, l.imgId);
+        } else await _subir(l);
+      }
+      await _loadMaps();
+      renderList();
+    } catch (e) {
+      console.warn('[mapas] sincronización', e);
+    } finally {
+      _sincronizando = false;
+    }
+  }
 
 
   /* Crea un mapa desde fuera (el diario), reusando la misma IndexedDB.
@@ -813,12 +935,14 @@ const Maps = (() => {
     const id    = 'map-' + Date.now();
     const imgId = 'img-' + Date.now();
     await _dbPut(STORE_IMGS, { id: imgId, blob });
-    await _dbPut(STORE_MAPS, {
+    const nuevo = {
       id, charId: _charId, name: name || 'Foto de sesión',
-      imgId, annotations: [], createdAt: new Date().toISOString(),
-    });
+      imgId, annotations: [], lienzo: LIENZO, createdAt: new Date().toISOString(),
+    };
+    await _dbPut(STORE_MAPS, nuevo);
     await _loadMaps();
     renderList();
+    _subir(nuevo).then(() => _loadMaps());
     return { id, imgId };
   }
 
@@ -837,7 +961,7 @@ const Maps = (() => {
     triggerAddMap, triggerCamera, handleFileSelect, deleteMap,
     openMap, closeMap,
     setTool, setColor, setSize,
-    undo, redo, clearAll, saveAnnotations, resetZoom, onSaved,
+    undo, redo, clearAll, saveAnnotations, resetZoom, sincronizar,
   };
 
 })();

@@ -25,7 +25,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await Maps.openMap(m.id); return m.id; });
   await sleep(800);
   const caja = await p.evaluate(() => { const r = document.getElementById('mapCanvas').getBoundingClientRect(); const c = document.getElementById('mapCanvas'); return { x: r.left, y: r.top, w: r.width, h: r.height, cw: c.width, ch: c.height }; });
-  const en = (cx, cy) => [caja.x + cx * caja.w / caja.cw, caja.y + cy * caja.h / caja.ch];   // coordenadas del canvas → pantalla
+  // Coordenadas del mapa (lienzo de 1000 de ancho) → pantalla
+  const k = caja.cw / 1000;
+  const en = (cx, cy) => [caja.x + cx * k * caja.w / caja.cw, caja.y + cy * k * caja.h / caja.ch];
   const arrastrar = async (a, b, pasos = 12) => { const [x1, y1] = en(...a), [x2, y2] = en(...b);
     await p.mouse.move(x1, y1); await p.mouse.down(); for (let i = 1; i <= pasos; i++) await p.mouse.move(x1 + (x2 - x1) * i / pasos, y1 + (y2 - y1) * i / pasos); await p.mouse.up(); await sleep(80); };
   const tocar = async pt => { const [x, y] = en(...pt); await p.mouse.click(x, y); await sleep(150); };
@@ -91,6 +93,36 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(id => Maps.openMap(id), id); await sleep(700);
   chk('al reabrir están todas las anotaciones', (await guardado(id)).length === n0);
   chk('sin botón Guardar; estado "Guardado"', await p.evaluate(() => !document.getElementById('mapBtnSave') && document.getElementById('mapSaveState').textContent === 'Guardado'));
+  // ── Nube simulada (misma interfaz que FirebaseApp): subir, bajar, más nuevo gana, borrado ──
+  await p.evaluate(() => Maps.closeMap()); await sleep(300);
+  await p.evaluate(() => {
+    const nube = window.__nube = { meta: {}, img: {} };
+    window.FirebaseApp = Object.assign(window.FirebaseApp || {}, {
+      getCurrentUser: () => ({ uid: 'u1' }),
+      saveMapMetaCloud: async (uid, m) => { nube.meta[m.id] = JSON.parse(JSON.stringify(m)); },
+      saveMapImgCloud: async (uid, id, t) => { nube.img[id] = t.slice(); },
+      listMapsCloud: async () => Object.values(nube.meta).map(x => ({ ...x })),
+      loadMapImgCloud: async (uid, id) => nube.img[id].join(''),
+      deleteMapCloud: async (uid, id) => { delete nube.meta[id]; delete nube.img[id]; },
+    });
+  });
+  const local = id => p.evaluate(id => new Promise(res => { const rq = indexedDB.open('dnd_maps_v1'); rq.onsuccess = () => { const g = rq.result.transaction('maps').objectStore('maps').get(id); g.onsuccess = () => res(g.result || null); }; }), id);
+  const borrarLocal = id => p.evaluate(id => new Promise(res => { const rq = indexedDB.open('dnd_maps_v1'); rq.onsuccess = () => { const tx = rq.result.transaction('maps', 'readwrite'); tx.objectStore('maps').delete(id); tx.oncomplete = () => res(); }; }), id);
+  await p.evaluate(() => Maps.sincronizar()); await sleep(800);
+  const subido = await p.evaluate(id => { const m = window.__nube.meta[id]; return m && { anots: JSON.parse(m.annotations).length, trozos: m.trozos, img: (window.__nube.img[id] || []).join('').length, lienzo: m.lienzo }; }, id);
+  chk('sube a la nube: imagen comprimida en trozos y las 7 anotaciones', subido && subido.anots === n0 && subido.trozos >= 1 && subido.img > 100 && subido.lienzo === 1000, subido);
+  await borrarLocal(id);
+  await p.evaluate(() => Maps.sincronizar()); await sleep(800);
+  const bajado = await local(id);
+  chk('otro dispositivo (sin el mapa local): lo baja con imagen y anotaciones', bajado && bajado.annotations.length === n0 && bajado.name === 'Mazmorra' && bajado.enNube, bajado && { n: bajado.annotations.length, enNube: bajado.enNube });
+  await p.evaluate(id => { const m = window.__nube.meta[id]; m.annotations = JSON.stringify([{ type: 'text', x: 10, y: 20, text: 'Desde el PC', color: '#fff', size: 18 }]); m.updatedAt = '2099-01-01T00:00:00.000Z'; }, id);
+  await p.evaluate(() => Maps.sincronizar()); await sleep(800);
+  const nuevo = await local(id);
+  chk('la nube más nueva reemplaza las anotaciones locales', nuevo && nuevo.annotations.length === 1 && nuevo.annotations[0].text === 'Desde el PC', nuevo && nuevo.annotations);
+  await p.evaluate(id => { delete window.__nube.meta[id]; }, id);
+  await p.evaluate(() => Maps.sincronizar()); await sleep(800);
+  chk('borrado en otro dispositivo: desaparece del local', !(await local(id)));
+
   console.log(res.every(Boolean) ? 'TODO OK' : 'HAY FALLAS');
   await browser.close();
 })();

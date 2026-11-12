@@ -288,8 +288,41 @@ async function revokeSharedChar(token) {
   await deleteDoc(_sharedRef(token));
 }
 
+/* ── Mapas ──
+   users/{uid}/maps/{mapId}: nombre, personaje, anotaciones (JSON en texto:
+   Firestore no admite arreglos dentro de arreglos) y cuántos trozos tiene la
+   imagen. La imagen va comprimida en base64, partida en
+   users/{uid}/maps/{mapId}/img/{n} para no pasar el límite de 1 MB por doc. */
+const _mapRef = (uid, id) => doc(_db, 'users', uid, 'maps', id);
+const _mapImgRef = (uid, id, n) => doc(_db, 'users', uid, 'maps', id, 'img', String(n));
+
+async function saveMapMetaCloud(uid, meta) {
+  await setDoc(_mapRef(uid, meta.id), _stripUndefined({ ...meta, _syncedAt: serverTimestamp() }));
+}
+async function saveMapImgCloud(uid, id, trozos) {
+  for (let n = 0; n < trozos.length; n++) await setDoc(_mapImgRef(uid, id, n), { d: trozos[n] });
+}
+async function listMapsCloud(uid) {
+  const snap = await getDocsFromServer(collection(_db, 'users', uid, 'maps'));
+  return snap.docs.map(d => { const x = d.data(); delete x._syncedAt; return x; });
+}
+async function loadMapImgCloud(uid, id, total) {
+  const partes = [];
+  for (let n = 0; n < total; n++) {
+    const s = await getDocFromServer(_mapImgRef(uid, id, n));
+    if (!s.exists()) throw new Error('falta un trozo de la imagen del mapa');
+    partes.push(s.data().d);
+  }
+  return partes.join('');
+}
+async function deleteMapCloud(uid, id, total) {
+  for (let n = 0; n < (total || 0); n++) await deleteDoc(_mapImgRef(uid, id, n));
+  await deleteDoc(_mapRef(uid, id));
+}
+
 /* ── Exportar singleton ── */
 window.FirebaseApp = {
+  saveMapMetaCloud, saveMapImgCloud, listMapsCloud, loadMapImgCloud, deleteMapCloud,
   newShareToken,
   publishSharedChar,
   loadSharedChar,
