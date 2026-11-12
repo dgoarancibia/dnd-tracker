@@ -9920,3 +9920,8 @@ body.diario-abierto .fab-note { opacity: 0; pointer-events: none; transform: sca
 .map-pin-panel input, .map-pin-panel textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text);
   font: 14px 'Jost', sans-serif; padding: 6px 8px; resize: vertical; }
 .map-pin-acc { display: flex; gap: 6px; justify-content: flex-end; }
+
+/* Bonos de un objeto mágico */
+.wnd-bonos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 4px; }
+.wnd-bonos label { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--text-dim); }
+.wnd-bonos input { width: 100%; }

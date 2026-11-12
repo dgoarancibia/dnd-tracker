@@ -3601,7 +3601,7 @@ const App = (() => {
     const parts = [];
     if (item.bonuses) {
       Object.entries(item.bonuses).forEach(([k,v]) => {
-        if (v) parts.push(`${v>0?'+':''}${v} ${k.toUpperCase()}`);
+        if (v) parts.push(`${v>0?'+':''}${v} ${({ ac:'CA', save:'salvaciones', attack:'ataque', damage:'daño', cd:'CD', spellAtk:'ataque conj.' })[k] || k.toUpperCase()}`);
       });
     }
     if (parts.length === 0 && item.notes) return item.notes;
@@ -3647,7 +3647,7 @@ const App = (() => {
   }
 
   function _renderAttunementBar(equipment) {
-    const count = Characters.calcAttunementCount(equipment);
+    const count = Characters.calcAttunementCount(equipment, _char && _char.consumables);
     const max = Characters.ATTUNEMENT_MAX;
     const dots = Array.from({length: max}, (_,i) =>
       `<span class="attune-dot${i < count ? ' attune-dot--on' : ''}"></span>`).join('');
@@ -3803,7 +3803,8 @@ const App = (() => {
         <div class="item-row${emptyClass}" id="item-row-${i}">
           <div class="item-row-left">
             <span class="item-name">${item.name}</span>
-            <div class="item-row-meta">${_itemCatBadge(cat)}${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}</div>
+            <div class="item-row-meta">${_itemCatBadge(cat)}${item.requiresAttunement ? `<button class="equip-attune-badge${item.attuned ? ' equip-attune-badge--on' : ''}"
+                onclick="event.stopPropagation();App.toggleAttunementBag(${i})" title="${item.attuned ? 'Sintonizado — tocar para quitar' : 'Necesita sintonía — tocar para sintonizar'}">${item.attuned ? '✦ sintonizado' : '◇ necesita sintonía'}</button>` : ''}${item.desc ? `<span class="item-desc">${item.desc}</span>` : ''}</div>
           </div>
           <div class="item-row-right">
             ${qtyControls}
@@ -7647,6 +7648,7 @@ const App = (() => {
     _saveChar();
     _renderEquipoTab();
     _renderHeader();
+    _renderStatsSidebar();   // salvaciones con los bonos del objeto
     if (_activeTab === 'combate') _renderCombateTab();
   }
 
@@ -7807,6 +7809,13 @@ const App = (() => {
           <label class="modal-mini-check">
             <input id="wondrousAttuneCheck" type="checkbox"> Requiere sintonía
           </label>
+          <div>
+            <label class="modal-mini-label">Bonos <span style="font-weight:400;text-transform:none;">(se suman solos mientras esté equipado y sintonizado si lo requiere)</span></label>
+            <div class="wnd-bonos">
+              ${[['ac','CA'],['save','Salvaciones'],['attack','Ataque (armas)'],['damage','Daño (armas)'],['cd','CD conjuros'],['spellAtk','Ataque conjuros']].map(([k, l]) =>
+                `<label><span>${l}</span><input id="wndBono-${k}" type="number" step="1" class="modal-mini-input" placeholder="0"></label>`).join('')}
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" onclick="App._closeWondrousModal()">Cancelar</button>
@@ -7817,6 +7826,9 @@ const App = (() => {
     return overlay;
   }
 
+  const _WND_BONOS = ['ac', 'save', 'attack', 'damage', 'cd', 'spellAtk'];
+  let _bolsaSintonizada = false;
+
   function _openWondrousModal(slotKey) {
     const overlay = _wondrousOverlay();
     const item = (_char.equipment && _char.equipment[slotKey]) || {};
@@ -7824,6 +7836,7 @@ const App = (() => {
     document.getElementById('wondrousNameInput').value = item.name || '';
     document.getElementById('wondrousNotesInput').value = item.notes || '';
     document.getElementById('wondrousAttuneCheck').checked = !!item.requiresAttunement;
+    _WND_BONOS.forEach(k => { const v = Number(item.bonuses && item.bonuses[k]) || 0; document.getElementById('wndBono-' + k).value = v || ''; });
     overlay.dataset.slot = slotKey;
     overlay.dataset.bagIdx = '';
     overlay.style.display = 'flex';
@@ -7874,7 +7887,8 @@ const App = (() => {
     document.getElementById('wondrousModalTitle').textContent = `✦ Equipar "${item.name}"`;
     document.getElementById('wondrousNameInput').value = item.name || '';
     document.getElementById('wondrousNotesInput').value = item.desc || '';
-    document.getElementById('wondrousAttuneCheck').checked = false;
+    document.getElementById('wondrousAttuneCheck').checked = !!item.requiresAttunement;
+    _WND_BONOS.forEach(k => { document.getElementById('wndBono-' + k).value = ''; });
     wOverlay.dataset.slot = slotKey;
     wOverlay.dataset.bagIdx = String(bagIdx);
     wOverlay.style.display = 'flex';
@@ -7899,13 +7913,16 @@ const App = (() => {
     const bagIdxRaw = overlay.dataset.bagIdx;
     const desdeMochila = bagIdxRaw !== '' && !isNaN(parseInt(bagIdxRaw));
     if (desdeMochila) {
+      _bolsaSintonizada = !!((_char.consumables || [])[parseInt(bagIdxRaw)] || {}).attuned;
       _quitarUnoDeMochila(parseInt(bagIdxRaw));
       if (_char.equipment[slotKey]) _moverSlotAMochila(slotKey);
     }
     const existing = _char.equipment[slotKey];
-    const bonuses = (existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 };
+    const bonuses = { ...((existing && existing.bonuses) || { ac:0, attack:0, damage:0, save:0 }) };
+    _WND_BONOS.forEach(k => { bonuses[k] = parseInt(document.getElementById('wndBono-' + k)?.value) || 0; });
     const buffs   = (existing && existing.buffs) || [];
-    const attuned = existing ? !!existing.attuned : false;
+    const deBolsa = desdeMochila ? _bolsaSintonizada : false;
+    const attuned = existing ? !!existing.attuned : deBolsa;
     _char.equipment[slotKey] = {
       id: (existing && existing.id) || ('wnd-' + Date.now()),
       name, kind:'wondrous', requiresAttunement, attuned, notes, bonuses, buffs,
@@ -7917,6 +7934,7 @@ const App = (() => {
     _closeWondrousModal();
     _renderEquipoTab();
     _renderHeader();
+    _renderStatsSidebar();
   }
 
   // Elegir arma liviana o escudo para offHand
@@ -8024,13 +8042,28 @@ const App = (() => {
     });
   }
 
+  // Sintonía de un objeto que no se equipa (va en la mochila): cuenta para el máximo de 3
+  function toggleAttunementBag(idx) {
+    const item = (_char.consumables || [])[idx];
+    if (!item || !item.requiresAttunement) return;
+    if (!item.attuned && Characters.calcAttunementCount(_char.equipment, _char.consumables) >= Characters.ATTUNEMENT_MAX) {
+      showToast(`Ya tienes ${Characters.ATTUNEMENT_MAX} objetos sintonizados (máximo)`, 'error');
+      return;
+    }
+    item.attuned = !item.attuned;
+    _saveChar();
+    _renderEquipoTab();
+    _renderHeader();
+    showToast(item.attuned ? `✦ ${item.name} sintonizado` : `${item.name} sin sintonía`);
+  }
+
   /* ── Attunement (derivado: contar atunados en equipment) ── */
 
   function toggleAttunement(slotKey) {
     const item = _char.equipment && _char.equipment[slotKey];
     if (!item || !item.requiresAttunement) return;
     if (!item.attuned) {
-      const count = Characters.calcAttunementCount(_char.equipment);
+      const count = Characters.calcAttunementCount(_char.equipment, _char.consumables);
       if (count >= Characters.ATTUNEMENT_MAX) {
         showToast(`Ya tenés ${Characters.ATTUNEMENT_MAX} ítems sintonizados (máximo)`, 'error');
         return;
@@ -8193,6 +8226,7 @@ const App = (() => {
     document.getElementById('aimDesc').value = item.desc || '';
     document.getElementById('aimQty').value  = item.qty !== undefined ? item.qty : 1;
     document.getElementById('aimCategory').value = item.category || 'Other';
+    document.getElementById('aimAttune').checked = !!item.requiresAttunement;
     _setContainerBtn(!!item.container);
     _setChargesFields(!!item.charges, item.charges && item.charges.current, item.charges && item.charges.max);
     const titleEl = document.getElementById('addItemModalTitle');
@@ -8211,6 +8245,7 @@ const App = (() => {
     _addItemSlot = slot || 'bag';
     document.getElementById('aimName').value = '';
     document.getElementById('aimDesc').value = '';
+    document.getElementById('aimAttune').checked = false;
     _setContainerBtn(false);
     _setChargesFields(false, 1, 1);
     document.getElementById('addItemModal').classList.add('show');
@@ -8242,6 +8277,7 @@ const App = (() => {
 
     const isContainer = document.getElementById('aimContainer')?.value === '1';
     const hasCharges = !!document.getElementById('aimHasCharges')?.checked;
+    const requiereSinton = !!document.getElementById('aimAttune')?.checked;
     let charges;
     if (hasCharges) {
       const cur = parseInt(document.getElementById('aimChargesCurrent')?.value);
@@ -8259,11 +8295,13 @@ const App = (() => {
         item.container = isContainer || undefined;
         if (isContainer) item.maxQty = qty > 0 ? qty : (item.maxQty || 1);
         if (hasCharges) item.charges = charges; else delete item.charges;
+        if (requiereSinton) item.requiresAttunement = true; else { delete item.requiresAttunement; delete item.attuned; }
       }
     } else {
       const newItem = { id:'i-'+Date.now(), name, qty, category, desc,
         container: isContainer || undefined, maxQty: isContainer ? qty : undefined };
       if (hasCharges) newItem.charges = charges;
+      if (requiereSinton) { newItem.requiresAttunement = true; newItem.attuned = false; }
       _char.consumables.push(newItem);
     }
 
@@ -12670,7 +12708,7 @@ ${notesText}`;
     adjustConsumable, deleteConsumable, addConsumable, refillContainer, refillCharges,
     setCurrency, setBagSearch, setBagCatFilter,
     openEquipPicker, openSlotOptions, _closeSlotOptions, _slotOptEdit, _slotOptUnequip, _slotOptDelete,
-    toggleAttunement, _pickSlotForBagItem, _pickFromBag, _crearParaSlot, _equiparDeMochila,
+    toggleAttunement, toggleAttunementBag, _pickSlotForBagItem, _pickFromBag, _crearParaSlot, _equiparDeMochila,
     openBuffModal, _closeBuffModal, _saveBuffModal, removeSlotBuff, removeStatBuff,
     _closeWondrousModal, _saveWondrousModal,
     setSpeciesTraits,

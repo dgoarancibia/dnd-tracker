@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 540;
+const _SW_EXPECTED = 541;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 540;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=151">
+<link rel="stylesheet" href="css/style.css?v=152">
 <link rel="stylesheet" href="css/tema.css?v=3">
 <link rel="stylesheet" href="css/pergamino.css?v=3">
 <link rel="stylesheet" href="css/onix.css?v=4">
@@ -974,6 +974,11 @@ const _SW_EXPECTED = 540;
           <input type="checkbox" id="aimHasCharges" onchange="App.toggleChargesFields()"> ¿Tiene cargas?
         </label>
       </div>
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label class="modal-mini-check" style="margin:0;">
+          <input type="checkbox" id="aimAttune"> Requiere sintonía <span style="color:var(--text-dim);font-size:11px;">(objeto mágico que no se equipa, ej. una brújula)</span>
+        </label>
+      </div>
       <div class="modal-field" id="aimChargesRow" style="grid-column:1/-1;display:none;gap:10px;">
         <div style="flex:1;">
           <label>Cargas actuales</label>
@@ -1316,13 +1321,13 @@ const _SW_EXPECTED = 540;
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/storage.js?v=60"></script>
-<script src="js/characters.js?v=155"></script>
+<script src="js/characters.js?v=156"></script>
 <script src="js/export_resumen.js?v=3"></script>
 <script src="js/roll20_es.js?v=2"></script>
 <script src="js/vendor/tiptap.min.js?v=2"></script>
 <script src="js/hojas.js?v=4"></script>
 <script src="js/bastion.js?v=2"></script>
-<script src="js/app.js?v=312"></script>
+<script src="js/app.js?v=313"></script>
 <script src="js/biblioteca.js?v=4"></script>
 <script src="js/maps.js?v=7"></script>
 <script>

@@ -623,7 +623,7 @@ const Characters = (() => {
   }
 
   function calcCD(char) {
-    const bonus = (char.bonuses && char.bonuses.cd) || 0;
+    const bonus = ((char.bonuses && char.bonuses.cd) || 0) + bonoObjetos(char, 'cd');
     if (!char.spellcastingStat) return bonus ? 8 + bonus : null;
     const prof  = calcProfBonus(char.nivel);
     const mod   = calcMod(char.stats[char.spellcastingStat]);
@@ -631,7 +631,7 @@ const Characters = (() => {
   }
 
   function calcAtaqueBonus(char) {
-    const bonus = (char.bonuses && char.bonuses.ataque) || 0;
+    const bonus = ((char.bonuses && char.bonuses.ataque) || 0) + bonoObjetos(char, 'spellAtk');
     if (!char.spellcastingStat) return bonus ? bonus : null;
     const prof = calcProfBonus(char.nivel);
     const mod  = calcMod(char.stats[char.spellcastingStat]);
@@ -673,7 +673,7 @@ const Characters = (() => {
     const hasProf = char.savingThrows && char.savingThrows.includes(statKey);
     const bonusGlobal = (char.bonuses && char.bonuses.savesAll) || 0;
     const bonusStat   = (char.bonuses && char.bonuses.saves && char.bonuses.saves[statKey]) || 0;
-    return mod + (hasProf ? prof : 0) + bonusGlobal + bonusStat;
+    return mod + (hasProf ? prof : 0) + bonusGlobal + bonusStat + bonoObjetos(char, 'save');
   }
 
   function calcHPMaxSuggested(char) {
@@ -695,6 +695,14 @@ const Characters = (() => {
   }
 
   // Devuelve item.bonuses[stat] (0 si no aplica o el slot no está activo).
+  /* Bonos de los objetos mágicos equipados (anillo, amuleto, capa…): CA,
+     salvaciones, ataque y daño con armas, CD y ataque de conjuros. Cuentan
+     solo si están activos (sintonizados, si lo requieren). */
+  function bonoObjetos(char, stat) {
+    return Object.values((char && char.equipment) || {}).reduce((acc, it) =>
+      it && it.kind === 'wondrous' && _slotActive(it) ? acc + (Number(it.bonuses && it.bonuses[stat]) || 0) : acc, 0);
+  }
+
   function _itemStatBonus(item, stat) {
     if (!_slotActive(item)) return 0;
     return (item.bonuses && Number(item.bonuses[stat])) || 0;
@@ -727,7 +735,7 @@ const Characters = (() => {
       : 0;
     // Integrated Protection del Warforged: +1 siempre, con o sin armadura.
     const razaBonus = (RAZAS_CONFIG[char.raza] && RAZAS_CONFIG[char.raza].acBonus) || 0;
-    const bonus = manualBonus + statBuffsBonus + itemBuffsBonus + shieldBonus + razaBonus;
+    const bonus = manualBonus + statBuffsBonus + itemBuffsBonus + shieldBonus + razaBonus + bonoObjetos(char, 'ac');
 
     // Unarmored Defense: solo aplica cuando el personaje no lleva armadura equipada
     const isUnarmored = !armor || (!armor.name && (armor.base_ca == null || armor.base_ca === 10) && armor.add_dex !== false);
@@ -828,7 +836,7 @@ const Characters = (() => {
     if (sinCompetencia) notas.push('Sin competencia: no suma tu BC ni puedes usar su maestría');
     // Desglose de lo que suma cada número (para mostrarlo, ej. en Roll20).
     const STAT_ABR = { for: 'FUE', des: 'DES' };
-    const otrosAtq = extra('attack') + _sumBuffs(w.buffs, 'attack') + _sumBuffs(char.statBuffs && char.statBuffs.attack, null);
+    const otrosAtq = extra('attack') + _sumBuffs(w.buffs, 'attack') + _sumBuffs(char.statBuffs && char.statBuffs.attack, null) + bonoObjetos(char, 'attack');
     const desgloseAtaque = [
       { v: mod, l: STAT_ABR[statKey] }, { v: prof, l: 'Competencia' },
       { v: magico, l: 'Mágica' }, { v: otrosAtq, l: 'Otros' },
@@ -841,7 +849,7 @@ const Characters = (() => {
       modDaño = 0;
       notas.push('Ataque extra de Light: sin modificador al daño');
     }
-    const otrosDaño = extra('damage') + _sumBuffs(w.buffs, 'damage');
+    const otrosDaño = extra('damage') + _sumBuffs(w.buffs, 'damage') + bonoObjetos(char, 'damage');
     const desgloseDaño = [{ v: modDaño, l: STAT_ABR[statKey] }, { v: magico, l: 'Mágica' }, { v: otrosDaño, l: 'Otros' }];
     let dañoFijo = modDaño + magico + otrosDaño;
     const otraArma = !!(eq[enSecundaria ? 'mainHand' : 'offHand'] && eq[enSecundaria ? 'mainHand' : 'offHand'].kind === 'weapon');
@@ -881,9 +889,11 @@ const Characters = (() => {
   }
 
   // Cuenta ítems atunados en equipment (máx 3, regla estándar 5e).
-  function calcAttunementCount(equipment) {
-    if (!equipment) return 0;
-    return Object.values(equipment).filter(item => item && item.attuned).length;
+  // Sintonía: lo equipado y lo que va en la mochila (una brújula, un orbe…) cuentan igual
+  function calcAttunementCount(equipment, mochila) {
+    const eq = equipment ? Object.values(equipment).filter(item => item && item.attuned).length : 0;
+    const bolsa = Array.isArray(mochila) ? mochila.filter(it => it && it.requiresAttunement && it.attuned).length : 0;
+    return eq + bolsa;
   }
 
   const ATTUNEMENT_MAX = 3;
@@ -7377,7 +7387,7 @@ const Characters = (() => {
     calcHPMaxSuggested,
     calcCA,
     calcWeaponAttackBonus, calcArma,
-    calcAttunementCount,
+    calcAttunementCount, bonoObjetos,
     ATTUNEMENT_MAX,
     getSlotsForClass,
     calcMulticlassSlots,
