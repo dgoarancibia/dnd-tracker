@@ -203,7 +203,8 @@ const Mesa = (() => {
     }).join('');
     const skills = Characters.SKILLS_DEF.map(k => {
       const exp = (c.skillExpertise || []).includes(k.id), p = (c.skillProfs || []).includes(k.id);
-      return fila('skill', k.id, `<u class="${exp ? 'e' : p ? 'p' : ''}"></u>${esc(k.name)} <small>${ABREV[k.stat]}</small><b>${sg(Characters.calcSkill(c, k.id))}</b>`, k.name);
+      // Nombre en español y debajo el del libro en inglés (el que usan Roll20 y el DM)
+      return fila('skill', k.id, `<u class="${exp ? 'e' : p ? 'p' : ''}"></u><span class="mt-sk">${esc(k.name)} <small>${ABREV[k.stat]}</small>${k.en ? `<i>${esc(k.en)}</i>` : ''}</span><b>${sg(Characters.calcSkill(c, k.id))}</b>`, k.name + (k.en ? ` (${k.en})` : ''));
     }).join('');
     const pasiva = id => 10 + Characters.calcSkill(c, id);
     // Guerrero 2024: Mente Táctica junto a las pruebas, que es donde se usa

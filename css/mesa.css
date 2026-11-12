@@ -453,3 +453,7 @@
 .mesa-eco .mesa-rec { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .mesa-eco .mesa-rec > div { min-width: 0; }
 .mesa-eco .mesa-pts { flex-wrap: nowrap; flex: none; }
+
+/* Habilidades con el nombre en inglés debajo */
+.mt-sk { flex: 1; min-width: 0; line-height: 1.15; }
+.mt-sk i { display: block; font: italic 500 10.5px 'Jost', sans-serif; color: var(--m-tx2); letter-spacing: .01em; }
