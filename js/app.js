@@ -9819,12 +9819,9 @@ const App = (() => {
   function openLevelUp() {
     document.getElementById('luNewLevel').value = Math.min(20, _char.nivel + 1);
     document.getElementById('luNewLevel').min = _char.nivel + 1;
-    const help = Characters.getHPGainHelp(_char);
-    // Prellenamos con el promedio fijo INCLUYENDO CON (antes solo iba el dado).
-    document.getElementById('luHPGained').value = help
-      ? help.fixedTotal
-      : Math.floor(_char.hitDie / 2) + 1;
-    _renderHPGainHelp(help);
+    // El campo es el resultado del dado: la app suma la CON (y el bonus de especie) sola.
+    // Prellenado con el valor fijo del dado.
+    document.getElementById('luHPGained').value = Math.floor((_char.hitDie || 8) / 2) + 1;
     _updateLevelUpPreview();
     document.getElementById('levelUpModal').classList.add('show');
   }
@@ -9833,29 +9830,38 @@ const App = (() => {
     document.getElementById('levelUpModal').classList.remove('show');
   }
 
-  // Texto de ayuda para el input de HP: dado real de la clase + mod CON, más el
-  // bonus racial de HP por nivel si la especie lo otorga (ej. Dwarven Toughness
-  // del Enano 2024), que ya viene sumado en los totales de getHPGainHelp().
-  function _renderHPGainHelp(help) {
+  /* PG que se ganan al subir: lo que salió en el dado (o la suma de dados si
+     sube varios niveles) + mod CON por nivel + bonus de especie por nivel (ej.
+     Dwarven Toughness). Cada nivel da al menos 1 PG. */
+  function _luHPTotal() {
+    const help = Characters.getHPGainHelp(_char);
+    const niveles = Math.max(1, (parseInt(document.getElementById('luNewLevel').value) || _char.nivel + 1) - _char.nivel);
+    const dado = parseInt(document.getElementById('luHPGained').value) || 0;
+    if (!help) return { total: dado, niveles, dado, help: null };
+    const total = Math.max(niveles, dado + help.conMod * niveles) + help.raceBonus * niveles;
+    return { total, niveles, dado, help };
+  }
+
+  function _renderHPGainHelp() {
     const el = document.getElementById('luHPHelp');
+    const lbl = document.getElementById('luHPLabel');
     if (!el) return;
+    const { total, niveles, dado, help } = _luHPTotal();
     if (!help) { el.innerHTML = ''; return; }
-    const con = `${help.conMod >= 0 ? '+' : ''}${help.conMod}`;
-    const race = help.raceBonus
-      ? ` +<b>${help.raceBonus}</b> (especie)`
-      : '';
-    const note = help.raceBonus
-      ? `Incluye +${help.raceBonus} HP por nivel de tu especie. Revisá si algún feat suma HP extra aparte.`
-      : 'Revisá si algún feat suma HP extra por nivel: no está incluido en este cálculo.';
+    const n = niveles > 1 ? niveles : '';
+    if (lbl) lbl.textContent = niveles > 1 ? `Suma de los dados (${niveles}d${help.hitDie})` : `Resultado del dado (1d${help.hitDie})`;
+    const inp = document.getElementById('luHPGained');
+    if (inp) { inp.min = niveles; inp.max = help.hitDie * niveles; }
+    const con = help.conMod * niveles, raza = help.raceBonus * niveles;
     el.innerHTML =
-      `Tirá <b>1d${help.hitDie}</b> (o tomá <b>${help.fixed}</b> fijo) ${con} (CON)${race} =
-       mínimo <b>${help.minTotal}</b> · promedio <b>${help.fixedTotal}</b> · máximo <b>${help.maxTotal}</b>
-       <span class="lu-hp-help-note">${note}</span>`;
+      `<b>${dado}</b> (dado) ${con >= 0 ? '+' : '−'} <b>${Math.abs(con)}</b> (CON${niveles > 1 ? ` ×${niveles}` : ''})${raza ? ` + <b>${raza}</b> (especie)` : ''} = <b>${total} PG</b>
+       <span class="lu-hp-help-note">Escribe solo lo que salió en ${n ? `los ${n} dados` : 'el dado'}: la CON se suma sola. Valor fijo si no tiras: ${help.fixed}${niveles > 1 ? ' por nivel' : ''}. Si una dote suma PG por nivel, agrégalo aparte.</span>`;
   }
 
   function _updateLevelUpPreview() {
     const newLevel = parseInt(document.getElementById('luNewLevel').value) || _char.nivel + 1;
-    const hpGained = parseInt(document.getElementById('luHPGained').value) || 0;
+    _renderHPGainHelp();
+    const hpGained = _luHPTotal().total;
     const newProf = Characters.calcProfBonus(newLevel);
     const oldProf = Characters.calcProfBonus(_char.nivel);
     const newCD = _char.spellcastingStat
@@ -9882,7 +9888,7 @@ const App = (() => {
 
   function applyLevelUp() {
     const newLevel = parseInt(document.getElementById('luNewLevel').value);
-    const hpGained = parseInt(document.getElementById('luHPGained').value) || 0;
+    const hpGained = _luHPTotal().total;
     if (newLevel <= _char.nivel) { showToast('El nivel debe ser mayor al actual'); return; }
 
     const oldLevel = _char.nivel;

@@ -37,8 +37,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   // Asistente: nivel 6 con 8 PG (promedio fijo + CON)
   await p.evaluate(() => App.openLevelUp()); await sleep(300);
-  const sugerido = await p.evaluate(() => ({ nv: document.getElementById('luNewLevel').value, hp: document.getElementById('luHPGained').value }));
-  chk('asistente propone nivel 6 y 8 PG (6 + CON 2)', sugerido.nv === '6' && sugerido.hp === '8', sugerido);
+  const sugerido = await p.evaluate(() => ({ nv: document.getElementById('luNewLevel').value, hp: document.getElementById('luHPGained').value,
+    lbl: document.getElementById('luHPLabel').textContent, ayuda: document.getElementById('luHPHelp').textContent.replace(/\s+/g, ' ') }));
+  chk('asistente propone nivel 6 y el dado fijo 6; la ayuda suma la CON (= 8 PG)', sugerido.nv === '6' && sugerido.hp === '6' && /1d10/.test(sugerido.lbl) && /= 8 PG/.test(sugerido.ayuda), sugerido);
+  // Si escribe lo que salió en el dado (7), la CON se suma sola: 9
+  await p.evaluate(() => { const i = document.getElementById('luHPGained'); i.value = '7'; i.dispatchEvent(new Event('input')); }); await sleep(150);
+  const tirada = await p.evaluate(() => document.getElementById('luPreview').textContent.replace(/\s+/g, ' '));
+  chk('dado 7 → +9 PG en la vista previa', /\+9 \(48 → 57\)/.test(tirada), tirada);
+  await p.evaluate(() => { const i = document.getElementById('luHPGained'); i.value = '6'; i.dispatchEvent(new Event('input')); });
   await p.evaluate(() => App.applyLevelUp()); await sleep(600);
   const modal = await p.evaluate(() => { const o = document.getElementById('choiceModalOverlay'); return o && getComputedStyle(o).display !== 'none' ? o.textContent.replace(/\s+/g, ' ').slice(0, 90) : null; });
   chk('pide la mejora de característica del nivel 6', /Ability Score|característica/i.test(modal || ''), modal);
