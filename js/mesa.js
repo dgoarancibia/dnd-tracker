@@ -160,6 +160,8 @@ const Mesa = (() => {
       <span class="mc-esp"></span>
       <div class="mc-turno">${_turno(c, false)}</div>
       <div class="mc-herr">
+        ${(() => { const n = App.prepAvisosCount ? App.prepAvisosCount() : 0;
+          return `<button class="mc-ic mc-listo" onclick="App.openPrepSesion()" title="Antes de jugar${n ? `: ${n} cosa${n === 1 ? '' : 's'} por revisar` : ''}"><i class="mesa-ico" style="--m:url(../assets/iconos/listo.svg)"></i>${n ? `<span class="mc-badge">${n}</span>` : ''}</button>`; })()}
         <button class="mc-ic" onclick="App.abrirMapas()" title="Mapas"><i class="mesa-ico" style="--m:url(../assets/iconos/vacio-mapa.svg)"></i></button>
         <button class="mc-ic" onclick="App.toggleNotebook()" title="Cuaderno: Hojas, notas rápidas, log"><i class="mesa-ico" style="--m:url(../assets/iconos/cuaderno.svg)"></i></button>
       </div>`;

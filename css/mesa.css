@@ -75,6 +75,9 @@
 .mc-ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; cursor: pointer;
   border: 1px solid var(--m-borde-2); background: var(--bg3); color: var(--m-acento-2); }
 .mc-ic .mesa-ico { width: 20px; height: 20px; }
+.mc-listo { position: relative; }
+.mc-badge { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+  background: var(--gold, #c9973a); color: #1a1208; font: 700 10px/17px system-ui, sans-serif; text-align: center; }
 :root[data-vista="mesa"] .fab, :root[data-vista="mesa"] .fab-note { display: none !important; }
 /* Guardado y versión: chicos, junto al ⋯ (la versión sigue en Ajustes → Forzar actualización) */
 :root[data-vista="mesa"] #appVersionBadge { display: none; }

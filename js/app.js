@@ -2217,44 +2217,10 @@ const App = (() => {
     return sesiones.find(s => s.endedAt) || sesiones[0] || null;
   }
 
-  function _prepEstadoHTML() {
-    const filas = [];
-    const hp = _char.hp || { current: 0, max: 0 };
-    const hpPct = hp.max ? Math.round((hp.current / hp.max) * 100) : 0;
-    const hpClase = hpPct >= 100 ? 'ok' : (hpPct >= 50 ? 'warn' : 'bad');
-    filas.push(`<div class="prep-stat ${hpClase}"><span class="ps-lbl">HP</span><span class="ps-val">${hp.current}/${hp.max}</span></div>`);
-
-    // Slots por nivel: muestra los que no están llenos como advertencia.
-    const slotsTxt = [];
-    let slotsIncompletos = false;
-    for (let i = 1; i <= 9; i++) {
-      const sl = _char.spellSlots && _char.spellSlots[i];
-      if (!sl || !sl.max) continue;
-      const usados = sl.max - (sl.current != null ? sl.current : sl.max);
-      if (usados > 0) slotsIncompletos = true;
-      slotsTxt.push(`<span class="ps-slot${usados ? ' gastado' : ''}">N${i} ${sl.current != null ? sl.current : sl.max}/${sl.max}</span>`);
-    }
-    if (slotsTxt.length) {
-      filas.push(`<div class="prep-stat ${slotsIncompletos ? 'warn' : 'ok'}"><span class="ps-lbl">Slots</span><span class="ps-val ps-slots">${slotsTxt.join('')}</span></div>`);
-    }
-
-    const dg = _char.hitDice;
-    if (dg && dg.max) {
-      filas.push(`<div class="prep-stat ${dg.current < dg.max ? 'warn' : 'ok'}"><span class="ps-lbl">Dados de golpe</span><span class="ps-val">${dg.current}/${dg.max}</span></div>`);
-    }
-
-    (_char.resources || []).filter(r => r.max > 0).forEach(r => {
-      const cur = r.current != null ? r.current : r.max;
-      filas.push(`<div class="prep-stat ${cur < r.max ? 'warn' : 'ok'}"><span class="ps-lbl">${(r.name || r.id).replace(/</g,'&lt;')}</span><span class="ps-val">${cur}/${r.max}</span></div>`);
-    });
-
-    return filas.join('');
-  }
-
   function _prepPendientesHTML() {
     const activas = (_char.entities || []).filter(e => e.type === 'quest' && e.status !== 'resolved');
     if (!activas.length) return '<div class="prep-empty">Sin misiones activas.</div>';
-    return activas.map(q => `<div class="prep-quest">⚔️ ${q.name.replace(/</g,'&lt;')}</div>`).join('');
+    return activas.map(q => `<div class="prep-quest">${q.name.replace(/</g,'&lt;')}</div>`).join('');
   }
 
   /* ══════════════════════════════════════════════════════
@@ -2382,6 +2348,133 @@ const App = (() => {
       .catch(() => showToast('No se pudo copiar'));
   }
 
+  /* ── Antes de jugar (HU-43): qué quedó colgado de la sesión anterior ──
+     Cada aviso dice qué pasa y, si se puede, trae el botón que lo resuelve.
+     Solo informa: no decide por el jugador (nada se limpia sin tocar). */
+  function _prepAvisos(c) {
+    const av = [];
+    const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const add = (txt, fix, btn, nivel) => av.push({ txt, fix, btn, nivel: nivel || 'warn' });
+
+    // Recursos que vuelven con un descanso largo
+    const gastado = [];
+    const hp = c.hp || { current: 0, max: 0 };
+    if (hp.current < hp.max) gastado.push(`PG ${hp.current}/${hp.max}`);
+    const slots = [];
+    for (let i = 1; i <= 9; i++) {
+      const sl = c.spellSlots && c.spellSlots[i];
+      if (sl && sl.max && sl.current < sl.max) slots.push(`nv${i} ${sl.current}/${sl.max}`);
+    }
+    if (slots.length) gastado.push('espacios ' + slots.join(', '));
+    if (c.hitDice && c.hitDice.current < c.hitDice.max) gastado.push(`dados de golpe ${c.hitDice.current}/${c.hitDice.max}`);
+    (c.resources || []).filter(r => r.max > 0 && r.current < r.max).forEach(r => gastado.push(`${r.name} ${r.current}/${r.max}`));
+    if (gastado.length)
+      add(`Llegas con cosas gastadas: ${esc(gastado.join(' · '))}. Si descansaron desde la última sesión, haz el descanso.`, 'largo', 'Descanso largo', hp.current <= 0 ? 'bad' : 'warn');
+
+    if (hp.temp > 0) add(`Tienes ${hp.temp} PG temporales de la sesión pasada.`, 'temp', 'Quitar');
+    if (c.concentration) {
+      const sp = (c.spells || []).find(x => x.id === c.concentration);
+      add(`Sigues concentrado en ${esc(sp ? sp.name : 'un conjuro')}${c.markTarget ? ` (marca: ${esc(c.markTarget)})` : ''}.`, 'conc', 'Terminar');
+    } else if (c.markTarget) add(`Quedó marcado “${esc(c.markTarget)}” sin concentración.`, 'marca', 'Quitar');
+    if (c.conditions && c.conditions.length) {
+      const noms = c.conditions.map(id => (CONDITIONS.find(x => x.id === id) || {}).label || id);
+      add(`Condiciones activas: ${esc(noms.join(', '))}.`, 'cond', 'Quitar todas');
+    }
+    if (c.exhaustion > 0) add(`Agotamiento ${c.exhaustion}: −${c.exhaustion * 2} a las pruebas d20. Baja 1 por descanso largo.`, null, null);
+    const ds = c.deathSaves || {};
+    if (ds.successes || ds.failures) add(`Tiradas de muerte marcadas (${ds.successes || 0} éxitos, ${ds.failures || 0} fallos).`, 'muerte', 'Limpiar');
+    const t = c.turn || {};
+    if (t.action || t.bonus || t.reaction || t.movement || t.ataques) add('El turno quedó con acciones marcadas.', 'turno', 'Limpiar');
+    if (c.resistTodo) add('Sigue activa la resistencia a todo el daño.', 'resist', 'Quitar');
+    if (c.echoActive) add('El eco quedó invocado.', 'eco', 'Descartar');
+    const nb = c.statBuffs ? ['ca', 'attack', 'save', 'spellDc'].reduce((n, k) => n + ((c.statBuffs[k] || []).length), 0) : 0;
+    if (nb) add(`${nb} bono${nb === 1 ? '' : 's'} temporal${nb === 1 ? '' : 'es'} (CA, ataque, salvación o CD) sigue${nb === 1 ? '' : 'n'} aplicado${nb === 1 ? '' : 's'}.`, 'buffs', 'Quitar');
+
+    // Compañero del Beast Master
+    if (c.companion && c.companion.beast && esBeastMaster(c)) {
+      const b = Characters.PRIMAL_COMPANION_BEASTS[c.companion.beast];
+      if (b) {
+        const max = b.calcMaxHP(getRangerLevel(c));
+        const cur = c.companion.hp != null ? c.companion.hp : max;
+        const nom = esc(c.companion.name || b.name);
+        if (cur <= 0) add(`${nom} está caído.`, 'bestia', 'Restaurar', 'bad');
+        else if (cur < max) add(`${nom} está con ${cur}/${max} PG.`, null, null);
+      }
+    }
+
+    // Munición de las armas equipadas
+    const vistos = new Set();
+    ['mainHand', 'offHand'].forEach(sl => {
+      const w = c.equipment && c.equipment[sl];
+      const tipo = w && Characters.getAmmoType && Characters.getAmmoType(w);
+      if (!tipo || vistos.has(tipo.key)) return;
+      vistos.add(tipo.key);
+      const lbl = esc(tipo.label || 'Munición').toLowerCase();
+      const it = Characters.getAmmoItem(c, tipo, w);
+      const pend = ((c.ammo || {})[tipo.key] || {}).spent || 0;
+      if (pend) add(`Quedaron ${pend} ${lbl} disparados sin recoger (recuperas la mitad).`, 'municion:' + tipo.key, 'Recuperar');
+      if (!it || !it.item) add(`No tienes ${lbl} en Ítems para ${esc(w.name)}.`, null, null);
+      else {
+        const qty = parseInt(it.item.qty) || 0;
+        if (qty <= 5) add(`Te quedan ${qty} ${lbl} para ${esc(w.name)}.`, null, null, qty ? 'warn' : 'bad');
+      }
+    });
+
+    const sint = Characters.calcAttunementCount(c.equipment, c.consumables);
+    if (sint > Characters.ATTUNEMENT_MAX) add(`Tienes ${sint} objetos sintonizados: el máximo es ${Characters.ATTUNEMENT_MAX}.`, null, null, 'bad');
+
+    if (c.progresion !== 'hito' && c.nivel < 20) {
+      const sig = Characters.getNextLevelXP(c.nivel);
+      if (sig && (c.xp || 0) >= sig) add(`Tu XP alcanza para subir a nivel ${c.nivel + 1}.`, 'nivel', 'Subir de nivel', 'info');
+    }
+
+    const prepMax = Characters.getPreparedMax ? Characters.getPreparedMax(c) : 0;
+    const prepN = (c.preparedToday || []).length;
+    if (prepMax && prepN < prepMax) add(`Te faltan ${prepMax - prepN} conjuros por preparar (${prepN}/${prepMax}).`, 'conjuros', 'Ir a Conjuros', 'info');
+    return av;
+  }
+
+  function prepAvisosCount() {
+    return _char ? _prepAvisos(_char).filter(a => a.nivel !== 'info').length : 0;
+  }
+
+  function prepArreglar(clave) {
+    const c = _char;
+    if (!c) return;
+    const [k, arg] = String(clave).split(':');
+    if (k === 'largo') { closePrepSesion(); longRest(); return; }
+    if (k === 'bestia') { closePrepSesion(); openCompanionRevive(); return; }
+    if (k === 'nivel') { closePrepSesion(); openLevelUp(); return; }
+    if (k === 'conjuros') { closePrepSesion(); switchTab('conjuros'); return; }
+    if (k === 'municion') { recuperarMunicion(arg); openPrepSesion(); return; }
+    if (k === 'temp') c.hp.temp = 0;
+    if (k === 'conc') { c.concentration = null; delete c.markTarget; }
+    if (k === 'marca') delete c.markTarget;
+    if (k === 'cond') c.conditions = [];
+    if (k === 'muerte') c.deathSaves = { successes: 0, failures: 0 };
+    if (k === 'turno') c.turn = { action: false, bonus: false, reaction: false, movement: false };
+    if (k === 'resist') delete c.resistTodo;
+    if (k === 'eco') c.echoActive = false;
+    if (k === 'buffs') c.statBuffs = { ca: [], attack: [], save: [], spellDc: [] };
+    _saveChar();
+    _renderHeader();
+    _renderCombateTab();
+    _updateCombatHUD();
+    openPrepSesion();
+  }
+
+  // Última nota de Hojas (el diario actual): título y comienzo del texto.
+  function _prepUltimaHoja(c) {
+    const pages = (c.pages || []).filter(p => p && p.doc)
+      .slice().sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+    const txt = n => !n ? '' : n.type === 'text' ? (n.text || '') : n.type === 'mention' ? ((n.attrs && n.attrs.label) || '') : (n.content || []).map(txt).join('');
+    for (const p of pages) {
+      const lineas = (p.doc.content || []).map(txt).map(x => x.trim()).filter(Boolean);
+      if (lineas.length) return { id: p.id, titulo: lineas[0].slice(0, 80), cuerpo: lineas.slice(1).join(' · ').slice(0, 240) };
+    }
+    return null;
+  }
+
   function openPrepSesion() {
     if (!_char) return;
     let overlay = document.getElementById('prepSesionOverlay');
@@ -2393,64 +2486,46 @@ const App = (() => {
       overlay.onclick = (e) => { if (e.target === overlay) closePrepSesion(); };
       document.body.appendChild(overlay);
     }
+    const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+    const avisos = _prepAvisos(_char);
+    const avisosHTML = (avisos.some(a => a.nivel !== 'info') ? '' : '<div class="prep-ok">Todo listo: nada quedó colgado de la sesión anterior.</div>')
+      + avisos.map(a => `<div class="prep-av ${a.nivel}"><span>${a.txt}</span>${a.fix
+          ? `<button class="prep-fix" onclick="App.prepArreglar('${a.fix}')">${a.btn}</button>` : ''}</div>`).join('');
 
     const sesion = _prepUltimaSesion();
-    const nSes = sesion ? _sessionNumber(sesion.id) : null;
+    const hoja = _prepUltimaHoja(_char);
     let dondeHTML;
     if (sesion && sesion.resumen) {
-      const titulo = sesion.label ? ` · ${sesion.label.replace(/</g,'&lt;')}` : '';
-      dondeHTML = `<div class="prep-resumen-hd">Sesión ${nSes}${titulo}</div>
-                   <div class="prep-resumen">${sesion.resumen.replace(/</g,'&lt;')}</div>`;
-    } else if (sesion) {
-      // Sin resumen generado: se muestran las últimas notas, que es lo
-      // que hay. Mejor eso que una sección vacía.
-      const ultimas = (_char.diary || [])
-        .filter(e => e.sessionId === sesion.id)
-        .slice(-4)
-        .map(e => `<div class="prep-nota">${e.text.replace(/</g,'&lt;').slice(0, 90)}</div>`)
-        .join('');
-      dondeHTML = `<div class="prep-resumen-hd">Sesión ${nSes} · últimas notas</div>
-                   ${ultimas || '<div class="prep-empty">Sin notas.</div>'}
-                   <div class="prep-tip">Generá el resumen desde 📓 Diario → 📅 Sesiones para verlo acá.</div>`;
+      const titulo = sesion.label ? ` · ${esc(sesion.label)}` : '';
+      dondeHTML = `<div class="prep-resumen-hd">Sesión ${_sessionNumber(sesion.id)}${titulo}</div>
+                   <div class="prep-resumen">${esc(sesion.resumen)}</div>`;
+    } else if (hoja) {
+      dondeHTML = `<div class="prep-resumen-hd">Última nota en Hojas</div>
+                   <div class="prep-resumen"><b>${esc(hoja.titulo)}</b>${hoja.cuerpo ? '<br>' + esc(hoja.cuerpo) : ''}</div>
+                   <button class="prep-link" onclick="App.prepAbrirHoja('${hoja.id}')">Abrir en Hojas →</button>`;
     } else {
-      dondeHTML = '<div class="prep-empty">Todavía no hay sesiones registradas.</div>';
+      dondeHTML = '<div class="prep-empty">Todavía no hay notas.</div>';
     }
-
-    const prepCount = (_char.preparedToday || []).length;
-    const prepMax = (typeof Characters !== 'undefined' && Characters.getPreparedMax)
-      ? Characters.getPreparedMax(_char) : 0;
 
     overlay.innerHTML = `
       <div class="modal prep-modal">
         <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>🎯 Antes de jugar</span>
+          <span>Antes de jugar</span>
           <span class="ref-close" onclick="App.closePrepSesion()">✕</span>
         </div>
         <div class="modal-body prep-body">
           <div class="prep-sec">
-            <div class="prep-sec-hd">📖 Dónde quedamos</div>
+            <div class="prep-sec-hd">Para revisar</div>
+            ${avisosHTML}
+          </div>
+          <div class="prep-sec">
+            <div class="prep-sec-hd">Dónde quedamos</div>
             ${dondeHTML}
           </div>
           <div class="prep-sec">
-            <div class="prep-sec-hd">💪 Con qué llegás</div>
-            <div class="prep-stats">${_prepEstadoHTML()}</div>
-          </div>
-          <div class="prep-sec">
-            <div class="prep-sec-hd">✨ Conjuros preparados
-              ${prepMax ? `<span class="prep-count${prepCount < prepMax ? ' warn' : ''}">${prepCount}/${prepMax}</span>` : ''}
-            </div>
-            ${prepMax && prepCount < prepMax
-              ? `<div class="prep-aviso">Te faltan ${prepMax - prepCount} por preparar.</div>`
-              : '<div class="prep-ok">Todo preparado.</div>'}
-            <button class="prep-link" onclick="App.closePrepSesion();App.switchTab('conjuros')">Ir a Conjuros →</button>
-          </div>
-          <div class="prep-sec">
-            <div class="prep-sec-hd">⚔️ Misiones abiertas</div>
+            <div class="prep-sec-hd">Misiones abiertas</div>
             ${_prepPendientesHTML()}
-          </div>
-          <div class="prep-sec">
-            <div class="prep-sec-hd">🎲 Dados para hoy</div>
-            ${_renderDicePouch(_char)}
           </div>
         </div>
         <div class="modal-footer">
@@ -2458,6 +2533,13 @@ const App = (() => {
         </div>
       </div>`;
     overlay.style.display = 'flex';
+  }
+
+  function prepAbrirHoja(id) {
+    closePrepSesion();
+    _notebookTab = 'pages';
+    if (_notebookOpen) switchNotebookTab('pages'); else toggleNotebook();
+    if (window.Hojas) Hojas.abrirNota(id);
   }
 
   function closePrepSesion() {
@@ -9748,12 +9830,28 @@ const App = (() => {
     document.querySelectorAll('#lrSummary .lr-chip').forEach(b => b.classList.toggle('on', b.dataset.terreno === k));
   }
 
+  // PHB 2024, Humano · Resourceful: Inspiración heroica al terminar cada descanso largo.
+  function _lrInspiracionHumano(c) {
+    return c.raza === 'Humano' && !c.inspiration;
+  }
+
+  // Qué puede cambiar de sus conjuros preparados al terminar el descanso (PHB 2024).
+  function _lrCambioPreparados(c) {
+    const clases = (c.classes && c.classes.length ? c.classes.map(x => x && x.name) : [c.clase]).filter(Boolean);
+    const todo = clases.filter(n => ['Clérigo', 'Druida', 'Mago', 'Artífice'].includes(n));
+    const uno = clases.filter(n => ['Explorador', 'Paladín'].includes(n));
+    const partes = [];
+    if (todo.length) partes.push(`puedes cambiar toda tu lista de conjuros preparados (${todo.join(', ')})`);
+    if (uno.length) partes.push(`puedes cambiar 1 conjuro preparado por otro de ${uno.length > 1 ? 'esas clases' : 'tu clase'} (${uno.join(', ')})`);
+    return partes.join(' · ');
+  }
+
   function longRest() {
     // Build preview of what will be recovered
     const c = _char;
     const hpRecover = c.hp.max - c.hp.current;
-    const hdRecover = Math.max(1, Math.ceil(c.hitDice.max / 2));
-    const hdNew = Math.min(c.hitDice.max, c.hitDice.current + hdRecover);
+    // PHB 2024: el descanso largo devuelve TODOS los dados de golpe (2014 devolvía la mitad)
+    const hdNew = c.hitDice.max;
 
     // Slots that will be recovered
     const slotLines = [];
@@ -9770,6 +9868,8 @@ const App = (() => {
       .map(r => `${r.name}: ${r.current}→${r.max}`);
 
     let summaryHtml = '';
+    if (c.hp.current <= 0)
+      summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">!</span><span>Con 0 PG no se puede empezar un descanso largo: necesitas al menos 1 PG (estabilizado recuperas 1 PG tras 1d4 horas).</span></div>`;
     if (hpRecover > 0)
       summaryHtml += `<div class="lr-row lr-hp"><span class="lr-icon">♥</span><span>HP <strong>${c.hp.current} → ${c.hp.max}</strong>${c.hp.temp > 0 ? ' · tmp eliminados' : ''}</span></div>`;
     else
@@ -9795,10 +9895,11 @@ const App = (() => {
       if (_b) {
         const _max = _b.calcMaxHP(getRangerLevel(c));
         const _cur = c.companion.hp != null ? c.companion.hp : _max;
-        if (_cur < _max) {
-          const _nom = (c.companion.name || _b.name);
-          summaryHtml += `<div class="lr-row"><span class="lr-icon">🐾</span><span>${_nom.replace(/</g,'&lt;')} <strong>${_cur} → ${_max}</strong> HP</span></div>`;
-        }
+        const _nom = (c.companion.name || _b.name).replace(/</g,'&lt;');
+        if (_cur <= 0)
+          summaryHtml += `<div class="lr-row"><span class="lr-icon">🐾</span><span>${_nom} vuelve con <strong>${_max}</strong> PG: al terminar un descanso largo puedes invocar de nuevo a tu bestia primigenia</span></div>`;
+        else if (_cur < _max)
+          summaryHtml += `<div class="lr-row"><span class="lr-icon">🐾</span><span>${_nom} <strong>${_cur} → ${_max}</strong> HP</span></div>`;
       }
     }
     const _buffs = c.statBuffs || {};
@@ -9809,6 +9910,16 @@ const App = (() => {
       const newEx = Math.max(0, c.exhaustion - 1);
       summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">😴</span><span>Agotamiento ${c.exhaustion} → ${newEx}</span></div>`;
     }
+
+    if (c.echoActive)
+      summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">✕</span><span>El eco desaparece (dormir te deja Incapacitado)</span></div>`;
+    if (c.resistTodo)
+      summaryHtml += `<div class="lr-row lr-cond"><span class="lr-icon">✕</span><span>Se quita la resistencia a todo el daño</span></div>`;
+    if (_lrInspiracionHumano(c))
+      summaryHtml += `<div class="lr-row"><span class="lr-icon">★</span><span>Ganas <strong>Inspiración heroica</strong> (Humano: Resourceful)</span></div>`;
+    const _prep = _lrCambioPreparados(c);
+    if (_prep)
+      summaryHtml += `<div class="lr-row lr-info"><span class="lr-icon">✎</span><span>Al despertar: ${_prep}</span></div>`;
 
     // Circle of the Land: el terreno se elige al terminar cada descanso largo.
     _lrTerreno = _esDruidaTierra(c) ? (c.landType || null) : undefined;
@@ -9841,13 +9952,18 @@ const App = (() => {
     for (let i = 1; i <= 9; i++) {
       if (c.spellSlots[i]) c.spellSlots[i].current = c.spellSlots[i].max;
     }
-    const hdRecover = Math.max(1, Math.ceil(c.hitDice.max / 2));
-    c.hitDice.current = Math.min(c.hitDice.max, c.hitDice.current + hdRecover);
+    c.hitDice.current = c.hitDice.max;   // PHB 2024: todos los dados de golpe
     c.hp.current = c.hp.max;
     c.hp.temp = 0;
     c.turn = { action: false, bonus: false, reaction: false, movement: false };
     c.concentration = null;
+    delete c.markTarget;
     c.conditions = [];
+    c.deathSaves = { successes: 0, failures: 0 };
+    delete c.resistTodo;
+    if (c.echoActive) c.echoActive = false;
+    const ganaInsp = _lrInspiracionHumano(c);
+    if (ganaInsp) c.inspiration = true;
     // Los buffs manuales (escudo, bendición, etc.) son temporales: sin esto
     // quedaban aplicados para siempre, inflando CA/ataque/CD.
     c.statBuffs = { ca: [], attack: [], save: [], spellDc: [] };
@@ -9890,7 +10006,9 @@ const App = (() => {
       _logCombat(`🐾 Compañero ${compAntes}→${compMax} HP`, 'rest');
     }
     if (terrenoNuevo) _logCombat(`⛰ Terreno: ${terrenoNuevo}`, 'rest');
-    showToast(`✦ Descanso largo — Todo recargado${terrenoNuevo ? ` · Terreno: ${terrenoNuevo}` : ''}`);
+    if (ganaInsp) _logCombat('★ Inspiración heroica (Resourceful)', 'rest');
+    const prepTxt = _lrCambioPreparados(c);
+    showToast(`✦ Descanso largo — Todo recargado${terrenoNuevo ? ` · Terreno: ${terrenoNuevo}` : ''}${prepTxt ? ' · Puedes cambiar preparados' : ''}`);
   }
 
   /* ══════════════════════════════════════════════════════
@@ -12810,7 +12928,7 @@ ${notesText}`;
     copiarRoll20,
     toggleHideFeature, toggleShowHidden, showAllHiddenFeatures,
     togglePouchDetail, openDicePouchModal, closeDicePouchModal,
-    openPrepSesion, closePrepSesion,
+    openPrepSesion, closePrepSesion, prepArreglar, prepAvisosCount, prepAbrirHoja,
     openShareModal, closeShareModal, publishShare, revokeShare, copyShareUrl,
     exportResumenPDF,
 
