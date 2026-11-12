@@ -463,3 +463,8 @@
 /* Recursos: el nombre se parte en líneas antes que los puntos (hasta 5 en fila) */
 .mesa-rec > div:first-child { flex: 1; min-width: 0; }
 .mesa-rec > .mesa-pts { flex: none; max-width: 125px; }
+
+/* Qué hace cada condición activa */
+.mesa-cond-ef { margin: 6px 0 2px; padding-left: 18px; font-size: 12.5px; line-height: 1.45; color: var(--text); }
+.mesa-cond-ef li + li { margin-top: 5px; }
+.mesa-cond-ef b { color: var(--m-acento-2); }

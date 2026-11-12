@@ -1871,19 +1871,22 @@ const App = (() => {
     _renderCombateDer();
   }
 
+  // Efectos según el glosario de reglas 2024 (PHB 2024 / D&D Beyond free rules)
   const CONDITIONS = [
-    { id:'caido',         label:'Caído',         effect:'Desventaja en ataques · Ataques cuerpo a cuerpo contra ti con ventaja · Vel 0' },
-    { id:'envenenado',    label:'Envenenado',     effect:'Desventaja en ataques y checks de habilidad' },
-    { id:'aturdido',      label:'Aturdido',       effect:'Incapacitado · no puede moverse · falla STR/DEX saves · ataques contra ti con ventaja' },
-    { id:'agarrado',      label:'Agarrado',       effect:'Velocidad 0 · desventaja en ataques contra quien no sea tu agarrador · te puede arrastrar · termina si queda incapacitado' },
-    { id:'asustado',      label:'Asustado',       effect:'Desventaja en ataques y checks mientras vea la fuente · no puede acercarse a ella' },
-    { id:'incapacitado',  label:'Incapacitado',   effect:'No puede realizar acciones ni reacciones' },
-    { id:'cegado',        label:'Cegado',         effect:'Falla checks que requieran vista · desventaja en ataques · ventaja contra ti' },
-    { id:'encantado',     label:'Encantado',      effect:'No puede atacar al encantador · el encantador tiene ventaja en checks sociales' },
-    { id:'ensordecido',   label:'Ensordecido',    effect:'Falla checks que requieran oído' },
-    { id:'invisible',     label:'Invisible',      effect:'Ventaja en ataques · desventaja en ataques contra ti · no se puede ver sin magia' },
-    { id:'paralizado',    label:'Paralizado',     effect:'Incapacitado · falla STR/DEX saves · ataques con ventaja · golpes a 5ft son críticos' },
-    { id:'apresado',      label:'Apresado',       effect:'Velocidad 0 · desventaja en tus ataques y salvaciones de DES · ventaja en ataques contra ti' },
+    { id:'caido',         label:'Caído',         effect:'Solo puedes arrastrarte, o gastar la mitad de tu velocidad para pararte · desventaja en tus ataques · ataques contra ti: ventaja a 1,5 m, desventaja más lejos' },
+    { id:'envenenado',    label:'Envenenado',    effect:'Desventaja en tiradas de ataque y pruebas de característica' },
+    { id:'aturdido',      label:'Aturdido',      effect:'Incapacitado · fallas las salvaciones de FUE y DES · ataques contra ti con ventaja' },
+    { id:'agarrado',      label:'Agarrado',      effect:'Velocidad 0 · desventaja en ataques contra quien no sea tu agarrador · te puede arrastrar (le cuesta movimiento extra)' },
+    { id:'asustado',      label:'Asustado',      effect:'Desventaja en pruebas y ataques mientras veas la fuente · no puedes acercarte a ella por voluntad propia' },
+    { id:'incapacitado',  label:'Incapacitado',  effect:'Sin acciones, acciones adicionales ni reacciones · pierdes la concentración · no puedes hablar · desventaja en iniciativa' },
+    { id:'cegado',        label:'Cegado',        effect:'Fallas las pruebas que requieren vista · tus ataques con desventaja · ataques contra ti con ventaja' },
+    { id:'encantado',     label:'Encantado',     effect:'No puedes atacar al encantador ni dañarlo con rasgos o magia · él tiene ventaja en pruebas sociales contigo' },
+    { id:'ensordecido',   label:'Ensordecido',   effect:'Fallas las pruebas que requieren oído' },
+    { id:'invisible',     label:'Invisible',     effect:'Ventaja en iniciativa · no te afectan efectos que requieran verte · tus ataques con ventaja y los ataques contra ti con desventaja (salvo que te vean)' },
+    { id:'paralizado',    label:'Paralizado',    effect:'Incapacitado · velocidad 0 · fallas salvaciones de FUE y DES · ataques contra ti con ventaja · golpes desde 1,5 m son críticos' },
+    { id:'apresado',      label:'Apresado',      effect:'Velocidad 0 · tus ataques con desventaja · ataques contra ti con ventaja · desventaja en salvaciones de DES' },
+    { id:'inconsciente',  label:'Inconsciente',  effect:'Incapacitado y Caído · sueltas lo que tengas · velocidad 0 · fallas salvaciones de FUE y DES · ataques contra ti con ventaja · golpes desde 1,5 m son críticos' },
+    { id:'petrificado',   label:'Petrificado',   effect:'Incapacitado · velocidad 0 · fallas salvaciones de FUE y DES · ataques contra ti con ventaja · resistencia a todo el daño · inmune a Envenenado' },
   ];
 
   // Condiciones: se movió al sidebar fijo (antes vivía en Combate-izquierda),
@@ -12650,6 +12653,8 @@ ${notesText}`;
     sumarDaño,
     // Estado del combate y ataques por turno, para la vista Mesa
     enCombate: () => _combatActive,
+    // Efecto de cada condición (Mesa lo muestra bajo las activas)
+    efectoCondicion: id => (CONDITIONS.find(x => x.id === id) || {}).effect || '',
     ataquesDelTurno: () => _char ? _ataquesDelTurno(_char) : 1,
     // Bloques que la vista Mesa reutiliza tal cual (ficha de la bestia, maestrías)
     mesaHTML: { companion: () => _char ? _renderCompanionHTML(_char) : '', maestrias: () => _char ? _renderMasteriesHTML(_char) : '' },

@@ -19,7 +19,7 @@ const Mesa = (() => {
   // Mismos ids que CONDITIONS en app.js
   const CONDICIONES = [['caido', 'Caído'], ['envenenado', 'Envenenado'], ['aturdido', 'Aturdido'], ['agarrado', 'Agarrado'], ['asustado', 'Asustado'],
     ['incapacitado', 'Incapacitado'], ['cegado', 'Cegado'], ['encantado', 'Encantado'], ['ensordecido', 'Ensordecido'], ['invisible', 'Invisible'],
-    ['paralizado', 'Paralizado'], ['apresado', 'Apresado']];
+    ['paralizado', 'Paralizado'], ['apresado', 'Apresado'], ['inconsciente', 'Inconsciente'], ['petrificado', 'Petrificado']];
   const CAMPO = { action: 'action', bonusAction: 'bonus', reaction: 'reaction' };
 
   // Estado de la vista (no se guarda en el personaje)
@@ -771,7 +771,12 @@ const Mesa = (() => {
     const todas = st.grupos.has('conds');
     const chips = CONDICIONES.filter(([id]) => todas || conds.includes(id)).map(([id, n]) =>
       `<button class="mesa-chip ${conds.includes(id) ? 'on' : ''}" onclick="App.toggleCondition('${id}')">${n}</button>`).join('');
-    bloques.push(`<section><div class="mesa-sec">Condiciones</div><div class="mesa-card mesa-conds"><div class="mesa-rapidas">${chips || '<span class="mesa-vacio">Ninguna</span>'}</div>
+    // Qué hace cada condición activa (2024), para no tener que buscarlo en mesa
+    const efectos = CONDICIONES.filter(([id]) => conds.includes(id)).map(([id, n]) => {
+      const ef = App.efectoCondicion ? App.efectoCondicion(id) : '';
+      return ef ? `<li><b>${n}</b>: ${esc(ef)}</li>` : '';
+    }).join('');
+    bloques.push(`<section><div class="mesa-sec">Condiciones</div><div class="mesa-card mesa-conds"><div class="mesa-rapidas">${chips || '<span class="mesa-vacio">Ninguna</span>'}</div>${efectos ? `<ul class="mesa-cond-ef">${efectos}</ul>` : ''}
       <button class="mesa-plegar" onclick="Mesa.grupo('conds')">${todas ? '▾ Ocultar las demás' : '▸ Agregar condición'}</button></div></section>`);
     return bloques.join('');
   }
