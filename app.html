@@ -9,7 +9,7 @@
 
 // ── SW Update — versión robusta para iOS PWA ─────────────────────────────────
 // _SW_EXPECTED debe coincidir con el número en CACHE de sw.js y en GET_VERSION
-const _SW_EXPECTED = 538;
+const _SW_EXPECTED = 539;
 
 (function() {
   if (!('serviceWorker' in navigator)) return;
@@ -103,7 +103,7 @@ const _SW_EXPECTED = 538;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=150">
+<link rel="stylesheet" href="css/style.css?v=151">
 <link rel="stylesheet" href="css/tema.css?v=3">
 <link rel="stylesheet" href="css/pergamino.css?v=3">
 <link rel="stylesheet" href="css/onix.css?v=4">
@@ -1288,17 +1288,23 @@ const _SW_EXPECTED = 538;
       <!-- Separador -->
       <div class="map-tool-sep"></div>
       <!-- Herramientas -->
-      <button class="map-tool-btn active" id="mapBtnPen"    onclick="Maps.setTool('pen')"    title="Lápiz">✏️</button>
-      <button class="map-tool-btn"        id="mapBtnText"   onclick="Maps.setTool('text')"   title="Texto">𝐓</button>
-      <button class="map-tool-btn"        id="mapBtnEraser" onclick="Maps.setTool('eraser')" title="Goma de borrar">🧹</button>
+      <button class="map-tool-btn txt active" id="mapBtnPen"     onclick="Maps.setTool('pen')"     title="Dibujar a mano">Lápiz</button>
+      <button class="map-tool-btn txt"        id="mapBtnLinea"   onclick="Maps.setTool('linea')"   title="Línea recta">Línea</button>
+      <button class="map-tool-btn txt"        id="mapBtnFlecha"  onclick="Maps.setTool('flecha')"  title="Flecha">Flecha</button>
+      <button class="map-tool-btn txt"        id="mapBtnCirculo" onclick="Maps.setTool('circulo')" title="Círculo: toca el centro y arrastra">Círculo</button>
+      <button class="map-tool-btn txt"        id="mapBtnText"    onclick="Maps.setTool('text')"    title="Texto: toca vacío para escribir, toca un texto para editarlo">Texto</button>
+      <button class="map-tool-btn txt"        id="mapBtnPin"     onclick="Maps.setTool('pin')"     title="Pin con nota">Pin</button>
+      <button class="map-tool-btn txt"        id="mapBtnMove"    onclick="Maps.setTool('move')"    title="Mover: arrastra; toca un texto o pin para editarlo">Mover</button>
+      <button class="map-tool-btn txt"        id="mapBtnEraser"  onclick="Maps.setTool('eraser')"  title="Goma: borra solo lo que toca">Goma</button>
       <!-- Tamaño -->
       <input type="range" id="mapSizeSlider" min="1" max="24" value="4" class="map-size-slider"
              oninput="Maps.setSize(this.value)" title="Grosor / Tamaño texto">
       <!-- Acciones -->
       <div class="map-tool-sep"></div>
-      <button class="map-action-btn" onclick="Maps.undo()"     title="Deshacer">↩</button>
-      <button class="map-action-btn" onclick="Maps.clearAll()" title="Borrar todo">🗑</button>
-      <button class="map-action-btn map-save-btn" id="mapBtnSave" onclick="Maps.saveAnnotations()">Guardar</button>
+      <button class="map-action-btn" id="mapBtnUndo" onclick="Maps.undo()" title="Deshacer">↶ Deshacer</button>
+      <button class="map-action-btn" id="mapBtnRedo" onclick="Maps.redo()" title="Rehacer">↷ Rehacer</button>
+      <button class="map-action-btn" onclick="Maps.clearAll()" title="Borrar todas las anotaciones">Borrar todo</button>
+      <span class="map-save-state" id="mapSaveState">Guardado</span>
       <button class="map-action-btn map-close-btn" onclick="Maps.closeMap()">✕ Cerrar</button>
     </div>
   </div>
@@ -1318,7 +1324,7 @@ const _SW_EXPECTED = 538;
 <script src="js/bastion.js?v=2"></script>
 <script src="js/app.js?v=312"></script>
 <script src="js/biblioteca.js?v=4"></script>
-<script src="js/maps.js?v=5"></script>
+<script src="js/maps.js?v=6"></script>
 <script>
 // Patch: asegurar hitDice en chars importados con _dataVersion alto que saltean migraciones
 // Esto corre después de storage.js y antes de init(), sin depender del SW

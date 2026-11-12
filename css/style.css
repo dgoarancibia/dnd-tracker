@@ -9910,3 +9910,13 @@ body.diario-abierto .fab-note { opacity: 0; pointer-events: none; transform: sca
 .xp-modo button { border: none; background: transparent; color: var(--text-mid); font: 600 12px 'Jost', sans-serif; padding: 4px 12px; cursor: pointer; min-height: 28px; }
 .xp-modo button.on { background: var(--gold); color: var(--bg); }
 .xp-hito { margin: 6px 0 10px; color: var(--text-mid); }
+
+/* Editor de mapas: herramientas con nombre, estado de guardado y pines */
+.map-tool-btn.txt { width: auto; padding: 0 10px; font: 600 12.5px 'Jost', sans-serif; }
+.map-action-btn:disabled { opacity: .4; cursor: default; }
+.map-save-state { font: 500 11.5px 'Jost', sans-serif; color: var(--text-dim); min-width: 64px; text-align: center; }
+.map-pin-panel { position: fixed; z-index: 1200; width: 260px; display: flex; flex-direction: column; gap: 6px; padding: 10px;
+  background: var(--bg2); border: 1px solid var(--gold-dim); border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.55); }
+.map-pin-panel input, .map-pin-panel textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text);
+  font: 14px 'Jost', sans-serif; padding: 6px 8px; resize: vertical; }
+.map-pin-acc { display: flex; gap: 6px; justify-content: flex-end; }

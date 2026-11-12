@@ -22,11 +22,11 @@ const Maps = (() => {
   let _ctx         = null;
   let _drawing     = false;
   let _currentPath = [];
-  let _tool        = 'pen';      // 'pen' | 'eraser' | 'text'
+  let _tool        = 'pen';      // 'pen' | 'eraser' | 'text' | 'move' | 'pin' | 'linea' | 'flecha' | 'circulo'
   let _color       = '#e05c2a';
   let _size        = 4;
   let _fontSize    = 18;
-  let _annotations = [];         // [ {type:'path',...} | {type:'text', x, y, text, color, size} ]
+  let _annotations = [];         // path {pts} · text {x,y,text} · shape {forma,x1,y1,x2,y2} · pin {x,y,titulo,nota}
 
   // ── IndexedDB ──────────────────────────────────────────
 
@@ -196,11 +196,16 @@ const Maps = (() => {
 
     // Resetear UI de herramientas
     setTool('pen');
+    _iniciarHistorial();
+    _estadoGuardado('Guardado');
 
     requestAnimationFrame(() => _initCanvas(imgUrl));
   }
 
   function closeMap() {
+    document.getElementById('mapTextInput')?.blur();
+    document.getElementById('mapPinPanel')?.remove();
+    if (_timerGuardar) saveAnnotations();   // que no se pierda lo último
     document.getElementById('mapCanvasOverlay').classList.remove('show');
     _activeMap = null;
     _drawing   = false;
@@ -231,31 +236,31 @@ const Maps = (() => {
     img.src = imgUrl;
   }
 
-  function _redraw() {
+  function _redraw(extra) {
     if (!_ctx || !_canvas._img) return;
     _ctx.clearRect(0, 0, _canvas.width, _canvas.height);
     _ctx.drawImage(_canvas._img, 0, 0, _canvas.width, _canvas.height);
-    _annotations.forEach(a => {
-      if (a.type === 'text') _drawText(a);
-      else                   _drawPath(a);
-    });
+    _annotations.forEach(_drawAnotacion);
+    if (extra) _drawAnotacion(extra);   // vista previa del trazo o forma en curso
+  }
+
+  function _drawAnotacion(a) {
+    if (a.type === 'text') _drawText(a);
+    else if (a.type === 'shape') _drawShape(a);
+    else if (a.type === 'pin') _drawPin(a);
+    else _drawPath(a);
   }
 
   function _drawPath(p) {
-    if (!p.pts || p.pts.length < 2) return;
+    if (!p.pts || p.pts.length < 2 || p.tool === 'eraser') return;   // los trazos de goma viejos ya no pintan
     _ctx.save();
-    if (p.tool === 'eraser') {
-      _ctx.globalCompositeOperation = 'destination-out';
-      _ctx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-      _ctx.globalCompositeOperation = 'source-over';
-      _ctx.strokeStyle = p.color || '#e05c2a';
-    }
+    _ctx.strokeStyle = p.color || '#e05c2a';
     _ctx.lineWidth = p.size || 4;
     _ctx.lineCap   = 'round';
     _ctx.lineJoin  = 'round';
     _ctx.beginPath();
     _ctx.moveTo(p.pts[0], p.pts[1]);
+    if (p.pts.length === 2) _ctx.lineTo(p.pts[0] + 0.01, p.pts[1]);   // un punto suelto también se ve
     for (let i = 2; i < p.pts.length; i += 2) _ctx.lineTo(p.pts[i], p.pts[i + 1]);
     _ctx.stroke();
     _ctx.restore();
@@ -263,13 +268,70 @@ const Maps = (() => {
 
   function _drawText(t) {
     _ctx.save();
-    _ctx.globalCompositeOperation = 'source-over';
     _ctx.font         = `bold ${t.size || 18}px 'Jost', sans-serif`;
     _ctx.fillStyle    = t.color || '#f0c040';
     _ctx.strokeStyle  = 'rgba(0,0,0,0.7)';
     _ctx.lineWidth    = 3;
     _ctx.strokeText(t.text, t.x, t.y);
     _ctx.fillText(t.text, t.x, t.y);
+    _ctx.restore();
+  }
+
+  // Línea, flecha y círculo
+  function _drawShape(s) {
+    _ctx.save();
+    _ctx.strokeStyle = s.color || '#e05c2a';
+    _ctx.fillStyle   = s.color || '#e05c2a';
+    _ctx.lineWidth   = s.size || 4;
+    _ctx.lineCap     = 'round';
+    _ctx.lineJoin    = 'round';
+    _ctx.beginPath();
+    if (s.forma === 'circulo') {
+      _ctx.arc(s.x1, s.y1, Math.hypot(s.x2 - s.x1, s.y2 - s.y1), 0, Math.PI * 2);
+      _ctx.stroke();
+    } else {
+      _ctx.moveTo(s.x1, s.y1);
+      _ctx.lineTo(s.x2, s.y2);
+      _ctx.stroke();
+      if (s.forma === 'flecha') {
+        const ang = Math.atan2(s.y2 - s.y1, s.x2 - s.x1);
+        const largo = Math.max(12, (s.size || 4) * 3.5);
+        _ctx.beginPath();
+        _ctx.moveTo(s.x2, s.y2);
+        _ctx.lineTo(s.x2 - largo * Math.cos(ang - 0.45), s.y2 - largo * Math.sin(ang - 0.45));
+        _ctx.lineTo(s.x2 - largo * Math.cos(ang + 0.45), s.y2 - largo * Math.sin(ang + 0.45));
+        _ctx.closePath();
+        _ctx.fill();
+      }
+    }
+    _ctx.restore();
+  }
+
+  // Pin: gota con borde blanco y el título al lado
+  const PIN_R = 11;
+  function _drawPin(p) {
+    _ctx.save();
+    _ctx.fillStyle = p.color || '#e05c2a';
+    _ctx.strokeStyle = '#fff';
+    _ctx.lineWidth = 2.5;
+    _ctx.beginPath();
+    _ctx.moveTo(p.x, p.y);
+    _ctx.bezierCurveTo(p.x - PIN_R * 1.3, p.y - PIN_R * 1.4, p.x - PIN_R, p.y - PIN_R * 2.6, p.x, p.y - PIN_R * 2.6);
+    _ctx.bezierCurveTo(p.x + PIN_R, p.y - PIN_R * 2.6, p.x + PIN_R * 1.3, p.y - PIN_R * 1.4, p.x, p.y);
+    _ctx.fill();
+    _ctx.stroke();
+    _ctx.fillStyle = '#fff';
+    _ctx.beginPath();
+    _ctx.arc(p.x, p.y - PIN_R * 1.75, 3.5, 0, Math.PI * 2);
+    _ctx.fill();
+    if (p.titulo) {
+      _ctx.font = "bold 14px 'Jost', sans-serif";
+      _ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      _ctx.lineWidth = 3;
+      _ctx.fillStyle = '#fff';
+      _ctx.strokeText(p.titulo, p.x + PIN_R + 3, p.y - PIN_R * 1.5);
+      _ctx.fillText(p.titulo, p.x + PIN_R + 3, p.y - PIN_R * 1.5);
+    }
     _ctx.restore();
   }
 
@@ -326,6 +388,8 @@ const Maps = (() => {
     _pinching   = true;
     _drawing    = false;   // cancelar cualquier trazo en curso
     _currentPath = [];
+    _forma = null;
+    _arrastre = null;
     _pinchDist0 = _distDedos(e.touches);
     _zoomBase   = _zoom;
     _redraw();
@@ -357,12 +421,8 @@ const Maps = (() => {
     return [(e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY];
   }
 
-  // ── Goma: borra ANOTACIONES, no píxeles ────────────────────────────────
-  // Antes usaba destination-out, que agujereaba también la imagen del mapa.
-  // Ahora elimina las anotaciones que el trazo de goma toca, dejando el mapa
-  // intacto — comportamiento de goma real.
+  // ── Geometría: qué anotación está bajo el dedo ─────────────────────────
 
-  // Distancia mínima de un punto a un segmento (para saber si la goma lo tocó)
   function _distPuntoSegmento(px, py, x1, y1, x2, y2) {
     const dx = x2 - x1, dy = y2 - y1;
     const largo2 = dx * dx + dy * dy;
@@ -372,130 +432,286 @@ const Maps = (() => {
     return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
   }
 
+  function _cajaTexto(a) {
+    _ctx.save();
+    _ctx.font = `bold ${a.size || 18}px 'Jost', sans-serif`;
+    const ancho = _ctx.measureText(a.text || '').width;
+    _ctx.restore();
+    return { x1: a.x, y1: a.y - (a.size || 18), x2: a.x + ancho, y2: a.y + 4 };
+  }
+
   function _anotacionTocada(a, x, y, radio) {
     if (a.type === 'text') {
-      // Caja aproximada del texto (el origen del fillText es la baseline)
-      const ancho = (a.text || '').length * (a.size || 18) * 0.55;
-      const alto  = (a.size || 18);
-      return x >= a.x - radio && x <= a.x + ancho + radio &&
-             y >= a.y - alto - radio && y <= a.y + radio;
+      const c = _cajaTexto(a);
+      return x >= c.x1 - radio && x <= c.x2 + radio && y >= c.y1 - radio && y <= c.y2 + radio;
+    }
+    if (a.type === 'pin') return Math.hypot(x - a.x, y - (a.y - PIN_R * 1.6)) <= PIN_R * 1.6 + radio;
+    if (a.type === 'shape') {
+      const tol = radio + (a.size || 4) / 2;
+      if (a.forma === 'circulo') return Math.abs(Math.hypot(x - a.x1, y - a.y1) - Math.hypot(a.x2 - a.x1, a.y2 - a.y1)) <= tol;
+      return _distPuntoSegmento(x, y, a.x1, a.y1, a.x2, a.y2) <= tol;
     }
     const pts = a.pts || [];
     const tolerancia = radio + (a.size || 4) / 2;
+    if (pts.length === 2) return Math.hypot(x - pts[0], y - pts[1]) <= tolerancia;
     for (let i = 0; i + 3 < pts.length; i += 2) {
       if (_distPuntoSegmento(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3]) <= tolerancia) return true;
     }
     return false;
   }
 
-  function _borrarEn(x, y) {
-    const radio = Math.max(8, _size * 2); // área de borrado del dedo/puntero
-    const antes = _annotations.length;
-    _annotations = _annotations.filter(a => !_anotacionTocada(a, x, y, radio));
-    return _annotations.length !== antes;
+  // La de más arriba (la última dibujada) bajo el punto
+  function _anotacionEn(x, y, radio = 10) {
+    for (let i = _annotations.length - 1; i >= 0; i--) if (_anotacionTocada(_annotations[i], x, y, radio)) return _annotations[i];
+    return null;
   }
+
+  /* ── Goma parcial ───────────────────────────────────────────────────────
+     En un trazo a mano borra solo el trozo que toca: el trazo se corta en
+     pedazos y se quedan los que están fuera del radio. Textos, pines y
+     formas se borran enteros (no tienen "trozos"). */
+  function _densificar(pts, paso) {
+    const out = [pts[0], pts[1]];
+    for (let i = 2; i < pts.length; i += 2) {
+      const x0 = out[out.length - 2], y0 = out[out.length - 1], x1 = pts[i], y1 = pts[i + 1];
+      const n = Math.floor(Math.hypot(x1 - x0, y1 - y0) / paso);
+      for (let k = 1; k < n; k++) out.push(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n);
+      out.push(x1, y1);
+    }
+    return out;
+  }
+
+  function _borrarEn(x, y) {
+    const radio = Math.max(8, _size * 2);
+    let cambio = false;
+    const nuevas = [];
+    for (const a of _annotations) {
+      if (!_anotacionTocada(a, x, y, radio)) { nuevas.push(a); continue; }
+      cambio = true;
+      if (a.type !== 'path' || !a.pts || a.pts.length < 4) continue;   // entero
+      const tol = radio + (a.size || 4) / 2;
+      const pts = _densificar(a.pts, Math.max(2, tol / 3));
+      let tramo = [];
+      for (let i = 0; i < pts.length; i += 2) {
+        if (Math.hypot(pts[i] - x, pts[i + 1] - y) <= tol) {
+          if (tramo.length >= 4) nuevas.push({ ...a, pts: tramo });
+          tramo = [];
+        } else tramo.push(pts[i], pts[i + 1]);
+      }
+      if (tramo.length >= 4) nuevas.push({ ...a, pts: tramo });
+    }
+    if (cambio) _annotations = nuevas;
+    return cambio;
+  }
+
+  function _moverAnotacion(a, dx, dy) {
+    if (a.type === 'text' || a.type === 'pin') { a.x += dx; a.y += dy; }
+    else if (a.type === 'shape') { a.x1 += dx; a.y1 += dy; a.x2 += dx; a.y2 += dy; }
+    else if (a.pts) for (let i = 0; i < a.pts.length; i += 2) { a.pts[i] += dx; a.pts[i + 1] += dy; }
+  }
+
+  // ── Puntero ───────────────────────────────────────────
+
+  let _forma = null;      // forma en curso { x1, y1, x2, y2 }
+  let _arrastre = null;   // { a, x, y, movio } con la herramienta Mover
 
   function _onDown(e) {
     e.preventDefault();
+    if (_pinching) return;
     _canvas.setPointerCapture(e.pointerId);
     const [x, y] = _getPos(e);
 
     if (_tool === 'text') {
-      _showTextInput(x, y, e);
+      // Tocar un texto existente lo edita; tocar vacío crea uno nuevo
+      const t = _anotacionEn(x, y, 6);
+      if (t && t.type === 'text') _editarTexto(t);
+      else _showTextInput(x, y);
       return;
     }
-
+    if (_tool === 'pin') {
+      const p = _anotacionEn(x, y, 6);
+      if (p && p.type === 'pin') _editarPin(p);
+      else _editarPin(null, x, y);
+      return;
+    }
+    if (_tool === 'move') {
+      const a = _anotacionEn(x, y, 12);
+      _arrastre = a ? { a, x, y, movio: false } : null;
+      _drawing = !!a;
+      return;
+    }
     if (_tool === 'eraser') {
       _drawing = true;
-      if (_borrarEn(x, y)) _redraw();
+      _borroAlgo = _borrarEn(x, y);
+      if (_borroAlgo) _redraw();
       return;
     }
-
+    if (FORMAS.includes(_tool)) {
+      _drawing = true;
+      _forma = { x1: x, y1: y, x2: x, y2: y };
+      return;
+    }
     _drawing     = true;
     _currentPath = [x, y];
   }
 
+  let _borroAlgo = false;
+
   function _onMove(e) {
     e.preventDefault();
-    if (!_drawing || _tool === 'text') return;
+    if (!_drawing || _pinching) return;
     const [x, y] = _getPos(e);
 
-    if (_tool === 'eraser') {
-      if (_borrarEn(x, y)) _redraw();
+    if (_tool === 'move' && _arrastre) {
+      const dx = x - _arrastre.x, dy = y - _arrastre.y;
+      if (!_arrastre.movio && Math.hypot(dx, dy) < 3) return;
+      _arrastre.movio = true;
+      _moverAnotacion(_arrastre.a, dx, dy);
+      _arrastre.x = x; _arrastre.y = y;
+      _redraw();
       return;
     }
-
+    if (_tool === 'eraser') {
+      if (_borrarEn(x, y)) { _borroAlgo = true; _redraw(); }
+      return;
+    }
+    if (_forma) {
+      _forma.x2 = x; _forma.y2 = y;
+      _redraw({ type: 'shape', forma: _tool, ..._forma, color: _color, size: _size });
+      return;
+    }
     _currentPath.push(x, y);
-    _redraw();
-    _drawPath({ pts: _currentPath, color: _color, size: _size, tool: _tool });
+    _redraw({ type: 'path', pts: _currentPath, color: _color, size: _size });
   }
 
-  function _onUp(e) {
+  function _onUp() {
     if (!_drawing) return;
     _drawing = false;
-    if (_tool === 'eraser') { _redraw(); return; } // se guarda con el botón, igual que el pincel
-    if (_currentPath.length >= 4) {
-      _annotations.push({ type: 'path', pts: _currentPath, color: _color, size: _size, tool: _tool });
+    if (_tool === 'move') {
+      const ar = _arrastre; _arrastre = null;
+      if (!ar) return;
+      if (ar.movio) _cambio();
+      else if (ar.a.type === 'text') _editarTexto(ar.a);     // tocar sin arrastrar: editar
+      else if (ar.a.type === 'pin') _editarPin(ar.a);
+      return;
+    }
+    if (_tool === 'eraser') { if (_borroAlgo) _cambio(); _borroAlgo = false; _redraw(); return; }
+    if (_forma) {
+      const f = _forma; _forma = null;
+      if (Math.hypot(f.x2 - f.x1, f.y2 - f.y1) >= 6) { _annotations.push({ type: 'shape', forma: _tool, ...f, color: _color, size: _size }); _cambio(); }
+      _redraw();
+      return;
+    }
+    if (_currentPath.length >= 2) {
+      _annotations.push({ type: 'path', pts: _currentPath, color: _color, size: _size });
+      _cambio();
     }
     _currentPath = [];
     _redraw();
   }
 
-  // ── Herramienta de texto ──────────────────────────────
+  // ── Texto: crear y editar ─────────────────────────────
 
-  function _showTextInput(canvasX, canvasY, pointerEvent) {
-    // Crear input flotante sobre el canvas en la posición del toque
-    const existing = document.getElementById('mapTextInput');
-    if (existing) existing.remove();
-
+  function _inputFlotante(canvasX, canvasY, valor, color, alListo) {
+    document.getElementById('mapTextInput')?.remove();
     const rect   = _canvas.getBoundingClientRect();
-    const scaleX = rect.width  / _canvas.width;
-    const scaleY = rect.height / _canvas.height;
-
-    // Posición en pantalla
-    const screenX = rect.left + canvasX * scaleX;
-    const screenY = rect.top  + canvasY * scaleY;
-
+    const sx = rect.width / _canvas.width, sy = rect.height / _canvas.height;
     const inp = document.createElement('input');
-    inp.id          = 'mapTextInput';
-    inp.type        = 'text';
+    inp.id = 'mapTextInput';
+    inp.type = 'text';
     inp.placeholder = 'Escribe una etiqueta…';
-    inp.className   = 'map-text-input';
-    inp.style.left  = `${screenX}px`;
-    inp.style.top   = `${screenY - 28}px`;   // un poco arriba del toque
-    inp.style.color = _color;
-
+    inp.className = 'map-text-input';
+    inp.value = valor || '';
+    inp.style.left  = `${rect.left + canvasX * sx}px`;
+    inp.style.top   = `${rect.top + canvasY * sy - 28}px`;
+    inp.style.color = color;
     document.body.appendChild(inp);
     inp.focus();
-
-    const commit = () => {
+    inp.select();
+    let hecho = false;
+    const commit = (cancelar) => {
+      if (hecho) return; hecho = true;
       const text = inp.value.trim();
       inp.remove();
+      if (!cancelar) alListo(text);
+    };
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); commit(false); }
+      if (e.key === 'Escape') commit(true);
+    });
+    inp.addEventListener('blur', () => commit(false));
+  }
+
+  function _showTextInput(canvasX, canvasY) {
+    _inputFlotante(canvasX, canvasY, '', _color, text => {
       if (!text) return;
       _annotations.push({ type: 'text', x: canvasX, y: canvasY, text, color: _color, size: _fontSize });
-      _redraw();
-    };
-
-    inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); commit(); }
-      if (e.key === 'Escape') { inp.remove(); }
+      _cambio(); _redraw();
     });
-    inp.addEventListener('blur', commit);
+  }
+
+  // Dejarlo vacío lo borra
+  function _editarTexto(t) {
+    _inputFlotante(t.x, t.y, t.text, t.color, text => {
+      if (text === t.text) return;
+      if (!text) _annotations = _annotations.filter(a => a !== t); else t.text = text;
+      _cambio(); _redraw();
+    });
+  }
+
+  // ── Pines con nota ────────────────────────────────────
+
+  function _editarPin(pin, x, y) {
+    document.getElementById('mapPinPanel')?.remove();
+    const nuevo = !pin;
+    const rect = _canvas.getBoundingClientRect();
+    const sx = rect.width / _canvas.width, sy = rect.height / _canvas.height;
+    const px = nuevo ? x : pin.x, py = nuevo ? y : pin.y;
+    const panel = document.createElement('div');
+    panel.id = 'mapPinPanel';
+    panel.className = 'map-pin-panel';
+    const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    panel.innerHTML = `
+      <input class="map-pin-titulo" placeholder="Título (ej. Guarida del dragón)" value="${esc(pin && pin.titulo)}">
+      <textarea class="map-pin-nota" rows="3" placeholder="Nota">${esc(pin && pin.nota)}</textarea>
+      <div class="map-pin-acc">
+        ${nuevo ? '' : '<button class="map-action-btn map-pin-borrar">Borrar</button>'}
+        <button class="map-action-btn map-pin-cancelar">Cancelar</button>
+        <button class="map-action-btn map-save-btn map-pin-ok">${nuevo ? 'Poner pin' : 'Guardar'}</button>
+      </div>`;
+    document.body.appendChild(panel);
+    const ancho = 260;
+    panel.style.left = `${Math.min(window.innerWidth - ancho - 8, Math.max(8, rect.left + px * sx - ancho / 2))}px`;
+    panel.style.top  = `${Math.min(window.innerHeight - 190, Math.max(8, rect.top + py * sy + 10))}px`;
+    const titulo = panel.querySelector('.map-pin-titulo'), nota = panel.querySelector('.map-pin-nota');
+    titulo.focus();
+    const cerrar = () => panel.remove();
+    panel.querySelector('.map-pin-cancelar').onclick = cerrar;
+    panel.querySelector('.map-pin-ok').onclick = () => {
+      const t = titulo.value.trim(), n = nota.value.trim();
+      if (nuevo) { if (!t && !n) { cerrar(); return; } _annotations.push({ type: 'pin', x: px, y: py, titulo: t, nota: n, color: _color }); }
+      else { pin.titulo = t; pin.nota = n; }
+      cerrar(); _cambio(); _redraw();
+    };
+    const borrar = panel.querySelector('.map-pin-borrar');
+    if (borrar) borrar.onclick = () => { _annotations = _annotations.filter(a => a !== pin); cerrar(); _cambio(); _redraw(); };
   }
 
   // ── Herramientas UI ───────────────────────────────────
 
+  const FORMAS = ['linea', 'flecha', 'circulo'];
+  const BOTONES = { pen: 'mapBtnPen', text: 'mapBtnText', eraser: 'mapBtnEraser', move: 'mapBtnMove', pin: 'mapBtnPin',
+    linea: 'mapBtnLinea', flecha: 'mapBtnFlecha', circulo: 'mapBtnCirculo' };
+
   function setTool(tool) {
     _tool = tool;
-    document.getElementById('mapBtnPen')?.classList.toggle('active',    tool === 'pen');
-    document.getElementById('mapBtnEraser')?.classList.toggle('active', tool === 'eraser');
-    document.getElementById('mapBtnText')?.classList.toggle('active',   tool === 'text');
-    if (_canvas) _canvas.style.cursor = tool === 'text' ? 'text' : 'crosshair';
+    Object.entries(BOTONES).forEach(([t, id]) => document.getElementById(id)?.classList.toggle('active', t === tool));
+    if (_canvas) _canvas.style.cursor = tool === 'text' ? 'text' : tool === 'move' ? 'grab' : 'crosshair';
   }
 
   function setColor(color) {
     _color = color;
-    if (_tool === 'eraser') setTool('pen');
+    if (_tool === 'eraser' || _tool === 'move') setTool('pen');
     document.querySelectorAll('.map-color-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.map-color-btn[data-color="${color}"]`)?.classList.add('active');
   }
@@ -505,38 +721,84 @@ const Maps = (() => {
     _fontSize = Math.max(12, _size * 3);   // texto escala con el slider
   }
 
+  /* ── Historial (Deshacer / Rehacer) y guardado automático ───────────────
+     Cada cambio deja una foto del estado; se guarda solo un momento después. */
+  let _hist = [], _histIdx = -1, _timerGuardar = null;
+  const _foto = () => JSON.stringify(_annotations);
+
+  function _iniciarHistorial() {
+    _hist = [_foto()];
+    _histIdx = 0;
+    _actualizarHistorialUI();
+  }
+
+  function _cambio() {
+    _hist = _hist.slice(0, _histIdx + 1);
+    _hist.push(_foto());
+    if (_hist.length > 60) _hist.shift();
+    _histIdx = _hist.length - 1;
+    _actualizarHistorialUI();
+    _programarGuardado();
+  }
+
+  function _actualizarHistorialUI() {
+    const u = document.getElementById('mapBtnUndo'), r = document.getElementById('mapBtnRedo');
+    if (u) u.disabled = _histIdx <= 0;
+    if (r) r.disabled = _histIdx >= _hist.length - 1;
+  }
+
   function undo() {
-    if (_annotations.length === 0) return;
-    _annotations.pop();
-    _redraw();
+    if (_histIdx <= 0) return;
+    _histIdx--;
+    _annotations = JSON.parse(_hist[_histIdx]);
+    _redraw(); _actualizarHistorialUI(); _programarGuardado();
+  }
+
+  function redo() {
+    if (_histIdx >= _hist.length - 1) return;
+    _histIdx++;
+    _annotations = JSON.parse(_hist[_histIdx]);
+    _redraw(); _actualizarHistorialUI(); _programarGuardado();
   }
 
   function clearAll() {
     if (!confirm('¿Borrar todas las anotaciones?')) return;
     _annotations = [];
+    _cambio();
     _redraw();
+  }
+
+  function _programarGuardado() {
+    _estadoGuardado('Guardando…');
+    clearTimeout(_timerGuardar);
+    _timerGuardar = setTimeout(() => saveAnnotations(), 500);
   }
 
   // ── Guardar ───────────────────────────────────────────
 
   async function saveAnnotations() {
+    clearTimeout(_timerGuardar);
+    _timerGuardar = null;
     if (!_activeMap) return;
-    _activeMap.annotations = _annotations.map(a => ({ ...a, pts: a.pts ? [...a.pts] : undefined }));
+    _activeMap.annotations = JSON.parse(_foto());
+    _activeMap.updatedAt = new Date().toISOString();
     delete _activeMap.paths; // limpiar campo viejo
     await _dbPut(STORE_MAPS, _activeMap);
     const idx = _maps.findIndex(m => m.id === _activeMap.id);
     if (idx >= 0) _maps[idx] = _activeMap;
-    _showSaveFlash();
+    _estadoGuardado('Guardado');
+    if (typeof _alGuardar === 'function') _alGuardar(_activeMap);
   }
 
-  function _showSaveFlash() {
-    const btn = document.getElementById('mapBtnSave');
-    if (!btn) return;
-    const orig = btn.textContent;
-    btn.textContent = '✓ Guardado';
-    btn.style.color = '#4caf50';
-    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+  function _estadoGuardado(txt) {
+    const el = document.getElementById('mapSaveState');
+    if (el) el.textContent = txt;
   }
+
+  // Gancho para la sincronización con la nube (lo asigna quien la maneje)
+  let _alGuardar = null;
+  function onSaved(fn) { _alGuardar = fn; }
+
 
   /* Crea un mapa desde fuera (el diario), reusando la misma IndexedDB.
      Así la foto adjuntada a una nota aparece también en la pestaña Mapas
@@ -575,7 +837,7 @@ const Maps = (() => {
     triggerAddMap, triggerCamera, handleFileSelect, deleteMap,
     openMap, closeMap,
     setTool, setColor, setSize,
-    undo, clearAll, saveAnnotations, resetZoom,
+    undo, redo, clearAll, saveAnnotations, resetZoom, onSaved,
   };
 
 })();
