@@ -457,3 +457,9 @@
 /* Habilidades con el nombre en inglés debajo */
 .mt-sk { flex: 1; min-width: 0; line-height: 1.15; }
 .mt-sk i { display: block; font: italic 500 10.5px 'Jost', sans-serif; color: var(--m-tx2); letter-spacing: .01em; }
+
+/* Nombre en español junto al del libro */
+:root[data-vista="mesa"] .nm-es { font: 400 .86em 'Jost', sans-serif; color: var(--m-tx2); letter-spacing: 0; text-transform: none; }
+/* Recursos: el nombre se parte en líneas antes que los puntos (hasta 5 en fila) */
+.mesa-rec > div:first-child { flex: 1; min-width: 0; }
+.mesa-rec > .mesa-pts { flex: none; max-width: 125px; }

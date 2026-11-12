@@ -73,8 +73,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(() => [...document.querySelectorAll('#mesa-combate .mesa-plegar')].filter(b => /No disponible/.test(b.textContent) && /▸/.test(b.textContent)).forEach(b => b.click())); await sleep(200);
   const reac = await p.evaluate(() => { const col = [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Reacción/.test(x.querySelector('.mesa-col-hd').textContent));
     const adic = [...document.querySelectorAll('#mesa-combate .mesa-col')].find(x => /Adicional/.test(x.querySelector('.mesa-col-hd').textContent));
-    return { reac: col ? [...col.querySelectorAll('.mesa-op b')].map(b => b.textContent) : [], reacTxt: col ? col.textContent.replace(/\s+/g, ' ') : '',
-      adic: adic ? [...adic.querySelectorAll('.mesa-op b')].map(b => b.textContent) : [] }; });
+    return { reac: col ? [...col.querySelectorAll('.mesa-op b')].map(b => b.firstChild.textContent) : [], reacTxt: col ? col.textContent.replace(/\s+/g, ' ') : '',
+      adic: adic ? [...adic.querySelectorAll('.mesa-op b')].map(b => b.firstChild.textContent) : [] }; });
   chk('Mesa: Ataque reactivo y Guardián (Sentinel) en Reacción; Golpe con el extremo en Adicional', ['Ataque de oportunidad', 'Ataque reactivo', 'Guardián (Sentinel)'].every(n => reac.reac.includes(n)) && reac.adic.includes('Golpe con el extremo'), reac);
   await p.screenshot({ path: __dirname + '/out/aztram6_1180.png' });
   console.log(res.every(Boolean) ? 'TODO OK' : 'HAY FALLAS');

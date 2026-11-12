@@ -28,6 +28,13 @@ const Mesa = (() => {
   const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const sg = n => (n >= 0 ? '+' : '') + n;
   const limpio = n => String(n || '').replace(/\s*[◆†○●]\s*/g, '').trim();
+  // Nombre del libro (inglés) + español entre paréntesis, como en la ficha clásica:
+  // "Second Wind (Tomar aliento)". Usa la misma tabla que las copias a Roll20.
+  const nom = n => {
+    const base = limpio(n);
+    const es = window.Roll20Es ? Roll20Es.nombre(base) : null;
+    return esc(base) + (es && es !== base ? `<span class="nm-es"> (${esc(es)})</span>` : '');
+  };
   const $ = id => document.getElementById(id);
   // Roll20 solo en escritorio: en la vista Mesa nunca hay botón en las filas,
   // solo dentro del detalle, y en táctil ni eso (misma regla que .solo-desktop).
@@ -553,7 +560,7 @@ const Mesa = (() => {
     const ab = st.abierto === id;
     return `<div data-id="${id}" class="mesa-op ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.abrir('${id}')">
       <span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/${icono}.svg)"></i></span>
-      <div class="mesa-op-tx"><b>${esc(limpio(nombre))}</b>${dmg ? `<span class="mesa-golpe"><span class="mesa-num">${num}</span><span class="mesa-dmg">${esc(dmg)}</span></span>` : ''}<small>${num && !dmg ? `<span class="mesa-num">${num}</span> · ` : ''}${esc(sub)}</small>${no ? `<em class="mesa-motivo">${esc(no)}</em>` : ''}</div>
+      <div class="mesa-op-tx"><b>${nom(nombre)}</b>${dmg ? `<span class="mesa-golpe"><span class="mesa-num">${num}</span><span class="mesa-dmg">${esc(dmg)}</span></span>` : ''}<small>${num && !dmg ? `<span class="mesa-num">${num}</span> · ` : ''}${esc(sub)}</small>${no ? `<em class="mesa-motivo">${esc(no)}</em>` : ''}</div>
       ${tags}<span class="mesa-mas">›</span>
       ${ab ? `<div class="mesa-det" onclick="event.stopPropagation()">${det}</div>` : ''}
     </div>`;
@@ -726,7 +733,7 @@ const Mesa = (() => {
     const conc = c.concentration ? (c.spells || []).find(s => s.id === c.concentration) : null;
     const lanzador = (c.spells || []).length > 0;
     const bloqueConc = lanzador ? `<section><div class="mesa-sec">Concentración</div><div class="mesa-card mesa-conc">
-      ${conc || c.concentration ? `<span class="mesa-lbl">Activa</span><b>${esc(limpio(conc ? conc.name : c.concentration))}</b>
+      ${conc || c.concentration ? `<span class="mesa-lbl">Activa</span><b>${nom(conc ? conc.name : c.concentration)}</b>
         ${conc && conc.duration ? `<small>${esc(conc.duration.replace(/^Concentraci[oó]n\s*\(?|\)$/gi, ''))}</small>` : ''}
         <button class="mesa-btn" onclick="App.setConc(null)">Terminar</button>` : '<span class="mesa-vacio">Ninguna</span>'}</div></section>` : '';
 
@@ -746,7 +753,7 @@ const Mesa = (() => {
 
     const puntos = (n, total, fn) => `<span class="mesa-pts">${Array.from({ length: total }, (_, i) =>
       `<i class="${i < n ? '' : 'u'}" onclick="${fn(i)}"></i>`).join('')}</span>`;
-    const recs = (c.resources || []).filter(r => r.max > 0 && !(bloqueEco && r.id === 'echo-unleash')).map(r => `<div class="mesa-rec"><div>${esc(limpio(r.name))}<small>${esc(r.action || '')}</small></div>
+    const recs = (c.resources || []).filter(r => r.max > 0 && !(bloqueEco && r.id === 'echo-unleash')).map(r => `<div class="mesa-rec"><div>${nom(r.name)}<small>${esc(r.action || '')}</small></div>
       ${puntos(r.current, r.max, i => `App.toggleResourceDot('${r.id}',${i})`)}</div>`);
     if (tab === 'combate') {
       for (let lv = 1; lv <= 9; lv++) {
@@ -991,7 +998,7 @@ const Mesa = (() => {
     return `<div class="mesa-cj ${ab ? 'abierto' : ''} ${no ? 'no' : ''}" onclick="Mesa.abrir('${id}')">
       ${conPrep ? `<span class="mesa-pr ${prep ? 'on' : ''}" ${sp.level === 0 || sp.domain ? 'title="Siempre preparado"' : `onclick="event.stopPropagation();App.toggleSpellPrepared('${sp.id}')" title="${prep ? 'Despreparar' : 'Preparar'}"`}></span>`
         : '<span class="mesa-t"><i class="mesa-ico" style="--m:url(../assets/iconos/conjuros.svg)"></i></span>'}
-      <div class="mesa-op-tx"><b>${esc(limpio(sp.name))}</b>${ef || espacio ? `<span class="mesa-golpe">${espacio ? `<span class="mesa-esp ${/↑/.test(espacio) ? 'sube' : ''}" title="Espacio que gasta">${espacio}</span>` : ''}${ef ? `<span class="mesa-dmg ${ef.cura ? 'cura' : ''}">${ef.cura ? '♥ ' : ''}${esc(ef.base)}</span>${ef.escala ? `<span class="mesa-escala">${esc(ef.escala)}</span>` : ''}` : ''}</span>` : ''}<small>${esc([sp.castTime, sp.range && App.fmtDist(sp.range), efecto].filter(Boolean).join(' · '))}</small>
+      <div class="mesa-op-tx"><b>${nom(sp.name)}</b>${ef || espacio ? `<span class="mesa-golpe">${espacio ? `<span class="mesa-esp ${/↑/.test(espacio) ? 'sube' : ''}" title="Espacio que gasta">${espacio}</span>` : ''}${ef ? `<span class="mesa-dmg ${ef.cura ? 'cura' : ''}">${ef.cura ? '♥ ' : ''}${esc(ef.base)}</span>${ef.escala ? `<span class="mesa-escala">${esc(ef.escala)}</span>` : ''}` : ''}</span>` : ''}<small>${esc([sp.castTime, sp.range && App.fmtDist(sp.range), efecto].filter(Boolean).join(' · '))}</small>
         ${no ? `<em class="mesa-motivo">${esc(no)}</em>` : conc ? `<em class="mesa-motivo aviso">Rompe tu concentración en ${esc(limpio(conc.name))}</em>` : ''}</div>
       <span class="mesa-tags">${tags}</span>${det}</div>`;
   }

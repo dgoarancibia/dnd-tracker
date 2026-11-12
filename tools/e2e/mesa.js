@@ -141,7 +141,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // War Caster: conjuro de 1 Acción como reacción en lugar del ataque de oportunidad
   await p.evaluate(() => { const c = App.getActiveChar(); c.turn = { action: false, bonus: false, reaction: false }; App.reloadChar(c); App.switchTab('combate'); }); await sleep(300);
   await p.evaluate(() => Mesa.grupo('conj-wc')); await sleep(200);
-  const wc = await p.evaluate(() => [...document.querySelectorAll('.mesa-sub .mesa-cj b')].filter(b => b.closest('.mesa-col').querySelector('.mesa-col-hd').textContent.includes('Reacción')).map(b => b.textContent));
+  const wc = await p.evaluate(() => [...document.querySelectorAll('.mesa-sub .mesa-cj b')].filter(b => b.closest('.mesa-col').querySelector('.mesa-col-hd').textContent.includes('Reacción')).map(b => b.firstChild.textContent));
   await p.evaluate(() => Mesa.abrir('sp-wc-toll-dead')); await sleep(200);
   await p.evaluate(() => document.querySelector('.mesa-cj.abierto .mesa-acc .mesa-btn.p').click()); await sleep(400);
   const tWc = await p.evaluate(() => App.getActiveChar().turn);
@@ -194,7 +194,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // Aztram (Echo Knight): invocar el eco y Unleash Incarnation a la vista
   await ficha('az');
   await p.evaluate(() => Mesa.combate(true)); await sleep(300);
-  const colsDe = () => p.evaluate(() => Object.fromEntries([...document.querySelectorAll('#mesa-combate .mesa-col')].map(c => [c.querySelector('.mesa-col-hd').childNodes[0].textContent.trim(), [...c.querySelectorAll('.mesa-op-tx b')].map(b => b.textContent)])));
+  const colsDe = () => p.evaluate(() => Object.fromEntries([...document.querySelectorAll('#mesa-combate .mesa-col')].map(c => [c.querySelector('.mesa-col-hd').childNodes[0].textContent.trim(), [...c.querySelectorAll('.mesa-op-tx b')].map(b => b.firstChild.textContent)])));
   const az = await colsDe();
   await p.evaluate(() => { Mesa.abrir('eco'); }); await sleep(200);
   await p.evaluate(() => document.querySelector('.mesa-op.abierto .mesa-btn.p').click()); await sleep(300);
