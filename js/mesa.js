@@ -952,9 +952,10 @@ const Mesa = (() => {
     const v = via ? `,'${via}'` : '';
     const corta = { action: 'ACC.', bonusAction: 'ADIC.', reaction: 'REAC.' }[via === 'reaction' ? 'reaction' : act] || '';
     const nivel = sp.level === 0 ? 'TRUCO' : `NV ${sp.level}`;
+    const opEsp = sp.level > 0 ? (App.castOptions(sp.id) || { free: false, slots: [] }) : null;
     const tags = [sp.level === 0 ? `<span class="mesa-tg">${nivel}</span>` : '', sp.concentration ? '<span class="mesa-tg">CONC</span>' : '',
       sp.domain ? `<span class="mesa-tg d">◆ ${/Cl[ée]rigo/.test(c.clase || '') ? 'DOMINIO' : 'SIEMPRE'}</span>` : '',
-      sp.mi ? '<span class="mesa-tg d">GRATIS</span>' : '', sp.ritual ? '<span class="mesa-tg">RITUAL</span>' : '', corta ? `<span class="mesa-tg a">${corta}</span>` : ''].join('');
+      sp.mi && !(sp.level > 0 && opEsp && opEsp.free) ? '<span class="mesa-tg d">GRATIS</span>' : '', sp.ritual ? '<span class="mesa-tg">RITUAL</span>' : '', corta ? `<span class="mesa-tg a">${corta}</span>` : ''].join('');
     const id = (via === 'reaction' ? 'sp-wc-' : via === 'other' ? 'sp-fc-' : 'sp-') + sp.id, ab = st.abierto === id;
     const prep = preparado(c, sp);
     const no = ritual ? (prep ? '' : 'No preparado') : _motivoConjuro(c, sp, via);
@@ -963,7 +964,6 @@ const Mesa = (() => {
       ? (c.spells || []).find(x => x.id === c.concentration) : null;
     const ef = _efectoConjuro(c, sp);
     // Qué espacio gasta: el de su nivel o, si se acabaron, el siguiente que quede (↑)
-    const opEsp = sp.level > 0 ? (App.castOptions(sp.id) || { free: false, slots: [] }) : null;
     const espacio = !opEsp ? '' : opEsp.free ? 'Gratis'
       : opEsp.slots.length ? `Nv ${opEsp.slots[0]}${opEsp.slots[0] > sp.level ? '↑' : ''}` : `Nv ${sp.level}`;
     const efecto = ef ? '' : (sp.desc || '').split(' · ').slice(2, 4).join(' · ');

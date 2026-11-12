@@ -210,20 +210,20 @@
 .mesa-t { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; background: var(--bg2); border: 1px solid var(--m-borde);
   color: var(--m-acento-2); flex: none; }
 .mesa-t .mesa-ico { width: 20px; height: 20px; }
-.mesa-op-tx { flex: 1; min-width: 0; }
+.mesa-op-tx { flex: 1 1 150px; min-width: 0; }
 .mesa-op-tx b { display: block; font: 600 14.5px 'Jost', sans-serif; color: var(--text); }
 .mesa-op-tx small { display: block; color: var(--m-tx2); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .abierto .mesa-op-tx small { white-space: normal; }
 .mesa-num { font: 700 15px 'Cinzel', serif; color: var(--m-acento-2); }
 /* Ataque y daño de un arma: a la vista y más grandes */
-.mesa-golpe { display: flex; align-items: baseline; gap: 10px; margin: 1px 0; }
+.mesa-golpe { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 2px; margin: 1px 0; }
 .mesa-golpe .mesa-num { font-size: 18px; }
-.mesa-dmg { font: 700 18px 'Jost', sans-serif; color: var(--text); letter-spacing: .01em; }
+.mesa-dmg { font: 700 18px 'Jost', sans-serif; color: var(--text); letter-spacing: .01em; white-space: nowrap; }
 .mesa-dmg.cura { color: var(--green-light); }
 .mesa-esp { align-self: center; font: 700 11px 'Jost', sans-serif; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 6px;
   border: 1px solid var(--gold-dim); color: var(--gold); white-space: nowrap; }
 .mesa-esp.sube { border-style: dashed; }
-.mesa-escala { font: 600 12px 'Jost', sans-serif; color: var(--text-muted); letter-spacing: .02em; }
+.mesa-escala { font: 600 12px 'Jost', sans-serif; color: var(--text-muted); letter-spacing: .02em; white-space: nowrap; }
 .mesa-mun { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; color: var(--text); }
 .mesa-mun input { width: 52px; min-height: 32px; border-radius: 8px; border: 1px solid var(--m-borde-2); background: var(--bg); color: var(--text); font: 600 14px 'Jost', sans-serif; text-align: center; }
 .mesa-mun small { flex-basis: 100%; color: var(--m-tx2); }
@@ -236,7 +236,7 @@
 .mesa-acc { display: flex; gap: 6px; flex-wrap: wrap; }
 .mesa-rapidas { display: flex; flex-wrap: wrap; gap: 5px; padding: 2px; }
 .mesa-link { align-self: flex-start; background: none; border: none; color: var(--m-acento-2); font: 500 13px 'Jost', sans-serif; cursor: pointer; padding: 4px 2px; }
-.mesa-tags { display: flex; gap: 4px; flex: none; margin-left: auto; }
+.mesa-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; flex: none; margin-left: auto; }
 .mesa-tg { font: 700 10px 'Jost', sans-serif; letter-spacing: .06em; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--m-borde-2); color: var(--m-tx2); }
 .mesa-tg.d { color: var(--m-acento-2); border-color: var(--m-acento); }
 .mesa-tg.a { background: var(--bg5); border-color: transparent; color: var(--text); }
