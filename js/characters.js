@@ -5253,7 +5253,9 @@ const Characters = (() => {
       const cfg = CLASES_CONFIG[c.name];
       if (!cfg) continue;
       if (cfg.slotTable === 'full')    casterLevels += c.level;
-      if (cfg.slotTable === 'half')    casterLevels += Math.floor(c.level / 2);
+      // 2024: Paladín y Explorador suman la MITAD REDONDEANDO HACIA ARRIBA (2014 redondeaba hacia abajo):
+      // un Explorador 3 tiene 3 espacios de nivel 1, no 2.
+      if (cfg.slotTable === 'half')    casterLevels += Math.ceil(c.level / 2);
       if (cfg.slotTable === 'warlock') warlockLevel = Math.max(warlockLevel, c.level);
       // Tercio de lanzador por subclase (Arcane Trickster, Eldritch Knight)
       if (!cfg.slotTable && /^(Arcane Trickster|Eldritch Knight)$/.test(c.subclass || '')) {

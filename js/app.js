@@ -183,6 +183,24 @@ const App = (() => {
       }
     }
 
+    // 1c-bis. Paladín / Explorador (medio lanzador): los espacios guardados se
+    //     calcularon con la mitad redondeando hacia abajo (regla 2014) y un
+    //     Explorador 3 quedó con 2 espacios de nivel 1 en vez de 3. Se ajustan
+    //     al cálculo 2024 sin devolver los ya gastados.
+    {
+      const cls = c.classes && c.classes.length ? c.classes : [{ name: c.clase, level: c.nivel || 1, subclass: c.subclase || '' }];
+      const medio = cls.some(x => x && (Characters.CLASES_CONFIG[x.name] || {}).slotTable === 'half');
+      if (medio) {
+        const tabla = Characters.calcMulticlassSlots(cls);
+        if (!c.spellSlots) c.spellSlots = {};
+        for (let i = 1; i <= 9; i++) {
+          const max = (tabla[i] && tabla[i].max) || 0, sl = c.spellSlots[i];
+          if (!sl) { if (max) { c.spellSlots[i] = { current: max, max }; changed = true; } }
+          else if (sl.max !== max) { sl.current = Math.min(max, (sl.current || 0) + Math.max(0, max - sl.max)); sl.max = max; changed = true; }
+        }
+      }
+    }
+
     // 1d. Arcane Trickster: lanza con INT y tiene espacios de tercio de lanzador.
     //     Slippery Mind (Pícaro nv15): competencia en salvaciones de SAB y CAR.
     if (c.clase === 'Pícaro') {
